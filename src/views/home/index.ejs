@@ -1,0 +1,2925 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const featuredRooms = home.rooms || [];
+  const cities = home.hotelCities || [];
+  const hotels = home.hotels || [];
+  const bedTypes = home.bedTypes || [];
+  const roomTypes = home.roomTypes || [];
+  const viewTypes = home.viewTypes || [];
+  const accentCities = cities.slice(0, 5);
+  const spotlightHotels = hotels.slice(0, 4);
+  const tripMoments = [
+    { title: "Biển sáng trong", note: "Sóng dịu, nắng đẹp, hồ bơi và ban công gió lộng." },
+    { title: "Kỳ nghỉ gia đình", note: "Phòng rộng, tiện nghi đủ đầy, check-in nhanh gọn." },
+    { title: "Tuần trăng mật", note: "View hoàng hôn, decor mềm mại, trải nghiệm lãng mạn." }
+  ];
+  const amenities = [
+    "Hồ bơi vô cực ngoài trời nhìn thẳng ra biển.",
+    "Spa, xông hơi, jacuzzi và massage thư giãn.",
+    "Nhà hàng buffet sáng cùng thực đơn Au - A.",
+    "Rooftop bar và nhạc live cuối tuần.",
+    "Khu vui chơi trẻ em và phòng gym hiện đại.",
+    "Tour tham quan, thuê xe và đưa đón sân bay."
+  ];
+  const testimonials = [
+    {
+      name: "Hà My",
+      title: "Khách nghỉ dưỡng cuối tuần",
+      quote: "Màu sắc rất vui mắt, nhìn trang chủ là đã có cảm giác muốn đặt ngay một chuyến đi biển thật nhanh.",
+      rating: 5
+    },
+    {
+      name: "Gia Bảo",
+      title: "Khách đi cùng gia đình",
+      quote: "Tìm phòng dễ, giao diện sáng sủa, có cảm giác vừa hiện đại vừa thân thiện chứ không khô cứng như trang đặt phòng thông thường.",
+      rating: 5
+    },
+    {
+      name: "Thanh Trúc",
+      title: "Khách thích trải nghiệm mobile",
+      quote: "Phần cài app rất tiện, nhìn tổng thể trẻ trung và đúng chất du lịch nghỉ dưỡng mà mình muốn.",
+      rating: 5
+    }
+  ];
+%>
+
+<style>
+  .site-header {
+    background: rgba(234, 251, 255, 0.72);
+    border-bottom-color: rgba(14, 73, 118, 0.10);
+    box-shadow: 0 16px 34px rgba(77, 132, 171, 0.08);
+  }
+
+  .site-header__inner {
+    min-height: 78px;
+  }
+
+  .brand strong {
+    color: #0b3255;
+  }
+
+  .brand span {
+    color: #51758f;
+  }
+
+  .nav-links .chip,
+  .nav-links .button {
+    background: rgba(255, 255, 255, 0.72);
+    color: #0b3255;
+    border-color: rgba(14, 73, 118, 0.10);
+  }
+
+  .nav-links .button--primary {
+    color: #ffffff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6 48%, #22c55e);
+  }
+
+  body.travel-night .site-header {
+    background: rgba(12, 22, 48, 0.86);
+    border-bottom-color: rgba(148, 163, 184, 0.20);
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.24);
+  }
+
+  body.travel-night .brand strong,
+  body.travel-night .nav-links .chip,
+  body.travel-night .nav-links .button {
+    color: #eef6ff;
+  }
+
+  body.travel-night .brand span {
+    color: #a8c5df;
+  }
+
+  body.travel-night .nav-links .chip,
+  body.travel-night .nav-links .button {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(226, 232, 240, 0.14);
+  }
+
+  .travel-home {
+    --travel-ink: #0b3255;
+    --travel-muted: #5b7790;
+    --travel-line: rgba(14, 73, 118, 0.12);
+    --travel-card: rgba(255, 255, 255, 0.72);
+    --travel-card-strong: rgba(255, 255, 255, 0.86);
+    --travel-cyan: #38bdf8;
+    --travel-sky: #7dd3fc;
+    --travel-sea: #14b8a6;
+    --travel-mint: #6ee7b7;
+    --travel-sun: #fbbf24;
+    --travel-coral: #fb7185;
+    --travel-peach: #fdba74;
+    --travel-violet: #a78bfa;
+    --travel-shadow: 0 28px 80px rgba(39, 83, 131, 0.16);
+    position: relative;
+    overflow: hidden;
+    color: var(--travel-ink);
+    transition: background 0.7s ease, color 0.35s ease;
+    background:
+      radial-gradient(circle at 10% 4%, rgba(125, 211, 252, 0.65), transparent 22%),
+      radial-gradient(circle at 92% 10%, rgba(167, 139, 250, 0.26), transparent 20%),
+      radial-gradient(circle at 20% 44%, rgba(251, 191, 36, 0.15), transparent 24%),
+      linear-gradient(180deg, #dff8ff 0%, #eefcff 22%, #ffffff 54%, #fef7f2 100%);
+  }
+
+  .travel-home[data-theme="night"] {
+    --travel-ink: #eef6ff;
+    --travel-muted: #b6c7dc;
+    --travel-line: rgba(226, 232, 240, 0.18);
+    --travel-card: rgba(15, 23, 42, 0.70);
+    --travel-card-strong: rgba(18, 29, 55, 0.86);
+    --travel-shadow: 0 28px 80px rgba(2, 6, 23, 0.36);
+    background:
+      radial-gradient(circle at 78% 8%, rgba(196, 181, 253, 0.26), transparent 24%),
+      radial-gradient(circle at 18% 16%, rgba(56, 189, 248, 0.12), transparent 22%),
+      radial-gradient(circle at 50% 72%, rgba(20, 184, 166, 0.10), transparent 30%),
+      linear-gradient(180deg, #071224 0%, #0d1b38 34%, #13243f 68%, #182a46 100%);
+  }
+
+  .travel-home::before,
+  .travel-home::after {
+    content: "";
+    position: absolute;
+    inset: auto;
+    width: 520px;
+    height: 520px;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(14px);
+    opacity: 0.65;
+    animation: travel-float-orb 14s ease-in-out infinite alternate;
+  }
+
+  .travel-home::before {
+    top: -220px;
+    right: -140px;
+    background: radial-gradient(circle, rgba(110, 231, 183, 0.34), rgba(56, 189, 248, 0.12), transparent 68%);
+  }
+
+  .travel-home::after {
+    left: -180px;
+    bottom: -240px;
+    background: radial-gradient(circle, rgba(251, 113, 133, 0.20), rgba(253, 186, 116, 0.16), transparent 70%);
+    animation-delay: -4s;
+  }
+
+  .travel-shell {
+    width: min(1220px, calc(100vw - 28px));
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+    padding: 28px 0 72px;
+  }
+
+  .travel-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(420px, 0.98fr);
+    gap: 26px;
+    align-items: stretch;
+  }
+
+  .travel-panel,
+  .travel-search-card,
+  .travel-room-card,
+  .travel-city-card,
+  .travel-story-card,
+  .travel-hotel-card,
+  .travel-promise-card {
+    border: 1px solid var(--travel-line);
+    background: var(--travel-card);
+    backdrop-filter: blur(22px);
+    box-shadow: var(--travel-shadow);
+  }
+
+  .travel-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 40px;
+    padding: 34px;
+    min-height: 640px;
+    background:
+      linear-gradient(155deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.58)),
+      radial-gradient(circle at 95% 12%, rgba(251, 191, 36, 0.24), transparent 22%);
+  }
+
+  .travel-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 84% 14%, rgba(255, 255, 255, 0.68), transparent 18%),
+      linear-gradient(120deg, rgba(255, 255, 255, 0.62), transparent 34%);
+    pointer-events: none;
+  }
+
+  .travel-home[data-theme="night"] .travel-panel {
+    background:
+      linear-gradient(155deg, rgba(15, 23, 42, 0.90), rgba(30, 41, 59, 0.68)),
+      radial-gradient(circle at 96% 10%, rgba(196, 181, 253, 0.18), transparent 24%);
+  }
+
+  .travel-home[data-theme="night"] .travel-panel::before {
+    background:
+      radial-gradient(circle at 84% 14%, rgba(191, 219, 254, 0.14), transparent 18%),
+      linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 34%);
+  }
+
+  .travel-home[data-theme="night"] .travel-search-card,
+  .travel-home[data-theme="night"] .travel-pwa-strip,
+  .travel-home[data-theme="night"] .travel-journey-panel,
+  .travel-home[data-theme="night"] .travel-info-card,
+  .travel-home[data-theme="night"] .travel-contact-card,
+  .travel-home[data-theme="night"] .travel-room-card,
+  .travel-home[data-theme="night"] .travel-city-card,
+  .travel-home[data-theme="night"] .travel-story-card,
+  .travel-home[data-theme="night"] .travel-promise-card,
+  .travel-home[data-theme="night"] .travel-testimonial-card,
+  .travel-home[data-theme="night"] .travel-hotel-card {
+    border-color: var(--travel-line);
+    background: var(--travel-card);
+  }
+
+  .travel-home[data-theme="night"] .travel-eyebrow,
+  .travel-home[data-theme="night"] .travel-chip,
+  .travel-home[data-theme="night"] .travel-pwa-chip,
+  .travel-home[data-theme="night"] .travel-room-pill,
+  .travel-home[data-theme="night"] .travel-mini-pill,
+  .travel-home[data-theme="night"] .travel-scene-badge,
+  .travel-home[data-theme="night"] .travel-scene-copy,
+  .travel-home[data-theme="night"] .travel-journey-card {
+    color: var(--travel-ink);
+    background: rgba(15, 23, 42, 0.62);
+    border-color: rgba(226, 232, 240, 0.16);
+  }
+
+  .travel-home[data-theme="night"] .travel-field input,
+  .travel-home[data-theme="night"] .travel-field select {
+    color: var(--travel-ink);
+    background: rgba(15, 23, 42, 0.64);
+    border-color: rgba(226, 232, 240, 0.18);
+  }
+
+  .travel-home[data-theme="night"] .travel-field input::placeholder {
+    color: rgba(226, 232, 240, 0.60);
+  }
+
+  .travel-home[data-theme="night"] .travel-button--secondary,
+  .travel-home[data-theme="night"] .travel-journey-link,
+  .travel-home[data-theme="night"] .travel-room-link {
+    color: var(--travel-ink);
+    background: rgba(15, 23, 42, 0.66);
+    border-color: rgba(226, 232, 240, 0.16);
+  }
+
+  .travel-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(56, 189, 248, 0.16);
+    color: #0284c7;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .travel-eyebrow-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--travel-sun), var(--travel-coral));
+    box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.16);
+    animation: travel-pulse 2s ease-in-out infinite;
+  }
+
+  .travel-title {
+    margin: 24px 0 14px;
+    max-width: 640px;
+    color: var(--travel-ink);
+    font-size: clamp(42px, 6vw, 78px);
+    line-height: 0.93;
+    letter-spacing: -0.08em;
+  }
+
+  .travel-title span {
+    display: inline-block;
+    color: transparent;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6 38%, #fb7185 72%, #f59e0b);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .travel-description {
+    max-width: 620px;
+    margin: 0;
+    color: var(--travel-muted);
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  .travel-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .travel-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(14, 73, 118, 0.10);
+    color: var(--travel-ink);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .travel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  .travel-button,
+  .travel-button:link,
+  .travel-button:visited {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 900;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .travel-button:hover {
+    transform: translateY(-2px);
+  }
+
+  .travel-button--primary {
+    color: #ffffff;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6 45%, #22c55e);
+    box-shadow: 0 20px 38px rgba(20, 184, 166, 0.26);
+  }
+
+  .travel-button--secondary {
+    color: var(--travel-ink);
+    background: rgba(255, 255, 255, 0.84);
+    border-color: rgba(14, 73, 118, 0.12);
+  }
+
+  .travel-button--install {
+    color: #0b3255;
+    background: linear-gradient(135deg, #fde68a, #f9a8d4 54%, #7dd3fc);
+    box-shadow: 0 18px 34px rgba(244, 114, 182, 0.18);
+  }
+
+  .travel-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  .travel-kpi {
+    border-radius: 24px;
+    padding: 16px 18px;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(14, 73, 118, 0.08);
+  }
+
+  .travel-kpi strong {
+    display: block;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+    color: var(--travel-ink);
+  }
+
+  .travel-kpi span {
+    display: block;
+    margin-top: 8px;
+    color: var(--travel-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .travel-search-card {
+    margin-top: 24px;
+    border-radius: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.80);
+  }
+
+  .travel-search-card form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .travel-field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .travel-field--wide {
+    grid-column: 1 / -1;
+  }
+
+  .travel-field label {
+    color: var(--travel-ink);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .travel-field input,
+  .travel-field select {
+    width: 100%;
+    min-height: 50px;
+    padding: 0 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(14, 73, 118, 0.14);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--travel-ink);
+    font: inherit;
+    outline: none;
+  }
+
+  .travel-field input:focus,
+  .travel-field select:focus {
+    border-color: rgba(14, 165, 233, 0.55);
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+  }
+
+  .travel-search-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 4px;
+  }
+
+  .travel-search-note {
+    margin: 10px 0 0;
+    color: var(--travel-muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .travel-scene-card {
+    position: relative;
+    overflow: hidden;
+    min-height: 640px;
+    border-radius: 42px;
+    border: 1px solid rgba(14, 73, 118, 0.10);
+    box-shadow: var(--travel-shadow);
+    transition: background 0.7s ease, border-color 0.35s ease;
+    background:
+      linear-gradient(180deg, #8fe8ff 0%, #b8f1ff 24%, #dff8ff 45%, #f7fdff 58%, #5fd0ff 59%, #17b1ca 100%);
+  }
+
+  .travel-home[data-theme="night"] .travel-scene-card {
+    border-color: rgba(226, 232, 240, 0.18);
+    background:
+      radial-gradient(circle at 78% 16%, rgba(196,181,253,0.20), transparent 18%),
+      linear-gradient(180deg, #08152f 0%, #111f42 30%, #172a50 49%, #1e3a5f 58%, #123f5a 100%);
+  }
+
+  .travel-scene-card::before {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 42%;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.34), transparent 26%),
+      linear-gradient(180deg, rgba(255,255,255,0.16), rgba(23,177,202,0));
+  }
+
+  .travel-home[data-theme="night"] .travel-scene-card::before {
+    background:
+      radial-gradient(circle at 24% 0%, rgba(147, 197, 253, 0.16), transparent 28%),
+      linear-gradient(180deg, rgba(15,23,42,0.04), rgba(7,18,36,0.18));
+  }
+
+  .travel-scene-top {
+    position: absolute;
+    inset: 24px 24px auto 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 2;
+  }
+
+  .travel-scene-badge {
+    border-radius: 20px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(14, 73, 118, 0.08);
+    backdrop-filter: blur(12px);
+    color: var(--travel-ink);
+    max-width: 220px;
+  }
+
+  .travel-scene-badge strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .travel-scene-badge span {
+    color: var(--travel-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .travel-sun {
+    position: absolute;
+    top: 52px;
+    right: 88px;
+    width: 108px;
+    height: 108px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 34% 34%, #fff7bf, #ffd45c 52%, #f59e0b 100%);
+    box-shadow: 0 0 0 18px rgba(251, 191, 36, 0.14), 0 0 68px rgba(251, 191, 36, 0.42);
+    animation: travel-sun-breathe 5s ease-in-out infinite;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  .travel-home[data-theme="night"] .travel-sun,
+  .travel-home[data-theme="night"] .travel-sun-rays,
+  .travel-home[data-theme="night"] .travel-rainbow {
+    opacity: 0;
+    transform: translateY(18px) scale(0.86);
+  }
+
+  .travel-sun-rays {
+    position: absolute;
+    top: 18px;
+    right: 54px;
+    width: 178px;
+    height: 178px;
+    border-radius: 999px;
+    background: conic-gradient(from 0deg, rgba(255,255,255,0), rgba(255,244,177,0.58), rgba(255,255,255,0) 18%, rgba(255,244,177,0.34) 28%, rgba(255,255,255,0) 42%, rgba(255,244,177,0.48), rgba(255,255,255,0));
+    opacity: 0.48;
+    animation: travel-rays-spin 34s linear infinite;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+
+  .travel-moon {
+    position: absolute;
+    top: 56px;
+    right: 92px;
+    width: 102px;
+    height: 102px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 32% 28%, #ffffff, #dbeafe 58%, #93c5fd 100%);
+    box-shadow: 0 0 0 18px rgba(147, 197, 253, 0.10), 0 0 76px rgba(191, 219, 254, 0.42);
+    opacity: 0;
+    transform: translateY(-16px) scale(0.88);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    z-index: 1;
+  }
+
+  .travel-moon::after {
+    content: "";
+    position: absolute;
+    right: -8px;
+    top: -4px;
+    width: 84px;
+    height: 84px;
+    border-radius: inherit;
+    background: #08152f;
+  }
+
+  .travel-home[data-theme="night"] .travel-moon {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .travel-stars {
+    position: absolute;
+    inset: 40px 28px auto 28px;
+    height: 230px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.55s ease;
+    z-index: 1;
+  }
+
+  .travel-star {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: #fff7cc;
+    box-shadow: 0 0 16px rgba(255, 247, 204, 0.80);
+    animation: travel-star-twinkle 2.6s ease-in-out infinite;
+  }
+
+  .travel-star:nth-child(1) { left: 10%; top: 18%; }
+  .travel-star:nth-child(2) { left: 24%; top: 44%; animation-delay: -0.5s; }
+  .travel-star:nth-child(3) { left: 38%; top: 15%; animation-delay: -1.2s; }
+  .travel-star:nth-child(4) { left: 55%; top: 38%; animation-delay: -0.9s; }
+  .travel-star:nth-child(5) { left: 70%; top: 24%; animation-delay: -1.6s; }
+  .travel-star:nth-child(6) { left: 86%; top: 48%; animation-delay: -0.3s; }
+
+  .travel-home[data-theme="night"] .travel-stars {
+    opacity: 1;
+  }
+
+  .travel-shooting-stars {
+    position: absolute;
+    inset: 74px 46px auto 46px;
+    height: 210px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.55s ease;
+    z-index: 2;
+  }
+
+  .travel-shooting-star {
+    position: absolute;
+    width: 86px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.95));
+    transform: rotate(-28deg) translateX(-80px);
+    animation: travel-shooting-star 5.8s ease-in-out infinite;
+  }
+
+  .travel-shooting-star:nth-child(1) { left: 16%; top: 18%; }
+  .travel-shooting-star:nth-child(2) { left: 56%; top: 42%; animation-delay: -2.9s; }
+
+  .travel-home[data-theme="night"] .travel-shooting-stars {
+    opacity: 1;
+  }
+
+  .travel-rainbow {
+    position: absolute;
+    top: 116px;
+    right: 22px;
+    width: 240px;
+    height: 130px;
+    border-top-left-radius: 240px;
+    border-top-right-radius: 240px;
+    border: 12px solid transparent;
+    border-bottom: 0;
+    transform: rotate(-10deg);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0)) padding-box,
+      linear-gradient(90deg, #fb7185, #f59e0b, #facc15, #4ade80, #38bdf8, #a78bfa) border-box;
+    opacity: 0.72;
+  }
+
+  .travel-cloud {
+    position: absolute;
+    height: 54px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.86);
+    filter: drop-shadow(0 16px 22px rgba(125, 211, 252, 0.22));
+    transition: opacity 0.45s ease, background 0.45s ease, filter 0.45s ease;
+  }
+
+  .travel-home[data-theme="night"] .travel-cloud {
+    background: rgba(191, 219, 254, 0.38);
+    filter: drop-shadow(0 18px 24px rgba(15, 23, 42, 0.28));
+    opacity: 0.62;
+  }
+
+  .travel-cloud::before,
+  .travel-cloud::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    background: inherit;
+  }
+
+  .travel-cloud--a {
+    top: 86px;
+    left: 44px;
+    width: 124px;
+    animation: travel-cloud 20s linear infinite;
+  }
+
+  .travel-cloud--a::before {
+    width: 56px;
+    height: 56px;
+    left: 16px;
+    top: -20px;
+  }
+
+  .travel-cloud--a::after {
+    width: 64px;
+    height: 64px;
+    right: 18px;
+    top: -24px;
+  }
+
+  .travel-cloud--b {
+    top: 152px;
+    left: 174px;
+    width: 96px;
+    height: 42px;
+    animation: travel-cloud 16s linear infinite reverse;
+  }
+
+  .travel-cloud--b::before {
+    width: 40px;
+    height: 40px;
+    left: 12px;
+    top: -18px;
+  }
+
+  .travel-cloud--b::after {
+    width: 48px;
+    height: 48px;
+    right: 10px;
+    top: -20px;
+  }
+
+  .travel-cloud--c {
+    top: 224px;
+    right: 54px;
+    width: 132px;
+    height: 46px;
+    opacity: 0.72;
+    animation: travel-cloud 24s linear infinite;
+    animation-delay: -5s;
+  }
+
+  .travel-cloud--c::before {
+    width: 52px;
+    height: 52px;
+    left: 18px;
+    top: -22px;
+  }
+
+  .travel-cloud--c::after {
+    width: 58px;
+    height: 58px;
+    right: 18px;
+    top: -24px;
+  }
+
+  .travel-mountain {
+    position: absolute;
+    bottom: 208px;
+    width: 0;
+    height: 0;
+    border-left: 130px solid transparent;
+    border-right: 130px solid transparent;
+    border-bottom: 196px solid #4aa4c9;
+    opacity: 0.92;
+  }
+
+  .travel-mountain::after {
+    content: "";
+    position: absolute;
+    left: -44px;
+    top: 28px;
+    width: 0;
+    height: 0;
+    border-left: 44px solid transparent;
+    border-right: 44px solid transparent;
+    border-bottom: 68px solid rgba(255, 255, 255, 0.72);
+  }
+
+  .travel-mountain--one {
+    left: 28px;
+  }
+
+  .travel-mountain--two {
+    left: 174px;
+    bottom: 216px;
+    border-left-width: 154px;
+    border-right-width: 154px;
+    border-bottom-width: 228px;
+    border-bottom-color: #338db6;
+  }
+
+  .travel-island {
+    position: absolute;
+    bottom: 178px;
+    left: 50%;
+    width: 280px;
+    height: 54px;
+    border-radius: 60% 40% 50% 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #17b169, #15803d);
+    box-shadow: 0 12px 0 rgba(21, 128, 61, 0.16);
+  }
+
+  .travel-resort-row {
+    position: absolute;
+    left: 50%;
+    bottom: 202px;
+    width: 230px;
+    height: 76px;
+    transform: translateX(-50%);
+    z-index: 1;
+  }
+
+  .travel-resort-house {
+    position: absolute;
+    bottom: 0;
+    width: 72px;
+    height: 44px;
+    border-radius: 8px 8px 4px 4px;
+    background: linear-gradient(180deg, #ffe9c7, #d69a57);
+    box-shadow: 0 12px 22px rgba(67, 56, 32, 0.14);
+  }
+
+  .travel-resort-house::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    right: -8px;
+    top: -24px;
+    height: 30px;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    background: linear-gradient(180deg, #8b5a2b, #5b3516);
+  }
+
+  .travel-resort-house::after {
+    content: "";
+    position: absolute;
+    left: 22px;
+    top: 17px;
+    width: 26px;
+    height: 16px;
+    border-radius: 4px;
+    background: rgba(14, 116, 144, 0.34);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.30);
+  }
+
+  .travel-resort-house:nth-child(1) { left: 0; transform: scale(0.86); }
+  .travel-resort-house:nth-child(2) { left: 78px; bottom: 8px; }
+  .travel-resort-house:nth-child(3) { right: 0; transform: scale(0.9); }
+
+  .travel-home[data-theme="night"] .travel-resort-house {
+    background: linear-gradient(180deg, #334155, #1e293b);
+  }
+
+  .travel-home[data-theme="night"] .travel-resort-house::after {
+    background: #fde68a;
+    box-shadow: 0 0 16px rgba(253, 230, 138, 0.86);
+  }
+
+  .travel-palm {
+    position: absolute;
+    bottom: 210px;
+    width: 12px;
+    height: 124px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #9a6a38, #5a3715);
+    transform-origin: bottom center;
+  }
+
+  .travel-palm--left {
+    left: 116px;
+    transform: rotate(-10deg);
+  }
+
+  .travel-palm--right {
+    left: 184px;
+    height: 138px;
+    transform: rotate(12deg);
+  }
+
+  .travel-palm::before,
+  .travel-palm::after {
+    content: "";
+    position: absolute;
+    width: 92px;
+    height: 20px;
+    background: linear-gradient(90deg, #0f9f66, #5dd39a);
+    border-radius: 999px 0 999px 0;
+    top: 10px;
+    transform-origin: left center;
+    animation: travel-palm-wave 4.2s ease-in-out infinite;
+  }
+
+  .travel-palm::before {
+    left: -6px;
+    transform: rotate(-36deg);
+  }
+
+  .travel-palm::after {
+    left: -74px;
+    top: 28px;
+    transform: rotate(28deg);
+    animation-delay: -1.3s;
+  }
+
+  .travel-palm-frond {
+    position: absolute;
+    width: 86px;
+    height: 18px;
+    background: linear-gradient(90deg, #0f9f66, #5dd39a);
+    border-radius: 0 999px 0 999px;
+    top: 20px;
+    left: -2px;
+    transform: rotate(12deg);
+    animation: travel-palm-wave 4.5s ease-in-out infinite;
+    animation-delay: -2.1s;
+  }
+
+  .travel-wave {
+    position: absolute;
+    left: -8%;
+    width: 116%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.36);
+  }
+
+  .travel-wave--one {
+    bottom: 130px;
+    height: 124px;
+    animation: travel-wave 8s ease-in-out infinite;
+  }
+
+  .travel-wave--two {
+    bottom: 86px;
+    height: 142px;
+    background: rgba(103, 232, 249, 0.26);
+    animation: travel-wave 10s ease-in-out infinite reverse;
+  }
+
+  .travel-wave--three {
+    bottom: 24px;
+    height: 174px;
+    background: linear-gradient(180deg, rgba(187, 247, 255, 0.34), rgba(23, 177, 202, 0.88));
+    animation: travel-wave 11s ease-in-out infinite;
+  }
+
+  .travel-water-reflection {
+    position: absolute;
+    left: 50%;
+    bottom: 46px;
+    width: 230px;
+    height: 174px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.42) 0 3px, transparent 3px 16px),
+      linear-gradient(180deg, rgba(251,191,36,0.28), rgba(255,255,255,0));
+    opacity: 0.52;
+    filter: blur(0.3px);
+    animation: travel-reflection 5.8s ease-in-out infinite;
+  }
+
+  .travel-home[data-theme="night"] .travel-water-reflection {
+    width: 180px;
+    background:
+      repeating-linear-gradient(180deg, rgba(191,219,254,0.42) 0 3px, transparent 3px 17px),
+      linear-gradient(180deg, rgba(147,197,253,0.30), rgba(255,255,255,0));
+    opacity: 0.46;
+  }
+
+  .travel-sailboat {
+    position: absolute;
+    left: 58%;
+    bottom: 158px;
+    width: 104px;
+    height: 94px;
+    z-index: 2;
+    animation: travel-sailboat 9s ease-in-out infinite;
+  }
+
+  .travel-sailboat::before {
+    content: "";
+    position: absolute;
+    left: 38px;
+    top: 0;
+    width: 2px;
+    height: 70px;
+    border-radius: 999px;
+    background: #4b5563;
+  }
+
+  .travel-sail {
+    position: absolute;
+    top: 4px;
+    width: 0;
+    height: 0;
+    filter: drop-shadow(0 8px 10px rgba(15, 23, 42, 0.12));
+  }
+
+  .travel-sail--main {
+    left: 40px;
+    border-left: 44px solid #ffffff;
+    border-top: 10px solid transparent;
+    border-bottom: 58px solid transparent;
+  }
+
+  .travel-sail--small {
+    left: 5px;
+    top: 16px;
+    border-right: 30px solid rgba(255,255,255,0.88);
+    border-top: 8px solid transparent;
+    border-bottom: 44px solid transparent;
+  }
+
+  .travel-boat-hull {
+    position: absolute;
+    left: 0;
+    bottom: 2px;
+    width: 96px;
+    height: 22px;
+    border-radius: 0 0 52px 52px;
+    background: linear-gradient(180deg, #7c2d12, #431407);
+  }
+
+  .travel-home[data-theme="night"] .travel-sail--main {
+    border-left-color: #c7d2fe;
+  }
+
+  .travel-home[data-theme="night"] .travel-sail--small {
+    border-right-color: rgba(191, 219, 254, 0.86);
+  }
+
+  .travel-dolphin {
+    position: absolute;
+    bottom: 196px;
+    width: 84px;
+    height: 38px;
+    border-radius: 60px 60px 22px 22px;
+    background: linear-gradient(135deg, #355b7b, #9fd2e7);
+  }
+
+  .travel-dolphin::before {
+    content: "";
+    position: absolute;
+    left: 60px;
+    top: 8px;
+    width: 26px;
+    height: 12px;
+    border-radius: 999px 999px 999px 0;
+    background: inherit;
+    transform: rotate(-12deg);
+  }
+
+  .travel-dolphin::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: -10px;
+    width: 18px;
+    height: 18px;
+    background: inherit;
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  }
+
+  .travel-dolphin--one {
+    left: 74px;
+    animation: travel-dolphin-jump 5.5s ease-in-out infinite;
+  }
+
+  .travel-dolphin--two {
+    right: 82px;
+    bottom: 216px;
+    transform: scale(0.86);
+    animation: travel-dolphin-jump 6.4s ease-in-out infinite;
+    animation-delay: -2.6s;
+  }
+
+  .travel-splash {
+    position: absolute;
+    bottom: 184px;
+    width: 68px;
+    height: 34px;
+    border-radius: 999px;
+    border-top: 4px solid rgba(255, 255, 255, 0.72);
+    opacity: 0.72;
+  }
+
+  .travel-splash--one {
+    left: 86px;
+    animation: travel-splash 5.5s ease-in-out infinite;
+  }
+
+  .travel-splash--two {
+    right: 94px;
+    animation: travel-splash 6.4s ease-in-out infinite;
+    animation-delay: -2.6s;
+  }
+
+  .travel-curtain {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 132px;
+    z-index: 4;
+    pointer-events: none;
+    transform: translateY(-94px);
+    transition: transform 0.72s cubic-bezier(.2, .9, .2, 1), filter 0.35s ease;
+    filter: drop-shadow(0 18px 24px rgba(76, 29, 149, 0.20));
+  }
+
+  .travel-curtain::before,
+  .travel-curtain::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.14) 0 10px, transparent 10px 22px),
+      linear-gradient(180deg, #fb7185, #be185d);
+  }
+
+  .travel-curtain::before {
+    left: 0;
+    border-bottom-right-radius: 42px;
+  }
+
+  .travel-curtain::after {
+    right: 0;
+    border-bottom-left-radius: 42px;
+  }
+
+  .travel-curtain-valance {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 42px;
+    z-index: 1;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.16) 0 8px, transparent 8px 18px),
+      linear-gradient(135deg, #f43f5e, #c026d3);
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+  }
+
+  .travel-home[data-theme="night"] .travel-curtain {
+    transform: translateY(-28px);
+    filter: drop-shadow(0 24px 34px rgba(2, 6, 23, 0.34));
+  }
+
+  .travel-curtain-toggle {
+    position: absolute;
+    top: 14px;
+    right: 28px;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 96px;
+    height: 196px;
+    padding: 0;
+    border: 0;
+    color: #713f12;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+    transform-origin: top center;
+    transition: transform 0.52s cubic-bezier(.2, .9, .2, 1), color 0.35s ease;
+  }
+
+  .travel-curtain-toggle:focus-visible {
+    outline: 3px solid rgba(14, 165, 233, 0.45);
+    outline-offset: 4px;
+  }
+
+  .travel-pull-cord {
+    position: relative;
+    display: block;
+    width: 38px;
+    height: 150px;
+    transform-origin: top center;
+    filter: drop-shadow(0 10px 10px rgba(92, 52, 20, 0.16));
+  }
+
+  .travel-pull-cord::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 4px;
+    height: 116px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.64) 0 5px, rgba(120, 53, 15, 0.58) 5px 10px),
+      linear-gradient(180deg, #fef3c7, #b45309);
+    box-shadow: inset 0 0 0 1px rgba(120, 53, 15, 0.22);
+  }
+
+  .travel-pull-knot {
+    position: absolute;
+    left: 50%;
+    top: 105px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    background: radial-gradient(circle at 34% 28%, #fff7ed, #f59e0b 58%, #92400e);
+    box-shadow: 0 5px 12px rgba(120, 53, 15, 0.22);
+  }
+
+  .travel-pull-handle {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 38px;
+    height: 42px;
+    border-radius: 999px 999px 18px 18px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, #fff7ed, #f59e0b 54%, #b45309);
+    border: 2px solid rgba(146, 64, 14, 0.34);
+    box-shadow: inset 0 8px 10px rgba(255,255,255,0.40), 0 12px 22px rgba(120, 53, 15, 0.24);
+  }
+
+  .travel-pull-handle::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 9px;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    transform: translateX(-50%);
+    border: 2px solid rgba(120, 53, 15, 0.38);
+    background: rgba(255, 255, 255, 0.34);
+  }
+
+  .travel-pull-label {
+    position: absolute;
+    top: 120px;
+    left: 48px;
+    min-width: 96px;
+    padding: 8px 10px;
+    border: 1px solid rgba(251, 191, 36, 0.30);
+    border-radius: 14px 14px 14px 4px;
+    background: rgba(255, 251, 235, 0.92);
+    box-shadow: 0 14px 28px rgba(120, 53, 15, 0.12);
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1.15;
+    text-align: left;
+    color: currentColor;
+    backdrop-filter: blur(12px);
+  }
+
+  .travel-pull-label::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 10px;
+    width: 12px;
+    height: 12px;
+    transform: rotate(45deg);
+    background: inherit;
+    border-left: 1px solid rgba(251, 191, 36, 0.30);
+    border-bottom: 1px solid rgba(251, 191, 36, 0.30);
+  }
+
+  .travel-curtain-toggle:hover .travel-pull-cord,
+  .travel-curtain-toggle:focus-visible .travel-pull-cord {
+    animation: travel-cord-sway 0.86s ease-in-out;
+  }
+
+  .travel-curtain-toggle:hover .travel-pull-label,
+  .travel-curtain-toggle:focus-visible .travel-pull-label {
+    transform: translateY(2px);
+  }
+
+  .travel-home[data-theme="night"] .travel-curtain-toggle {
+    color: #e0f2fe;
+    transform: translateY(48px);
+  }
+
+  .travel-home[data-theme="night"] .travel-pull-cord::before {
+    background:
+      repeating-linear-gradient(180deg, rgba(226,232,240,0.64) 0 5px, rgba(30, 41, 59, 0.72) 5px 10px),
+      linear-gradient(180deg, #e0f2fe, #64748b);
+  }
+
+  .travel-home[data-theme="night"] .travel-pull-knot,
+  .travel-home[data-theme="night"] .travel-pull-handle {
+    background: linear-gradient(180deg, #f8fafc, #94a3b8 58%, #334155);
+    border-color: rgba(226, 232, 240, 0.26);
+  }
+
+  .travel-home[data-theme="night"] .travel-pull-label {
+    border-color: rgba(226, 232, 240, 0.18);
+    background: rgba(15, 23, 42, 0.74);
+    box-shadow: 0 14px 28px rgba(2, 6, 23, 0.22);
+  }
+
+  .travel-scene-caption {
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    bottom: 18px;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    z-index: 2;
+  }
+
+  .travel-scene-copy {
+    max-width: 320px;
+    border-radius: 24px;
+    padding: 16px 18px;
+    background: rgba(255, 255, 255, 0.74);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(14, 73, 118, 0.08);
+  }
+
+  .travel-scene-copy strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 16px;
+  }
+
+  .travel-scene-copy span {
+    color: var(--travel-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .travel-scene-mini {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .travel-mini-pill {
+    padding: 10px 12px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(14, 73, 118, 0.08);
+    color: var(--travel-ink);
+    min-width: 116px;
+  }
+
+  .travel-mini-pill strong {
+    display: block;
+    font-size: 15px;
+  }
+
+  .travel-mini-pill span {
+    color: var(--travel-muted);
+    font-size: 12px;
+  }
+
+  .travel-section {
+    margin-top: 24px;
+  }
+
+  .travel-pwa-strip,
+  .travel-journey-panel,
+  .travel-info-card,
+  .travel-contact-card {
+    border: 1px solid var(--travel-line);
+    background: var(--travel-card);
+    backdrop-filter: blur(22px);
+    box-shadow: var(--travel-shadow);
+  }
+
+  .travel-pwa-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-radius: 28px;
+    padding: 18px 20px;
+  }
+
+  .travel-pwa-title {
+    color: #0284c7;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .travel-pwa-note {
+    margin-top: 6px;
+    color: var(--travel-muted);
+    font-size: 13px;
+    line-height: 1.7;
+    max-width: 620px;
+  }
+
+  .travel-pwa-meta,
+  .travel-pwa-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .travel-pwa-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(56, 189, 248, 0.16);
+    background: rgba(56, 189, 248, 0.10);
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .travel-journey-panel {
+    border-radius: 28px;
+    padding: 18px 20px;
+  }
+
+  .travel-journey-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .travel-journey-title {
+    color: #0284c7;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .travel-journey-subtitle {
+    margin-top: 6px;
+    color: var(--travel-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .travel-journey-list {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  .travel-journey-card {
+    min-width: 220px;
+    flex: 1 1 220px;
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(14, 73, 118, 0.08);
+  }
+
+  .travel-journey-card strong {
+    display: block;
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  .travel-journey-card span {
+    display: block;
+    margin-top: 8px;
+    color: var(--travel-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .travel-journey-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .travel-journey-link {
+    border: 1px solid rgba(14, 73, 118, 0.10);
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--travel-ink);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .travel-journey-empty {
+    margin-top: 14px;
+    color: var(--travel-muted);
+    font-size: 13px;
+  }
+
+  .travel-section-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .travel-section-head h2 {
+    margin: 0;
+    color: var(--travel-ink);
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 0.98;
+    letter-spacing: -0.06em;
+  }
+
+  .travel-section-head p {
+    margin: 6px 0 0;
+    color: var(--travel-muted);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 560px;
+  }
+
+  .travel-link {
+    color: #0284c7;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .travel-city-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .travel-city-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    padding: 18px;
+    min-height: 160px;
+    background:
+      radial-gradient(circle at 82% 16%, rgba(251, 191, 36, 0.22), transparent 20%),
+      linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.66));
+  }
+
+  .travel-city-card::before {
+    content: "";
+    position: absolute;
+    inset: auto auto 20px 18px;
+    width: 82px;
+    height: 82px;
+    border-radius: 999px 999px 999px 0;
+    background: linear-gradient(135deg, rgba(56,189,248,0.24), rgba(20,184,166,0.14));
+    transform: rotate(20deg);
+  }
+
+  .travel-city-card strong {
+    display: block;
+    position: relative;
+    z-index: 1;
+    font-size: 20px;
+    letter-spacing: -0.04em;
+  }
+
+  .travel-city-card span {
+    display: block;
+    position: relative;
+    z-index: 1;
+    margin-top: 8px;
+    color: var(--travel-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .travel-room-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .travel-room-card {
+    overflow: hidden;
+    border-radius: 30px;
+    background: var(--travel-card-strong);
+  }
+
+  .travel-room-media {
+    position: relative;
+    height: 224px;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(224,247,255,0.16), rgba(23,177,202,0.18));
+  }
+
+  .travel-room-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.45s ease;
+  }
+
+  .travel-room-card:hover .travel-room-media img {
+    transform: scale(1.06);
+  }
+
+  .travel-room-overlay {
+    position: absolute;
+    inset: auto 16px 16px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .travel-room-badge,
+  .travel-room-price {
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(14, 73, 118, 0.10);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .travel-room-price {
+    color: #0f766e;
+  }
+
+  .travel-room-body {
+    padding: 18px;
+  }
+
+  .travel-room-body h3 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+
+  .travel-room-meta {
+    margin-top: 8px;
+    color: var(--travel-muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .travel-room-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .travel-room-pill {
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(20, 184, 166, 0.09);
+    border: 1px solid rgba(20, 184, 166, 0.14);
+    color: #0f766e;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .travel-room-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .travel-room-link {
+    color: #0284c7;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .travel-story-grid,
+  .travel-promise-grid,
+  .travel-testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .travel-story-card,
+  .travel-promise-card,
+  .travel-testimonial-card {
+    border-radius: 28px;
+    padding: 22px;
+  }
+
+  .travel-story-card {
+    background:
+      radial-gradient(circle at top right, rgba(125, 211, 252, 0.24), transparent 24%),
+      linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.66));
+  }
+
+  .travel-story-card strong,
+  .travel-promise-card strong {
+    display: block;
+    font-size: 21px;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+  }
+
+  .travel-story-card p,
+  .travel-promise-card p {
+    margin: 10px 0 0;
+    color: var(--travel-muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .travel-promise-card {
+    background:
+      radial-gradient(circle at top left, rgba(251, 113, 133, 0.16), transparent 22%),
+      linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.68));
+  }
+
+  .travel-testimonial-card {
+    background:
+      radial-gradient(circle at top right, rgba(253, 186, 116, 0.18), transparent 24%),
+      linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.68));
+  }
+
+  .travel-testimonial-stars {
+    color: #f59e0b;
+    font-size: 18px;
+    letter-spacing: 0.16em;
+  }
+
+  .travel-testimonial-quote {
+    margin: 14px 0 0;
+    color: var(--travel-ink);
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  .travel-testimonial-meta {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(14, 73, 118, 0.08);
+  }
+
+  .travel-testimonial-meta strong {
+    display: block;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .travel-testimonial-meta span {
+    display: block;
+    margin-top: 6px;
+    color: var(--travel-muted);
+    font-size: 13px;
+  }
+
+  .travel-promise-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 16px;
+    color: #ffffff;
+    font-size: 24px;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6, #fb7185);
+    box-shadow: 0 18px 34px rgba(14, 165, 233, 0.20);
+  }
+
+  .travel-hotel-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .travel-info-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+    gap: 16px;
+  }
+
+  .travel-info-card,
+  .travel-contact-card {
+    border-radius: 28px;
+    padding: 22px;
+  }
+
+  .travel-info-card h3,
+  .travel-contact-card h3 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    line-height: 1.05;
+    letter-spacing: -0.05em;
+  }
+
+  .travel-info-card p,
+  .travel-contact-card p {
+    margin: 0 0 10px;
+    color: var(--travel-muted);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .travel-list {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    color: var(--travel-ink);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .travel-amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .travel-amenity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--travel-ink);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .travel-amenity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    margin-top: 8px;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+    box-shadow: 0 0 0 6px rgba(20, 184, 166, 0.10);
+  }
+
+  .travel-promo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    border-radius: 22px;
+    padding: 16px 18px;
+    color: #fff7ed;
+    background: linear-gradient(135deg, #f97316, #fb7185);
+    box-shadow: 0 20px 40px rgba(251, 113, 133, 0.18);
+  }
+
+  .travel-promo-banner strong {
+    display: block;
+    font-size: 18px;
+  }
+
+  .travel-promo-banner span {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: rgba(255, 247, 237, 0.88);
+  }
+
+  .travel-promo-chip {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 247, 237, 0.55);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .travel-hotel-card {
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .travel-hotel-card strong {
+    display: block;
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .travel-hotel-card span {
+    display: block;
+    margin-top: 8px;
+    color: var(--travel-muted);
+    font-size: 13px;
+  }
+
+  .travel-cta-band {
+    position: relative;
+    overflow: hidden;
+    border-radius: 36px;
+    padding: 28px;
+    border: 1px solid rgba(14, 73, 118, 0.10);
+    box-shadow: var(--travel-shadow);
+    background:
+      radial-gradient(circle at 10% 18%, rgba(125, 211, 252, 0.36), transparent 20%),
+      radial-gradient(circle at 86% 22%, rgba(251, 191, 36, 0.24), transparent 18%),
+      linear-gradient(135deg, rgba(255,255,255,0.84), rgba(255,255,255,0.68));
+  }
+
+  .travel-cta-band::before {
+    content: "";
+    position: absolute;
+    inset: auto -20px -40px auto;
+    width: 240px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(20, 184, 166, 0.12);
+    transform: rotate(-10deg);
+  }
+
+  .travel-cta-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .travel-cta-band h2 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 0.98;
+    letter-spacing: -0.06em;
+  }
+
+  .travel-cta-band p {
+    margin: 10px 0 0;
+    color: var(--travel-muted);
+    font-size: 14px;
+    line-height: 1.8;
+    max-width: 620px;
+  }
+
+  .travel-cta-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  @keyframes travel-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.78); opacity: 0.68; }
+  }
+
+  @keyframes travel-float-orb {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to { transform: translate3d(28px, 20px, 0) rotate(12deg); }
+  }
+
+  @keyframes travel-sun-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  @keyframes travel-rays-spin {
+    from { transform: rotate(0deg) scale(1); }
+    to { transform: rotate(360deg) scale(1); }
+  }
+
+  @keyframes travel-cloud {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(24px); }
+    100% { transform: translateX(0); }
+  }
+
+  @keyframes travel-palm-wave {
+    0%, 100% { transform: rotate(12deg); }
+    50% { transform: rotate(24deg); }
+  }
+
+  @keyframes travel-wave {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -10px, 0); }
+  }
+
+  @keyframes travel-dolphin-jump {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    30% { transform: translate3d(14px, -26px, 0) rotate(-10deg); }
+    52% { transform: translate3d(28px, 4px, 0) rotate(4deg); }
+  }
+
+  @keyframes travel-splash {
+    0%, 100% { opacity: 0.14; transform: scaleX(0.88); }
+    40% { opacity: 0.72; transform: scaleX(1); }
+  }
+
+  @keyframes travel-star-twinkle {
+    0%, 100% { opacity: 0.42; transform: scale(0.86); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  @keyframes travel-shooting-star {
+    0%, 70%, 100% { opacity: 0; transform: rotate(-28deg) translateX(-90px); }
+    78% { opacity: 1; }
+    92% { opacity: 0; transform: rotate(-28deg) translateX(120px); }
+  }
+
+  @keyframes travel-reflection {
+    0%, 100% { transform: translateX(-50%) scaleX(0.96); opacity: 0.46; }
+    50% { transform: translateX(-50%) scaleX(1.08); opacity: 0.62; }
+  }
+
+  @keyframes travel-sailboat {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); }
+    50% { transform: translate3d(18px, -8px, 0) rotate(2deg); }
+  }
+
+  @keyframes travel-cord-sway {
+    0%, 100% { transform: rotate(0deg); }
+    26% { transform: rotate(7deg); }
+    56% { transform: rotate(-5deg); }
+    78% { transform: rotate(3deg); }
+  }
+
+  @media (max-width: 1120px) {
+    .travel-hero,
+    .travel-city-grid,
+    .travel-hotel-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .travel-room-grid,
+    .travel-story-grid,
+    .travel-promise-grid,
+    .travel-testimonial-grid,
+    .travel-info-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .travel-panel,
+    .travel-scene-card {
+      min-height: auto;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .travel-shell {
+      width: min(100vw - 18px, 100%);
+      padding: 18px 0 52px;
+    }
+
+    .travel-hero,
+    .travel-kpi-row,
+    .travel-city-grid,
+    .travel-room-grid,
+    .travel-story-grid,
+    .travel-promise-grid,
+    .travel-testimonial-grid,
+    .travel-hotel-grid,
+    .travel-info-grid,
+    .travel-amenities-grid,
+    .travel-cta-grid,
+    .travel-search-card form {
+      grid-template-columns: 1fr;
+    }
+
+    .travel-panel,
+    .travel-scene-card,
+    .travel-cta-band {
+      border-radius: 28px;
+      padding: 22px;
+    }
+
+    .travel-title {
+      font-size: 42px;
+    }
+
+    .travel-search-actions,
+    .travel-cta-actions,
+    .travel-room-actions,
+    .travel-section-head,
+    .travel-scene-caption {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .travel-scene-card {
+      min-height: 560px;
+    }
+
+    .travel-sun {
+      right: 44px;
+      width: 84px;
+      height: 84px;
+    }
+
+    .travel-sun-rays {
+      right: 18px;
+      width: 134px;
+      height: 134px;
+    }
+
+    .travel-rainbow {
+      right: -12px;
+      width: 172px;
+      height: 90px;
+    }
+
+    .travel-moon {
+      right: 48px;
+      width: 80px;
+      height: 80px;
+    }
+
+    .travel-resort-row {
+      transform: translateX(-50%) scale(0.82);
+    }
+
+    .travel-sailboat {
+      left: 50%;
+      transform: scale(0.82);
+    }
+
+    .travel-scene-top {
+      inset: 78px 18px auto 18px;
+    }
+
+    .travel-curtain-toggle {
+      top: 16px;
+      right: 12px;
+      width: 78px;
+      height: 166px;
+    }
+
+    .travel-pull-cord {
+      height: 126px;
+      transform: scale(0.86);
+    }
+
+    .travel-pull-label {
+      top: 104px;
+      left: auto;
+      right: 42px;
+      min-width: 82px;
+      border-radius: 14px 14px 4px 14px;
+      text-align: right;
+    }
+
+    .travel-pull-label::before {
+      left: auto;
+      right: -8px;
+      border-left: 0;
+      border-bottom: 0;
+      border-right: 1px solid rgba(251, 191, 36, 0.30);
+      border-top: 1px solid rgba(251, 191, 36, 0.30);
+    }
+
+    .travel-scene-caption {
+      left: 18px;
+      right: 18px;
+      bottom: 16px;
+    }
+
+    .travel-mini-pill,
+    .travel-scene-badge {
+      width: 100%;
+      max-width: none;
+    }
+
+    .travel-room-media {
+      height: 210px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .travel-home::before,
+    .travel-home::after,
+    .travel-eyebrow-dot,
+    .travel-sun,
+    .travel-cloud,
+    .travel-palm::before,
+    .travel-palm::after,
+    .travel-palm-frond,
+    .travel-wave,
+    .travel-dolphin,
+    .travel-splash,
+    .travel-star,
+    .travel-shooting-star,
+    .travel-sailboat,
+    .travel-water-reflection,
+    .travel-sun-rays,
+    .travel-pull-cord {
+      animation: none !important;
+    }
+
+    .travel-button,
+    .travel-room-media img {
+      transition: none;
+    }
+  }
+</style>
+
+<main class="travel-home" id="travel-home" data-theme="day">
+  <div class="travel-shell">
+    <section class="travel-hero">
+      <div class="travel-panel">
+        <div class="travel-eyebrow">
+          <span class="travel-eyebrow-dot"></span>
+          Resort travel mood
+        </div>
+
+        <h1 class="travel-title">
+          Một trang chủ <span>đầy nắng, gió, sóng</span> cho khách vừa nhìn đã muốn đi nghỉ.
+        </h1>
+
+        <p class="travel-description">
+          Bento Resort được làm lại theo tinh thần nghỉ dưỡng hiện đại: sạch, tươi, dễ dùng, đậm chất du lịch
+          và vẫn đủ chuyên nghiệp để khách tìm phòng, xem điểm đến và chuyển vào luồng đặt phòng chỉ trong vài nhịp chạm.
+        </p>
+
+        <div class="travel-highlights">
+          <span class="travel-chip">Biển xanh • Núi xa • Mây nhẹ</span>
+          <span class="travel-chip">Fresh booking experience</span>
+          <span class="travel-chip">PWA mobile-ready</span>
+          <span class="travel-chip">Tông màu nghỉ dưỡng vui tươi</span>
+        </div>
+
+        <div class="travel-actions">
+          <a class="travel-button travel-button--primary" href="#travel-search">Tìm phòng ngay</a>
+          <a class="travel-button travel-button--secondary" href="/booking/search">Mở trang booking đầy đủ</a>
+          <button class="travel-button travel-button--install" type="button" id="travel-install-app">Cài app Bento</button>
+          <% if (roleMenu) { %>
+            <a class="travel-button travel-button--secondary" href="<%= roleMenu.href %>"><%= roleMenu.label %></a>
+          <% } %>
+        </div>
+
+        <div class="travel-kpi-row">
+          <article class="travel-kpi">
+            <strong><%= featuredRooms.length %></strong>
+            <span>Phòng nổi bật</span>
+          </article>
+          <article class="travel-kpi">
+            <strong><%= hotels.length %></strong>
+            <span>Khách sạn nội bộ</span>
+          </article>
+          <article class="travel-kpi">
+            <strong><%= cities.length %></strong>
+            <span>Điểm đến</span>
+          </article>
+          <article class="travel-kpi">
+            <strong><%= roomTypes.length %></strong>
+            <span>Dòng phòng</span>
+          </article>
+        </div>
+
+        <section class="travel-search-card" id="travel-search">
+          <form action="/booking/search" method="get">
+            <div class="travel-field">
+              <label for="hotel_city">Thành phố</label>
+              <select id="hotel_city" name="hotel_city">
+                <option value="">Tất cả điểm đến</option>
+                <% cities.forEach((city) => { %>
+                  <option value="<%= city %>"><%= city %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="travel-field">
+              <label for="loai_phong">Loại phòng</label>
+              <select id="loai_phong" name="loai_phong">
+                <option value="">Chọn loại phòng</option>
+                <% roomTypes.forEach((type) => { %>
+                  <option value="<%= type %>"><%= type %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="travel-field">
+              <label for="ngay_nhan">Ngày nhận</label>
+              <input id="ngay_nhan" type="date" name="ngay_nhan" />
+            </div>
+
+            <div class="travel-field">
+              <label for="ngay_tra">Ngày trả</label>
+              <input id="ngay_tra" type="date" name="ngay_tra" />
+            </div>
+
+            <div class="travel-field">
+              <label for="so_khach">Số khách</label>
+              <input id="so_khach" type="number" min="1" max="12" step="1" name="so_khach" placeholder="2 khách" />
+            </div>
+
+            <div class="travel-field">
+              <label for="view_phong">View yêu thích</label>
+              <select id="view_phong" name="view_phong">
+                <option value="">Không giới hạn</option>
+                <% viewTypes.forEach((view) => { %>
+                  <option value="<%= view %>"><%= view %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="travel-field travel-field--wide">
+              <label for="loai_giuong">Kiểu giường</label>
+              <select id="loai_giuong" name="loai_giuong">
+                <option value="">Chọn kiểu giường</option>
+                <% bedTypes.forEach((bed) => { %>
+                  <option value="<%= bed %>"><%= bed %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="travel-search-actions">
+              <button class="travel-button travel-button--primary" type="submit">Khám phá phòng phù hợp</button>
+              <a class="travel-button travel-button--secondary" href="/ai/concierge">Nhờ AI gợi ý chuyến đi</a>
+            </div>
+          </form>
+          <p class="travel-search-note">
+            Bộ lọc gọn gàng để khách bắt đầu ngay từ trang chủ, rồi đi tiếp sang trang booking chi tiết khi cần.
+          </p>
+        </section>
+      </div>
+
+      <aside class="travel-scene-card" aria-label="Minh họa cảnh quan nghỉ dưỡng">
+        <div class="travel-curtain" aria-hidden="true">
+          <span class="travel-curtain-valance"></span>
+        </div>
+        <button class="travel-curtain-toggle" type="button" id="travel-theme-toggle" aria-pressed="false" title="Kéo rèm xuống để mở ban đêm">
+          <span class="travel-pull-cord" aria-hidden="true">
+            <span class="travel-pull-knot"></span>
+            <span class="travel-pull-handle"></span>
+          </span>
+          <span class="travel-pull-label" data-theme-label>Kéo xuống đêm</span>
+        </button>
+        <div class="travel-scene-top">
+          <div class="travel-scene-badge">
+            <strong>Visual du lịch mới</strong>
+            <span>Tông biển trời, màu trái cây, chuyển động mềm và cảm giác kỳ nghỉ tươi sáng.</span>
+          </div>
+          <div class="travel-scene-badge">
+            <strong>Fresh + Professional</strong>
+            <span>Đủ xinh để cuốn hút, đủ sạch để khách tin tưởng đặt phòng.</span>
+          </div>
+        </div>
+
+        <div class="travel-sun"></div>
+        <div class="travel-sun-rays" aria-hidden="true"></div>
+        <div class="travel-moon" aria-hidden="true"></div>
+        <div class="travel-stars" aria-hidden="true">
+          <span class="travel-star"></span>
+          <span class="travel-star"></span>
+          <span class="travel-star"></span>
+          <span class="travel-star"></span>
+          <span class="travel-star"></span>
+          <span class="travel-star"></span>
+        </div>
+        <div class="travel-shooting-stars" aria-hidden="true">
+          <span class="travel-shooting-star"></span>
+          <span class="travel-shooting-star"></span>
+        </div>
+        <div class="travel-rainbow"></div>
+        <div class="travel-cloud travel-cloud--a"></div>
+        <div class="travel-cloud travel-cloud--b"></div>
+        <div class="travel-cloud travel-cloud--c"></div>
+
+        <div class="travel-mountain travel-mountain--one"></div>
+        <div class="travel-mountain travel-mountain--two"></div>
+        <div class="travel-island"></div>
+        <div class="travel-resort-row" aria-hidden="true">
+          <span class="travel-resort-house"></span>
+          <span class="travel-resort-house"></span>
+          <span class="travel-resort-house"></span>
+        </div>
+
+        <div class="travel-palm travel-palm--left">
+          <span class="travel-palm-frond"></span>
+        </div>
+        <div class="travel-palm travel-palm--right">
+          <span class="travel-palm-frond"></span>
+        </div>
+
+        <div class="travel-wave travel-wave--one"></div>
+        <div class="travel-wave travel-wave--two"></div>
+        <div class="travel-wave travel-wave--three"></div>
+        <div class="travel-water-reflection" aria-hidden="true"></div>
+        <div class="travel-sailboat" aria-hidden="true">
+          <span class="travel-sail travel-sail--main"></span>
+          <span class="travel-sail travel-sail--small"></span>
+          <span class="travel-boat-hull"></span>
+        </div>
+
+        <div class="travel-dolphin travel-dolphin--one"></div>
+        <div class="travel-dolphin travel-dolphin--two"></div>
+        <div class="travel-splash travel-splash--one"></div>
+        <div class="travel-splash travel-splash--two"></div>
+
+        <div class="travel-scene-caption">
+          <div class="travel-scene-copy">
+            <strong>Xin chào mùa nghỉ dưỡng</strong>
+            <span>Nhìn là thấy biển, mây, nắng và động lực xách vali lên đường.</span>
+          </div>
+          <div class="travel-scene-mini">
+            <div class="travel-mini-pill">
+              <strong>Sea vibe</strong>
+              <span>Sóng nước dịu</span>
+            </div>
+            <div class="travel-mini-pill">
+              <strong>Happy tone</strong>
+              <span>Màu xinh tươi</span>
+            </div>
+            <div class="travel-mini-pill">
+              <strong>Soft motion</strong>
+              <span>Chuyển động êm</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-pwa-strip">
+        <div>
+          <div class="travel-pwa-title">Mobile / PWA Flow</div>
+          <div class="travel-pwa-note" id="travel-pwa-note">
+            Mở như app để đặt phòng, theo dõi lịch sử và dùng Bento thuận tiện hơn trên điện thoại.
+          </div>
+        </div>
+        <div class="travel-pwa-meta" id="travel-pwa-meta"></div>
+        <div class="travel-pwa-actions">
+          <button class="travel-button travel-button--install" type="button" id="travel-pwa-primary">Cài app Bento</button>
+          <a class="travel-button travel-button--secondary" href="<%= user ? "/customer/mobile-hub" : "/auth/login" %>">Mở Mobile Hub</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-journey-panel" id="travel-recent-journeys">
+        <div class="travel-journey-head">
+          <div>
+            <div class="travel-journey-title">Recent Journeys</div>
+            <div class="travel-journey-subtitle">Lưu nhanh vài hành trình tìm kiếm gần đây để khách quay lại như một app booking thật sự.</div>
+          </div>
+          <button class="travel-button travel-button--secondary" type="button" id="travel-clear-journeys">Xóa lịch sử</button>
+        </div>
+        <div class="travel-journey-list" id="travel-journey-list"></div>
+        <div class="travel-journey-empty" id="travel-journey-empty">Chưa có hành trình tìm gần đây.</div>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-section-head">
+        <div>
+          <h2>Điểm đến nổi bật</h2>
+          <p>Những thành phố đầu tiên khách có thể bắt đầu chuyến đi theo tinh thần resort trẻ trung và ngập nắng.</p>
+        </div>
+      </div>
+
+      <div class="travel-city-grid">
+        <% accentCities.forEach((city, index) => { %>
+          <a class="travel-city-card" href="/booking/search?hotel_city=<%= encodeURIComponent(city) %>">
+            <strong><%= city %></strong>
+            <span>Không khí nghỉ dưỡng số <%= index + 1 %> với sắc biển trời, điểm check-in và phòng đẹp dễ chọn.</span>
+          </a>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-section-head">
+        <div>
+          <h2>Phòng nổi bật đang mời gọi</h2>
+          <p>Những lựa chọn đẹp nhất trên trang chủ để khách vào là có cảm giác muốn đặt ngay.</p>
+        </div>
+        <a class="travel-link" href="/booking/search">Xem tất cả phòng</a>
+      </div>
+
+      <div class="travel-room-grid">
+        <% featuredRooms.slice(0, 6).forEach((room) => { %>
+          <article class="travel-room-card">
+            <div class="travel-room-media">
+              <img src="<%= room.imageUrl %>" alt="Phòng <%= room.soPhong %> - <%= room.loaiPhong %>" loading="lazy" onerror="this.onerror=null;this.src='/uploads/phong/1.png';" />
+              <div class="travel-room-overlay">
+                <span class="travel-room-badge"><%= room.khachSan %></span>
+                <span class="travel-room-price"><%= Number(room.gia || 0).toLocaleString("vi-VN") %> đ / đêm</span>
+              </div>
+            </div>
+            <div class="travel-room-body">
+              <h3><%= room.loaiPhong %></h3>
+              <div class="travel-room-meta">
+                Phòng <%= room.soPhong %> · <%= room.tinhThanh %> · tối đa <%= room.soKhachToiDa %> khách
+              </div>
+              <div class="travel-room-pills">
+                <% if (room.loaiGiuong) { %><span class="travel-room-pill"><%= room.loaiGiuong %></span><% } %>
+                <% if (room.viewPhong) { %><span class="travel-room-pill">View <%= room.viewPhong %></span><% } %>
+                <span class="travel-room-pill">Resort ready</span>
+              </div>
+              <div class="travel-room-actions">
+                <a class="travel-button travel-button--primary" href="/booking/rooms/<%= room.id %>">Đặt phòng này</a>
+                <a class="travel-room-link" href="/booking/search?hotel_city=<%= encodeURIComponent(room.tinhThanh) %>">Xem cùng khu vực</a>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-section-head">
+        <div>
+          <h2>Cảm hứng cho từng chuyến đi</h2>
+          <p>Trang chủ mới không chỉ bán phòng, mà còn gợi cảm giác du lịch đúng nghĩa ngay từ first impression.</p>
+        </div>
+      </div>
+
+      <div class="travel-story-grid">
+        <% tripMoments.forEach((moment) => { %>
+          <article class="travel-story-card">
+            <strong><%= moment.title %></strong>
+            <p><%= moment.note %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-section-head">
+        <div>
+          <h2>Những điều làm giao diện này đáng yêu hơn</h2>
+          <p>Mình giữ độ chuyên nghiệp của hệ thống đặt phòng, nhưng thêm nhiều chi tiết giàu cảm xúc để tạo “travel mood”.</p>
+        </div>
+      </div>
+
+      <div class="travel-promise-grid">
+        <article class="travel-promise-card">
+          <div class="travel-promise-icon">🌴</div>
+          <strong>Cảnh quan siêu thực mềm mại</strong>
+          <p>Cây dừa, cầu vồng, núi, sóng nước, mây và cá heo được dựng bằng CSS để trang chủ có linh hồn riêng.</p>
+        </article>
+        <article class="travel-promise-card">
+          <div class="travel-promise-icon">🌊</div>
+          <strong>Màu sắc tươi sáng, dễ thương</strong>
+          <p>Bảng màu thiên về biển trời, san hô, nắng và mint giúp giao diện trông vui nhộn nhưng vẫn sạch sẽ.</p>
+        </article>
+        <article class="travel-promise-card">
+          <div class="travel-promise-icon">✨</div>
+          <strong>Chuyển động vừa đủ</strong>
+          <p>Mọi animation đều là nhịp thở nhẹ, không làm rối mắt, phù hợp một homepage nghỉ dưỡng chuyên nghiệp.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-section-head">
+        <div>
+          <h2>Khách nói gì về trải nghiệm này</h2>
+          <p>Thêm đánh giá trên trang chủ để khách mới có cảm giác tin tưởng hơn ngay từ lần nhìn đầu tiên.</p>
+        </div>
+      </div>
+
+      <div class="travel-testimonial-grid">
+        <% testimonials.forEach((item) => { %>
+          <article class="travel-testimonial-card">
+            <div class="travel-testimonial-stars"><%= "★".repeat(item.rating) %></div>
+            <p class="travel-testimonial-quote">“<%= item.quote %>”</p>
+            <div class="travel-testimonial-meta">
+              <strong><%= item.name %></strong>
+              <span><%= item.title %></span>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-section-head">
+        <div>
+          <h2>Về Bento Resort</h2>
+          <p>Khối giới thiệu, tiện ích và ưu đãi là những phần có thật ở trang chủ cũ và vẫn rất đáng giữ vì giúp khách ra quyết định nhanh hơn.</p>
+        </div>
+      </div>
+
+      <div class="travel-info-grid">
+        <article class="travel-info-card">
+          <h3>Không gian nghỉ dưỡng sát biển, đủ sang trọng và đủ dễ chịu</h3>
+          <p>
+            Bento Resort được định hình như một điểm đến nghỉ dưỡng hiện đại: gần biển, tiện đi lại, thiết kế sáng thoáng
+            và đủ dịch vụ để khách có thể ở trọn kỳ nghỉ mà không thấy thiếu trải nghiệm.
+          </p>
+          <p>
+            Khi đặt trực tiếp trên website, khách thường có cảm giác an tâm hơn vì nhìn được phòng nổi bật, ưu đãi hiện hành,
+            cách dùng app mobile và các lựa chọn dịch vụ đi kèm ngay từ homepage.
+          </p>
+          <ul class="travel-list">
+            <li>Giá trực tiếp tốt hơn các kênh OTA trong nhiều thời điểm.</li>
+            <li>Ưu tiên nhận phòng sớm hoặc trả phòng trễ khi điều kiện cho phép.</li>
+            <li>Dễ nối sang spa, nhà hàng, dịch vụ sân bay và mobile hub.</li>
+          </ul>
+        </article>
+
+        <article class="travel-info-card">
+          <h3>Tiện ích & dịch vụ được khách quan tâm nhiều</h3>
+          <div class="travel-amenities-grid">
+            <% amenities.forEach((item) => { %>
+              <div class="travel-amenity-item">
+                <span class="travel-amenity-dot"></span>
+                <span><%= item %></span>
+              </div>
+            <% }) %>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-info-card">
+        <h3>Ưu đãi đang chạy trên kênh trực tiếp</h3>
+        <p>Trang chủ cũ có khối khuyến mãi khá rõ. Mình giữ lại tinh thần đó để khách mới thấy ngay lý do nên đặt trực tiếp thay vì đi vòng qua kênh khác.</p>
+        <div class="travel-promo-banner">
+          <div>
+            <strong>Combo Stay & Dine giảm tới 30%</strong>
+            <span>Đặt từ 2 đêm trở lên: ưu đãi bữa tối set menu, cộng thêm khả năng nhận phòng sớm tùy tình trạng thực tế.</span>
+          </div>
+          <div class="travel-promo-chip">Áp dụng mùa này</div>
+        </div>
+        <ul class="travel-list">
+          <li>Khách mới có thể nhận thêm ưu đãi khi đăng ký tài khoản.</li>
+          <li>Ở dài ngày có thể mở rộng quyền lợi spa hoặc dịch vụ đi kèm.</li>
+          <li>Gia đình có trẻ nhỏ phù hợp với các gói linh hoạt hơn về bữa sáng và extra bed.</li>
+        </ul>
+      </div>
+    </section>
+
+    <% if (spotlightHotels.length) { %>
+      <section class="travel-section">
+        <div class="travel-section-head">
+          <div>
+            <h2>Khách sạn trong hệ thống</h2>
+            <p>Gợi mở hệ sinh thái lưu trú đa điểm đến để khách hiểu ngay quy mô của resort network.</p>
+          </div>
+        </div>
+
+        <div class="travel-hotel-grid">
+          <% spotlightHotels.forEach((hotel) => { %>
+            <a class="travel-hotel-card" href="/booking/search?hotel_name=<%= encodeURIComponent(hotel.tenKhachSan) %>">
+              <strong><%= hotel.tenKhachSan %></strong>
+              <span><%= hotel.tinhThanh %></span>
+            </a>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <section class="travel-section">
+      <div class="travel-contact-card">
+        <h3>Liên hệ & hỗ trợ đặt phòng</h3>
+        <p>Trang chủ cũ có hẳn khối liên hệ. Phần này vẫn cần vì nhiều khách muốn gọi ngay sau khi xem phòng và ưu đãi.</p>
+        <ul class="travel-list">
+          <li><strong>Hotline:</strong> 1900 1234 567</li>
+          <li><strong>Email:</strong> reservation@abcresort.vn</li>
+          <li><strong>Địa chỉ:</strong> 123 Đường Biển, Thành phố Du lịch, Việt Nam</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="travel-section">
+      <div class="travel-cta-band">
+        <div class="travel-cta-grid">
+          <div>
+            <h2>Biến cảm hứng du lịch thành booking thật.</h2>
+            <p>
+              Từ trang chủ này, khách có thể tìm phòng ngay, dùng AI Concierge để được tư vấn, hoặc đi thẳng vào portal nếu đã có tài khoản.
+            </p>
+          </div>
+          <div class="travel-cta-actions">
+            <a class="travel-button travel-button--primary" href="/booking/search">Tìm phòng ngay</a>
+            <a class="travel-button travel-button--secondary" href="/ai/concierge">AI Concierge</a>
+            <button class="travel-button travel-button--install" type="button" id="travel-install-app-cta">Cài app</button>
+            <% if (user) { %>
+              <a class="travel-button travel-button--secondary" href="/customer/mobile-hub">Mobile Hub</a>
+            <% } else { %>
+              <a class="travel-button travel-button--secondary" href="/auth/register">Tạo tài khoản</a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  (() => {
+    const JOURNEY_KEY = "bento_home_recent_journeys_v1";
+    const THEME_KEY = "bento_home_day_night_theme_v1";
+    const MAX_JOURNEYS = 5;
+    const homeRoot = document.getElementById("travel-home");
+    const themeToggle = document.getElementById("travel-theme-toggle");
+    const themeLabel = themeToggle?.querySelector("[data-theme-label]");
+    const installButtons = [
+      document.getElementById("travel-install-app"),
+      document.getElementById("travel-install-app-cta")
+    ].filter(Boolean);
+    const pwaMeta = document.getElementById("travel-pwa-meta");
+    const pwaNote = document.getElementById("travel-pwa-note");
+    const pwaPrimary = document.getElementById("travel-pwa-primary");
+    const searchForm = document.querySelector("#travel-search form");
+    const journeyList = document.getElementById("travel-journey-list");
+    const journeyEmpty = document.getElementById("travel-journey-empty");
+    const clearJourneys = document.getElementById("travel-clear-journeys");
+
+    function readTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      return saved === "night" ? "night" : "day";
+    }
+
+    function applyTheme(theme, persist = true) {
+      if (!homeRoot) return;
+      const nextTheme = theme === "night" ? "night" : "day";
+      homeRoot.dataset.theme = nextTheme;
+      document.body.classList.toggle("travel-night", nextTheme === "night");
+      themeToggle?.setAttribute("aria-pressed", nextTheme === "night" ? "true" : "false");
+      themeToggle?.setAttribute("title", nextTheme === "night" ? "Kéo rèm lên để mở ban ngày" : "Kéo rèm xuống để mở ban đêm");
+      themeToggle?.setAttribute("aria-label", nextTheme === "night" ? "Kéo rèm lên để mở ban ngày" : "Kéo rèm xuống để mở ban đêm");
+      if (themeLabel) themeLabel.textContent = nextTheme === "night" ? "Kéo mở ngày" : "Kéo xuống đêm";
+      if (persist) localStorage.setItem(THEME_KEY, nextTheme);
+    }
+
+    function readJourneys() {
+      try {
+        return JSON.parse(localStorage.getItem(JOURNEY_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function writeJourneys(items) {
+      localStorage.setItem(JOURNEY_KEY, JSON.stringify(items.slice(0, MAX_JOURNEYS)));
+    }
+
+    function summarizeFilters(formData) {
+      const city = String(formData.get("hotel_city") || "").trim();
+      const roomType = String(formData.get("loai_phong") || "").trim();
+      const guests = String(formData.get("so_khach") || "").trim();
+      const view = String(formData.get("view_phong") || "").trim();
+      return {
+        city,
+        roomType,
+        guests,
+        view,
+        label: city || roomType || "Tìm phòng gần đây"
+      };
+    }
+
+    function saveJourney(formData) {
+      const summary = summarizeFilters(formData);
+      const meaningful = Object.values(summary).some((value) => String(value).trim() !== "");
+      if (!meaningful) return;
+
+      const nextItem = {
+        id: `journey_${Date.now()}`,
+        summary,
+        saved_at: Date.now()
+      };
+
+      const current = readJourneys().filter((item) => JSON.stringify(item.summary) !== JSON.stringify(summary));
+      current.unshift(nextItem);
+      writeJourneys(current);
+      renderJourneys();
+    }
+
+    function applyJourney(summary) {
+      if (!searchForm || !summary) return;
+      const mapping = {
+        hotel_city: summary.city || "",
+        loai_phong: summary.roomType || "",
+        so_khach: summary.guests || "",
+        view_phong: summary.view || ""
+      };
+      Object.entries(mapping).forEach(([key, value]) => {
+        const field = searchForm.querySelector(`[name="${key}"]`);
+        if (field) field.value = value;
+      });
+      document.getElementById("travel-search")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderJourneys() {
+      if (!journeyList || !journeyEmpty) return;
+      const items = readJourneys();
+      journeyList.innerHTML = "";
+      journeyEmpty.hidden = items.length > 0;
+
+      items.forEach((item) => {
+        const summary = item.summary || {};
+        const card = document.createElement("article");
+        card.className = "travel-journey-card";
+        const bits = [summary.roomType, summary.view, summary.guests ? `${summary.guests} khách` : ""].filter(Boolean).join(" · ");
+        card.innerHTML = `
+          <strong>${summary.label || "Tìm phòng gần đây"}</strong>
+          <span>${bits || "Bộ lọc tìm kiếm được lưu để quay lại nhanh."}</span>
+          <div class="travel-journey-actions">
+            <button type="button" class="travel-journey-link" data-journey-id="${item.id}">Dùng lại bộ lọc</button>
+          </div>
+        `;
+        journeyList.appendChild(card);
+      });
+    }
+
+    const updateInstallButtons = () => {
+      const state = window.__abcPwaState || {};
+      const canInstall = Boolean(state.installAvailable && typeof window.__abcPwaInstall === "function");
+      const installed = Boolean(state.installed);
+
+      if (pwaMeta) {
+        pwaMeta.innerHTML = `
+          <span class="travel-pwa-chip">${installed ? "App mode" : "Web mode"}</span>
+          <span class="travel-pwa-chip">${state.online === false ? "Offline" : "Online"}</span>
+          ${canInstall ? '<span class="travel-pwa-chip">Install ready</span>' : ""}
+          ${state.hasWaitingUpdate ? '<span class="travel-pwa-chip">Có bản mới</span>' : ""}
+        `;
+      }
+
+      if (pwaNote) {
+        pwaNote.textContent = installed
+          ? "Bạn đang dùng Bento ở app mode, phù hợp để mở nhanh mobile hub và theo dõi hành trình đặt phòng."
+          : "Mở như app để đặt phòng, theo dõi lịch sử và dùng Bento thuận tiện hơn trên điện thoại.";
+      }
+
+      installButtons.forEach((button) => {
+        if (!button) return;
+        if (installed) {
+          button.textContent = "Đã ở app mode";
+          button.disabled = true;
+          button.style.opacity = "0.72";
+          button.style.cursor = "default";
+          return;
+        }
+
+        button.disabled = false;
+        button.style.opacity = "1";
+        button.style.cursor = "pointer";
+        button.textContent = canInstall ? "Cài app Bento" : "Mở Mobile Hub";
+      });
+
+      if (pwaPrimary) {
+        pwaPrimary.textContent = installed ? "Đã ở app mode" : (canInstall ? "Cài app Bento" : "Mở Mobile Hub");
+        pwaPrimary.disabled = installed;
+        pwaPrimary.style.opacity = installed ? "0.72" : "1";
+        pwaPrimary.style.cursor = installed ? "default" : "pointer";
+      }
+    };
+
+    const handleInstall = async () => {
+      const state = window.__abcPwaState || {};
+      if (state.installAvailable && typeof window.__abcPwaInstall === "function") {
+        await window.__abcPwaInstall();
+        updateInstallButtons();
+        return;
+      }
+
+      window.location.href = "<%= user ? "/customer/mobile-hub" : "/auth/login" %>";
+    };
+
+    installButtons.forEach((button) => {
+      button.addEventListener("click", handleInstall);
+    });
+
+    pwaPrimary?.addEventListener("click", handleInstall);
+
+    searchForm?.addEventListener("submit", () => {
+      saveJourney(new FormData(searchForm));
+    });
+
+    journeyList?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-journey-id]");
+      if (!button) return;
+      const entry = readJourneys().find((item) => item.id === button.getAttribute("data-journey-id"));
+      if (entry?.summary) applyJourney(entry.summary);
+    });
+
+    clearJourneys?.addEventListener("click", () => {
+      localStorage.removeItem(JOURNEY_KEY);
+      renderJourneys();
+    });
+
+    themeToggle?.addEventListener("click", () => {
+      const current = homeRoot?.dataset.theme === "night" ? "night" : "day";
+      applyTheme(current === "night" ? "day" : "night");
+    });
+
+    window.addEventListener("abc:pwa-state", updateInstallButtons);
+    applyTheme(readTheme(), false);
+    renderJourneys();
+    updateInstallButtons();
+  })();
+</script>
+
+<%- include("../partials/footer") %>

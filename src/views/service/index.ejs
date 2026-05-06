@@ -1,0 +1,439 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const fd = frontdeskPayload || null;
+  const transaction = fd?.transaction || null;
+  const rooms = fd?.rooms || [];
+  const catalog = fd?.catalog || payload.catalog || [];
+  const recentOrders = fd?.recentOrders || payload.recentOrders || [];
+  const aiAddon = fd?.aiAddon || { available: false, count: 0, headline: "AI service preselect", summary: "Booking này chưa có AI add-on nào để gợi ý cho lễ tân.", items: [] };
+  const drafts = serviceDrafts || {};
+%>
+
+<style>
+  .svc-shell{
+    --svc-ink:#102033;
+    --svc-muted:#667085;
+    --svc-card:rgba(255,255,255,.80);
+    --svc-line:rgba(16,32,51,.10);
+    --svc-blue:#0ea5e9;
+    --svc-teal:#14b8a6;
+    --svc-lime:#a3e635;
+    --svc-coral:#fb7185;
+    --svc-amber:#f59e0b;
+    --svc-violet:#8b5cf6;
+    --svc-shadow:0 24px 70px rgba(15,23,42,.16);
+    min-height:calc(100vh - 84px);
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+    padding:34px 18px 56px;
+    color:var(--svc-ink);
+    background:
+      radial-gradient(circle at 6% 8%,rgba(20,184,166,.30),transparent 31%),
+      radial-gradient(circle at 84% 12%,rgba(14,165,233,.26),transparent 34%),
+      radial-gradient(circle at 48% 102%,rgba(163,230,53,.24),transparent 42%),
+      radial-gradient(circle at 18% 82%,rgba(251,113,133,.18),transparent 30%),
+      linear-gradient(135deg,#fbfffb 0%,#e9fbf6 42%,#f7fbff 100%);
+  }
+  .svc-shell::before,.svc-shell::after{content:"";position:absolute;width:520px;height:520px;border-radius:999px;pointer-events:none;z-index:-1;opacity:.44;animation:svc-float 12s ease-in-out infinite alternate}
+  .svc-shell::before{top:-240px;right:-140px;background:conic-gradient(from 160deg,rgba(14,165,233,.42),rgba(20,184,166,.32),rgba(163,230,53,.34),rgba(139,92,246,.28),rgba(14,165,233,.42))}
+  .svc-shell::after{left:-220px;bottom:-260px;background:conic-gradient(from 20deg,rgba(251,113,133,.30),rgba(245,158,11,.28),rgba(20,184,166,.30),rgba(14,165,233,.24),rgba(251,113,133,.30));animation-delay:-4s}
+  .svc-wrap{max-width:1220px;margin:0 auto;position:relative}
+  .svc-hero{display:grid;grid-template-columns:minmax(0,1.1fr) 420px;gap:22px;align-items:stretch;margin-bottom:22px}
+  .svc-card,.svc-hero-main,.svc-orbit,.svc-strip,.svc-action,.svc-stat,.svc-table-card,.svc-feed-card{border:1px solid var(--svc-line);background:var(--svc-card);box-shadow:var(--svc-shadow);backdrop-filter:blur(24px)}
+  .svc-hero-main{position:relative;overflow:hidden;min-height:330px;border-radius:34px;padding:34px}
+  .svc-hero-main::before{content:"";position:absolute;inset:-1px;background:linear-gradient(120deg,rgba(255,255,255,.66),transparent 28%),radial-gradient(circle at 88% 18%,rgba(20,184,166,.24),transparent 31%);pointer-events:none}
+  .svc-eyebrow{display:inline-flex;align-items:center;gap:8px;position:relative;z-index:1;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.20);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .svc-dot{width:8px;height:8px;border-radius:999px;background:var(--svc-teal);box-shadow:0 0 0 7px rgba(20,184,166,.12);animation:svc-pulse 1.8s ease-in-out infinite}
+  .svc-hero h1{position:relative;z-index:1;max-width:720px;margin:24px 0 14px;color:var(--svc-ink);font-size:clamp(38px,5.8vw,70px);line-height:.92;letter-spacing:-.07em}
+  .svc-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 48%,#65a30d);-webkit-background-clip:text;background-clip:text}
+  .svc-lead{position:relative;z-index:1;max-width:690px;margin:0;color:var(--svc-muted);font-size:16px;line-height:1.72}
+  .svc-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+  .svc-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;padding:10px 17px;color:var(--svc-ink);text-decoration:none;font-size:14px;font-weight:900;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.74);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .svc-button:hover{transform:translateY(-2px);border-color:rgba(14,165,233,.32);box-shadow:0 18px 42px rgba(14,165,233,.16)}
+  .svc-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 18px 38px rgba(20,184,166,.22)}
+  .svc-button--danger{color:#fff;border-color:transparent;background:linear-gradient(135deg,#fb7185,#e11d48);box-shadow:0 18px 38px rgba(251,113,133,.22)}
+  .svc-orbit{position:relative;overflow:hidden;border-radius:34px;min-height:330px;background:linear-gradient(160deg,rgba(255,255,255,.84),rgba(236,253,245,.62))}
+  .svc-orbit-stage{position:absolute;inset:24px;border-radius:32px;background:linear-gradient(145deg,rgba(15,23,42,.86),rgba(12,74,110,.72));overflow:hidden}
+  .svc-orbit-stage::before{content:"";position:absolute;inset:24px;border:1px dashed rgba(226,232,240,.24);border-radius:999px;animation:svc-spin 18s linear infinite}
+  .svc-orbit-stage::after{content:"";position:absolute;width:160px;height:160px;left:calc(50% - 80px);top:calc(50% - 80px);border-radius:42px;background:linear-gradient(135deg,rgba(103,232,249,.9),rgba(163,230,53,.82));box-shadow:0 24px 70px rgba(20,184,166,.34);transform:rotate(14deg);animation:svc-breathe 4.2s ease-in-out infinite}
+  .svc-orbit-word{position:absolute;z-index:2;display:inline-flex;align-items:center;border-radius:999px;padding:9px 12px;color:#eff6ff;background:rgba(15,23,42,.48);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);font-size:12px;font-weight:1000}
+  .svc-orbit-word:nth-child(1){left:28px;top:36px;animation:svc-drift-a 5.5s ease-in-out infinite}
+  .svc-orbit-word:nth-child(2){right:34px;top:88px;animation:svc-drift-b 6s ease-in-out infinite}
+  .svc-orbit-word:nth-child(3){left:46px;bottom:62px;animation:svc-drift-b 5.8s ease-in-out infinite reverse}
+  .svc-orbit-word:nth-child(4){right:42px;bottom:42px;animation:svc-drift-a 6.4s ease-in-out infinite reverse}
+  .svc-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent}
+  .svc-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}
+  .svc-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
+  .svc-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .svc-card{border-radius:30px;padding:22px;margin-bottom:18px}
+  .svc-card h2{margin:0 0 8px;color:var(--svc-ink);font-size:24px;letter-spacing:-.04em}
+  .svc-muted{color:var(--svc-muted);font-size:13px;line-height:1.55}
+  .svc-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .svc-field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .svc-field label{font-size:13px;font-weight:900;color:#344054}
+  .svc-field input,.svc-field select,.svc-field textarea{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.76);color:var(--svc-ink);font:inherit;outline:none}
+  .svc-field textarea{min-height:76px;resize:vertical}
+  .svc-field input:focus,.svc-field select:focus,.svc-field textarea:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
+  .svc-field input[disabled]{background:rgba(255,255,255,.50);color:var(--svc-muted)}
+  .input-error{border-color:rgba(251,113,133,.72)!important;background:rgba(255,241,242,.85)!important}
+  .svc-error-msg{font-size:12px;color:#be123c;min-height:16px}
+  .svc-table-wrap{overflow:auto;border:1px solid var(--svc-line);border-radius:22px;background:rgba(255,255,255,.58);margin-top:16px}
+  .svc-table{width:100%;border-collapse:collapse;min-width:980px;font-size:14px}
+  .svc-table th,.svc-table td{padding:13px;border-bottom:1px solid rgba(16,32,51,.08);text-align:left;vertical-align:top}
+  .svc-table th{background:rgba(255,255,255,.68);color:#344054;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .svc-table tr:last-child td{border-bottom:0}
+  .svc-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;letter-spacing:.04em}
+  .svc-badge--blue{background:rgba(14,165,233,.12);color:#0369a1}
+  .svc-badge--amber{background:rgba(245,158,11,.13);color:#b45309}
+  .svc-badge--danger{background:rgba(251,113,133,.14);color:#be123c}
+  .svc-service-img{width:72px;height:72px;border-radius:20px;object-fit:cover;border:1px solid rgba(16,32,51,.10);background:rgba(255,255,255,.72)}
+  .svc-service-img--lg{width:100%;max-width:240px;height:150px}
+  .svc-inline-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .svc-mini-button{min-height:36px;border-radius:999px;padding:8px 12px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.75);color:var(--svc-ink);font-weight:900;text-decoration:none;cursor:pointer}
+  .svc-mini-button--danger{color:#be123c;border-color:rgba(251,113,133,.28);background:rgba(255,241,242,.72)}
+  .svc-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+  .svc-stat{border-radius:22px;padding:16px;background:rgba(255,255,255,.58);border:1px solid rgba(16,32,51,.08)}
+  .svc-stat strong{display:block;font-size:28px;line-height:1;color:var(--svc-ink);letter-spacing:-.05em}
+  .svc-stat span{display:block;margin-top:8px;color:var(--svc-muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .svc-action{position:relative;overflow:hidden;grid-column:span 4;min-height:220px;border-radius:30px;padding:22px;text-decoration:none;color:var(--svc-ink);background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.66));transform:translateY(18px);opacity:0;animation:svc-rise .7s cubic-bezier(.22,1,.36,1) forwards}
+  .svc-action:nth-child(1),.svc-action:nth-child(4){grid-column:span 5}.svc-action:nth-child(2),.svc-action:nth-child(5){grid-column:span 3}
+  .svc-action::before{content:"";position:absolute;width:180px;height:180px;right:-56px;top:-56px;border-radius:999px;background:radial-gradient(circle,var(--card-glow,rgba(14,165,233,.18)),transparent 68%)}
+  .svc-action::after{content:"";position:absolute;left:22px;right:22px;bottom:18px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--card-accent,#0ea5e9),transparent);opacity:.62}
+  .svc-action h3{position:relative;z-index:1;margin:26px 0 10px;color:var(--svc-ink);font-size:23px;line-height:1.08;letter-spacing:-.045em}
+  .svc-action p{position:relative;z-index:1;margin:0;color:var(--svc-muted);line-height:1.58;font-size:14px}
+  .svc-empty{border:1px dashed rgba(16,32,51,.14);border-radius:22px;padding:22px;background:rgba(255,255,255,.58);color:var(--svc-muted)}
+  @keyframes svc-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(32px,24px,0) rotate(16deg)}}
+  @keyframes svc-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
+  @keyframes svc-spin{to{transform:rotate(360deg)}}
+  @keyframes svc-breathe{0%,100%{transform:rotate(14deg) scale(1);border-radius:42px}50%{transform:rotate(22deg) scale(1.06);border-radius:64px}}
+  @keyframes svc-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}
+  @keyframes svc-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
+  @keyframes svc-rise{to{transform:translateY(0);opacity:1}}
+  @media(max-width:1080px){.svc-hero{grid-template-columns:1fr}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:span 6}}
+  @media(max-width:760px){.svc-shell{padding:20px 12px 42px}.svc-hero-main{min-height:auto;padding:24px}.svc-hero h1{font-size:42px}.svc-row,.svc-summary{grid-template-columns:1fr}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:1/-1}}
+</style>
+
+<main class="svc-shell">
+  <div class="svc-wrap">
+    <% if (notice?.error) { %><div class="svc-alert svc-alert--error"><%= notice.error %></div><% } %>
+    <% if (notice?.success) { %><div class="svc-alert svc-alert--success"><%= notice.success %></div><% } %>
+    <div id="clientErrors" class="svc-alert svc-alert--error" style="display:none"><strong>Có lỗi xảy ra:</strong><ul id="clientErrorsList" style="margin:8px 0 0 18px;padding:0"></ul></div>
+
+    <section class="svc-hero">
+      <div class="svc-hero-main">
+        <div class="svc-eyebrow"><span class="svc-dot"></span> <%= isFrontdesk ? "Đặt dịch vụ · Lễ tân" : "Dịch vụ ops" %></div>
+        <h1><%= isFrontdesk ? "Đăng ký dịch vụ" : "Room operations" %> <span><%= isFrontdesk ? "cho khách đang ở." : "live board." %></span></h1>
+        <p class="svc-lead">
+          <% if (isFrontdesk) { %>
+            Tìm giao dịch đã check-in, chọn phòng đang CheckedIn và gán nhiều dịch vụ trong một lần, đúng flow PHP cũ.
+          <% } else { %>
+            Trang này là hub điều hướng. Ba UC của Nhân viên dịch vụ đã được tách riêng, mỗi UC có trang xử lý độc lập.
+          <% } %>
+        </p>
+        <div class="svc-actions">
+          <a class="svc-button svc-button--primary" href="<%= isFrontdesk ? "/frontdesk" : "/dashboard/dichvu" %>">Quay lại dashboard</a>
+          <% if (!isFrontdesk) { %><a class="svc-button" href="/service/catalog/manage">Quản lý dịch vụ</a><% } %>
+          <% if (!isFrontdesk) { %><a class="svc-button" href="/service/room-inspection">Kiểm tra phòng</a><% } %>
+          <% if (!isFrontdesk) { %><a class="svc-button" href="/service/room-board-live">Room board live</a><% } %>
+          <a class="svc-button" href="/api/service/room-feed">Room board API</a>
+        </div>
+      </div>
+      <aside class="svc-orbit" aria-label="Minh họa đặt dịch vụ">
+        <div class="svc-orbit-stage">
+          <span class="svc-orbit-word">Stayed</span>
+          <span class="svc-orbit-word">CheckedIn</span>
+          <span class="svc-orbit-word">Service</span>
+          <span class="svc-orbit-word">Invoice</span>
+        </div>
+      </aside>
+    </section>
+
+    <% if (isFrontdesk) { %>
+      <form method="post" action="/service/orders" id="formSearch" class="svc-card">
+        <h2>Tìm kiếm giao dịch</h2>
+        <p class="svc-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn. Chỉ giao dịch trạng thái <strong>Stayed</strong> mới được đặt dịch vụ.</p>
+        <div class="svc-row" style="grid-template-columns:2fr 1fr">
+          <div class="svc-field">
+            <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
+            <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 12 hoặc 22653661123" />
+            <div class="svc-error-msg" id="err_search"></div>
+          </div>
+          <div class="svc-field" style="justify-content:flex-end">
+            <div class="svc-actions" style="margin-top:0">
+              <button class="svc-button" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
+              <button class="svc-button svc-button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <form method="post" action="/service/orders" id="formService">
+        <input type="hidden" name="search_keyword" value="<%= keyword || "" %>" />
+        <% if (transaction) { %>
+          <input type="hidden" name="ma_giao_dich" value="<%= transaction.maGiaoDich %>" />
+        <% } %>
+
+        <section class="svc-card">
+          <h2>Thông tin giao dịch</h2>
+          <% if (transaction) { %>
+            <div class="svc-row">
+              <div class="svc-field"><label>Mã giao dịch</label><input value="<%= transaction.maGiaoDich %>" disabled /></div>
+              <div class="svc-field"><label>Trạng thái</label><input value="<%= transaction.trangThai %>" disabled /></div>
+              <div class="svc-field"><label>Tổng tiền hiện tại</label><input value="<%= transaction.tongTienFormatted %>" disabled /></div>
+            </div>
+            <div class="svc-row">
+              <div class="svc-field"><label>Trưởng đoàn / khách chính</label><input value="<%= transaction.customerName || "Khách vãng lai" %>" disabled /></div>
+              <div class="svc-field"><label>CMND/CCCD</label><input value="<%= transaction.cccd || "" %>" disabled /></div>
+              <div class="svc-field"><label>Khách sạn / cơ sở</label><input value="<%= transaction.hotelLabel %>" disabled /></div>
+            </div>
+            <div class="svc-summary">
+              <div class="svc-stat"><strong><%= rooms.length %></strong><span>Phòng CheckedIn</span></div>
+              <div class="svc-stat"><strong><%= catalog.length %></strong><span>Dịch vụ hoạt động</span></div>
+              <div class="svc-stat"><strong><%= recentOrders.length %></strong><span>Order gần đây</span></div>
+              <div class="svc-stat"><strong><%= aiAddon.count || 0 %></strong><span>AI gợi ý</span></div>
+            </div>
+            <p class="svc-muted">Phòng hợp lệ: <%= rooms.map((room) => `P${room.soPhong} (${room.trangThai})`).join(", ") %></p>
+            <div class="svc-card" style="box-shadow:none;margin:14px 0 0;background:rgba(255,255,255,.48)">
+              <span class="svc-badge svc-badge--blue"><%= aiAddon.headline || "AI service preselect" %></span>
+              <p class="svc-muted" style="margin:10px 0 0"><%= aiAddon.summary || "Booking này chưa có AI add-on nào để gợi ý cho lễ tân." %></p>
+            </div>
+          <% } else { %>
+            <div class="svc-empty">Chưa có giao dịch nào được chọn. Vui lòng tìm kiếm ở bước trên.</div>
+          <% } %>
+        </section>
+
+        <section class="svc-card">
+          <h2>Danh sách dịch vụ</h2>
+          <p class="svc-muted">Nhập số lượng lớn hơn 0 và chọn phòng sử dụng. Có thể chọn nhiều dịch vụ rồi lưu một lần.</p>
+          <% if (transaction && rooms.length && catalog.length) { %>
+            <div class="svc-table-wrap">
+              <table class="svc-table">
+                <thead>
+                  <tr>
+                    <th>Dịch vụ</th>
+                    <th>Đơn giá</th>
+                    <th>Số lượng</th>
+                    <th>Phòng</th>
+                    <th>Ghi chú</th>
+                    <th>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% catalog.forEach((service) => {
+                    const draft = drafts[String(service.id)] || {};
+                    const qty = Number(draft.so_luong || 0);
+                  %>
+                    <tr>
+                      <td>
+                        <strong><%= service.tenDichVu %></strong>
+                        <div class="svc-muted">Mã DV: <%= service.id %></div>
+                      </td>
+                      <td><%= service.giaDichVuFormatted %></td>
+                      <td>
+                        <input class="svcQty" type="number" name="services[<%= service.id %>][so_luong]" min="0" max="20" value="<%= qty %>" data-price="<%= service.giaDichVu %>" data-service="<%= service.id %>" style="max-width:110px" />
+                      </td>
+                      <td>
+                        <select class="svcRoom" name="services[<%= service.id %>][ma_phong]" data-service="<%= service.id %>">
+                          <option value="0">-- Chọn phòng --</option>
+                          <% rooms.forEach((room) => { %>
+                            <option value="<%= room.maPhong %>" <%= String(draft.ma_phong || "") === String(room.maPhong) ? "selected" : "" %>>P<%= room.soPhong %> · <%= room.tenKhach || transaction.customerName || "Khách" %></option>
+                          <% }) %>
+                        </select>
+                      </td>
+                      <td><textarea name="services[<%= service.id %>][note]" placeholder="Ghi chú thêm"><%= draft.note || "" %></textarea></td>
+                      <td class="svcLineTotal" data-service="<%= service.id %>">0 đ</td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+            <div class="svc-summary">
+              <div class="svc-stat"><strong id="selectedCount">0</strong><span>Dịch vụ chọn</span></div>
+              <div class="svc-stat"><strong id="totalQty">0</strong><span>Tổng số lượng</span></div>
+              <div class="svc-stat" style="grid-column:span 2"><strong id="serviceTotal">0 đ</strong><span>Tổng tiền thêm</span></div>
+            </div>
+            <div class="svc-actions">
+              <button class="svc-button" type="reset">Làm lại</button>
+              <button class="svc-button svc-button--danger" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
+              <button class="svc-button svc-button--primary" type="submit" name="btn_action" value="save" onclick="return confirm('Xác nhận đặt dịch vụ cho giao dịch này?');">Xác nhận đặt dịch vụ</button>
+            </div>
+          <% } else if (transaction && !catalog.length) { %>
+            <div class="svc-empty">Hiện chưa có dịch vụ nào đang hoạt động.</div>
+          <% } else if (transaction && !rooms.length) { %>
+            <div class="svc-empty">Giao dịch không có phòng CheckedIn hợp lệ để đặt dịch vụ.</div>
+          <% } else { %>
+            <div class="svc-empty">Vui lòng chọn giao dịch trước khi đặt dịch vụ.</div>
+          <% } %>
+        </section>
+      </form>
+
+      <section class="svc-card" id="recent-orders">
+        <h2>Dịch vụ đã đặt gần đây</h2>
+        <% if (!recentOrders.length) { %>
+          <div class="svc-empty">Chưa có order dịch vụ gần đây cho giao dịch này.</div>
+        <% } else { %>
+          <div class="svc-grid">
+            <% recentOrders.forEach((item) => { %>
+              <article class="svc-action" style="--card-accent:#14b8a6;--card-glow:rgba(20,184,166,.22)">
+                <span class="svc-badge"><%= item.trangThaiDichVu %></span>
+                <h3><%= item.tenDichVu %></h3>
+                <p>GD <%= item.transactionId %> · Phòng <%= item.roomNumber || "N/A" %> · SL <%= item.soLuong %></p>
+                <p><strong><%= item.thanhTienFormatted %></strong></p>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+    <% } else { %>
+      <section class="svc-card">
+        <h2>Chọn nghiệp vụ dịch vụ</h2>
+        <p class="svc-muted">Workspace này chỉ đóng vai trò điều hướng nhanh. Mỗi UC bên dưới có route và màn xử lý riêng để tránh lẫn nghiệp vụ.</p>
+        <div class="svc-grid">
+          <a class="svc-action" href="/service/catalog/manage" style="--card-accent:#14b8a6;--card-glow:rgba(20,184,166,.22)">
+            <span class="svc-badge">UC01</span>
+            <h3>Quản lý dịch vụ</h3>
+            <p>Thêm, sửa, ngưng bán/xóa dịch vụ, quản lý giá, mô tả, hình ảnh và trạng thái.</p>
+          </a>
+          <a class="svc-action" href="/service/room-inspection" style="--card-accent:#0ea5e9;--card-glow:rgba(14,165,233,.20)">
+            <span class="svc-badge svc-badge--blue">UC02</span>
+            <h3>Kiểm tra tình trạng phòng</h3>
+            <p>Chọn phòng, cập nhật tình trạng thực tế, ghi log và phát realtime cho các bộ phận.</p>
+          </a>
+          <a class="svc-action" href="/service/room-board-live" style="--card-accent:#a3e635;--card-glow:rgba(163,230,53,.20)">
+            <span class="svc-badge">UC03</span>
+            <h3>Room board live</h3>
+            <p>Theo dõi snapshot phòng realtime: Stayed, Booked, Cleaning, Maintenance và phòng cần ưu tiên.</p>
+          </a>
+        </div>
+      </section>
+    <% } %>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const isFrontdesk = <%= isFrontdesk ? "true" : "false" %>;
+  const formSearch = document.getElementById("formSearch");
+  const formService = document.getElementById("formService");
+  const searchInput = document.getElementById("search_keyword");
+  const errSearch = document.getElementById("err_search");
+  const clientErrors = document.getElementById("clientErrors");
+  const clientErrorsList = document.getElementById("clientErrorsList");
+
+  function money(value) {
+    return Math.round(Number(value || 0)).toLocaleString("vi-VN") + " đ";
+  }
+
+  function showErrors(errors) {
+    if (!clientErrors || !clientErrorsList) return;
+    clientErrorsList.innerHTML = "";
+    errors.forEach((message) => {
+      const li = document.createElement("li");
+      li.textContent = message;
+      clientErrorsList.appendChild(li);
+    });
+    clientErrors.style.display = errors.length ? "block" : "none";
+    if (errors.length) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function validateSearch(fromSubmit) {
+    const value = (searchInput?.value || "").trim();
+    if (searchInput) searchInput.classList.remove("input-error");
+    if (errSearch) errSearch.textContent = "";
+    if (!value) {
+      if (!fromSubmit) return [];
+      if (searchInput) searchInput.classList.add("input-error");
+      if (errSearch) errSearch.textContent = "Vui lòng nhập mã giao dịch hoặc CMND/CCCD.";
+      return ["Vui lòng nhập mã giao dịch hoặc CMND/CCCD."];
+    }
+    if (!/^\d+$/.test(value)) {
+      if (searchInput) searchInput.classList.add("input-error");
+      if (errSearch) errSearch.textContent = "Chỉ được nhập số.";
+      return ["Chỉ được nhập số."];
+    }
+    if (value.length > 12) {
+      if (searchInput) searchInput.classList.add("input-error");
+      if (errSearch) errSearch.textContent = "Tối đa 12 số.";
+      return ["Tối đa 12 số."];
+    }
+    return [];
+  }
+
+  function updateTotals() {
+    let selected = 0;
+    let qtyTotal = 0;
+    let amount = 0;
+    document.querySelectorAll(".svcQty").forEach((input) => {
+      const qty = Math.max(0, Number(input.value || 0));
+      const price = Number(input.dataset.price || 0);
+      const serviceId = input.dataset.service;
+      const line = qty * price;
+      const lineDom = document.querySelector('.svcLineTotal[data-service="' + serviceId + '"]');
+      if (lineDom) lineDom.textContent = money(line);
+      if (qty > 0) selected += 1;
+      qtyTotal += qty;
+      amount += line;
+    });
+    const selectedDom = document.getElementById("selectedCount");
+    const qtyDom = document.getElementById("totalQty");
+    const totalDom = document.getElementById("serviceTotal");
+    if (selectedDom) selectedDom.textContent = String(selected);
+    if (qtyDom) qtyDom.textContent = String(qtyTotal);
+    if (totalDom) totalDom.textContent = money(amount);
+  }
+
+  function validateServiceForm() {
+    const errors = [];
+    let hasSelection = false;
+    document.querySelectorAll(".svcQty").forEach((input) => {
+      const qty = Math.max(0, Number(input.value || 0));
+      const serviceId = input.dataset.service;
+      const room = document.querySelector('.svcRoom[data-service="' + serviceId + '"]');
+      if (qty > 0) {
+        hasSelection = true;
+        if (!room || Number(room.value || 0) <= 0) {
+          errors.push("Dịch vụ có số lượng > 0 phải chọn phòng sử dụng.");
+          if (room) room.classList.add("input-error");
+        }
+      } else if (room) {
+        room.classList.remove("input-error");
+      }
+    });
+    if (!hasSelection) errors.push("Vui lòng chọn ít nhất một dịch vụ.");
+    return errors;
+  }
+
+  searchInput?.addEventListener("input", () => validateSearch(false));
+  searchInput?.addEventListener("blur", () => validateSearch(false));
+  document.addEventListener("input", (event) => {
+    if (event.target?.classList?.contains("svcQty")) updateTotals();
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target?.classList?.contains("svcRoom")) event.target.classList.remove("input-error");
+  });
+
+  formSearch?.addEventListener("submit", (event) => {
+    if ((event.submitter?.value || "") !== "search") return;
+    const errors = validateSearch(true);
+    if (errors.length) {
+      event.preventDefault();
+      showErrors(errors);
+    }
+  });
+
+  formService?.addEventListener("submit", (event) => {
+    if ((event.submitter?.value || "") !== "save") return;
+    const errors = validateServiceForm();
+    if (errors.length) {
+      event.preventDefault();
+      showErrors(errors);
+    }
+  });
+
+  updateTotals();
+
+});
+</script>
+<%- include("../partials/footer") %>

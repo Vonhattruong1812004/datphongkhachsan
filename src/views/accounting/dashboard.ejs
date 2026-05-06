@@ -1,0 +1,904 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const recentCashflow = payload.recentCashflow || [];
+  const topRooms = payload.topRooms || [];
+  const debtFocus = payload.debtFocus || [];
+  const netPositive = Number(payload.netCashflow || 0) >= 0;
+  const statusLabel = {
+    Booked: "Đã đặt",
+    Stayed: "Đang ở",
+    Paid: "Đã thanh toán",
+    ChoDuyet: "Chờ duyệt",
+    DaDuyet: "Đã duyệt",
+    ChuaThu: "Chưa thu",
+    ThuMotPhan: "Thu một phần",
+    QuaHan: "Quá hạn"
+  };
+%>
+
+<style>
+  .guest-home {
+    --guest-ink: #112233;
+    --guest-muted: #667085;
+    --guest-card: rgba(255, 255, 255, .74);
+    --guest-card-strong: rgba(255, 255, 255, .90);
+    --guest-line: rgba(17, 34, 51, .10);
+    --guest-cyan: #18bff2;
+    --guest-mint: #21cfa6;
+    --guest-lime: #b7ef4a;
+    --guest-peach: #ff9f7a;
+    --guest-pink: #ff6fa3;
+    --guest-violet: #8b6bff;
+    --guest-yellow: #ffd166;
+    --guest-shadow: 0 28px 86px rgba(18, 38, 63, .17);
+    min-height: calc(100vh - 84px);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 34px 18px 58px;
+    color: var(--guest-ink);
+    background:
+      radial-gradient(circle at 9% 12%, rgba(33, 207, 166, .32), transparent 27%),
+      radial-gradient(circle at 82% 10%, rgba(255, 111, 163, .22), transparent 30%),
+      radial-gradient(circle at 46% 104%, rgba(183, 239, 74, .24), transparent 38%),
+      linear-gradient(135deg, #fbfffb 0%, #eafcff 39%, #fff7ed 100%);
+  }
+
+  .guest-home::before,
+  .guest-home::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .guest-home::before {
+    width: 620px;
+    height: 620px;
+    top: -310px;
+    right: -170px;
+    border-radius: 48% 52% 42% 58%;
+    opacity: .42;
+    background: conic-gradient(from 180deg, rgba(24,191,242,.50), rgba(33,207,166,.34), rgba(183,239,74,.34), rgba(255,111,163,.28), rgba(24,191,242,.50));
+    animation: guest-blob 16s ease-in-out infinite alternate;
+  }
+
+  .guest-home::after {
+    width: 520px;
+    height: 520px;
+    left: -230px;
+    bottom: -260px;
+    border-radius: 999px;
+    opacity: .34;
+    background: conic-gradient(from 20deg, rgba(255,159,122,.36), rgba(255,209,102,.32), rgba(24,191,242,.28), rgba(139,107,255,.26), rgba(255,159,122,.36));
+    animation: guest-orb-bg 14s ease-in-out infinite alternate;
+  }
+
+  .guest-wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .guest-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) 390px;
+    gap: 22px;
+    align-items: stretch;
+    margin-bottom: 20px;
+  }
+
+  .guest-panel,
+  .guest-hero-card,
+  .guest-live-card,
+  .guest-uc-card,
+  .guest-focus-card,
+  .guest-booking-card {
+    border: 1px solid var(--guest-line);
+    background: var(--guest-card);
+    box-shadow: var(--guest-shadow);
+    backdrop-filter: blur(26px);
+  }
+
+  .guest-hero-card {
+    min-height: 360px;
+    border-radius: 38px;
+    padding: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .guest-hero-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .70), transparent 28%),
+      radial-gradient(circle at 86% 20%, rgba(24, 191, 242, .26), transparent 30%),
+      radial-gradient(circle at 16% 88%, rgba(183, 239, 74, .20), transparent 28%);
+  }
+
+  .guest-chip {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 7px 12px;
+    border: 1px solid rgba(33, 207, 166, .24);
+    background: rgba(33, 207, 166, .12);
+    color: #087763;
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .guest-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--guest-mint);
+    box-shadow: 0 0 0 7px rgba(33, 207, 166, .14);
+    animation: guest-pulse 1.8s ease-in-out infinite;
+  }
+
+  .guest-hero h1 {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 26px 0 14px;
+    color: var(--guest-ink);
+    font-size: 68px;
+    line-height: .95;
+    letter-spacing: 0;
+  }
+
+  .guest-hero h1 span {
+    color: transparent;
+    background: linear-gradient(96deg, #0891b2 0%, #10b981 43%, #f59e0b 72%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .guest-lead {
+    position: relative;
+    z-index: 1;
+    max-width: 690px;
+    margin: 0;
+    color: var(--guest-muted);
+    font-size: 16px;
+    line-height: 1.72;
+  }
+
+  .guest-tags,
+  .guest-hero-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .guest-tags {
+    margin-top: 22px;
+  }
+
+  .guest-tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 11px;
+    color: var(--guest-ink);
+    background: rgba(255, 255, 255, .66);
+    border: 1px solid rgba(17, 34, 51, .08);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .guest-tag--ekyc {
+    color: #0f766e;
+    background: rgba(33, 207, 166, .11);
+    border-color: rgba(33, 207, 166, .18);
+  }
+
+  .guest-hero-actions {
+    margin-top: 28px;
+  }
+
+  .guest-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 45px;
+    border-radius: 999px;
+    padding: 10px 18px;
+    border: 1px solid rgba(17, 34, 51, .12);
+    background: rgba(255, 255, 255, .76);
+    color: var(--guest-ink);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 950;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .guest-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(24, 191, 242, .34);
+    box-shadow: 0 18px 44px rgba(24, 191, 242, .16);
+  }
+
+  .guest-button--primary {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #08a5c8, #21cfa6);
+    box-shadow: 0 18px 42px rgba(33, 207, 166, .24);
+  }
+
+  .guest-mini-stats {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .guest-mini-stat {
+    border-radius: 23px;
+    padding: 16px;
+    background: rgba(255, 255, 255, .58);
+    border: 1px solid rgba(17, 34, 51, .08);
+  }
+
+  .guest-mini-stat strong {
+    display: block;
+    color: var(--guest-ink);
+    font-size: 26px;
+    line-height: 1.1;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .guest-mini-stat span {
+    display: block;
+    margin-top: 8px;
+    color: var(--guest-muted);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .guest-live-card {
+    min-height: 360px;
+    border-radius: 38px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(160deg, rgba(255, 255, 255, .86), rgba(236, 253, 245, .58)),
+      radial-gradient(circle at 30% 18%, rgba(255, 209, 102, .20), transparent 28%);
+  }
+
+  .guest-live-card::before {
+    content: "";
+    position: absolute;
+    inset: 22px;
+    border-radius: 32px;
+    background:
+      linear-gradient(145deg, rgba(14, 38, 58, .90), rgba(12, 86, 110, .74)),
+      radial-gradient(circle at 22% 18%, rgba(183,239,74,.24), transparent 32%);
+  }
+
+  .guest-live-ring {
+    position: absolute;
+    inset: 48px;
+    border: 1px dashed rgba(255, 255, 255, .25);
+    border-radius: 999px;
+    animation: guest-spin 22s linear infinite;
+  }
+
+  .guest-live-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 158px;
+    height: 158px;
+    border-radius: 46px;
+    transform: translate(-50%, -50%) rotate(14deg);
+    background: linear-gradient(135deg, rgba(103, 232, 249, .96), rgba(183, 239, 74, .86));
+    box-shadow: 0 26px 76px rgba(33, 207, 166, .34);
+    animation: guest-core 4.8s ease-in-out infinite;
+  }
+
+  .guest-live-word {
+    position: absolute;
+    z-index: 2;
+    border-radius: 999px;
+    padding: 9px 12px;
+    color: #f8fbff;
+    background: rgba(15, 23, 42, .48);
+    border: 1px solid rgba(255, 255, 255, .18);
+    backdrop-filter: blur(16px);
+    font-size: 12px;
+    font-weight: 1000;
+  }
+
+  .guest-live-word:nth-child(4) { left: 34px; top: 42px; animation: guest-drift-a 5.5s ease-in-out infinite; }
+  .guest-live-word:nth-child(5) { right: 30px; top: 98px; animation: guest-drift-b 6.2s ease-in-out infinite; }
+  .guest-live-word:nth-child(6) { left: 44px; bottom: 78px; animation: guest-drift-b 5.8s ease-in-out infinite reverse; }
+  .guest-live-word:nth-child(7) { right: 42px; bottom: 44px; animation: guest-drift-a 6.5s ease-in-out infinite reverse; }
+
+  .guest-focus-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    border-radius: 30px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    background: rgba(255, 255, 255, .66);
+  }
+
+  .guest-focus-card strong {
+    display: block;
+    color: var(--guest-ink);
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+
+  .guest-focus-card span {
+    display: block;
+    margin-top: 4px;
+    color: var(--guest-muted);
+    font-size: 13px;
+  }
+
+  .guest-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .guest-flow a {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 11px;
+    color: #0f766e;
+    background: rgba(33, 207, 166, .11);
+    border: 1px solid rgba(33, 207, 166, .18);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .guest-section {
+    margin-top: 20px;
+  }
+
+  .guest-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 0 14px;
+  }
+
+  .guest-section-head h2 {
+    margin: 0;
+    color: var(--guest-ink);
+    font-size: 26px;
+    letter-spacing: 0;
+  }
+
+  .guest-section-head p {
+    margin: 5px 0 0;
+    color: var(--guest-muted);
+    font-size: 13px;
+  }
+
+  .guest-bento {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(210px, auto);
+    gap: 16px;
+  }
+
+  .guest-uc-card {
+    --accent: var(--guest-cyan);
+    --accent-soft: rgba(24, 191, 242, .20);
+    grid-column: span 4;
+    position: relative;
+    overflow: hidden;
+    border-radius: 32px;
+    padding: 22px;
+    text-decoration: none;
+    color: var(--guest-ink);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .88), rgba(255, 255, 255, .62)),
+      radial-gradient(circle at 100% 0%, var(--accent-soft), transparent 34%);
+    transform: translateY(20px);
+    opacity: 0;
+    animation: guest-rise .72s cubic-bezier(.22, 1, .36, 1) forwards;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+
+  .guest-uc-card:nth-child(1) { animation-delay: .02s; }
+  .guest-uc-card:nth-child(2) { animation-delay: .08s; }
+  .guest-uc-card:nth-child(3) { animation-delay: .14s; }
+  .guest-uc-card:nth-child(4) { animation-delay: .20s; }
+  .guest-uc-card:nth-child(5) { animation-delay: .26s; }
+
+  .guest-uc-card.is-wide {
+    grid-column: span 5;
+  }
+
+  .guest-uc-card.is-compact {
+    grid-column: span 3;
+  }
+
+  .guest-uc-card:hover {
+    transform: translateY(-7px) rotate(-.24deg);
+    border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+    box-shadow: 0 34px 92px rgba(18, 38, 63, .22);
+  }
+
+  .guest-uc-card::before {
+    content: "";
+    position: absolute;
+    width: 190px;
+    height: 190px;
+    right: -64px;
+    top: -64px;
+    border-radius: 999px;
+    background: radial-gradient(circle, var(--accent-soft), transparent 68%);
+    transition: transform .25s ease;
+  }
+
+  .guest-uc-card:hover::before {
+    transform: scale(1.24);
+  }
+
+  .guest-uc-card::after {
+    content: "";
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 18px;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: .62;
+  }
+
+  .guest-uc-top {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .guest-uc-code {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, .74);
+    border: 1px solid rgba(17, 34, 51, .08);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: 0;
+  }
+
+  .guest-uc-orb {
+    width: 52px;
+    height: 52px;
+    border-radius: 19px;
+    background: linear-gradient(135deg, var(--accent), rgba(255, 255, 255, .36));
+    box-shadow: 0 16px 36px var(--accent-soft);
+    transform: rotate(8deg);
+  }
+
+  .guest-uc-card h3 {
+    position: relative;
+    z-index: 1;
+    margin: 28px 0 10px;
+    max-width: 360px;
+    color: var(--guest-ink);
+    font-size: 26px;
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+
+  .guest-uc-card p {
+    position: relative;
+    z-index: 1;
+    max-width: 430px;
+    margin: 0;
+    color: var(--guest-muted);
+    font-size: 14px;
+    line-height: 1.62;
+  }
+
+  .guest-open {
+    position: absolute;
+    z-index: 1;
+    right: 22px;
+    bottom: 25px;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 1000;
+  }
+
+  .guest-search { --accent: var(--guest-mint); --accent-soft: rgba(33,207,166,.22); }
+  .guest-history { --accent: var(--guest-cyan); --accent-soft: rgba(24,191,242,.22); }
+  .guest-profile { --accent: var(--guest-violet); --accent-soft: rgba(139,107,255,.20); }
+  .guest-service { --accent: var(--guest-yellow); --accent-soft: rgba(255,209,102,.24); }
+  .guest-edit { --accent: var(--guest-pink); --accent-soft: rgba(255,111,163,.20); }
+  .guest-feedback { --accent: #74c61f; --accent-soft: rgba(116,198,31,.19); }
+
+  .guest-booking-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .guest-booking-card {
+    border-radius: 28px;
+    padding: 20px;
+    background: rgba(255, 255, 255, .70);
+  }
+
+  .guest-booking-card h3 {
+    margin: 12px 0 8px;
+    color: var(--guest-ink);
+    font-size: 21px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .guest-booking-card p {
+    margin: 0 0 6px;
+    color: var(--guest-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .guest-booking-card strong {
+    display: block;
+    margin-top: 10px;
+    color: var(--guest-ink);
+    font-size: 21px;
+    overflow-wrap: anywhere;
+  }
+
+  .guest-booking-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .guest-booking-actions .guest-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .guest-badge {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: rgba(33, 207, 166, .12);
+    color: #0f766e;
+    font-size: 11px;
+    font-weight: 1000;
+    letter-spacing: 0;
+  }
+
+  .guest-badge--chi {
+    color: #be123c;
+    background: rgba(255, 111, 163, .13);
+  }
+
+  .guest-empty {
+    border: 1px dashed rgba(17, 34, 51, .16);
+    border-radius: 28px;
+    padding: 24px;
+    color: var(--guest-muted);
+    background: rgba(255, 255, 255, .58);
+  }
+
+  @keyframes guest-blob {
+    0% { transform: translate3d(0, 0, 0) rotate(0deg); border-radius: 48% 52% 42% 58%; }
+    100% { transform: translate3d(26px, 30px, 0) rotate(18deg); border-radius: 56% 44% 60% 40%; }
+  }
+
+  @keyframes guest-orb-bg {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to { transform: translate3d(34px, -18px, 0) rotate(-14deg); }
+  }
+
+  @keyframes guest-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(.72); opacity: .68; }
+  }
+
+  @keyframes guest-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes guest-core {
+    0%, 100% { transform: translate(-50%, -50%) rotate(14deg) scale(1); border-radius: 46px; }
+    50% { transform: translate(-50%, -50%) rotate(24deg) scale(1.07); border-radius: 72px; }
+  }
+
+  @keyframes guest-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(12px, -10px, 0); }
+  }
+
+  @keyframes guest-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(-10px, 12px, 0); }
+  }
+
+  @keyframes guest-rise {
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @media (max-width: 1080px) {
+    .guest-hero { grid-template-columns: 1fr; }
+    .guest-live-card { min-height: 320px; }
+    .guest-uc-card,
+    .guest-uc-card.is-wide,
+    .guest-uc-card.is-compact { grid-column: span 6; }
+    .guest-booking-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 760px) {
+    .guest-home { padding: 20px 12px 42px; }
+    .guest-hero-card { min-height: auto; padding: 24px; border-radius: 30px; }
+    .guest-hero h1 { font-size: 44px; }
+    .guest-mini-stats,
+    .guest-focus-card,
+    .guest-booking-grid { grid-template-columns: 1fr; }
+    .guest-live-card { min-height: 280px; }
+    .guest-uc-card,
+    .guest-uc-card.is-wide,
+    .guest-uc-card.is-compact {
+      grid-column: 1 / -1;
+      min-height: 220px;
+    }
+    .guest-section-head { display: block; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .guest-home::before,
+    .guest-home::after,
+    .guest-pulse,
+    .guest-live-ring,
+    .guest-live-core,
+    .guest-live-word,
+    .guest-uc-card {
+      animation: none;
+    }
+    .guest-uc-card {
+      transform: none;
+      opacity: 1;
+    }
+  }
+</style>
+
+<main class="guest-home">
+  <div class="guest-wrap">
+    <section class="guest-hero" aria-label="Dashboard kế toán">
+      <div class="guest-hero-card">
+        <div class="guest-chip"><span class="guest-pulse"></span> Finance command center</div>
+        <h1>Dashboard <span>kế toán</span></h1>
+        <p class="guest-lead">
+          Một dashboard sạch cho kiểm soát tài chính: theo dõi doanh thu, chi phí,
+          thu chi hợp nhất, công nợ và báo cáo tổng hợp trong kỳ <%= payload.periodLabel %>.
+        </p>
+
+        <div class="guest-tags" aria-label="Thông tin nhanh">
+          <span class="guest-tag guest-tag--ekyc">Dòng tiền: <%= netPositive ? "Dương" : "Âm" %></span>
+          <span class="guest-tag">Giao dịch thu: <%= payload.revenueTransactionCount %></span>
+          <span class="guest-tag">Phiếu chi: <%= payload.expenseVoucherCount %></span>
+          <span class="guest-tag">Công nợ mở: <%= payload.pendingDebtCount %></span>
+        </div>
+
+        <div class="guest-hero-actions">
+          <a class="guest-button guest-button--primary" href="/accounting/reports">Báo cáo tổng hợp</a>
+          <a class="guest-button" href="/accounting/cashflow">Thu chi hợp nhất</a>
+          <a class="guest-button" href="/accounting/debts">Công nợ</a>
+        </div>
+
+        <div class="guest-mini-stats" aria-label="Tóm tắt tài chính">
+          <div class="guest-mini-stat"><strong><%= payload.monthlyRevenueFormatted %></strong><span>Doanh thu</span></div>
+          <div class="guest-mini-stat"><strong><%= payload.monthlyExpenseFormatted %></strong><span>Chi phí</span></div>
+          <div class="guest-mini-stat"><strong><%= payload.outstandingDebtFormatted %></strong><span>Công nợ</span></div>
+        </div>
+      </div>
+
+      <aside class="guest-live-card" aria-label="Minh họa luồng tài chính">
+        <div class="guest-live-ring"></div>
+        <div class="guest-live-core"></div>
+        <span class="guest-live-word">Revenue</span>
+        <span class="guest-live-word">Expense</span>
+        <span class="guest-live-word">Debt</span>
+        <span class="guest-live-word">Cashflow</span>
+      </aside>
+    </section>
+
+    <section class="guest-focus-card">
+      <div>
+        <strong>Luồng ưu tiên cho kế toán</strong>
+        <span>Đi từ báo cáo tổng hợp đến doanh thu, chi phí, thu chi và công nợ trong một nơi.</span>
+      </div>
+      <div class="guest-flow" aria-label="Luồng nghiệp vụ kế toán">
+        <a href="/accounting/reports">Báo cáo</a>
+        <a href="/accounting/revenue">Doanh thu</a>
+        <a href="/accounting/expenses">Chi phí</a>
+        <a href="/accounting/debts">Công nợ</a>
+      </div>
+    </section>
+
+    <section class="guest-section" aria-label="Nghiệp vụ kế toán">
+      <div class="guest-section-head">
+        <div>
+          <h2>Use case chính</h2>
+          <p>Các thao tác kế toán dùng nhiều nhất, bố cục bento giống dashboard khách hàng.</p>
+        </div>
+      </div>
+
+      <div class="guest-bento">
+        <a class="guest-uc-card guest-search is-wide" href="/accounting/reports">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">FIN01</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Báo cáo tổng hợp</h3>
+          <p>Tổng hợp doanh thu, chi phí, lợi nhuận và dữ liệu xuất báo cáo cho kỳ kế toán.</p>
+          <span class="guest-open">Mở nghiệp vụ</span>
+        </a>
+
+        <a class="guest-uc-card guest-history is-compact" href="/accounting/revenue">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">FIN02</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Doanh thu</h3>
+          <p>Tra cứu giao dịch thu, mã đặt chỗ, khách hàng, trạng thái và tổng tiền.</p>
+          <span class="guest-open">Mở nghiệp vụ</span>
+        </a>
+
+        <a class="guest-uc-card guest-profile" href="/accounting/expenses">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">FIN03</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Chi phí vận hành</h3>
+          <p>Ghi nhận, lọc và kiểm soát các khoản chi theo ngày, nội dung và trạng thái.</p>
+          <span class="guest-open">Mở nghiệp vụ</span>
+        </a>
+
+        <a class="guest-uc-card guest-service" href="/accounting/cashflow">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">FIN04</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Thu chi hợp nhất</h3>
+          <p>Xem timeline thu vào và chi ra để đối soát nhanh theo ngày và nhóm nghiệp vụ.</p>
+          <span class="guest-open">Mở nghiệp vụ</span>
+        </a>
+
+        <a class="guest-uc-card guest-feedback is-wide" href="/accounting/debts">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">FIN05</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Công nợ và đối soát</h3>
+          <p>Theo dõi khoản phải thu, hạn thanh toán, trạng thái thu nợ và các khoản quá hạn.</p>
+          <span class="guest-open">Mở nghiệp vụ</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="guest-section" aria-label="Thu chi gần đây">
+      <div class="guest-section-head">
+        <div>
+          <h2>Thu chi gần đây</h2>
+          <p>Dòng tiền mới nhất trong tháng <%= payload.periodLabel %>.</p>
+        </div>
+        <a class="guest-button" href="/accounting/cashflow">Xem tất cả</a>
+      </div>
+
+      <% if (!recentCashflow.length) { %>
+        <div class="guest-empty">Chưa có dòng thu chi trong tháng <%= payload.periodLabel %>.</div>
+      <% } else { %>
+        <div class="guest-booking-grid">
+          <% recentCashflow.slice(0, 6).forEach((row) => { %>
+            <article class="guest-booking-card">
+              <span class="guest-badge <%= row.loaiDongTien === 'chi' ? 'guest-badge--chi' : '' %>"><%= row.loaiDongTien === "chi" ? "Chi" : "Thu" %> · <%= statusLabel[row.trangThai] || row.trangThai %></span>
+              <h3><%= row.maThamChieu %></h3>
+              <p><%= row.doiTuong || "Đối tượng chưa rõ" %></p>
+              <p><%= row.noiDung %> · <%= row.ngayFormatted %></p>
+              <strong><%= row.soTienFormatted %></strong>
+              <div class="guest-booking-actions">
+                <a class="guest-button" href="/accounting/cashflow?search=<%= encodeURIComponent(row.maThamChieu) %>">Chi tiết</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="guest-section" aria-label="Top phòng doanh thu">
+      <div class="guest-section-head">
+        <div>
+          <h2>Top phòng doanh thu</h2>
+          <p>Phòng tạo doanh thu nổi bật trong tháng hiện tại.</p>
+        </div>
+        <a class="guest-button" href="/accounting/revenue">Xem doanh thu</a>
+      </div>
+
+      <% if (!topRooms.length) { %>
+        <div class="guest-empty">Chưa có doanh thu phòng trong tháng <%= payload.periodLabel %>.</div>
+      <% } else { %>
+        <div class="guest-booking-grid">
+          <% topRooms.slice(0, 3).forEach((room, index) => { %>
+            <article class="guest-booking-card">
+              <span class="guest-badge">Top <%= index + 1 %></span>
+              <h3>Phòng <%= room.roomNumber %></h3>
+              <p><%= room.hotelName || "Chưa rõ cơ sở" %><%= room.city ? ` · ${room.city}` : "" %></p>
+              <p><%= room.bookingCount %> lượt phát sinh doanh thu.</p>
+              <strong><%= room.revenueFormatted %></strong>
+              <div class="guest-booking-actions">
+                <a class="guest-button" href="/accounting/revenue">Đối chiếu</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="guest-section" aria-label="Công nợ cần theo dõi">
+      <div class="guest-section-head">
+        <div>
+          <h2>Công nợ cần theo dõi</h2>
+          <p>Ưu tiên khoản quá hạn hoặc chưa thu đủ.</p>
+        </div>
+        <a class="guest-button" href="/accounting/debts">Mở công nợ</a>
+      </div>
+
+      <% if (!debtFocus.length) { %>
+        <div class="guest-empty">Không có công nợ mở cần theo dõi.</div>
+      <% } else { %>
+        <div class="guest-booking-grid">
+          <% debtFocus.slice(0, 3).forEach((debt) => { %>
+            <article class="guest-booking-card">
+              <span class="guest-badge"><%= statusLabel[debt.status] || debt.status %></span>
+              <h3><%= debt.bookingCode || `CN-${debt.id}` %></h3>
+              <p><%= debt.customerName || "Khách" %></p>
+              <p>Hạn thanh toán: <%= debt.dueDateFormatted %></p>
+              <strong><%= debt.remainingFormatted %></strong>
+              <div class="guest-booking-actions">
+                <a class="guest-button" href="/accounting/debts?search=<%= encodeURIComponent(debt.bookingCode || debt.customerName || '') %>">Đối soát</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

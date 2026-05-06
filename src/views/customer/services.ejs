@@ -1,0 +1,369 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const money = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
+  const statusClass = (status) => {
+    const value = String(status || "");
+    if (value === "ChuaSuDung") return "is-fresh";
+    if (value === "DangSuDung") return "is-active";
+    if (value === "DaSuDung") return "is-done";
+    return "is-muted";
+  };
+%>
+<style>
+  body{background:radial-gradient(circle at 8% 8%,rgba(45,212,191,.28),transparent 28%),radial-gradient(circle at 88% 10%,rgba(251,191,36,.22),transparent 30%),radial-gradient(circle at 54% 100%,rgba(14,165,233,.18),transparent 36%),linear-gradient(135deg,#fffef5 0%,#ebfffb 38%,#eef7ff 72%,#fff4f7 100%);color:#123047}
+  .svc-shell{position:relative;overflow:hidden;max-width:1240px;margin:0 auto;padding:34px 18px 70px}
+  .svc-shell::before,.svc-shell::after{content:"";position:absolute;border-radius:999px;pointer-events:none;z-index:-1;filter:blur(.2px);animation:svc-orbit 14s ease-in-out infinite alternate}
+  .svc-shell::before{right:-160px;top:-230px;width:520px;height:520px;background:conic-gradient(from 110deg,rgba(14,165,233,.46),rgba(20,184,166,.36),rgba(250,204,21,.30),rgba(251,113,133,.23),rgba(14,165,233,.46))}
+  .svc-shell::after{left:-200px;bottom:-260px;width:520px;height:520px;background:conic-gradient(from 20deg,rgba(251,113,133,.25),rgba(245,158,11,.24),rgba(45,212,191,.30),rgba(59,130,246,.22),rgba(251,113,133,.25));animation-delay:-5s}
+  .svc-hero,.svc-panel,.svc-card,.svc-order,.svc-booking,.svc-order-card{border:1px solid rgba(18,48,71,.12);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.70));box-shadow:0 26px 72px rgba(12,39,64,.13);backdrop-filter:blur(22px)}
+  .svc-hero{position:relative;overflow:hidden;border-radius:36px;padding:32px;margin-bottom:18px}
+  .svc-hero::before{content:"";position:absolute;right:42px;top:26px;width:118px;height:118px;border-radius:999px;background:radial-gradient(circle,#fff9d8 0 18%,#fde68a 36%,#f59e0b 64%,transparent 70%);box-shadow:0 0 0 24px rgba(253,224,71,.13),0 0 85px rgba(251,191,36,.28);animation:svc-sun 7s ease-in-out infinite}
+  .svc-hero::after{content:"";position:absolute;left:42%;bottom:-3px;width:260px;height:52px;border-radius:999px 999px 0 0;background:repeating-radial-gradient(ellipse at center,rgba(14,165,233,.18) 0 8px,rgba(20,184,166,.10) 9px 18px);opacity:.78;animation:svc-wave 5s ease-in-out infinite}
+  .svc-cloud{position:absolute;border-radius:999px;background:rgba(255,255,255,.72);box-shadow:24px 4px 0 rgba(255,255,255,.68),48px 0 0 rgba(255,255,255,.58);height:24px;width:58px;animation:svc-cloud 18s linear infinite}
+  .svc-cloud.one{left:24px;top:34px}.svc-cloud.two{right:240px;top:86px;animation-delay:-7s;transform:scale(.8)}
+  .svc-kicker{display:inline-flex;position:relative;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .svc-hero h1{position:relative;margin:20px 0 10px;max-width:800px;color:#102033;font-size:clamp(40px,6vw,74px);line-height:.92;letter-spacing:-.07em}
+  .svc-hero h1 span{color:transparent;background:linear-gradient(110deg,#0ea5e9,#14b8a6 48%,#84cc16);-webkit-background-clip:text;background-clip:text}
+  .svc-muted{color:#5f778f;line-height:1.65;font-size:14px}
+  .svc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .svc-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:999px;border:1px solid rgba(18,48,71,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:9px 15px;font-size:13px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 12px 28px rgba(12,39,64,.08);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .svc-button:hover{transform:translateY(-2px);border-color:rgba(14,165,233,.30);box-shadow:0 18px 40px rgba(12,39,64,.13)}
+  .svc-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 48%,#22c55e)}
+  .svc-button--danger{color:#be123c;background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(255,241,242,.88))}
+  .svc-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
+  .svc-stat{border-radius:24px;border:1px solid rgba(18,48,71,.10);background:rgba(255,255,255,.72);padding:17px;box-shadow:0 18px 44px rgba(12,39,64,.09)}
+  .svc-stat span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .svc-stat strong{display:block;margin-top:8px;color:#102033;font-size:28px;letter-spacing:-.05em}
+  .svc-alert{border-radius:22px;padding:14px 16px;margin:0 0 16px;border:1px solid rgba(18,48,71,.10);font-weight:800}
+  .svc-alert--success{background:rgba(16,185,129,.13);color:#047857;border-color:rgba(16,185,129,.22)}
+  .svc-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.24)}
+  .svc-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:18px;align-items:start}
+  .svc-panel{border-radius:30px;padding:20px;margin-bottom:18px}
+  .svc-panel-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:16px}
+  .svc-panel h2{margin:0;color:#102033;font-size:27px;letter-spacing:-.05em}
+  .svc-tools{display:grid;grid-template-columns:minmax(220px,1fr) 180px;gap:10px;margin-bottom:14px}
+  .svc-field{display:grid;gap:7px}
+  .svc-field label{font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em;color:#173651}
+  .svc-field input,.svc-field select,.svc-field textarea{width:100%;min-height:46px;border-radius:16px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);color:#102033;padding:10px 13px;font:inherit;outline:none;box-sizing:border-box}
+  .svc-field textarea{min-height:88px;resize:vertical}
+  .svc-field input:focus,.svc-field select:focus,.svc-field textarea:focus{border-color:rgba(14,165,233,.46);box-shadow:0 0 0 4px rgba(14,165,233,.12)}
+  .svc-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .svc-card{position:relative;overflow:hidden;border-radius:28px;padding:0;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .svc-card:hover,.svc-card.is-selected{transform:translateY(-5px);border-color:rgba(20,184,166,.35);box-shadow:0 30px 82px rgba(12,39,64,.17)}
+  .svc-art{position:relative;height:142px;overflow:hidden;background:var(--svc-gradient)}
+  .svc-art img{width:100%;height:100%;object-fit:cover;display:block}
+  .svc-art::before{content:"";position:absolute;left:16px;bottom:14px;width:86px;height:34px;border-radius:999px 999px 16px 16px;background:rgba(255,255,255,.70);box-shadow:24px -12px 0 rgba(255,255,255,.52),54px -3px 0 rgba(255,255,255,.40);animation:svc-bob 4s ease-in-out infinite}
+  .svc-art::after{content:"";position:absolute;right:-30px;bottom:-18px;width:160px;height:70px;border-radius:999px 999px 0 0;background:repeating-radial-gradient(ellipse at center,rgba(255,255,255,.35) 0 7px,rgba(255,255,255,.12) 8px 16px)}
+  .svc-card-body{padding:17px}
+  .svc-chip{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:1000;border:1px solid rgba(18,48,71,.10);background:rgba(255,255,255,.70);color:#0f766e}
+  .svc-chip.is-fresh{color:#0369a1;background:rgba(14,165,233,.10);border-color:rgba(14,165,233,.20)}
+  .svc-chip.is-active{color:#b45309;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.22)}
+  .svc-chip.is-done{color:#047857;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.20)}
+  .svc-chip.is-muted{color:#475569;background:rgba(148,163,184,.12)}
+  .svc-card h3,.svc-order-card h3{margin:12px 0 8px;color:#102033;font-size:22px;letter-spacing:-.045em}
+  .svc-price{display:block;margin:12px 0;color:#0f766e;font-size:22px;font-weight:1000;letter-spacing:-.04em}
+  .svc-order{position:sticky;top:18px;border-radius:30px;padding:20px}
+  .svc-total-box{border-radius:22px;border:1px solid rgba(18,48,71,.10);background:linear-gradient(135deg,rgba(236,253,245,.80),rgba(240,249,255,.78));padding:16px;margin:14px 0}
+  .svc-total-box span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .svc-total-box strong{display:block;margin-top:7px;color:#0f766e;font-size:28px;letter-spacing:-.05em}
+  .svc-bookings{display:grid;gap:10px}
+  .svc-booking{border-radius:22px;padding:14px;box-shadow:0 16px 40px rgba(12,39,64,.09)}
+  .svc-booking button{width:100%;text-align:left;border:0;background:transparent;padding:0;color:inherit;cursor:pointer}
+  .svc-booking strong{display:block;color:#102033;font-size:16px}
+  .svc-empty{border:1px dashed rgba(18,48,71,.18);border-radius:24px;padding:18px;background:rgba(255,255,255,.58);color:#5f778f}
+  .svc-orders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .svc-order-card{border-radius:28px;padding:18px;position:relative;overflow:hidden}
+  .svc-order-card::before{content:"";position:absolute;right:-70px;top:-85px;width:180px;height:180px;border-radius:999px;background:radial-gradient(circle,rgba(14,165,233,.16),transparent 68%)}
+  .svc-order-thumb{position:relative;overflow:hidden;margin:-18px -18px 16px;height:148px;background:linear-gradient(135deg,rgba(14,165,233,.24),rgba(20,184,166,.20),rgba(250,204,21,.18))}
+  .svc-order-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .svc-order-thumb::after{content:"";position:absolute;inset:auto 0 0;height:70px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.80))}
+  .svc-lines{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+  .svc-line{border-radius:17px;border:1px solid rgba(18,48,71,.09);background:rgba(255,255,255,.62);padding:11px}
+  .svc-line span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .svc-line strong{display:block;margin-top:6px;color:#102033;font-size:15px}
+  .svc-help{font-size:12px;color:#5f778f;line-height:1.55;margin-top:6px}
+  @keyframes svc-orbit{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
+  @keyframes svc-sun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
+  @keyframes svc-wave{0%,100%{transform:translateX(0)}50%{transform:translateX(18px)}}
+  @keyframes svc-cloud{from{transform:translateX(-20px)}to{transform:translateX(70px)}}
+  @keyframes svc-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @media(max-width:1040px){.svc-layout{grid-template-columns:1fr}.svc-order{position:relative;top:auto}.svc-stats,.svc-grid,.svc-orders{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:680px){.svc-shell{padding:22px 12px 52px}.svc-hero,.svc-panel,.svc-order{border-radius:26px;padding:20px}.svc-stats,.svc-grid,.svc-orders,.svc-lines,.svc-tools{grid-template-columns:1fr}.svc-hero::before{width:82px;height:82px;right:16px}.svc-cloud.two{display:none}}
+</style>
+
+<main class="svc-shell">
+  <section class="svc-hero">
+    <span class="svc-cloud one"></span>
+    <span class="svc-cloud two"></span>
+    <span class="svc-kicker">UC04 · Dịch vụ bổ sung</span>
+    <h1>Thêm tiện ích cho chuyến đi <span>vui và gọn hơn.</span></h1>
+    <p class="svc-muted">Chọn booking còn hợp lệ, chọn phòng cụ thể, thêm dịch vụ đang hoạt động và theo dõi các dịch vụ có thể hủy trước ngày trả phòng.</p>
+    <div class="svc-actions">
+      <a class="svc-button svc-button--primary" href="/customer/bookings">Xem lịch sử và hóa đơn</a>
+      <a class="svc-button" href="/customer/dashboard">Về dashboard</a>
+      <a class="svc-button" href="/booking/search">Đặt phòng mới</a>
+    </div>
+  </section>
+
+  <section class="svc-stats">
+    <div class="svc-stat"><span>Dịch vụ khả dụng</span><strong><%= payload.stats.activeServiceCount %></strong></div>
+    <div class="svc-stat"><span>Phòng đủ điều kiện</span><strong><%= payload.stats.eligibleBookingCount %></strong></div>
+    <div class="svc-stat"><span>Dịch vụ đã đặt</span><strong><%= payload.stats.orderedCount %></strong></div>
+    <div class="svc-stat"><span>Tổng dịch vụ</span><strong><%= payload.stats.orderedTotalFormatted %></strong></div>
+  </section>
+
+  <% if (successMessage) { %>
+    <div class="svc-alert svc-alert--success"><%= successMessage %></div>
+  <% } %>
+  <% if (errorMessage) { %>
+    <div class="svc-alert svc-alert--error"><%= errorMessage %></div>
+  <% } %>
+
+  <div class="svc-layout">
+    <div>
+      <section class="svc-panel">
+        <div class="svc-panel-head">
+          <div>
+            <h2>Danh mục dịch vụ</h2>
+            <p class="svc-muted">Danh sách chỉ hiển thị dịch vụ đang hoạt động. Nhấn chọn để đưa vào phiếu đặt bên phải.</p>
+          </div>
+        </div>
+        <div class="svc-tools">
+          <div class="svc-field">
+            <label for="svcKeyword">Tìm dịch vụ</label>
+            <input id="svcKeyword" type="search" placeholder="Spa, đưa đón, khăn tắm, nước uống..." />
+          </div>
+          <div class="svc-field">
+            <label for="svcSort">Sắp xếp</label>
+            <select id="svcSort">
+              <option value="featured">Gợi ý trước</option>
+              <option value="price_asc">Giá thấp trước</option>
+              <option value="price_desc">Giá cao trước</option>
+              <option value="name">Tên A-Z</option>
+            </select>
+          </div>
+        </div>
+
+        <% if (!payload.catalog.length) { %>
+          <div class="svc-empty">Hiện chưa có dịch vụ nào khả dụng để đặt thêm.</div>
+        <% } else { %>
+          <div class="svc-grid" id="svcCatalogGrid">
+            <% payload.catalog.forEach((item, index) => { %>
+              <article
+                class="svc-card"
+                style="--svc-gradient:<%= item.visual.gradient %>"
+                data-service-card
+                data-service-id="<%= item.id %>"
+                data-name="<%= item.tenDichVu.toLowerCase() %>"
+                data-price="<%= item.giaDichVu %>"
+                data-index="<%= index %>"
+              >
+                <div class="svc-art">
+                  <% if (item.imageUrl) { %>
+                    <img src="<%= item.imageUrl %>" alt="<%= item.tenDichVu %>" onerror="this.style.display='none'" />
+                  <% } %>
+                </div>
+                <div class="svc-card-body">
+                  <span class="svc-chip"><%= item.statusLabel %></span>
+                  <h3><%= item.tenDichVu %></h3>
+                  <p class="svc-muted"><%= item.moTa || "Dịch vụ tiện ích giúp kỳ nghỉ của bạn thoải mái hơn." %></p>
+                  <strong class="svc-price"><%= item.giaDichVuFormatted %></strong>
+                  <button class="svc-button svc-button--primary" type="button" data-pick-service="<%= item.id %>">Chọn dịch vụ</button>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="svc-panel">
+        <div class="svc-panel-head">
+          <div>
+            <h2>Phòng có thể đặt thêm</h2>
+            <p class="svc-muted">Theo nghiệp vụ cũ, chỉ booking đang ở trạng thái đã đặt và ngày nhận phòng chưa qua mới được thêm dịch vụ.</p>
+          </div>
+        </div>
+        <% if (!payload.bookingOptions.length) { %>
+          <div class="svc-empty">Bạn chưa có phòng nào đủ điều kiện đặt thêm dịch vụ. Hãy kiểm tra lịch sử booking hoặc tạo booking mới.</div>
+        <% } else { %>
+          <div class="svc-bookings">
+            <% payload.bookingOptions.forEach((item) => { %>
+              <article class="svc-booking">
+                <button type="button" data-pick-booking="<%= item.optionKey %>">
+                  <strong><%= item.bookingCode || `GD-${item.transactionId}` %> · Phòng <%= item.roomNumber %></strong>
+                  <span class="svc-muted"><%= item.hotelName %><%= item.hotelCity ? ` · ${item.hotelCity}` : "" %> · <%= item.checkinLabel %> đến <%= item.checkoutLabel %></span>
+                </button>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+    </div>
+
+    <aside class="svc-order">
+      <span class="svc-kicker">Phiếu đặt nhanh</span>
+      <h2 style="margin:14px 0 8px;color:#102033;font-size:28px;letter-spacing:-.05em">Đặt dịch vụ</h2>
+      <p class="svc-muted">Chọn đúng phòng và dịch vụ, hệ thống sẽ tự tính tiền rồi cộng vào tổng giao dịch.</p>
+      <form method="post" action="/customer/services" id="svcOrderForm">
+        <div class="svc-field">
+          <label for="svcBooking">Booking và phòng</label>
+          <select id="svcBooking" name="booking_key" required <%= !payload.bookingOptions.length ? "disabled" : "" %>>
+            <option value="">Chọn booking đủ điều kiện</option>
+            <% payload.bookingOptions.forEach((item) => { %>
+              <option value="<%= item.optionKey %>">
+                <%= item.bookingCode || `GD-${item.transactionId}` %> · Phòng <%= item.roomNumber %> · <%= item.hotelName %> · nhận <%= item.checkinLabel %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="svc-field" style="margin-top:12px">
+          <label for="svcService">Dịch vụ</label>
+          <select id="svcService" name="service_id" required <%= !payload.catalog.length ? "disabled" : "" %>>
+            <option value="">Chọn dịch vụ</option>
+            <% payload.catalog.forEach((item) => { %>
+              <option value="<%= item.id %>" data-price="<%= item.giaDichVu %>" data-name="<%= item.tenDichVu %>"><%= item.tenDichVu %> · <%= item.giaDichVuFormatted %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="svc-field" style="margin-top:12px">
+          <label for="svcQty">Số lượng</label>
+          <input id="svcQty" name="quantity" type="number" min="1" max="20" value="1" required />
+          <div class="svc-help" id="svcQtyHelp">Số lượng từ 1 đến 20 cho mỗi lần đặt.</div>
+        </div>
+        <div class="svc-field" style="margin-top:12px">
+          <label for="svcNote">Ghi chú</label>
+          <textarea id="svcNote" name="note" maxlength="300" placeholder="Ví dụ: chuẩn bị sau 15:00, cần xe 7 chỗ..."></textarea>
+        </div>
+        <div class="svc-total-box">
+          <span>Tạm tính</span>
+          <strong id="svcTotal">0 đ</strong>
+          <p class="svc-help" id="svcPreview">Chọn dịch vụ để xem tạm tính.</p>
+        </div>
+        <button class="svc-button svc-button--primary" type="submit" <%= !payload.bookingOptions.length || !payload.catalog.length ? "disabled" : "" %>>Xác nhận đặt dịch vụ</button>
+      </form>
+    </aside>
+  </div>
+
+  <section class="svc-panel">
+    <div class="svc-panel-head">
+      <div>
+        <h2>Dịch vụ đã đặt</h2>
+        <p class="svc-muted">Có thể hủy dịch vụ khi chưa sử dụng và booking chưa tới ngày trả phòng.</p>
+      </div>
+      <span class="svc-chip"><%= payload.stats.cancellableCount %> có thể hủy</span>
+    </div>
+    <% if (!payload.serviceOrders.length) { %>
+      <div class="svc-empty">Bạn chưa đặt dịch vụ bổ sung nào cho các booking đang mở.</div>
+    <% } else { %>
+      <div class="svc-orders">
+        <% payload.serviceOrders.forEach((item) => { %>
+          <article class="svc-order-card">
+            <% if (item.imageUrl) { %>
+              <div class="svc-order-thumb">
+                <img src="<%= item.imageUrl %>" alt="<%= item.serviceName %>" onerror="this.parentElement.style.display='none'" />
+              </div>
+            <% } %>
+            <span class="svc-chip <%= statusClass(item.status) %>"><%= item.statusLabel %></span>
+            <h3><%= item.serviceName %></h3>
+            <p class="svc-muted"><%= item.bookingCode || `GD-${item.transactionId}` %> · Phòng <%= item.roomNumber || "chưa gán" %><%= item.hotelName ? ` · ${item.hotelName}` : "" %></p>
+            <div class="svc-lines">
+              <div class="svc-line"><span>Số lượng</span><strong><%= item.quantity %></strong></div>
+              <div class="svc-line"><span>Đơn giá</span><strong><%= item.unitPriceFormatted %></strong></div>
+              <div class="svc-line"><span>Ngày đặt</span><strong><%= item.createdAtLabel %></strong></div>
+              <div class="svc-line"><span>Hạn hủy</span><strong><%= item.checkoutLabel %></strong></div>
+            </div>
+            <% if (item.note) { %><p class="svc-muted">Ghi chú: <%= item.note %></p><% } %>
+            <strong class="svc-price"><%= item.amountFormatted %></strong>
+            <p class="svc-help"><%= item.cancelHint %></p>
+            <% if (item.cancelable) { %>
+              <form method="post" action="/customer/service-orders/<%= item.id %>/cancel" onsubmit="return confirm('Bạn có chắc muốn hủy dịch vụ bổ sung này?');">
+                <button class="svc-button svc-button--danger" type="submit">Hủy dịch vụ</button>
+              </form>
+            <% } %>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const money = (value) => new Intl.NumberFormat("vi-VN").format(value);
+  const serviceSelect = document.getElementById("svcService");
+  const bookingSelect = document.getElementById("svcBooking");
+  const quantityInput = document.getElementById("svcQty");
+  const total = document.getElementById("svcTotal");
+  const preview = document.getElementById("svcPreview");
+  const keyword = document.getElementById("svcKeyword");
+  const sort = document.getElementById("svcSort");
+  const grid = document.getElementById("svcCatalogGrid");
+  const cards = grid ? Array.from(grid.querySelectorAll("[data-service-card]")) : [];
+
+  function updateTotal() {
+    const option = serviceSelect?.selectedOptions?.[0];
+    const price = Number(option?.dataset?.price || 0);
+    const quantity = Math.max(1, Math.min(20, Number(quantityInput?.value || 1)));
+    if (quantityInput && Number(quantityInput.value || 0) !== quantity) quantityInput.value = String(quantity);
+    const amount = price * quantity;
+    if (total) total.textContent = money(amount) + " đ";
+    if (preview) {
+      const serviceName = option?.dataset?.name || "dịch vụ";
+      preview.textContent = price > 0 ? `${quantity} x ${serviceName}` : "Chọn dịch vụ để xem tạm tính.";
+    }
+  }
+
+  function selectService(serviceId) {
+    if (serviceSelect) {
+      serviceSelect.value = String(serviceId);
+    }
+    updateTotal();
+    cards.forEach((card) => card.classList.toggle("is-selected", String(card.dataset.serviceId) === String(serviceId)));
+  }
+
+  function applyCatalogFilter() {
+    if (!grid) return;
+    const text = String(keyword?.value || "").trim().toLowerCase();
+    const sorted = [...cards].sort((a, b) => {
+      const priceA = Number(a.dataset.price || 0);
+      const priceB = Number(b.dataset.price || 0);
+      const nameA = String(a.dataset.name || "");
+      const nameB = String(b.dataset.name || "");
+      if (sort?.value === "price_asc") return priceA - priceB;
+      if (sort?.value === "price_desc") return priceB - priceA;
+      if (sort?.value === "name") return nameA.localeCompare(nameB, "vi");
+      return Number(a.dataset.index || 0) - Number(b.dataset.index || 0);
+    });
+    sorted.forEach((card) => grid.appendChild(card));
+    cards.forEach((card) => {
+      const match = !text || String(card.dataset.name || "").includes(text);
+      card.style.display = match ? "" : "none";
+    });
+  }
+
+  document.querySelectorAll("[data-pick-service]").forEach((button) => {
+    button.addEventListener("click", () => selectService(button.getAttribute("data-pick-service")));
+  });
+
+  document.querySelectorAll("[data-pick-booking]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (bookingSelect) {
+        bookingSelect.value = String(button.getAttribute("data-pick-booking") || "");
+        bookingSelect.focus();
+      }
+    });
+  });
+
+  serviceSelect?.addEventListener("change", () => {
+    updateTotal();
+    cards.forEach((card) => card.classList.toggle("is-selected", String(card.dataset.serviceId) === String(serviceSelect.value)));
+  });
+  quantityInput?.addEventListener("input", updateTotal);
+  keyword?.addEventListener("input", applyCatalogFilter);
+  sort?.addEventListener("change", applyCatalogFilter);
+  updateTotal();
+  applyCatalogFilter();
+});
+</script>
+<%- include("../partials/footer") %>

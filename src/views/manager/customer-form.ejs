@@ -1,0 +1,239 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const detailCustomer = detail?.customer || null;
+  const hardDuplicateRows = typeof hardDuplicates !== "undefined" ? hardDuplicates : [];
+  const duplicateModeValue = typeof duplicateMode !== "undefined" ? duplicateMode : "";
+  const warningSuggestions = typeof duplicateSuggestions !== "undefined" ? duplicateSuggestions : [];
+  const duplicateSuggestionsList = warningSuggestions.length ? warningSuggestions : (detail?.duplicateSuggestions || []);
+  const formError = typeof errorMessage !== "undefined" ? errorMessage : "";
+  const success = typeof successMessage !== "undefined" ? successMessage : "";
+  const rawForm = typeof formData !== "undefined" ? formData : null;
+  const isEdit = mode === "edit" || Boolean(detailCustomer);
+  const rawCustomerId = rawForm ? String(rawForm.customer_id || "").trim() : "";
+  const parsedCustomerId = Number(rawCustomerId);
+  const formCustomerId = rawForm
+    ? (Number.isInteger(parsedCustomerId) && parsedCustomerId > 0 ? parsedCustomerId : detailCustomer?.id || "")
+    : (detailCustomer?.id || "");
+  const formValues = rawForm ? {
+    id: formCustomerId,
+    tenKh: rawForm.ten_kh || "",
+    sdt: rawForm.sdt || "",
+    email: rawForm.email || "",
+    cccd: rawForm.cccd || "",
+    diaChi: rawForm.dia_chi || "",
+    loaiKhach: rawForm.loai_khach || "CaNhan",
+    password: rawForm.password || ""
+  } : (detailCustomer || {
+    id: "",
+    tenKh: "",
+    sdt: "",
+    email: "",
+    cccd: "",
+    diaChi: "",
+    loaiKhach: "CaNhan",
+    password: ""
+  });
+%>
+
+<style>
+  .cust-edit {
+    --ink: #172033;
+    --muted: #667085;
+    --line: rgba(23, 32, 51, .10);
+    --panel: #ffffff;
+    --cyan: #00a6d6;
+    --mint: #19b879;
+    --sun: #f5b700;
+    --coral: #ff6b6b;
+    --berry: #d946ef;
+    min-height: calc(100vh - 84px);
+    position: relative;
+    padding: 24px 18px 54px;
+    color: var(--ink);
+    background:
+      linear-gradient(135deg, rgba(255, 107, 107, .10), transparent 32%),
+      linear-gradient(225deg, rgba(0, 166, 214, .12), transparent 38%),
+      repeating-linear-gradient(90deg, rgba(23, 32, 51, .035) 0 1px, transparent 1px 44px),
+      linear-gradient(180deg, #fffefa 0%, #f5fcff 48%, #fff8fb 100%);
+  }
+  .cust-edit::before { content: ""; position: absolute; inset: 0 0 auto; height: 9px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan), var(--berry)); }
+  .cust-shell { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+  .cust-hero,
+  .cust-panel {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 18px 44px rgba(23, 32, 51, .09);
+  }
+  .cust-hero { border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; gap: 18px; align-items: flex-end; flex-wrap: wrap; border-top: 5px solid var(--cyan); }
+  .cust-chip { display: inline-flex; border-radius: 8px; padding: 7px 10px; color: #087894; background: #effbff; border: 1px solid rgba(0,166,214,.22); font-size: 12px; font-weight: 900; letter-spacing: 0; text-transform: uppercase; }
+  .cust-hero h1 { margin: 14px 0 8px; max-width: 760px; font-size: 46px; line-height: 1; letter-spacing: 0; }
+  .cust-muted { color: var(--muted); font-size: 13px; line-height: 1.58; }
+  .cust-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .cust-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 8px; padding: 9px 14px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); text-decoration: none; font: inherit; font-size: 14px; font-weight: 850; cursor: pointer; }
+  .cust-button--primary { color: #fff; border-color: transparent; background: linear-gradient(135deg, #00a6d6, #19b879); box-shadow: 0 14px 28px rgba(0,166,214,.18); }
+  .cust-button--danger { color: #b42318; border-color: rgba(255,107,107,.28); background: #fff7f7; }
+  .cust-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+  .cust-panel { border-radius: 8px; padding: 20px; }
+  .cust-panel h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
+  .cust-alert { margin: 14px 0 0; border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(23,32,51,.10); font-size: 14px; font-weight: 800; line-height: 1.5; }
+  .cust-alert--error { color: #b42318; background: #fff4f4; border-color: rgba(255,107,107,.30); }
+  .cust-alert--success { color: #047857; background: #effcf6; border-color: rgba(25,184,121,.28); }
+  .cust-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 18px; }
+  .cust-field { display: grid; gap: 7px; }
+  .cust-field.is-wide { grid-column: 1 / -1; }
+  .cust-field label { color: #405066; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
+  .cust-field input,
+  .cust-field select { width: 100%; min-height: 42px; border-radius: 8px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); padding: 10px 12px; outline: none; font: inherit; }
+  .cust-field input:focus,
+  .cust-field select:focus { border-color: rgba(0,166,214,.55); box-shadow: 0 0 0 4px rgba(0,166,214,.12); }
+  .cust-status { display: inline-flex; align-items: center; border-radius: 8px; padding: 6px 9px; font-size: 12px; font-weight: 850; }
+  .cust-status--green { color: #047857; background: #effcf6; }
+  .cust-status--cyan { color: #087894; background: #effbff; }
+  .cust-status--sun { color: #8a5a00; background: #fff8d7; }
+  .cust-status--rose { color: #b42318; background: #fff4f4; }
+  .cust-status--slate { color: #475569; background: #f3f5f8; }
+  .cust-list { display: grid; gap: 10px; margin-top: 14px; }
+  .cust-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--coral); }
+  .cust-money { font-weight: 900; color: #047857; }
+  @media (max-width: 980px) { .cust-layout { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .cust-edit { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 36px; } .cust-field-grid { grid-template-columns: 1fr; } .cust-field.is-wide { grid-column: auto; } }
+</style>
+
+<main class="cust-edit">
+  <div class="cust-shell">
+    <section class="cust-hero">
+      <div>
+        <span class="cust-chip">Manager CRM</span>
+        <h1><%= isEdit ? "Sửa hồ sơ khách hàng" : "Thêm khách hàng mới" %></h1>
+        <p class="cust-muted">
+          <%= isEdit
+            ? `Đang xử lý hồ sơ #${formValues.id}. Trang riêng giúp sửa dữ liệu, đổi mật khẩu và kiểm tra trùng mềm rõ ràng hơn.`
+            : "Tạo hồ sơ khách và tài khoản đăng nhập tương ứng. Mật khẩu khi thêm mới phải có tối thiểu 6 ký tự như logic hệ thống cũ." %>
+        </p>
+      </div>
+      <div class="cust-actions">
+        <a class="cust-button" href="/manager/customers">Danh sách</a>
+        <% if (isEdit && formValues.id) { %><a class="cust-button" href="/manager/customers/<%= formValues.id %>">Chi tiết</a><% } %>
+      </div>
+    </section>
+
+    <section class="cust-layout">
+      <section class="cust-panel">
+        <h2><%= isEdit ? "Thông tin cần cập nhật" : "Thông tin hồ sơ" %></h2>
+        <p class="cust-muted">Email, SĐT và CCCD là bộ khóa định danh; khi sửa một hồ sơ hiện hữu, hệ thống tự loại trừ chính khách hàng đó khỏi kiểm tra trùng.</p>
+        <% if (formError) { %><div class="cust-alert cust-alert--error"><%= formError %></div><% } %>
+        <% if (success) { %><div class="cust-alert cust-alert--success"><%= success %></div><% } %>
+        <% if (duplicateModeValue === "hard_duplicate" && hardDuplicateRows.length) { %>
+          <div class="cust-list">
+            <% hardDuplicateRows.forEach((item) => { %>
+              <article class="cust-insight">
+                <span class="cust-status cust-status--rose">Trùng cứng</span>
+                <h3 style="margin:10px 0 4px"><a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a></h3>
+                <p class="cust-muted"><%= item.email || "Chưa email" %> · <%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></p>
+                <div class="cust-actions">
+                  <a class="cust-button cust-button--primary" href="/manager/customers/<%= item.id %>/edit">Cập nhật hồ sơ cũ</a>
+                  <a class="cust-button" href="/manager/customers/<%= item.id %>">Xem chi tiết</a>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+        <form method="post" action="/manager/customers" autocomplete="off" novalidate>
+          <input type="hidden" name="customer_id" value="<%= formValues.id || "" %>" autocomplete="off" />
+          <div class="cust-field-grid">
+            <div class="cust-field">
+              <label for="customer_id_display">Mã KH</label>
+              <input id="customer_id_display" value="<%= formValues.id || "Tự sinh khi tạo mới" %>" disabled autocomplete="off" />
+            </div>
+            <div class="cust-field">
+              <label for="ten_kh">Họ tên</label>
+              <input id="ten_kh" name="ten_kh" required value="<%= formValues.tenKh || "" %>" autocomplete="off" />
+            </div>
+            <div class="cust-field">
+              <label for="sdt">SĐT</label>
+              <input id="sdt" name="sdt" required value="<%= formValues.sdt || "" %>" autocomplete="off" />
+            </div>
+            <div class="cust-field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" required value="<%= formValues.email || "" %>" autocomplete="off" />
+            </div>
+            <div class="cust-field">
+              <label for="cccd">CCCD</label>
+              <input id="cccd" name="cccd" required value="<%= formValues.cccd || "" %>" autocomplete="off" />
+            </div>
+            <div class="cust-field">
+              <label for="loai_khach">Loại khách</label>
+              <select id="loai_khach" name="loai_khach">
+                <% (payload.customerTypeOptions || []).filter((item) => item.value !== "all").forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= (formValues.loaiKhach || "CaNhan") === option.value ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="cust-field">
+              <label for="password">Mật khẩu</label>
+              <input id="password" name="password" type="password" placeholder="<%= isEdit ? "Để trống nếu không đổi" : "Tối thiểu 6 ký tự" %>" autocomplete="new-password" />
+            </div>
+            <div class="cust-field is-wide">
+              <label for="dia_chi">Địa chỉ</label>
+              <input id="dia_chi" name="dia_chi" value="<%= formValues.diaChi || "" %>" autocomplete="off" />
+            </div>
+          </div>
+          <div class="cust-actions">
+            <button class="cust-button cust-button--primary" type="submit"><%= isEdit ? "Cập nhật hồ sơ" : "Tạo khách hàng" %></button>
+            <a class="cust-button" href="/manager/customers">Hủy</a>
+          </div>
+        </form>
+      </section>
+
+      <aside class="cust-panel">
+        <h2>Ngữ cảnh</h2>
+        <% if (detailCustomer) { %>
+          <div class="cust-list">
+            <article class="cust-insight">
+              <span class="cust-status cust-status--<%= detailCustomer.ekycMeta.tone %>"><%= detailCustomer.ekycMeta.label %></span>
+              <h3 style="margin:10px 0 4px"><%= detailCustomer.tenKh %></h3>
+              <p class="cust-muted"><%= detailCustomer.email || "Chưa email" %> · <%= detailCustomer.sdt || "Chưa SĐT" %> · <%= detailCustomer.cccd || "Chưa CCCD" %></p>
+              <strong class="cust-money"><%= detailCustomer.totalSpentFormatted %></strong>
+              <p class="cust-muted"><%= detailCustomer.transactionCount %> giao dịch · <%= detailCustomer.feedbackCount %> phản hồi</p>
+            </article>
+          </div>
+        <% } else { %>
+          <p class="cust-muted">Sau khi tạo, hệ thống chuyển sang trang chi tiết để bạn kiểm tra tài khoản, audit log và dữ liệu liên quan.</p>
+        <% } %>
+
+        <% if (duplicateSuggestionsList.length) { %>
+          <h2 style="margin-top:20px"><%= duplicateModeValue === "soft_duplicate" ? "Cảnh báo trùng mềm" : "Gợi ý trùng mềm" %></h2>
+          <div class="cust-list">
+            <% duplicateSuggestionsList.forEach((item) => { %>
+              <article class="cust-insight">
+                <span class="cust-status cust-status--<%= item.meta.tone %>"><%= item.meta.label %> · <%= item.scoreLabel %></span>
+                <h3 style="margin:10px 0 4px"><a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a></h3>
+                <p class="cust-muted"><%= item.email || "Chưa email" %> · <%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></p>
+                <p class="cust-muted"><%= (item.reasons || []).join(", ") %></p>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+        <% if (duplicateModeValue === "soft_duplicate") { %>
+          <form method="post" action="/manager/customers" autocomplete="off">
+            <input type="hidden" name="ten_kh" value="<%= formValues.tenKh || "" %>" />
+            <input type="hidden" name="sdt" value="<%= formValues.sdt || "" %>" />
+            <input type="hidden" name="email" value="<%= formValues.email || "" %>" />
+            <input type="hidden" name="cccd" value="<%= formValues.cccd || "" %>" />
+            <input type="hidden" name="dia_chi" value="<%= formValues.diaChi || "" %>" />
+            <input type="hidden" name="loai_khach" value="<%= formValues.loaiKhach || "CaNhan" %>" />
+            <input type="hidden" name="password" value="<%= formValues.password || "" %>" />
+            <input type="hidden" name="force_create" value="1" />
+            <div class="cust-actions">
+              <a class="cust-button" href="/manager/customers/new">Quay lại sửa dữ liệu</a>
+              <button class="cust-button cust-button--primary" type="submit">Vẫn tạo khách hàng mới</button>
+            </div>
+          </form>
+        <% } %>
+      </aside>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

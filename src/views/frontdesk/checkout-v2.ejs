@@ -1,0 +1,342 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const tx = payload?.transaction || null;
+  const checkout = payload?.checkout || null;
+  const rooms = payload?.rooms || [];
+  const preview = checkout?.preview || null;
+  const selectedId = Number(selectedRoomId || checkout?.selectedRoomId || preview?.room?.maPhong || 0);
+  const money = preview?.summary || null;
+  const transfer = preview?.paymentTransfer || null;
+  const promotion = preview?.promotion || null;
+%>
+
+<style>
+  .co-shell{
+    --co-ink:#102033;--co-muted:#667085;--co-card:rgba(255,255,255,.80);--co-line:rgba(16,32,51,.10);
+    --co-blue:#0ea5e9;--co-teal:#14b8a6;--co-lime:#a3e635;--co-rose:#fb7185;--co-amber:#f59e0b;--co-violet:#8b5cf6;
+    --co-shadow:0 24px 70px rgba(15,23,42,.16);
+    min-height:calc(100vh - 84px);position:relative;isolation:isolate;overflow:hidden;padding:34px 18px 56px;color:var(--co-ink);
+    background:
+      radial-gradient(circle at 6% 8%,rgba(20,184,166,.30),transparent 31%),
+      radial-gradient(circle at 86% 10%,rgba(139,92,246,.22),transparent 34%),
+      radial-gradient(circle at 50% 104%,rgba(163,230,53,.20),transparent 42%),
+      linear-gradient(135deg,#fbfffb 0%,#eaf8ff 44%,#fff8fb 100%);
+  }
+  .co-shell::before,.co-shell::after{content:"";position:absolute;width:520px;height:520px;border-radius:999px;z-index:-1;pointer-events:none;opacity:.44;animation:co-float 12s ease-in-out infinite alternate}
+  .co-shell::before{right:-160px;top:-240px;background:conic-gradient(from 160deg,rgba(14,165,233,.36),rgba(20,184,166,.30),rgba(163,230,53,.26),rgba(139,92,246,.24),rgba(14,165,233,.36))}
+  .co-shell::after{left:-220px;bottom:-260px;background:conic-gradient(from 20deg,rgba(251,113,133,.26),rgba(245,158,11,.24),rgba(20,184,166,.26),rgba(14,165,233,.22),rgba(251,113,133,.26));animation-delay:-4s}
+  .co-wrap{max-width:1220px;margin:0 auto;position:relative}
+  .co-hero{display:grid;grid-template-columns:minmax(0,1.15fr) 390px;gap:22px;margin-bottom:22px}
+  .co-card,.co-hero-main,.co-orbit,.co-stat,.co-room,.co-preview{border:1px solid var(--co-line);background:var(--co-card);box-shadow:var(--co-shadow);backdrop-filter:blur(24px)}
+  .co-hero-main{position:relative;overflow:hidden;border-radius:34px;min-height:320px;padding:34px}
+  .co-hero-main::before{content:"";position:absolute;inset:-1px;background:linear-gradient(120deg,rgba(255,255,255,.70),transparent 28%),radial-gradient(circle at 88% 18%,rgba(20,184,166,.24),transparent 32%);pointer-events:none}
+  .co-eyebrow{display:inline-flex;align-items:center;gap:8px;position:relative;z-index:1;border-radius:999px;padding:7px 12px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.20);color:#6d28d9;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .co-dot{width:8px;height:8px;border-radius:999px;background:var(--co-teal);box-shadow:0 0 0 7px rgba(20,184,166,.12);animation:co-pulse 1.8s ease-in-out infinite}
+  .co-hero h1{position:relative;z-index:1;max-width:760px;margin:24px 0 14px;color:var(--co-ink);font-size:clamp(38px,5.7vw,70px);line-height:.92;letter-spacing:-.07em}
+  .co-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#7c3aed 45%,#0f766e);-webkit-background-clip:text;background-clip:text}
+  .co-lead{position:relative;z-index:1;max-width:720px;margin:0;color:var(--co-muted);font-size:16px;line-height:1.72}
+  .co-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+  .co-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;padding:10px 17px;color:var(--co-ink);text-decoration:none;font-size:14px;font-weight:900;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.76);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .co-button:hover{transform:translateY(-2px);border-color:rgba(14,165,233,.32);box-shadow:0 18px 42px rgba(14,165,233,.16)}
+  .co-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 18px 38px rgba(20,184,166,.22)}
+  .co-button--danger{color:#fff;border-color:transparent;background:linear-gradient(135deg,#fb7185,#e11d48);box-shadow:0 18px 38px rgba(251,113,133,.22)}
+  .co-orbit{position:relative;overflow:hidden;border-radius:34px;min-height:320px;background:linear-gradient(160deg,rgba(255,255,255,.84),rgba(239,246,255,.66))}
+  .co-orbit-stage{position:absolute;inset:24px;border-radius:32px;background:linear-gradient(145deg,rgba(15,23,42,.88),rgba(49,46,129,.70));overflow:hidden}
+  .co-orbit-stage::before{content:"";position:absolute;inset:24px;border:1px dashed rgba(226,232,240,.24);border-radius:999px;animation:co-spin 18s linear infinite}
+  .co-orbit-stage::after{content:"";position:absolute;width:160px;height:160px;left:calc(50% - 80px);top:calc(50% - 80px);border-radius:42px;background:linear-gradient(135deg,rgba(103,232,249,.92),rgba(196,181,253,.84));box-shadow:0 24px 70px rgba(139,92,246,.30);transform:rotate(14deg);animation:co-breathe 4.2s ease-in-out infinite}
+  .co-word{position:absolute;z-index:2;border-radius:999px;padding:9px 12px;color:#eff6ff;background:rgba(15,23,42,.50);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);font-size:12px;font-weight:1000}
+  .co-word:nth-child(1){left:28px;top:36px;animation:co-drift-a 5.5s ease-in-out infinite}.co-word:nth-child(2){right:34px;top:88px;animation:co-drift-b 6s ease-in-out infinite}.co-word:nth-child(3){left:46px;bottom:62px;animation:co-drift-b 5.8s ease-in-out infinite reverse}.co-word:nth-child(4){right:42px;bottom:42px;animation:co-drift-a 6.4s ease-in-out infinite reverse}
+  .co-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent}.co-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}.co-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
+  .co-card{border-radius:30px;padding:22px;margin-bottom:18px}.co-card h2{margin:0 0 8px;color:var(--co-ink);font-size:24px;letter-spacing:-.04em}.co-muted{color:var(--co-muted);font-size:13px;line-height:1.55}
+  .co-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.co-field{display:flex;flex-direction:column;gap:6px;margin-top:10px}.co-field label{font-size:13px;font-weight:900;color:#344054}.co-field input,.co-field select{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.78);color:var(--co-ink);font:inherit;outline:none}.co-field input:focus,.co-field select:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}.co-field input[disabled]{background:rgba(255,255,255,.54);color:var(--co-muted)}
+  .co-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.co-stat{border-radius:22px;padding:16px;background:rgba(255,255,255,.58)}.co-stat strong{display:block;font-size:28px;line-height:1;color:var(--co-ink);letter-spacing:-.05em}.co-stat span{display:block;margin-top:8px;color:var(--co-muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .co-room{grid-column:span 4;position:relative;overflow:hidden;border-radius:26px;padding:18px;background:rgba(255,255,255,.70)}.co-room.is-selected{outline:3px solid rgba(20,184,166,.22);border-color:rgba(20,184,166,.42)}.co-room h3{margin:12px 0 8px;font-size:22px;letter-spacing:-.04em}.co-room p{margin:0;color:var(--co-muted);font-size:13px;line-height:1.5}.co-radio{display:flex;align-items:center;gap:8px;font-weight:1000;color:#0f766e}.co-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;letter-spacing:.04em}.co-badge--ai{background:rgba(139,92,246,.12);color:#6d28d9}.co-badge--money{background:rgba(245,158,11,.13);color:#b45309}
+  .co-preview{border-radius:30px;padding:22px;background:rgba(255,255,255,.76)}.co-preview-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.co-preview h3{margin:0;font-size:26px;letter-spacing:-.05em}.co-table-wrap{overflow:auto;border:1px solid var(--co-line);border-radius:22px;background:rgba(255,255,255,.58);margin-top:14px}.co-table{width:100%;border-collapse:collapse;min-width:760px;font-size:14px}.co-table th,.co-table td{padding:13px;border-bottom:1px solid rgba(16,32,51,.08);text-align:left}.co-table th{background:rgba(255,255,255,.68);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#344054}.co-table tr:last-child td{border-bottom:0}
+  .co-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}.co-summary .co-stat:last-child{grid-column:span 2}.co-total{font-size:32px!important;color:#0f766e!important}
+  .co-pay{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;margin-top:16px}.co-qr{border-radius:24px;padding:16px;border:1px solid rgba(14,165,233,.16);background:linear-gradient(135deg,rgba(255,255,255,.78),rgba(236,253,245,.62));display:grid;grid-template-columns:112px 1fr;gap:14px}.co-qr img{width:112px;height:112px;border-radius:16px;border:1px solid rgba(16,32,51,.10);background:#fff}.co-bank-grid{display:grid;gap:8px}.co-bank-item{border-radius:14px;padding:9px 11px;background:rgba(255,255,255,.64);border:1px solid rgba(16,32,51,.08)}.co-bank-item span{display:block;font-size:11px;color:var(--co-muted);text-transform:uppercase;letter-spacing:.08em}.co-bank-item strong{display:block;color:var(--co-ink);word-break:break-word}.co-empty{border:1px dashed rgba(16,32,51,.14);border-radius:22px;padding:22px;background:rgba(255,255,255,.58);color:var(--co-muted)}
+  .input-error{border-color:rgba(251,113,133,.72)!important;background:rgba(255,241,242,.86)!important}.co-error-msg{font-size:12px;color:#be123c;min-height:16px}
+  @keyframes co-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(32px,24px,0) rotate(16deg)}}@keyframes co-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}@keyframes co-spin{to{transform:rotate(360deg)}}@keyframes co-breathe{0%,100%{transform:rotate(14deg) scale(1);border-radius:42px}50%{transform:rotate(22deg) scale(1.06);border-radius:64px}}@keyframes co-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}@keyframes co-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
+  @media(max-width:1080px){.co-hero,.co-pay{grid-template-columns:1fr}.co-room{grid-column:span 6}.co-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.co-summary .co-stat:last-child{grid-column:1/-1}}@media(max-width:760px){.co-shell{padding:20px 12px 42px}.co-hero-main{min-height:auto;padding:24px}.co-hero h1{font-size:42px}.co-row{grid-template-columns:1fr}.co-room{grid-column:1/-1}.co-qr{grid-template-columns:1fr}.co-summary{grid-template-columns:1fr}.co-summary .co-stat:last-child{grid-column:auto}}
+</style>
+
+<main class="co-shell">
+  <div class="co-wrap">
+    <% if (notice?.error) { %><div class="co-alert co-alert--error"><%= notice.error %></div><% } %>
+    <% if (notice?.success) { %><div class="co-alert co-alert--success"><%= notice.success %></div><% } %>
+
+    <section class="co-hero">
+      <div class="co-hero-main">
+        <div class="co-eyebrow"><span class="co-dot"></span> Check-out V2 · Lễ tân</div>
+        <h1>Trả phòng <span>theo từng phòng.</span></h1>
+        <p class="co-lead">Bám UC PHP cũ: tìm giao dịch, chọn một phòng CheckedIn, tải preview tiền phòng, dịch vụ, bồi thường, khuyến mãi, VietQR rồi xác nhận đã thanh toán.</p>
+        <div class="co-actions">
+          <a class="co-button co-button--primary" href="/frontdesk">Quay lại dashboard</a>
+          <a class="co-button" href="/service?from=frontdesk">Đặt dịch vụ</a>
+          <a class="co-button" href="/frontdesk/checkin">Check-in</a>
+        </div>
+      </div>
+      <aside class="co-orbit" aria-label="Minh họa check-out">
+        <div class="co-orbit-stage">
+          <span class="co-word">CheckedIn</span>
+          <span class="co-word">Preview</span>
+          <span class="co-word">VietQR</span>
+          <span class="co-word">Paid</span>
+        </div>
+      </aside>
+    </section>
+
+    <form method="post" id="formSearch" class="co-card">
+      <h2>Tìm kiếm giao dịch</h2>
+      <p class="co-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn. Chỉ nhập số, giống rule của hệ thống PHP cũ.</p>
+      <div class="co-row" style="grid-template-columns:2fr 1fr">
+        <div class="co-field">
+          <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
+          <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 168 hoặc 22653661123" />
+          <div class="co-error-msg" id="err_search"></div>
+        </div>
+        <div class="co-field" style="justify-content:flex-end">
+          <div class="co-actions" style="margin-top:0">
+            <button class="co-button" type="submit" name="btn_action" value="cancel">Làm mới</button>
+            <button class="co-button co-button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <% if (tx && checkout) { %>
+      <section class="co-card">
+        <h2>Thông tin giao dịch</h2>
+        <div class="co-row">
+          <div class="co-field"><label>Mã giao dịch</label><input value="<%= tx.maGiaoDich %>" disabled /></div>
+          <div class="co-field"><label>Trạng thái giao dịch</label><input value="<%= tx.trangThai %>" disabled /></div>
+          <div class="co-field"><label>Tổng tiền hiện tại</label><input value="<%= tx.tongTienFormatted %>" disabled /></div>
+        </div>
+        <div class="co-row">
+          <div class="co-field"><label>Khách hàng / Trưởng đoàn</label><input value="<%= checkout.leaderName || "Khách vãng lai" %>" disabled /></div>
+          <div class="co-field"><label>CMND/CCCD</label><input value="<%= checkout.leaderCccd || "" %>" disabled /></div>
+          <div class="co-field"><label>Cơ sở</label><input value="<%= checkout.hotelLabel %>" disabled /></div>
+        </div>
+        <div class="co-grid" style="margin-top:14px">
+          <div class="co-stat" style="grid-column:span 4"><strong><%= checkout.counts.checkedIn %></strong><span>Phòng CheckedIn</span></div>
+          <div class="co-stat" style="grid-column:span 4"><strong><%= checkout.counts.checkedOut %></strong><span>Đã check-out</span></div>
+          <div class="co-stat" style="grid-column:span 4"><strong><%= checkout.counts.booked %></strong><span>Còn booked</span></div>
+        </div>
+      </section>
+
+      <form method="post" id="formRoomPicker" class="co-card">
+        <input type="hidden" name="btn_action" value="load_room" />
+        <input type="hidden" name="search_keyword" value="<%= keyword || tx.maGiaoDich %>" />
+        <input type="hidden" name="ma_gd" value="<%= tx.maGiaoDich %>" />
+        <h2>Danh sách phòng đang ở</h2>
+        <p class="co-muted">Chọn một phòng để tải preview chi phí. Chỉ phòng `CheckedIn` được phép check-out.</p>
+        <div class="co-grid">
+          <% rooms.forEach((room) => { %>
+            <label class="co-room <%= selectedId === room.maPhong ? "is-selected" : "" %>">
+              <span class="co-radio"><input type="radio" name="selected_room" value="<%= room.maPhong %>" <%= selectedId === room.maPhong ? "checked" : "" %> /> Chọn phòng</span>
+              <h3>P<%= room.soPhong %></h3>
+              <p><strong><%= room.hotelName %></strong> · <%= room.loaiPhong %></p>
+              <p>Ngày nhận: <%= room.ngayCheckInLabel || room.ngayNhanLabel %></p>
+              <p>Ngày trả dự kiến: <%= room.ngayTraLabel %></p>
+              <p>Tiền phòng: <strong><%= room.thanhTienFormatted %></strong></p>
+              <span class="co-badge"><%= room.trangThai %></span>
+            </label>
+          <% }) %>
+        </div>
+        <div class="co-actions">
+          <button class="co-button co-button--primary" type="submit">Tải preview phòng</button>
+        </div>
+      </form>
+
+      <section class="co-card">
+        <h2>Chi tiết phòng & chi phí</h2>
+        <% if (!preview) { %>
+          <div class="co-empty">Chưa có phòng nào được chọn. Hãy chọn một phòng ở danh sách trên để tải preview check-out.</div>
+        <% } else { %>
+          <div class="co-preview">
+            <div class="co-preview-head">
+              <div>
+                <span class="co-badge">Phòng CheckedIn</span>
+                <h3>P<%= preview.room.soPhong %> · <%= preview.room.loaiPhong %></h3>
+                <p class="co-muted"><%= preview.room.hotelLabel %> · <%= preview.room.conditionLabel %></p>
+              </div>
+              <div class="co-stat" style="min-width:230px"><strong class="co-total"><%= money.totalFormatted %></strong><span>Tổng phải thu</span></div>
+            </div>
+
+            <div class="co-row" style="margin-top:10px">
+              <div class="co-field"><label>Ngày nhận</label><input value="<%= preview.room.ngayCheckInLabel || preview.room.ngayNhanLabel %>" disabled /></div>
+              <div class="co-field"><label>Ngày trả dự kiến</label><input value="<%= preview.room.ngayTraLabel %>" disabled /></div>
+              <div class="co-field"><label>Số khách</label><input value="<%= preview.room.soNguoi %>" disabled /></div>
+            </div>
+
+            <% if (preview.services.length) { %>
+              <div class="co-table-wrap">
+                <table class="co-table">
+                  <thead><tr><th>Dịch vụ</th><th>Nguồn</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th><th>Ghi chú</th></tr></thead>
+                  <tbody>
+                    <% preview.services.forEach((service) => { %>
+                      <tr>
+                        <td><strong><%= service.tenDichVu %></strong></td>
+                        <td><span class="co-badge <%= service.source === "ai_preselect" ? "co-badge--ai" : "" %>"><%= service.sourceLabel %></span></td>
+                        <td><%= service.soLuong %></td>
+                        <td><%= service.giaBanFormatted %></td>
+                        <td><%= service.thanhTienFormatted %></td>
+                        <td><%= service.cleanNote || "" %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            <% } else { %>
+              <div class="co-empty" style="margin-top:14px">Phòng này chưa sử dụng dịch vụ nào.</div>
+            <% } %>
+
+            <div class="co-summary">
+              <div class="co-stat"><strong><%= money.roomFeeFormatted %></strong><span>Tiền phòng</span></div>
+              <div class="co-stat"><strong><%= money.serviceFeeFormatted %></strong><span>Dịch vụ</span></div>
+              <div class="co-stat"><strong><%= money.damageFeeFormatted %></strong><span>Bồi thường</span></div>
+              <div class="co-stat"><strong>-<%= money.discountFeeFormatted %></strong><span><%= promotion?.id ? promotion.label : "Khuyến mãi" %></span></div>
+              <% if (money.depositCredit > 0) { %>
+                <div class="co-stat"><strong>-<%= money.depositCreditFormatted %></strong><span>Cọc SePay đã thu</span></div>
+              <% } %>
+              <div class="co-stat"><strong class="co-total"><%= money.totalFormatted %></strong><span>Tổng thanh toán</span></div>
+            </div>
+
+            <div class="co-pay">
+              <form method="post" id="formCheckout" class="co-card" style="box-shadow:none;margin:0;background:rgba(255,255,255,.52)">
+                <input type="hidden" name="btn_action" value="checkout" />
+                <input type="hidden" name="search_keyword" value="<%= keyword || tx.maGiaoDich %>" />
+                <input type="hidden" name="ma_gd" value="<%= tx.maGiaoDich %>" />
+                <input type="hidden" name="room_id" value="<%= preview.room.maPhong %>" />
+                <h2>Thanh toán</h2>
+                <div class="co-row" style="grid-template-columns:1fr 1fr">
+                  <div class="co-field">
+                    <label>Phương thức thanh toán</label>
+                    <select name="payment_method" id="payment_method">
+                      <option value="">-- Chọn phương thức --</option>
+                      <option value="cash">Tiền mặt</option>
+                      <option value="transfer">Chuyển khoản</option>
+                      <option value="card">Thẻ POS</option>
+                    </select>
+                  </div>
+                  <div class="co-field">
+                    <label>Trạng thái thanh toán</label>
+                    <select name="payment_status" id="payment_status">
+                      <option value="unpaid">Chưa thanh toán</option>
+                      <option value="paid">Đã thanh toán</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="co-field">
+                  <label>Ghi chú thêm</label>
+                  <input name="damage_note" placeholder="VD: khách đồng ý bồi thường hư hại nhẹ" />
+                </div>
+                <div class="co-actions">
+                  <button class="co-button co-button--danger" type="submit" name="btn_action" value="cancel" onclick="return confirm('Bạn chắc chắn muốn hủy tiến trình check-out?');">Hủy thao tác</button>
+                  <button class="co-button co-button--primary" type="submit" name="btn_action" value="checkout" onclick="return confirm('Xác nhận thanh toán và hoàn tất trả phòng này?');">Hoàn tất Check-out phòng này</button>
+                </div>
+              </form>
+
+              <aside class="co-qr" id="bankTransferPanel">
+                <% if (transfer?.qrImageUrl) { %>
+                  <img id="paymentQrImage" src="<%= transfer.qrImageUrl %>" alt="QR thanh toán VietQR" />
+                <% } %>
+                <div>
+                  <span class="co-badge co-badge--money">VietQR checkout</span>
+                  <div class="co-bank-grid" style="margin-top:10px">
+                    <div class="co-bank-item"><span>Ngân hàng</span><strong><%= transfer?.bankName || "MB Bank" %></strong></div>
+                    <div class="co-bank-item"><span>Số tài khoản</span><strong><%= transfer?.accountNo || "" %></strong></div>
+                    <div class="co-bank-item"><span>Chủ tài khoản</span><strong><%= transfer?.accountName || "" %></strong></div>
+                    <div class="co-bank-item"><span>Nội dung CK</span><strong><%= transfer?.content || "" %></strong></div>
+                  </div>
+                  <p class="co-muted"><%= transfer?.instructions || "Chọn Chuyển khoản để dùng QR động theo số tiền checkout." %></p>
+                </div>
+              </aside>
+            </div>
+          </div>
+        <% } %>
+      </section>
+    <% } else { %>
+      <section class="co-card">
+        <h2>Chưa có giao dịch nào được chọn</h2>
+        <div class="co-empty">Vui lòng tìm kiếm mã giao dịch hoặc CMND/CCCD ở bước trên.</div>
+      </section>
+    <% } %>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const formSearch = document.getElementById("formSearch");
+  const searchInput = document.getElementById("search_keyword");
+  const errSearch = document.getElementById("err_search");
+  const formRoomPicker = document.getElementById("formRoomPicker");
+  const formCheckout = document.getElementById("formCheckout");
+  const paymentMethod = document.getElementById("payment_method");
+  const qrPanel = document.getElementById("bankTransferPanel");
+
+  function setSearchError(message) {
+    if (searchInput) searchInput.classList.add("input-error");
+    if (errSearch) errSearch.textContent = message;
+  }
+
+  function clearSearchError() {
+    if (searchInput) searchInput.classList.remove("input-error");
+    if (errSearch) errSearch.textContent = "";
+  }
+
+  function validateSearch(fromSubmit) {
+    const value = (searchInput?.value || "").trim();
+    clearSearchError();
+    if (!value) {
+      if (fromSubmit) setSearchError("Vui lòng nhập mã giao dịch hoặc CMND/CCCD.");
+      return fromSubmit ? false : true;
+    }
+    if (!/^\d+$/.test(value)) {
+      setSearchError("Chỉ được nhập số.");
+      return false;
+    }
+    return true;
+  }
+
+  function updateQrState() {
+    if (!qrPanel || !paymentMethod) return;
+    qrPanel.style.opacity = paymentMethod.value === "transfer" ? "1" : ".38";
+  }
+
+  searchInput?.addEventListener("input", () => validateSearch(false));
+  searchInput?.addEventListener("blur", () => validateSearch(false));
+  paymentMethod?.addEventListener("change", updateQrState);
+  updateQrState();
+
+  formSearch?.addEventListener("submit", function (event) {
+    if ((event.submitter?.value || "") !== "search") return;
+    if (!validateSearch(true)) event.preventDefault();
+  });
+
+  formRoomPicker?.addEventListener("submit", function (event) {
+    const selected = formRoomPicker.querySelector('input[name="selected_room"]:checked');
+    if (!selected) {
+      event.preventDefault();
+      alert("Vui lòng chọn một phòng để tải preview.");
+    }
+  });
+
+  formCheckout?.addEventListener("submit", function (event) {
+    if ((event.submitter?.value || "") !== "checkout") return;
+    const method = formCheckout.querySelector('[name="payment_method"]');
+    const status = formCheckout.querySelector('[name="payment_status"]');
+    if (!method || !method.value) {
+      event.preventDefault();
+      alert("Vui lòng chọn phương thức thanh toán.");
+      return;
+    }
+    if (!status || status.value !== "paid") {
+      event.preventDefault();
+      alert('Vui lòng chọn trạng thái "Đã thanh toán" trước khi hoàn tất.');
+    }
+  });
+});
+</script>
+
+<%- include("../partials/footer") %>

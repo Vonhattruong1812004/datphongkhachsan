@@ -1,0 +1,51 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Admin Users</div>
+    <h2>Tao va quan ly tai khoan / phan quyen</h2>
+    <form method="post" action="/admin/users">
+      <div class="field-grid">
+        <div class="field"><label>Ma user (bo trong de tao moi)</label><input name="user_id" /></div>
+        <div class="field"><label>Ho ten</label><input name="ho_ten" required /></div>
+        <div class="field"><label>Username</label><input name="username" required /></div>
+        <div class="field"><label>Password</label><input name="password" value="Abc@123" /></div>
+        <div class="field"><label>Email</label><input name="email" required /></div>
+        <div class="field"><label>SDT</label><input name="sdt" required /></div>
+        <div class="field"><label>Role</label><input name="vai_tro" value="2" list="role-options" required /></div>
+        <div class="field"><label>Trang thai</label><input name="trang_thai" value="HoatDong" /></div>
+        <div class="field"><label>CCCD (neu role khach hang)</label><input name="cccd" /></div>
+      </div>
+      <div class="nav-links" style="margin-top:16px">
+        <button class="button button--primary" type="submit">Luu user</button>
+        <a class="chip" href="/admin/diagnostics">Diagnostics</a>
+        <a class="chip" href="/admin/backups">Backups</a>
+        <a class="chip" href="/admin/restore">Restore</a>
+      </div>
+    </form>
+    <datalist id="role-options">
+      <% payload.roles.forEach((role) => { %>
+        <option value="<%= role.id %>"><%= role.tenVaiTro %></option>
+      <% }) %>
+    </datalist>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Danh sach user</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.users.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge"><%= item.trangThai %></span>
+          <h3><%= item.username %></h3>
+          <p><%= item.tenVaiTro || `Role ${item.maVaiTro}` %></p>
+          <p class="muted"><%= item.tenKh || item.tenNv || "Chua lien ket" %></p>
+          <p class="muted"><%= item.emailKh || item.emailNv || "" %> · <%= item.sdtKh || item.sdtNv || "" %></p>
+          <div class="nav-links" style="margin-top:12px">
+            <a class="chip" href="/api/admin/users">API</a>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

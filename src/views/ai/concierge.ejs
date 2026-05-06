@@ -1,0 +1,44 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+
+<main class="container">
+  <section class="panel panel--soft">
+    <div class="section-eyebrow">AI Concierge</div>
+    <h1>Trợ lý đặt phòng đã chuyển thành chat bubble thông minh.</h1>
+    <p class="muted">
+      AI Concierge hiện đã được đưa về chung một giao diện với toàn bộ website: nằm ở góc dưới bên phải, mở lên như một hộp chat,
+      để gợi ý phòng, giải thích booking và dẫn khách sang các CTA phù hợp mà không cắt đứt hành trình đang xem.
+    </p>
+    <div class="nav-links" style="margin-top:18px;">
+      <button class="button button--primary" type="button" id="open-ai-widget">Mở AI Concierge</button>
+      <a class="chip" href="/booking/search">Tìm phòng thủ công</a>
+      <a class="chip" href="/">Về trang chủ</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Cải tiến mới</div>
+    <div class="dashboard-grid">
+      <article class="dashboard-card">
+        <strong>Bubble chat</strong>
+        <p class="muted">Nằm cố định ở góc phải dưới, đồng nhất trải nghiệm trên toàn site.</p>
+      </article>
+      <article class="dashboard-card">
+        <strong>AI follow-up</strong>
+        <p class="muted">Sau mỗi phản hồi, AI có thêm gợi ý tiếp nối để khách đi tiếp tự nhiên hơn.</p>
+      </article>
+      <article class="dashboard-card">
+        <strong>Zalo support</strong>
+        <p class="muted">Có nút liên hệ nhanh với Zalo `0333204860` như các website vận hành thực tế.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script>
+  document.getElementById("open-ai-widget")?.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("abc:ai-widget-open"));
+  });
+</script>
+
+<%- include("../partials/footer") %>

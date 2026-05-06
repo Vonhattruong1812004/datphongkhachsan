@@ -1,0 +1,13 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Application Error</div>
+    <h2><%= title %></h2>
+    <p><%= message %></p>
+    <% if (stack) { %>
+      <pre style="white-space:pre-wrap;color:#94a3b8"><%= stack %></pre>
+    <% } %>
+  </section>
+</main>
+<%- include("../partials/footer") %>

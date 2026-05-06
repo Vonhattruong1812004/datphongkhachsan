@@ -1,0 +1,51 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Runtime Diagnostics</div>
+    <h2>Runtime health va system readiness</h2>
+    <div class="dashboard-grid">
+      <article class="dashboard-card"><strong><%= runtime.summary.overall_score %>%</strong><h3>Runtime score</h3></article>
+      <article class="dashboard-card"><strong><%= system.summary.overall_score %>%</strong><h3>System score</h3></article>
+      <article class="dashboard-card"><strong><%= runtime.summary.blocked %></strong><h3>Runtime blocked</h3></article>
+    </div>
+    <div class="nav-links" style="margin-top:16px">
+      <a class="chip" href="/api/admin/diagnostics/runtime">Runtime JSON</a>
+      <a class="chip" href="/api/admin/diagnostics/system">System JSON</a>
+      <a class="chip" href="/admin/runtime-health">Runtime Health</a>
+      <a class="chip" href="/admin/system-readiness">System Readiness</a>
+      <a class="chip" href="/admin/mobile-readiness">Mobile Readiness</a>
+      <a class="chip" href="/admin/ai-diagnostics">AI Diagnostics</a>
+      <a class="chip" href="/admin/multi-hotel-diagnostics">Multi-Hotel</a>
+      <a class="chip" href="/admin/backups">Backups</a>
+      <a class="chip" href="/admin/restore">Restore</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Runtime Checks</div>
+    <div class="room-grid room-grid--wide">
+      <% runtime.checks.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge"><%= item.status %></span>
+          <h3><%= item.label %></h3>
+          <p class="muted"><%= item.detail %></p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">System Modules</div>
+    <div class="room-grid room-grid--wide">
+      <% system.modules.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge"><%= item.ready ? "ready" : "partial" %></span>
+          <h3><%= item.name %></h3>
+          <p class="muted"><%= item.detail %></p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

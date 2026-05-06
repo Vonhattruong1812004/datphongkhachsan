@@ -1,0 +1,271 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const customer = payload.customer || {};
+  const verification = payload.verification || null;
+  const history = payload.history || [];
+  const status = customer.trangThaiEkyc || customer.ekyc_status || "ChuaXacThuc";
+  const statusLabel = customer.ekyc_status_label || ({
+    DaXacThuc: "Khách đã xác thực",
+    ThatBai: "Khách xác thực thất bại",
+    DangXuLy: "Đang xử lý",
+    ChuaXacThuc: "Khách chưa xác thực"
+  }[status] || status);
+  const resultTone = (result) => {
+    if (result === "ThanhCong") return "is-ok";
+    if (result === "ThatBai") return "is-bad";
+    if (result === "DangXuLy") return "is-wait";
+    return "is-idle";
+  };
+  const currentResult = verification?.result || verification?.ketQuaXacThuc || "ChuaXacThuc";
+%>
+<style>
+  body{background:radial-gradient(circle at 8% 8%,rgba(45,212,191,.28),transparent 28%),radial-gradient(circle at 88% 10%,rgba(14,165,233,.24),transparent 30%),radial-gradient(circle at 54% 100%,rgba(251,191,36,.16),transparent 36%),linear-gradient(135deg,#fffef5 0%,#ebfffb 38%,#eef7ff 72%,#fff4f7 100%);color:#123047}
+  .ekyc-home{--ink:#102033;--muted:#5f778f;--line:rgba(18,48,71,.12);--teal:#14b8a6;--blue:#0ea5e9;--lime:#a3e635;--rose:#fb7185;position:relative;overflow:hidden;max-width:1240px;margin:0 auto;padding:34px 18px 70px}
+  .ekyc-home::before,.ekyc-home::after{content:"";position:absolute;border-radius:999px;pointer-events:none;z-index:-1;filter:blur(.2px);animation:ekyc-orbit 14s ease-in-out infinite alternate}
+  .ekyc-home::before{right:-160px;top:-230px;width:520px;height:520px;background:conic-gradient(from 110deg,rgba(14,165,233,.46),rgba(20,184,166,.36),rgba(250,204,21,.24),rgba(251,113,133,.18),rgba(14,165,233,.46))}
+  .ekyc-home::after{left:-200px;bottom:-260px;width:520px;height:520px;background:conic-gradient(from 20deg,rgba(251,113,133,.24),rgba(245,158,11,.22),rgba(45,212,191,.30),rgba(59,130,246,.18),rgba(251,113,133,.24));animation-delay:-5s}
+  .ekyc-hero,.ekyc-card,.ekyc-panel,.ekyc-stat,.ekyc-uploader,.ekyc-history-card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.70));box-shadow:0 26px 72px rgba(12,39,64,.13);backdrop-filter:blur(22px)}
+  .ekyc-hero{position:relative;overflow:hidden;border-radius:36px;padding:32px;margin-bottom:18px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:22px;align-items:center}
+  .ekyc-hero::before{content:"";position:absolute;right:40px;top:28px;width:118px;height:118px;border-radius:999px;background:radial-gradient(circle,#ecfeff 0 18%,#67e8f9 35%,#0ea5e9 64%,transparent 70%);box-shadow:0 0 0 24px rgba(14,165,233,.10),0 0 85px rgba(14,165,233,.24);animation:ekyc-sun 7s ease-in-out infinite}
+  .ekyc-kicker{display:inline-flex;position:relative;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .ekyc-hero h1{position:relative;margin:20px 0 10px;max-width:800px;color:#102033;font-size:clamp(40px,6vw,74px);line-height:.92;letter-spacing:-.07em}
+  .ekyc-hero h1 span{color:transparent;background:linear-gradient(110deg,#0ea5e9,#14b8a6 48%,#84cc16);-webkit-background-clip:text;background-clip:text}
+  .ekyc-muted{color:var(--muted);line-height:1.65;font-size:14px}
+  .ekyc-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .ekyc-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:999px;border:1px solid rgba(18,48,71,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:9px 15px;font-size:13px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 12px 28px rgba(12,39,64,.08);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .ekyc-button:hover{transform:translateY(-2px);border-color:rgba(14,165,233,.30);box-shadow:0 18px 40px rgba(12,39,64,.13)}
+  .ekyc-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 48%,#22c55e)}
+  .ekyc-status-card{position:relative;z-index:1;border-radius:30px;padding:20px;background:rgba(255,255,255,.64);border:1px solid rgba(18,48,71,.10)}
+  .ekyc-fingerprint{width:96px;height:96px;border-radius:32px;background:linear-gradient(135deg,#0ea5e9,#14b8a6,#a3e635);display:grid;place-items:center;color:white;font-size:44px;font-weight:1000;box-shadow:0 20px 48px rgba(20,184,166,.22);animation:ekyc-pulse 3.5s ease-in-out infinite}
+  .ekyc-badge{display:inline-flex;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:1000;border:1px solid rgba(18,48,71,.10);background:rgba(255,255,255,.70);margin-top:12px}
+  .ekyc-badge.is-ok{color:#047857;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.20)}
+  .ekyc-badge.is-wait{color:#b45309;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.22)}
+  .ekyc-badge.is-bad{color:#be123c;background:rgba(244,63,94,.10);border-color:rgba(244,63,94,.18)}
+  .ekyc-badge.is-idle{color:#475569;background:rgba(148,163,184,.12)}
+  .ekyc-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+  .ekyc-stat{border-radius:24px;padding:17px}
+  .ekyc-stat span{display:block;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .ekyc-stat strong{display:block;margin-top:8px;color:#102033;font-size:28px;letter-spacing:-.05em}
+  .ekyc-alert{border-radius:22px;padding:14px 16px;margin:0 0 16px;border:1px solid rgba(18,48,71,.10);font-weight:800}
+  .ekyc-alert--success{background:rgba(16,185,129,.13);color:#047857;border-color:rgba(16,185,129,.22)}
+  .ekyc-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.24)}
+  .ekyc-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:18px;align-items:start}
+  .ekyc-panel{border-radius:30px;padding:22px;margin-bottom:18px}
+  .ekyc-panel h2{margin:0;color:#102033;font-size:30px;letter-spacing:-.05em}
+  .ekyc-form-grid{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;margin:18px 0}
+  .ekyc-field{display:grid;gap:7px}
+  .ekyc-field label{font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em;color:#173651}
+  .ekyc-field input,.ekyc-field select{width:100%;min-height:48px;border-radius:17px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);color:#102033;padding:10px 13px;font:inherit;outline:none;box-sizing:border-box}
+  .ekyc-field input:focus,.ekyc-field select:focus{border-color:rgba(14,165,233,.46);box-shadow:0 0 0 4px rgba(14,165,233,.12)}
+  .ekyc-upload-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .ekyc-uploader{position:relative;overflow:hidden;border-radius:26px;padding:14px}
+  .ekyc-preview{height:190px;border-radius:20px;border:1px dashed rgba(18,48,71,.18);background:linear-gradient(135deg,rgba(236,253,245,.82),rgba(240,249,255,.72));display:grid;place-items:center;overflow:hidden;color:#5f778f;font-weight:900;text-align:center}
+  .ekyc-preview img{width:100%;height:100%;object-fit:cover;display:block}
+  .ekyc-uploader input{margin-top:12px;width:100%;font-size:12px}
+  .ekyc-latest-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+  .ekyc-latest-img{height:120px;border-radius:18px;overflow:hidden;background:rgba(148,163,184,.15);border:1px solid rgba(18,48,71,.10)}
+  .ekyc-latest-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .ekyc-side{position:sticky;top:18px;display:grid;gap:14px}
+  .ekyc-card{border-radius:28px;padding:20px}
+  .ekyc-card h3{margin:0 0 10px;color:#102033;font-size:23px;letter-spacing:-.045em}
+  .ekyc-kv{display:grid;gap:10px;margin-top:12px}
+  .ekyc-kv div{border-radius:17px;border:1px solid rgba(18,48,71,.09);background:rgba(255,255,255,.62);padding:11px}
+  .ekyc-kv span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .ekyc-kv strong{display:block;margin-top:6px;color:#102033;font-size:15px}
+  .ekyc-history{display:grid;gap:12px}
+  .ekyc-history-card{border-radius:24px;padding:15px}
+  .ekyc-history-card h3{margin:8px 0;color:#102033;font-size:18px}
+  .ekyc-help{font-size:12px;color:#5f778f;line-height:1.55;margin-top:7px}
+  @keyframes ekyc-orbit{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
+  @keyframes ekyc-sun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
+  @keyframes ekyc-pulse{0%,100%{transform:rotate(-4deg) scale(1)}50%{transform:rotate(4deg) scale(1.05)}}
+  @media(max-width:1040px){.ekyc-hero,.ekyc-layout{grid-template-columns:1fr}.ekyc-side{position:relative;top:auto}.ekyc-stats,.ekyc-upload-grid,.ekyc-latest-images{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:680px){.ekyc-home{padding:22px 12px 52px}.ekyc-hero,.ekyc-panel,.ekyc-card{border-radius:26px;padding:20px}.ekyc-stats,.ekyc-upload-grid,.ekyc-latest-images,.ekyc-form-grid{grid-template-columns:1fr}.ekyc-hero::before{width:82px;height:82px;right:16px}}
+</style>
+
+<main class="ekyc-home">
+  <section class="ekyc-hero">
+    <div>
+      <span class="ekyc-kicker">UC03 · eKYC khách hàng</span>
+      <h1>Xác minh danh tính <span>trước khi đến quầy.</span></h1>
+      <p class="ekyc-muted">Tải giấy tờ và selfie để hệ thống tạo hồ sơ định danh số. Trạng thái này được dùng ở check-in, giúp giảm thời gian đối chiếu tại quầy và giữ lịch sử xác minh rõ ràng.</p>
+      <div class="ekyc-actions">
+        <a class="ekyc-button ekyc-button--primary" href="/customer/profile">Hồ sơ cá nhân</a>
+        <a class="ekyc-button" href="/customer/dashboard">Về dashboard</a>
+        <a class="ekyc-button" href="/customer/bookings">Lịch sử booking</a>
+      </div>
+    </div>
+    <aside class="ekyc-status-card">
+      <div class="ekyc-fingerprint">ID</div>
+      <h3 style="margin:16px 0 4px"><%= customer.tenKh || "Khách hàng" %></h3>
+      <div class="ekyc-muted"><%= customer.email || "Chưa có email" %></div>
+      <span class="ekyc-badge <%= status === "DaXacThuc" ? "is-ok" : status === "ThatBai" ? "is-bad" : status === "DangXuLy" ? "is-wait" : "is-idle" %>"><%= statusLabel %></span>
+    </aside>
+  </section>
+
+  <% if (successMessage) { %><div class="ekyc-alert ekyc-alert--success"><%= successMessage %></div><% } %>
+  <% if (errorMessage) { %><div class="ekyc-alert ekyc-alert--error"><%= errorMessage %></div><% } %>
+
+  <section class="ekyc-stats">
+    <article class="ekyc-stat"><span>Trạng thái khách</span><strong><%= statusLabel %></strong></article>
+    <article class="ekyc-stat"><span>Hồ sơ gần nhất</span><strong><%= verification?.result_label || "Chưa có" %></strong></article>
+    <article class="ekyc-stat"><span>Lịch sử gửi</span><strong><%= history.length %></strong></article>
+  </section>
+
+  <section class="ekyc-layout">
+    <div>
+      <section class="ekyc-panel">
+        <h2>Gửi hồ sơ xác minh</h2>
+        <p class="ekyc-muted">Logic giữ theo hệ thống PHP cũ: loại giấy tờ hợp lệ, số giấy tờ 8-20 ký tự, bắt buộc đủ mặt trước, mặt sau và selfie. Ảnh tối đa 5MB, định dạng JPG/PNG/WEBP.</p>
+        <form method="post" action="/ekyc" enctype="multipart/form-data" id="ekycForm" novalidate>
+          <div class="ekyc-form-grid">
+            <div class="ekyc-field">
+              <label>Loại giấy tờ</label>
+              <select name="document_type" id="documentType" required>
+                <option value="CCCD">CCCD</option>
+                <option value="CMND">CMND</option>
+                <option value="Passport">Passport</option>
+              </select>
+            </div>
+            <div class="ekyc-field">
+              <label>Số giấy tờ</label>
+              <input name="document_number" id="documentNumber" required value="<%= customer.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Passport" />
+              <div class="ekyc-help" id="documentHelp">Số giấy tờ gồm chữ/số, dài 8-20 ký tự.</div>
+            </div>
+          </div>
+
+          <div class="ekyc-upload-grid">
+            <label class="ekyc-uploader">
+              <div class="ekyc-preview" data-preview="front">Ảnh mặt trước</div>
+              <input name="front" type="file" accept="image/jpeg,image/png,image/webp" required />
+              <div class="ekyc-help">Mặt trước giấy tờ.</div>
+            </label>
+            <label class="ekyc-uploader">
+              <div class="ekyc-preview" data-preview="back">Ảnh mặt sau</div>
+              <input name="back" type="file" accept="image/jpeg,image/png,image/webp" required />
+              <div class="ekyc-help">Mặt sau giấy tờ.</div>
+            </label>
+            <label class="ekyc-uploader">
+              <div class="ekyc-preview" data-preview="selfie">Ảnh selfie</div>
+              <input name="selfie" type="file" accept="image/jpeg,image/png,image/webp" required />
+              <div class="ekyc-help">Ảnh chân dung rõ mặt.</div>
+            </label>
+          </div>
+
+          <div class="ekyc-actions">
+            <button class="ekyc-button ekyc-button--primary" type="submit">Gửi eKYC</button>
+            <button class="ekyc-button" type="reset">Chọn lại ảnh</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="ekyc-panel">
+        <h2>Hồ sơ gần nhất</h2>
+        <% if (verification) { %>
+          <p class="ekyc-muted"><%= verification.note || "Hồ sơ đã được ghi nhận trong hệ thống." %></p>
+          <div class="ekyc-latest-images">
+            <% [
+              ["Mặt trước", verification.images?.front_url],
+              ["Mặt sau", verification.images?.back_url],
+              ["Selfie", verification.images?.selfie_url]
+            ].forEach(([label, url]) => { %>
+              <div class="ekyc-latest-img">
+                <% if (url) { %><a href="<%= url %>" target="_blank" rel="noreferrer"><img src="<%= url %>" alt="<%= label %>" /></a><% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="ekyc-muted">Bạn chưa gửi hồ sơ eKYC nào. Hãy tải đủ 3 ảnh để tạo hồ sơ xác minh đầu tiên.</p>
+        <% } %>
+      </section>
+    </div>
+
+    <aside class="ekyc-side">
+      <article class="ekyc-card">
+        <h3>Thông tin hiện tại</h3>
+        <div class="ekyc-kv">
+          <div><span>Khách hàng</span><strong><%= customer.tenKh || "-" %></strong></div>
+          <div><span>Email</span><strong><%= customer.email || "-" %></strong></div>
+          <div><span>Số điện thoại</span><strong><%= customer.sdt || "-" %></strong></div>
+          <div><span>CCCD lưu hồ sơ</span><strong><%= customer.cccd || "-" %></strong></div>
+        </div>
+      </article>
+
+      <article class="ekyc-card">
+        <h3>Snapshot xác minh</h3>
+        <span class="ekyc-badge <%= resultTone(currentResult) %>"><%= verification?.result_label || "Chưa có hồ sơ" %></span>
+        <div class="ekyc-kv">
+          <div><span>Loại giấy tờ</span><strong><%= verification?.document_type || "-" %></strong></div>
+          <div><span>Số giấy tờ</span><strong><%= verification?.document_number || "-" %></strong></div>
+          <div><span>Độ tin cậy</span><strong><%= verification?.confidence_label || "0%" %></strong></div>
+          <div><span>Ngày gửi</span><strong><%= verification?.submitted_at || "-" %></strong></div>
+        </div>
+      </article>
+
+      <article class="ekyc-card">
+        <h3>Lịch sử gần đây</h3>
+        <div class="ekyc-history">
+          <% if (history.length) { %>
+            <% history.forEach((item) => { %>
+              <div class="ekyc-history-card">
+                <span class="ekyc-badge <%= resultTone(item.result) %>"><%= item.result_label %></span>
+                <h3><%= item.document_type || "-" %> · <%= item.document_number || "-" %></h3>
+                <div class="ekyc-muted">Gửi: <%= item.submitted_at || "-" %> · Tin cậy <%= item.confidence_label %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p class="ekyc-muted">Chưa có lịch sử eKYC.</p>
+          <% } %>
+        </div>
+      </article>
+    </aside>
+  </section>
+</main>
+
+<script>
+  (function () {
+    const form = document.getElementById("ekycForm");
+    const docNumber = document.getElementById("documentNumber");
+    const docHelp = document.getElementById("documentHelp");
+
+    document.querySelectorAll(".ekyc-uploader input[type='file']").forEach((input) => {
+      input.addEventListener("change", function () {
+        const file = input.files && input.files[0];
+        const preview = input.closest(".ekyc-uploader").querySelector(".ekyc-preview");
+        if (!file || !preview) return;
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+          preview.textContent = "Sai định dạng ảnh";
+          input.value = "";
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          preview.textContent = "Ảnh vượt quá 5MB";
+          input.value = "";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function () {
+          preview.innerHTML = "";
+          const img = document.createElement("img");
+          img.src = String(reader.result || "");
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function validateDocument() {
+      const ok = /^[A-Za-z0-9]{8,20}$/.test((docNumber.value || "").trim());
+      docHelp.textContent = ok ? "Số giấy tờ hợp lệ." : "Số giấy tờ gồm chữ/số, dài 8-20 ký tự.";
+      docHelp.style.color = ok ? "#047857" : "#be123c";
+      return ok;
+    }
+
+    docNumber && docNumber.addEventListener("input", validateDocument);
+    form && form.addEventListener("submit", function (event) {
+      if (!validateDocument()) event.preventDefault();
+    });
+  })();
+</script>
+<%- include("../partials/footer") %>

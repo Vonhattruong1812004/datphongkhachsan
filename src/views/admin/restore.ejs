@@ -1,0 +1,78 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Admin Restore</div>
+    <h2>Phuc hoi du lieu tu backup SQL</h2>
+    <p class="muted">Restore se ghi de lai du lieu trong schema `abc_resort1`. Chi chay khi ban chac chan file backup la dung snapshot mong muon.</p>
+
+    <% if (success) { %>
+      <div class="flash flash--success"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="flash flash--error"><%= error %></div>
+    <% } %>
+
+    <div class="nav-links" style="margin-top:16px;">
+      <a class="chip" href="/admin/backups">Backups</a>
+      <a class="chip" href="/api/admin/backups">Backup JSON</a>
+    </div>
+  </section>
+
+  <% if (payload.selectedBackupInfo) { %>
+    <section class="panel">
+      <div class="section-eyebrow">Selected Backup</div>
+      <div class="dashboard-grid">
+        <article class="dashboard-card"><strong><%= payload.selectedBackupInfo.name %></strong><h3>File dang chon</h3></article>
+        <article class="dashboard-card"><strong><%= payload.selectedBackupInfo.backupType || "sql" %></strong><h3>Loai backup</h3></article>
+        <article class="dashboard-card"><strong><%= payload.selectedBackupInfo.hotelCount %></strong><h3>Hotel count</h3></article>
+      </div>
+      <p class="muted" style="margin-top:16px;">Tao luc: <%= payload.selectedBackupInfo.createdAt || "N/A" %> · Scope: <%= payload.selectedBackupInfo.backupScope || "system_wide" %> · Kich thuoc: <%= (payload.selectedBackupInfo.size / 1024).toFixed(1) %> KB</p>
+    </section>
+  <% } %>
+
+  <section class="panel">
+    <div class="section-eyebrow">Restore Action</div>
+    <form method="post" action="/admin/restore">
+      <div class="field">
+        <label>Chon file backup</label>
+        <select name="backup_file" required>
+          <option value="">-- Chon file --</option>
+          <% payload.backups.forEach((item) => { %>
+            <option value="<%= item.name %>" <%= payload.selectedBackupInfo && payload.selectedBackupInfo.name === item.name ? "selected" : "" %>>
+              <%= item.name %> · <%= item.backupType || "sql" %> · <%= item.createdAt || "N/A" %>
+            </option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="flash flash--error" style="margin-top:16px;">
+        Restore se ghi de du lieu hien tai. Nen tao mot backup moi truoc khi phuc hoi.
+      </div>
+      <div class="nav-links" style="margin-top:16px;">
+        <button class="button button--primary" type="submit">Phuc hoi ngay</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Available Files</div>
+    <% if (!payload.backups.length) { %>
+      <div class="empty-state">Chua co file backup nao de phuc hoi.</div>
+    <% } else { %>
+      <div class="room-grid room-grid--wide">
+        <% payload.backups.forEach((item) => { %>
+          <article class="room-card">
+            <span class="badge"><%= item.backupType || "sql" %></span>
+            <h3><%= item.name %></h3>
+            <p class="muted">Tao luc: <%= item.createdAt || "N/A" %></p>
+            <p class="muted">Scope: <%= item.backupScope || "system_wide" %></p>
+            <div class="nav-links" style="margin-top:12px;">
+              <a class="chip" href="/admin/restore?file=<%= encodeURIComponent(item.name) %>">Chon file</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+<%- include("../partials/footer") %>

@@ -1,0 +1,644 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const filters = payload?.filters || { result: "", q: "" };
+  const items = payload?.items || [];
+  const overview = payload?.overview || { total: items.length, pending: 0, approved: 0, rejected: 0, unverified: 0 };
+  const customer = selected?.customer || null;
+  const verification = selected?.verification || null;
+  const review = selected?.review || null;
+  const history = selected?.history || [];
+  const activeId = Number(selectedId || verification?.id || selected?.id || 0);
+  const badgeClass = (tone) => ({
+    emerald: "ekyc-badge--ok",
+    rose: "ekyc-badge--bad",
+    amber: "ekyc-badge--wait",
+    slate: "ekyc-badge--idle"
+  }[tone || "slate"] || "ekyc-badge--idle");
+  const keepParams = (id) => {
+    const params = new URLSearchParams();
+    if (id) params.set("id", String(id));
+    if (filters.result) params.set("result", filters.result);
+    if (filters.q) params.set("q", filters.q);
+    return params.toString();
+  };
+%>
+<style>
+  :root {
+    --ekyc-ink: #102034;
+    --ekyc-muted: #64748b;
+    --ekyc-card: rgba(255, 255, 255, .78);
+    --ekyc-card-strong: rgba(255, 255, 255, .92);
+    --ekyc-border: rgba(15, 23, 42, .1);
+    --ekyc-sky: #38bdf8;
+    --ekyc-blue: #2563eb;
+    --ekyc-mint: #34d399;
+    --ekyc-rose: #fb7185;
+    --ekyc-amber: #f59e0b;
+    --ekyc-violet: #8b5cf6;
+    --ekyc-shadow: 0 28px 90px rgba(37, 99, 235, .18);
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 8% 12%, rgba(56, 189, 248, .28), transparent 32%),
+      radial-gradient(circle at 90% 8%, rgba(251, 113, 133, .18), transparent 30%),
+      linear-gradient(135deg, #f8fbff 0%, #eef8ff 42%, #fff7ed 100%);
+    color: var(--ekyc-ink);
+  }
+
+  .ekyc-shell {
+    position: relative;
+    overflow: hidden;
+    padding: 28px 0 48px;
+  }
+
+  .ekyc-shell::before,
+  .ekyc-shell::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    border-radius: 999px;
+    filter: blur(2px);
+    opacity: .7;
+    animation: ekycFloat 8s ease-in-out infinite alternate;
+  }
+
+  .ekyc-shell::before {
+    width: 320px;
+    height: 320px;
+    left: -120px;
+    bottom: 8%;
+    background: radial-gradient(circle, rgba(52, 211, 153, .24), transparent 68%);
+  }
+
+  .ekyc-shell::after {
+    width: 260px;
+    height: 260px;
+    right: -86px;
+    top: 24%;
+    background: radial-gradient(circle, rgba(139, 92, 246, .2), transparent 70%);
+    animation-delay: -2s;
+  }
+
+  @keyframes ekycFloat {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(18px, -18px, 0) scale(1.06); }
+  }
+
+  .ekyc-hero,
+  .ekyc-card,
+  .ekyc-metric {
+    border: 1px solid var(--ekyc-border);
+    background: var(--ekyc-card);
+    box-shadow: var(--ekyc-shadow);
+    backdrop-filter: blur(22px);
+  }
+
+  .ekyc-hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 26px;
+    align-items: center;
+    border-radius: 34px;
+    padding: 28px;
+    overflow: hidden;
+  }
+
+  .ekyc-hero::after {
+    content: "";
+    position: absolute;
+    inset: auto -80px -130px auto;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: conic-gradient(from 180deg, rgba(56,189,248,.35), rgba(52,211,153,.2), rgba(251,113,133,.25), rgba(56,189,248,.35));
+  }
+
+  .ekyc-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, .08);
+    color: #1d4ed8;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-size: 11px;
+  }
+
+  .ekyc-hero h1 {
+    margin: 14px 0 10px;
+    max-width: 720px;
+    font-size: clamp(34px, 5vw, 62px);
+    line-height: .95;
+    letter-spacing: -.06em;
+  }
+
+  .ekyc-hero p {
+    max-width: 760px;
+    margin: 0;
+    color: var(--ekyc-muted);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .ekyc-orbit {
+    position: relative;
+    z-index: 1;
+    min-height: 230px;
+    border-radius: 32px;
+    background: linear-gradient(135deg, rgba(255,255,255,.52), rgba(255,255,255,.2));
+    border: 1px solid rgba(255,255,255,.68);
+    display: grid;
+    place-items: center;
+  }
+
+  .ekyc-orbit span {
+    position: absolute;
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(15,23,42,.08);
+    font-size: 12px;
+    font-weight: 800;
+    color: #2563eb;
+  }
+
+  .ekyc-orbit span:nth-child(1) { top: 20px; left: 22px; }
+  .ekyc-orbit span:nth-child(2) { right: 18px; top: 78px; color: #059669; }
+  .ekyc-orbit span:nth-child(3) { left: 46px; bottom: 22px; color: #e11d48; }
+
+  .ekyc-core {
+    width: 106px;
+    height: 106px;
+    border-radius: 34px;
+    background: linear-gradient(135deg, var(--ekyc-blue), var(--ekyc-sky));
+    color: white;
+    display: grid;
+    place-items: center;
+    font-size: 42px;
+    font-weight: 900;
+    box-shadow: 0 24px 54px rgba(37,99,235,.34);
+    animation: ekycPulse 2.8s ease-in-out infinite;
+  }
+
+  @keyframes ekycPulse {
+    0%, 100% { transform: rotate(-4deg) scale(1); }
+    50% { transform: rotate(3deg) scale(1.05); }
+  }
+
+  .ekyc-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+  }
+
+  .ekyc-metric {
+    border-radius: 24px;
+    padding: 18px;
+  }
+
+  .ekyc-metric small {
+    display: block;
+    color: var(--ekyc-muted);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .ekyc-metric strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .ekyc-layout {
+    display: grid;
+    grid-template-columns: 390px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .ekyc-card {
+    border-radius: 30px;
+    padding: 22px;
+  }
+
+  .ekyc-toolbar {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .ekyc-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--ekyc-muted);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .ekyc-field input,
+  .ekyc-field select,
+  .ekyc-field textarea {
+    width: 100%;
+    border: 1px solid rgba(15, 23, 42, .12);
+    border-radius: 18px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,.84);
+    color: var(--ekyc-ink);
+    outline: none;
+  }
+
+  .ekyc-field textarea { min-height: 118px; resize: vertical; }
+
+  .ekyc-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .ekyc-btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 11px 17px;
+    background: rgba(255,255,255,.84);
+    color: var(--ekyc-ink);
+    text-decoration: none;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 14px 36px rgba(15,23,42,.08);
+  }
+
+  .ekyc-btn--primary { background: linear-gradient(135deg, var(--ekyc-blue), var(--ekyc-sky)); color: white; }
+  .ekyc-btn--ok { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
+  .ekyc-btn--bad { background: linear-gradient(135deg, #e11d48, #fb7185); color: white; }
+  .ekyc-btn--wait { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #422006; }
+
+  .ekyc-queue {
+    display: grid;
+    gap: 12px;
+    max-height: 760px;
+    overflow: auto;
+    padding-right: 4px;
+  }
+
+  .ekyc-queue-item {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid rgba(15, 23, 42, .08);
+    background: rgba(255,255,255,.64);
+    border-radius: 24px;
+    padding: 16px;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+
+  .ekyc-queue-item:hover,
+  .ekyc-queue-item.is-active {
+    transform: translateY(-2px);
+    border-color: rgba(37,99,235,.34);
+    box-shadow: 0 18px 46px rgba(37,99,235,.14);
+  }
+
+  .ekyc-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .ekyc-muted { color: var(--ekyc-muted); }
+  .ekyc-title { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+
+  .ekyc-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .ekyc-badge--ok { background: rgba(16,185,129,.14); color: #047857; }
+  .ekyc-badge--bad { background: rgba(251,113,133,.16); color: #be123c; }
+  .ekyc-badge--wait { background: rgba(245,158,11,.18); color: #b45309; }
+  .ekyc-badge--idle { background: rgba(100,116,139,.13); color: #475569; }
+
+  .ekyc-detail-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .ekyc-detail-head h2 {
+    margin: 8px 0 6px;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1;
+    letter-spacing: -.04em;
+  }
+
+  .ekyc-image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .ekyc-image-box,
+  .ekyc-info-box {
+    border: 1px solid rgba(15,23,42,.08);
+    background: rgba(255,255,255,.64);
+    border-radius: 24px;
+    padding: 13px;
+  }
+
+  .ekyc-image-box img {
+    width: 100%;
+    height: 230px;
+    object-fit: cover;
+    border-radius: 18px;
+    display: block;
+    background: #e2e8f0;
+  }
+
+  .ekyc-empty-img {
+    min-height: 230px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    border: 1px dashed rgba(100,116,139,.38);
+    color: var(--ekyc-muted);
+  }
+
+  .ekyc-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  .ekyc-kv {
+    display: grid;
+    grid-template-columns: 145px minmax(0, 1fr);
+    gap: 8px 12px;
+    font-size: 14px;
+  }
+
+  .ekyc-kv strong {
+    color: var(--ekyc-muted);
+  }
+
+  .ekyc-history {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .ekyc-history-item {
+    border: 1px solid rgba(15,23,42,.08);
+    background: rgba(255,255,255,.62);
+    border-radius: 20px;
+    padding: 13px;
+  }
+
+  .ekyc-flash {
+    margin: 16px 0;
+    padding: 14px 16px;
+    border-radius: 20px;
+    font-weight: 800;
+  }
+
+  .ekyc-flash--success { background: rgba(16,185,129,.14); color: #047857; }
+  .ekyc-flash--error { background: rgba(251,113,133,.16); color: #be123c; }
+
+  @media (max-width: 1080px) {
+    .ekyc-hero,
+    .ekyc-layout {
+      grid-template-columns: 1fr;
+    }
+    .ekyc-orbit { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    .ekyc-metrics,
+    .ekyc-image-grid,
+    .ekyc-info-grid {
+      grid-template-columns: 1fr;
+    }
+    .ekyc-kv { grid-template-columns: 1fr; }
+    .ekyc-card, .ekyc-hero { border-radius: 24px; padding: 18px; }
+  }
+</style>
+
+<main class="container ekyc-shell">
+  <section class="ekyc-hero">
+    <div>
+      <span class="ekyc-kicker">eKYC Operations Console</span>
+      <h1>Review định danh nhanh, rõ và an toàn.</h1>
+      <p>
+        Màn này đồng bộ lại theo hệ thống PHP cũ: chỉ ưu tiên hồ sơ mới nhất theo từng khách,
+        có bộ lọc trạng thái, lịch sử gửi hồ sơ, ảnh giấy tờ/selfie và thao tác duyệt thủ công
+        để UC check-in dùng trạng thái eKYC nhất quán.
+      </p>
+      <div class="ekyc-actions" style="margin-top:18px">
+        <a class="ekyc-btn ekyc-btn--primary" href="/frontdesk/checkin">Mở UC check-in</a>
+        <a class="ekyc-btn" href="/dashboard/letan">Dashboard lễ tân</a>
+        <a class="ekyc-btn" href="/api/ekyc/review-queue">JSON queue</a>
+      </div>
+    </div>
+    <div class="ekyc-orbit" aria-hidden="true">
+      <span>CCCD</span>
+      <span>Selfie</span>
+      <span>Manual review</span>
+      <div class="ekyc-core">ID</div>
+    </div>
+  </section>
+
+  <% if (flash) { %>
+    <div class="ekyc-flash ekyc-flash--<%= flash.type === "error" ? "error" : "success" %>"><%= flash.message %></div>
+  <% } %>
+
+  <section class="ekyc-metrics">
+    <article class="ekyc-metric"><small>Tổng hồ sơ latest</small><strong><%= overview.total || 0 %></strong></article>
+    <article class="ekyc-metric"><small>Đang xử lý</small><strong style="color:var(--ekyc-amber)"><%= overview.pending || 0 %></strong></article>
+    <article class="ekyc-metric"><small>Đã xác thực</small><strong style="color:#059669"><%= overview.approved || 0 %></strong></article>
+    <article class="ekyc-metric"><small>Thất bại</small><strong style="color:#e11d48"><%= overview.rejected || 0 %></strong></article>
+  </section>
+
+  <section class="ekyc-layout">
+    <aside class="ekyc-card">
+      <form class="ekyc-toolbar" method="get" action="/ekyc/review">
+        <div class="ekyc-field">
+          <label>Tìm khách / CCCD / giấy tờ</label>
+          <input name="q" value="<%= filters.q || "" %>" placeholder="Tên khách, email, SĐT, CCCD..." />
+        </div>
+        <div class="ekyc-field">
+          <label>Trạng thái hồ sơ</label>
+          <select name="result">
+            <option value="">Tất cả</option>
+            <option value="DangXuLy" <%= filters.result === "DangXuLy" ? "selected" : "" %>>Đang xử lý</option>
+            <option value="ThanhCong" <%= filters.result === "ThanhCong" ? "selected" : "" %>>Đã xác thực</option>
+            <option value="ThatBai" <%= filters.result === "ThatBai" ? "selected" : "" %>>Thất bại</option>
+            <option value="ChuaXacThuc" <%= filters.result === "ChuaXacThuc" ? "selected" : "" %>>Chưa xác thực</option>
+          </select>
+        </div>
+        <div class="ekyc-actions">
+          <button class="ekyc-btn ekyc-btn--primary" type="submit">Lọc hồ sơ</button>
+          <a class="ekyc-btn" href="/ekyc/review">Reset</a>
+        </div>
+      </form>
+
+      <div class="ekyc-row" style="margin-bottom:12px">
+        <strong>Review queue</strong>
+        <span class="ekyc-muted"><%= items.length %> hồ sơ</span>
+      </div>
+
+      <div class="ekyc-queue">
+        <% if (items.length) { %>
+          <% items.forEach((item) => { %>
+            <a class="ekyc-queue-item <%= Number(item.id) === activeId ? "is-active" : "" %>" href="/ekyc/review?<%= keepParams(item.id) %>">
+              <div class="ekyc-row">
+                <div>
+                  <h3 class="ekyc-title"><%= item.customer_name %></h3>
+                  <div class="ekyc-muted" style="margin-top:5px"><%= item.document_type || "-" %> · <%= item.document_number || "-" %></div>
+                </div>
+                <span class="ekyc-badge <%= badgeClass(item.tone) %>"><%= item.result_label %></span>
+              </div>
+              <div class="ekyc-muted" style="margin-top:12px;font-size:13px">
+                <div><%= item.customer_phone || item.customer_email || "Chưa có liên hệ" %></div>
+                <div><%= item.submitted_at || "Chưa rõ thời gian" %> · Tin cậy <%= item.confidence_label %></div>
+              </div>
+            </a>
+          <% }) %>
+        <% } else { %>
+          <div class="ekyc-info-box ekyc-muted">Không có hồ sơ eKYC nào khớp bộ lọc hiện tại.</div>
+        <% } %>
+      </div>
+    </aside>
+
+    <section class="ekyc-card">
+      <% if (selected && verification) { %>
+        <div class="ekyc-detail-head">
+          <div>
+            <span class="ekyc-kicker">Hồ sơ đang xem</span>
+            <h2><%= customer?.name || "Khách hàng" %></h2>
+            <div class="ekyc-muted"><%= customer?.email || "-" %> · <%= customer?.phone || "-" %></div>
+          </div>
+          <div style="text-align:right">
+            <span class="ekyc-badge <%= badgeClass(review?.tone) %>"><%= review?.result_label || "Chưa xác thực" %></span>
+            <div class="ekyc-muted" style="margin-top:8px">Khách: <%= customer?.ekyc_status_label || "Khách chưa xác thực" %></div>
+            <div class="ekyc-muted">Độ tin cậy: <%= verification.confidence_label || "0%" %></div>
+          </div>
+        </div>
+
+        <div class="ekyc-image-grid">
+          <% [
+            ["Mặt trước", verification.images?.front_url],
+            ["Mặt sau", verification.images?.back_url],
+            ["Selfie", verification.images?.selfie_url]
+          ].forEach(([label, url]) => { %>
+            <article class="ekyc-image-box">
+              <div class="ekyc-muted" style="font-weight:900;margin-bottom:9px"><%= label %></div>
+              <% if (url) { %>
+                <a href="<%= url %>" target="_blank" rel="noreferrer"><img src="<%= url %>" alt="<%= label %> eKYC" /></a>
+              <% } else { %>
+                <div class="ekyc-empty-img">Chưa có ảnh</div>
+              <% } %>
+            </article>
+          <% }) %>
+        </div>
+
+        <div class="ekyc-info-grid">
+          <article class="ekyc-info-box">
+            <strong>Thông tin giấy tờ</strong>
+            <div class="ekyc-kv" style="margin-top:12px">
+              <strong>Loại giấy tờ</strong><div><%= verification.document_type || "-" %></div>
+              <strong>Số giấy tờ</strong><div><%= verification.document_number || "-" %></div>
+              <strong>Ngày gửi</strong><div><%= verification.submitted_at || "-" %></div>
+              <strong>Ngày xác thực</strong><div><%= verification.verified_at || "-" %></div>
+              <strong>CCCD khách</strong><div><%= customer?.cccd || "-" %></div>
+            </div>
+          </article>
+          <article class="ekyc-info-box">
+            <strong>Ghi chú hệ thống</strong>
+            <p class="ekyc-muted" style="line-height:1.8;margin-bottom:0"><%= verification.note || "Chưa có ghi chú." %></p>
+          </article>
+        </div>
+
+        <article class="ekyc-info-box">
+          <div class="ekyc-row">
+            <strong>Lịch sử hồ sơ cùng khách</strong>
+            <span class="ekyc-muted"><%= history.length %> lần gửi gần nhất</span>
+          </div>
+          <div class="ekyc-history">
+            <% if (history.length) { %>
+              <% history.forEach((item) => { %>
+                <div class="ekyc-history-item">
+                  <div class="ekyc-row">
+                    <div>
+                      <strong><%= item.document_type || "-" %> · <%= item.document_number || "-" %></strong>
+                      <div class="ekyc-muted" style="font-size:13px;margin-top:5px">Gửi: <%= item.submitted_at || "-" %> · Xác thực: <%= item.verified_at || "-" %></div>
+                    </div>
+                    <span class="ekyc-badge <%= badgeClass(item.tone) %>"><%= item.result_label %></span>
+                  </div>
+                  <% if (item.note) { %>
+                    <div class="ekyc-muted" style="font-size:13px;margin-top:8px;line-height:1.7"><%= item.note %></div>
+                  <% } %>
+                </div>
+              <% }) %>
+            <% } else { %>
+              <div class="ekyc-muted">Chưa có lịch sử hồ sơ nào.</div>
+            <% } %>
+          </div>
+        </article>
+
+        <article class="ekyc-info-box" style="margin-top:12px">
+          <div class="ekyc-row">
+            <div>
+              <strong>Manual review</strong>
+              <div class="ekyc-muted" style="margin-top:5px">Duyệt hồ sơ này để UC check-in đọc đúng trạng thái eKYC, hạn chế phải override tại quầy.</div>
+            </div>
+            <a class="ekyc-btn" href="/frontdesk/checkin">Mở check-in</a>
+          </div>
+          <form method="post" action="/ekyc/review" style="margin-top:16px">
+            <input type="hidden" name="ma_ekyc" value="<%= verification.id %>" />
+            <input type="hidden" name="result_filter" value="<%= filters.result || "" %>" />
+            <input type="hidden" name="q_filter" value="<%= filters.q || "" %>" />
+            <div class="ekyc-field">
+              <label>Ghi chú review</label>
+              <textarea name="review_note" placeholder="Ví dụ: Đã đối chiếu giấy tờ gốc tại quầy, thông tin khớp với booking."></textarea>
+            </div>
+            <div class="ekyc-actions" style="margin-top:14px">
+              <button class="ekyc-btn ekyc-btn--ok" type="submit" name="decision" value="approve">Duyệt xác thực</button>
+              <button class="ekyc-btn ekyc-btn--bad" type="submit" name="decision" value="reject">Từ chối hồ sơ</button>
+              <button class="ekyc-btn ekyc-btn--wait" type="submit" name="decision" value="pending">Chuyển về chờ xử lý</button>
+            </div>
+          </form>
+        </article>
+      <% } else { %>
+        <div class="ekyc-info-box" style="min-height:420px;display:grid;place-items:center;text-align:center">
+          <div>
+            <div class="ekyc-core" style="margin:0 auto 18px">ID</div>
+            <h2>Chọn một hồ sơ eKYC để review</h2>
+            <p class="ekyc-muted">Queue bên trái đang hiển thị hồ sơ mới nhất theo từng khách giống hệ thống PHP cũ.</p>
+          </div>
+        </div>
+      <% } %>
+    </section>
+  </section>
+</main>
+<%- include("../partials/footer") %>

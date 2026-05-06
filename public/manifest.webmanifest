@@ -1,0 +1,47 @@
+{
+  "name": "Bento Resort",
+  "short_name": "Bento",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07111f",
+  "theme_color": "#0ea5e9",
+  "description": "Bento Resort chạy nhất quán trên web và app: tìm phòng, đặt phòng, mobile hub và snapshot offline.",
+  "categories": ["travel", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tìm phòng",
+      "short_name": "Tìm phòng",
+      "url": "/booking/search?source=pwa-shortcut",
+      "icons": [{ "src": "/icons/app-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mobile Hub",
+      "short_name": "Hub",
+      "url": "/customer/mobile-hub?source=pwa-shortcut",
+      "icons": [{ "src": "/icons/app-icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

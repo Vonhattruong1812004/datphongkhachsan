@@ -1,0 +1,33 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">AI Diagnostics</div>
+    <h2>Concierge, recommendation va analytics</h2>
+    <div class="dashboard-grid">
+      <article class="dashboard-card"><strong><%= payload.summary.overall_score %>%</strong><h3>AI score</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.conciergeCount %></strong><h3>Concierge calls</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.recommendationCount %></strong><h3>Recommendation calls</h3></article>
+    </div>
+    <p class="muted" style="margin-top:16px;">Mode: <%= payload.provider.mode %> · Provider: <%= payload.provider.provider %> · <%= payload.provider.summary %></p>
+    <div class="nav-links" style="margin-top:16px;">
+      <a class="chip" href="/api/admin/diagnostics/ai">AI JSON</a>
+      <a class="chip" href="/ai/analytics">Mo AI Analytics</a>
+      <a class="chip" href="/ai/concierge">Mo AI Concierge</a>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-eyebrow">Signals</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.signals.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge">signal</span>
+          <h3><%= item.label %></h3>
+          <strong><%= item.value %></strong>
+          <p class="muted"><%= item.detail %></p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

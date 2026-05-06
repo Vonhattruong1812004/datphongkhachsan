@@ -1,0 +1,30 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">System Readiness</div>
+    <h2>Do phu module va tinh san sang van hanh</h2>
+    <div class="dashboard-grid">
+      <article class="dashboard-card"><strong><%= payload.summary.overall_score %>%</strong><h3>Overall score</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.ready %></strong><h3>Ready modules</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.partial %></strong><h3>Partial modules</h3></article>
+    </div>
+    <div class="nav-links" style="margin-top:16px;">
+      <a class="chip" href="/api/admin/diagnostics/system">System JSON</a>
+      <a class="chip" href="/admin/diagnostics">Tong hop</a>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-eyebrow">Modules</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.modules.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge"><%= item.ready ? "ready" : "partial" %></span>
+          <h3><%= item.name %></h3>
+          <p class="muted"><%= item.detail %></p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

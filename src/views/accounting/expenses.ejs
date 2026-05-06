@@ -1,0 +1,794 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const filters = payload.filters || {};
+  const rows = payload.rows || [];
+  const summary = payload.summary || {};
+  const statusOptions = payload.statusOptions || [];
+  const statusBreakdown = payload.statusBreakdown || [];
+  const dailyTrend = payload.dailyTrend || [];
+  const categoryBreakdown = payload.categoryBreakdown || [];
+  const hotelOptions = payload.hotelOptions || [];
+  const page = Number(payload.currentPage || 1);
+  const totalPages = Number(payload.totalPages || 1);
+  const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
+  const csvQuery = makeQuery({ format: "csv" });
+  const jsonQuery = makeQuery({ format: "json" });
+  const pages = [];
+  const firstPage = Math.max(1, page - 2);
+  const lastPage = Math.min(totalPages, page + 2);
+  for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
+  const maxTrend = Math.max(...dailyTrend.map((item) => Number(item.total || 0)), 1);
+%>
+
+<style>
+  .exp-home {
+    --ink: #132033;
+    --muted: #667085;
+    --line: rgba(19, 32, 51, .10);
+    --glass: rgba(255, 255, 255, .80);
+    --strong: rgba(255, 255, 255, .94);
+    --cyan: #12bff3;
+    --mint: #20d6a3;
+    --lime: #b7ef4a;
+    --sun: #ffd166;
+    --orange: #ff9f7a;
+    --pink: #ff6aa2;
+    --violet: #8068ff;
+    --shadow: 0 24px 70px rgba(19, 32, 51, .14);
+    min-height: calc(100vh - 84px);
+    padding: 34px 18px 58px;
+    color: var(--ink);
+    background:
+      linear-gradient(115deg, rgba(255, 159, 122, .18), transparent 30%),
+      linear-gradient(245deg, rgba(18, 191, 243, .16), transparent 36%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.72) 0 13px, rgba(250,253,239,.72) 13px 26px),
+      linear-gradient(135deg, #fffdf8 0%, #effcff 46%, #f9fff0 100%);
+  }
+
+  .exp-wrap {
+    max-width: 1260px;
+    margin: 0 auto;
+  }
+
+  .exp-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.14fr) minmax(320px, .86fr);
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 16px;
+  }
+
+  .exp-hero-main,
+  .exp-kpi,
+  .exp-form,
+  .exp-panel,
+  .exp-table-panel,
+  .exp-alert {
+    border: 1px solid var(--line);
+    background: var(--glass);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(24px);
+  }
+
+  .exp-hero-main {
+    position: relative;
+    overflow: hidden;
+    border-radius: 30px;
+    padding: 30px;
+  }
+
+  .exp-hero-main::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(96deg, rgba(255, 209, 102, .26), transparent 34%),
+      linear-gradient(164deg, transparent 0 54%, rgba(32, 214, 163, .20) 54% 68%, transparent 68%),
+      linear-gradient(28deg, transparent 0 70%, rgba(128, 104, 255, .18) 70% 86%, transparent 86%);
+  }
+
+  .exp-hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .exp-chip,
+  .exp-tag,
+  .exp-pill,
+  .exp-status,
+  .exp-cat {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .exp-chip {
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 159, 122, .30);
+    background: rgba(255, 159, 122, .15);
+    color: #9a3412;
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+  }
+
+  .exp-spark {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--orange);
+    box-shadow: 0 0 0 7px rgba(255, 159, 122, .14);
+  }
+
+  .exp-hero h1 {
+    max-width: 720px;
+    margin: 24px 0 12px;
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .exp-hero h1 span {
+    color: transparent;
+    background: linear-gradient(96deg, #f97316 0%, #f59e0b 25%, #10b981 52%, #0891b2 76%, #8068ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .exp-lead {
+    max-width: 760px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .exp-tags,
+  .exp-actions,
+  .exp-form-actions,
+  .exp-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .exp-tags {
+    margin-top: 20px;
+  }
+
+  .exp-tag {
+    padding: 8px 11px;
+    border: 1px solid rgba(19, 32, 51, .08);
+    background: rgba(255, 255, 255, .70);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .exp-actions {
+    margin-top: 22px;
+  }
+
+  .exp-button {
+    min-height: 43px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(19, 32, 51, .12);
+    border-radius: 999px;
+    padding: 10px 17px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .78);
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .exp-button--primary {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #f97316, #ff6aa2);
+    box-shadow: 0 16px 36px rgba(255, 106, 162, .24);
+  }
+
+  .exp-button--mint {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #10b981, #12bff3);
+    box-shadow: 0 16px 36px rgba(18, 191, 243, .20);
+  }
+
+  .exp-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 42px rgba(255, 159, 122, .16);
+  }
+
+  .exp-kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    height: 100%;
+  }
+
+  .exp-kpi {
+    min-height: 142px;
+    border-radius: 24px;
+    padding: 18px;
+    background: var(--strong);
+  }
+
+  .exp-kpi strong {
+    display: block;
+    margin-top: 12px;
+    font-size: 23px;
+    line-height: 1.1;
+  }
+
+  .exp-kpi span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .exp-kpi.is-orange { border-color: rgba(255, 159, 122, .34); }
+  .exp-kpi.is-green { border-color: rgba(32, 214, 163, .30); }
+  .exp-kpi.is-sun { border-color: rgba(255, 209, 102, .44); }
+  .exp-kpi.is-violet { border-color: rgba(128, 104, 255, .30); }
+
+  .exp-layout {
+    display: grid;
+    grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .exp-side-stack {
+    display: grid;
+    gap: 16px;
+  }
+
+  .exp-form,
+  .exp-panel,
+  .exp-table-panel,
+  .exp-alert {
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .exp-form h2,
+  .exp-panel h2,
+  .exp-table-panel h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .exp-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .exp-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .exp-field.is-wide {
+    grid-column: 1 / -1;
+  }
+
+  .exp-field label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .exp-field input,
+  .exp-field select {
+    width: 100%;
+    min-height: 43px;
+    border: 1px solid rgba(19, 32, 51, .12);
+    border-radius: 14px;
+    padding: 10px 12px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .88);
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .exp-form-actions {
+    margin-top: 16px;
+  }
+
+  .exp-alert {
+    margin-bottom: 16px;
+    background: rgba(255, 246, 214, .88);
+    border-color: rgba(245, 158, 11, .25);
+    color: #8a4b00;
+    font-weight: 800;
+  }
+
+  .exp-alert p {
+    margin: 0;
+  }
+
+  .exp-breakdown,
+  .exp-trend,
+  .exp-cats {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .exp-break-row,
+  .exp-trend-row {
+    display: grid;
+    grid-template-columns: minmax(96px, .7fr) minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .exp-meter {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(19, 32, 51, .08);
+  }
+
+  .exp-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--orange), var(--sun), var(--mint));
+  }
+
+  .exp-pill {
+    padding: 7px 10px;
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(19, 32, 51, .08);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .exp-cat-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(19, 32, 51, .08);
+    background: rgba(255, 255, 255, .64);
+  }
+
+  .exp-cat-row span {
+    display: block;
+  }
+
+  .exp-muted,
+  .exp-cat-row span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .exp-status,
+  .exp-cat {
+    padding: 7px 10px;
+    border: 1px solid rgba(19, 32, 51, .08);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .exp-status--sun { color: #92400e; background: rgba(255, 209, 102, .22); }
+  .exp-status--green { color: #047857; background: rgba(32, 214, 163, .16); }
+  .exp-status--rose { color: #be123c; background: rgba(255, 106, 162, .14); }
+  .exp-status--slate { color: #475569; background: rgba(100, 116, 139, .14); }
+  .exp-cat--cyan { color: #0369a1; background: rgba(18, 191, 243, .14); }
+  .exp-cat--violet { color: #6d28d9; background: rgba(128, 104, 255, .14); }
+  .exp-cat--orange { color: #9a3412; background: rgba(255, 159, 122, .18); }
+  .exp-cat--lime { color: #3f6212; background: rgba(183, 239, 74, .20); }
+  .exp-cat--pink { color: #be185d; background: rgba(255, 106, 162, .14); }
+  .exp-cat--slate { color: #475569; background: rgba(100, 116, 139, .14); }
+
+  .exp-table-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .exp-table-head p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .exp-table-wrap {
+    overflow-x: auto;
+  }
+
+  .exp-table {
+    width: 100%;
+    min-width: 880px;
+    border-collapse: separate;
+    border-spacing: 0 9px;
+  }
+
+  .exp-table th {
+    padding: 0 12px 6px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .exp-table td {
+    padding: 13px 12px;
+    border-top: 1px solid rgba(19, 32, 51, .08);
+    border-bottom: 1px solid rgba(19, 32, 51, .08);
+    background: rgba(255, 255, 255, .75);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  .exp-table td:first-child {
+    border-left: 1px solid rgba(19, 32, 51, .08);
+    border-radius: 18px 0 0 18px;
+  }
+
+  .exp-table td:last-child {
+    border-right: 1px solid rgba(19, 32, 51, .08);
+    border-radius: 0 18px 18px 0;
+  }
+
+  .exp-code {
+    display: grid;
+    gap: 3px;
+    font-weight: 950;
+  }
+
+  .exp-money {
+    font-weight: 1000;
+    color: #c2410c;
+  }
+
+  .exp-empty {
+    border: 1px dashed rgba(19, 32, 51, .18);
+    border-radius: 22px;
+    padding: 22px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, .62);
+  }
+
+  .exp-pagination {
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .exp-page {
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(19, 32, 51, .10);
+    color: var(--ink);
+    background: rgba(255,255,255,.78);
+    text-decoration: none;
+    font-weight: 950;
+  }
+
+  .exp-page.is-active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #f97316, #ff6aa2);
+  }
+
+  @media (max-width: 1080px) {
+    .exp-hero,
+    .exp-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .exp-home {
+      padding: 20px 12px 42px;
+    }
+    .exp-hero-main,
+    .exp-form,
+    .exp-panel,
+    .exp-table-panel {
+      border-radius: 24px;
+      padding: 18px;
+    }
+    .exp-hero h1 {
+      font-size: 40px;
+    }
+    .exp-kpi-grid,
+    .exp-field-grid {
+      grid-template-columns: 1fr;
+    }
+    .exp-table-head,
+    .exp-cat-row {
+      display: block;
+    }
+    .exp-break-row,
+    .exp-trend-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<main class="exp-home">
+  <div class="exp-wrap">
+    <section class="exp-hero" aria-label="Quản lý chi phí">
+      <div class="exp-hero-main">
+        <div class="exp-hero-content">
+          <div class="exp-chip"><span class="exp-spark"></span> Expense control</div>
+          <h1>Quản lý <span>chi phí</span></h1>
+          <p class="exp-lead">Kiểm soát phiếu chi vận hành, trạng thái duyệt, nhóm chi phí và xu hướng phát sinh theo kỳ.</p>
+          <div class="exp-tags">
+            <span class="exp-tag"><%= payload.rangeLabel %></span>
+            <span class="exp-tag"><%= payload.hotelContext.label %></span>
+            <span class="exp-tag"><%= payload.totalRecords %> phiếu chi</span>
+            <span class="exp-tag">Cập nhật <%= payload.generatedAtLabel %></span>
+          </div>
+          <div class="exp-actions">
+            <a class="exp-button exp-button--primary" href="/api/accounting/expenses?<%= csvQuery %>">Xuất CSV</a>
+            <a class="exp-button" href="/api/accounting/expenses?<%= jsonQuery %>">JSON</a>
+            <a class="exp-button exp-button--mint" href="/accounting/reports?loai_baocao=chiphi&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Báo cáo chi phí</a>
+          </div>
+        </div>
+      </div>
+
+      <aside class="exp-kpi-grid" aria-label="KPI chi phí">
+        <article class="exp-kpi is-orange"><span>Tổng chi phí</span><strong><%= summary.totalExpenseFormatted %></strong></article>
+        <article class="exp-kpi is-green"><span>Đã duyệt</span><strong><%= summary.approvedExpenseFormatted %></strong></article>
+        <article class="exp-kpi is-sun"><span>Chờ duyệt</span><strong><%= summary.pendingExpenseFormatted %></strong></article>
+        <article class="exp-kpi is-violet"><span>TB / phiếu</span><strong><%= summary.averageExpenseFormatted %></strong></article>
+      </aside>
+    </section>
+
+    <% if (payload.warnings && payload.warnings.length) { %>
+      <section class="exp-alert">
+        <% payload.warnings.forEach((warning) => { %>
+          <p><%= warning %></p>
+        <% }) %>
+      </section>
+    <% } %>
+
+    <section class="exp-layout">
+      <aside class="exp-side-stack">
+        <section class="exp-form">
+          <h2>Thêm phiếu chi</h2>
+          <form method="post" action="/accounting/expenses">
+            <div class="exp-field-grid">
+              <div class="exp-field is-wide">
+                <label for="ten_chi_phi">Tên chi phí</label>
+                <input id="ten_chi_phi" name="ten_chi_phi" required placeholder="Ví dụ: Chi phí bảo trì phòng" />
+              </div>
+              <div class="exp-field">
+                <label for="ngay_chi">Ngày chi</label>
+                <input id="ngay_chi" type="date" name="ngay_chi" required value="<%= filters.den_ngay %>" />
+              </div>
+              <div class="exp-field">
+                <label for="so_tien">Số tiền</label>
+                <input id="so_tien" name="so_tien" type="number" min="0" step="1000" required placeholder="0" />
+              </div>
+              <div class="exp-field">
+                <label for="trang_thai_create">Trạng thái</label>
+                <select id="trang_thai_create" name="trang_thai">
+                  <option value="ChoDuyet">Chờ duyệt</option>
+                  <option value="DaDuyet">Đã duyệt</option>
+                  <option value="Huy">Đã hủy</option>
+                </select>
+              </div>
+              <div class="exp-field is-wide">
+                <label for="noi_dung">Nội dung</label>
+                <input id="noi_dung" name="noi_dung" placeholder="Ghi chú chứng từ, nhà cung cấp hoặc lý do chi..." />
+              </div>
+            </div>
+            <div class="exp-form-actions">
+              <button class="exp-button exp-button--primary" type="submit">Thêm chi phí</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="exp-form">
+          <h2>Bộ lọc</h2>
+          <form method="get" action="/accounting/expenses">
+            <div class="exp-field-grid">
+              <div class="exp-field">
+                <label for="tu_ngay">Từ ngày</label>
+                <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
+              </div>
+              <div class="exp-field">
+                <label for="den_ngay">Đến ngày</label>
+                <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
+              </div>
+              <div class="exp-field">
+                <label for="trang_thai">Trạng thái</label>
+                <select id="trang_thai" name="trang_thai">
+                  <% statusOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field">
+                <label for="limit">Hiển thị</label>
+                <select id="limit" name="limit">
+                  <% [15, 25, 50, 100].forEach((limit) => { %>
+                    <option value="<%= limit %>" <%= Number(filters.limit) === limit ? "selected" : "" %>><%= limit %> dòng</option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field is-wide">
+                <label for="hotel_id">Cơ sở</label>
+                <select id="hotel_id" name="hotel_id">
+                  <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
+                  <% hotelOptions.forEach((hotel) => { %>
+                    <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>>
+                      <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field is-wide">
+                <label for="search">Tìm kiếm</label>
+                <input id="search" name="search" value="<%= filters.search %>" placeholder="Mã phiếu, tên chi phí hoặc nội dung..." />
+              </div>
+            </div>
+            <input type="hidden" name="page" value="1" />
+            <div class="exp-form-actions">
+              <button class="exp-button exp-button--primary" type="submit">Lọc chi phí</button>
+              <a class="exp-button" href="/accounting/expenses">Đặt lại</a>
+            </div>
+          </form>
+        </section>
+
+        <section class="exp-panel">
+          <h2>Trạng thái phiếu chi</h2>
+          <div class="exp-breakdown">
+            <% if (!statusBreakdown.length) { %>
+              <div class="exp-empty">Chưa có dữ liệu trạng thái trong kỳ này.</div>
+            <% } %>
+            <% statusBreakdown.forEach((item) => {
+              const pct = summary.totalExpense > 0 ? Math.round((Number(item.total || 0) / Number(summary.totalExpense || 1)) * 100) : 0;
+            %>
+              <div class="exp-break-row">
+                <span class="exp-status exp-status--<%= item.meta.tone %>"><%= item.meta.label %></span>
+                <div class="exp-meter"><span style="width:<%= Math.max(5, pct) %>%"></span></div>
+                <span class="exp-pill"><%= item.count %> · <%= item.totalFormatted %></span>
+              </div>
+            <% }) %>
+          </div>
+        </section>
+      </aside>
+
+      <section class="exp-side-stack">
+        <section class="exp-panel">
+          <h2>Nhóm chi phí</h2>
+          <div class="exp-cats">
+            <% if (!categoryBreakdown.length) { %>
+              <div class="exp-empty">Chưa có dữ liệu nhóm chi phí.</div>
+            <% } %>
+            <% categoryBreakdown.forEach((item) => { %>
+              <article class="exp-cat-row">
+                <div>
+                  <span class="exp-cat exp-cat--<%= item.meta.tone %>"><%= item.meta.label %></span>
+                  <span style="margin-top:7px"><%= item.count %> phiếu</span>
+                </div>
+                <strong class="exp-money"><%= item.totalFormatted %></strong>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="exp-panel">
+          <h2>Xu hướng theo ngày</h2>
+          <div class="exp-trend">
+            <% if (!dailyTrend.length) { %>
+              <div class="exp-empty">Không có xu hướng để hiển thị.</div>
+            <% } %>
+            <% dailyTrend.slice(-10).forEach((item) => { %>
+              <div class="exp-trend-row">
+                <strong><%= item.dateLabel %></strong>
+                <div class="exp-meter"><span style="width:<%= Math.max(5, Math.round((Number(item.total || 0) / maxTrend) * 100)) %>%"></span></div>
+                <span class="exp-money"><%= item.totalFormatted %></span>
+              </div>
+            <% }) %>
+          </div>
+          <% if (payload.highestDay) { %>
+            <p class="exp-muted" style="margin:14px 0 0">Ngày chi nhiều nhất: <strong><%= payload.highestDay.dateLabel %></strong> với <strong><%= payload.highestDay.totalFormatted %></strong>.</p>
+          <% } %>
+        </section>
+
+        <section class="exp-table-panel">
+          <div class="exp-table-head">
+            <div>
+              <h2>Danh sách phiếu chi</h2>
+              <p>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRecords %> bản ghi.</p>
+            </div>
+            <span class="exp-pill">Đã hủy: <%= summary.cancelledExpenseFormatted %></span>
+          </div>
+
+          <% if (!payload.hasData) { %>
+            <div class="exp-empty">Không có phiếu chi phù hợp với bộ lọc hiện tại.</div>
+          <% } else { %>
+            <div class="exp-table-wrap">
+              <table class="exp-table">
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Ngày chi</th>
+                    <th>Chi phí</th>
+                    <th>Nhóm</th>
+                    <th>Cơ sở</th>
+                    <th>Số tiền</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% rows.forEach((row) => { %>
+                    <tr>
+                      <td>
+                        <span class="exp-code">
+                          CP-<%= row.id %>
+                          <span class="exp-muted">#<%= row.id %></span>
+                        </span>
+                      </td>
+                      <td><%= row.ngayChiLabel %></td>
+                      <td>
+                        <strong><%= row.tenChiPhi %></strong>
+                        <div class="exp-muted"><%= row.noiDung || "Không có nội dung" %></div>
+                      </td>
+                      <td><span class="exp-cat exp-cat--<%= row.categoryMeta.tone %>"><%= row.categoryMeta.label %></span></td>
+                      <td><%= row.hotelLabel %></td>
+                      <td class="exp-money"><%= row.soTienFormatted %></td>
+                      <td>
+                        <span class="exp-status exp-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
+                        <div class="exp-muted" style="margin-top:5px"><%= row.statusMeta.hint %></div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+
+            <% if (totalPages > 1) { %>
+              <nav class="exp-pagination" aria-label="Phân trang chi phí">
+                <% if (page > 1) { %>
+                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: page - 1 }) %>">Trước</a>
+                <% } %>
+                <% if (firstPage > 1) { %>
+                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: 1 }) %>">1</a>
+                <% } %>
+                <% pages.forEach((item) => { %>
+                  <a class="exp-page <%= item === page ? "is-active" : "" %>" href="/accounting/expenses?<%= makeQuery({ page: item }) %>"><%= item %></a>
+                <% }) %>
+                <% if (lastPage < totalPages) { %>
+                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a>
+                <% } %>
+                <% if (page < totalPages) { %>
+                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: page + 1 }) %>">Tiếp</a>
+                <% } %>
+              </nav>
+            <% } %>
+          <% } %>
+        </section>
+      </section>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

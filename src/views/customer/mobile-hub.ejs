@@ -1,0 +1,183 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Mobile Hub</div>
+    <h2>App mobile/PWA cho <%= payload.profile.tenKh || user?.displayName || "Khách hàng" %></h2>
+    <p class="muted">Đây là cổng mobile-first để theo dõi hành trình lưu trú, cài app ra màn hình chính và xem snapshot khi mất mạng.</p>
+
+    <div class="dashboard-grid">
+      <article class="dashboard-card"><strong><%= payload.stats.totalBookings %></strong><h3>Total bookings</h3></article>
+      <article class="dashboard-card"><strong><%= payload.stats.serviceLineCount %></strong><h3>Service lines</h3></article>
+      <article class="dashboard-card"><strong><%= payload.profile.trangThaiEkyc %></strong><h3>eKYC</h3></article>
+    </div>
+
+    <div id="mobile-pwa-strip" class="flash" style="margin-top:16px;">
+      <strong>App mode</strong>
+      <p class="muted" id="mobile-pwa-note">Đang kiểm tra trạng thái PWA, khả năng cài app và offline shell...</p>
+      <div class="nav-links" style="margin-top:12px;">
+        <button class="button button--primary" id="mobile-install-btn" type="button">Cài app</button>
+        <button class="button" id="mobile-update-btn" type="button">Cập nhật app</button>
+        <a class="chip" href="/booking/search">Mở tìm phòng</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Journey</div>
+    <div class="room-grid">
+      <article class="room-card">
+        <span class="badge">Active stay</span>
+        <% if (payload.journey.activeStay) { %>
+          <h3><%= payload.journey.activeStay.hotelNames || payload.journey.activeStay.bookingCode %></h3>
+          <p class="muted">Checkout: <%= payload.journey.activeStay.checkoutLabel %> · <%= payload.journey.activeStay.roomCount %> phong</p>
+        <% } else { %>
+          <h3>Chưa có lưu trú đang diễn ra</h3>
+          <p class="muted">Khi khách đã check-in, mobile hub sẽ đẩy thông tin stay hiện tại lên đây.</p>
+        <% } %>
+      </article>
+      <article class="room-card">
+        <span class="badge">Next stay</span>
+        <% if (payload.journey.nextStay) { %>
+          <h3><%= payload.journey.nextStay.hotelNames || payload.journey.nextStay.bookingCode %></h3>
+          <p class="muted"><%= payload.journey.nextStay.checkinLabel %> → <%= payload.journey.nextStay.checkoutLabel %></p>
+          <strong><%= payload.journey.nextStay.totalFormatted %></strong>
+        <% } else { %>
+          <h3>Chưa có lịch gần nhất</h3>
+          <p class="muted">Bạn có thể đặt phòng mới ngay trong mobile hub này.</p>
+        <% } %>
+      </article>
+      <article class="room-card">
+        <span class="badge">Favorites</span>
+        <h3>Co so yeu thich</h3>
+        <p class="muted"><%= payload.journey.favoriteHotels.length ? payload.journey.favoriteHotels.map((item) => `${item.hotelName} (${item.total})`).join(" · ") : "Chưa có lịch sử đủ để học sở thích." %></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Quick Actions</div>
+    <div class="nav-links">
+      <% payload.quickActions.forEach((item) => { %>
+        <a class="button <%= item.key === 'search' ? 'button--primary' : '' %>" href="<%= item.href %>"><%= item.label %></a>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Offline Snapshot</div>
+    <div id="offline-snapshot-status" class="muted">Đang kiểm tra snapshot đã lưu trên thiết bị...</div>
+    <div id="mobile-bookings-grid" class="room-grid room-grid--wide" style="margin-top:16px;">
+      <% payload.bookings.slice(0, 6).forEach((booking) => { %>
+        <article class="room-card">
+          <span class="badge"><%= booking.status %></span>
+          <h3><%= booking.bookingCode || `GD-${booking.id}` %></h3>
+          <p class="muted"><%= booking.hotelNames || "Chưa có tên cơ sở" %></p>
+          <p class="muted"><%= booking.checkinLabel %> → <%= booking.checkoutLabel %></p>
+          <strong><%= booking.totalFormatted %></strong>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<script>
+  const pwaNote = document.getElementById("mobile-pwa-note");
+  const installBtn = document.getElementById("mobile-install-btn");
+  const updateBtn = document.getElementById("mobile-update-btn");
+  const snapshotStatus = document.getElementById("offline-snapshot-status");
+  const mobileGrid = document.getElementById("mobile-bookings-grid");
+  const snapshotKey = "abc-resort-mobile-snapshot-v1";
+  const escapeHtml = (value) => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  function renderPwaState() {
+    const state = window.__abcPwaState || {};
+    if (state.hasWaitingUpdate) {
+      pwaNote.textContent = "Đã có bản cập nhật mới cho app. Bạn có thể áp dụng ngay mà không cần vào store.";
+      installBtn.disabled = true;
+      updateBtn.disabled = false;
+    } else if (state.installAvailable) {
+      pwaNote.textContent = "Thiết bị này đã sẵn sàng cài Bento ra màn hình chính.";
+      installBtn.disabled = false;
+      updateBtn.disabled = true;
+    } else if (state.installed) {
+      pwaNote.textContent = "Bento đang chạy trong app mode. Offline shell và snapshot đã sẵn sàng.";
+      installBtn.disabled = true;
+      updateBtn.disabled = true;
+    } else if (state.supported === false) {
+      pwaNote.textContent = "Trình duyệt này chưa hỗ trợ cài PWA, nhưng web mode vẫn dùng đầy đủ chức năng.";
+      installBtn.disabled = true;
+      updateBtn.disabled = true;
+    } else {
+      pwaNote.textContent = state.online === false
+        ? "Bạn đang offline. App shell vẫn mở được, snapshot sẽ đồng bộ lại khi có mạng."
+        : "PWA đang sẵn sàng ở web mode. Nếu trình duyệt hỗ trợ, nút Cài app sẽ bật lên.";
+      installBtn.disabled = true;
+      updateBtn.disabled = true;
+    }
+  }
+
+  installBtn?.addEventListener("click", async () => {
+    if (window.__abcPwaInstall) {
+      await window.__abcPwaInstall();
+      renderPwaState();
+    }
+  });
+
+  updateBtn?.addEventListener("click", () => {
+    if (window.__abcPwaApplyUpdate) {
+      window.__abcPwaApplyUpdate();
+    }
+  });
+
+  window.addEventListener("abc:pwa-state", renderPwaState);
+  window.addEventListener("abc:pwa-install-available", renderPwaState);
+  renderPwaState();
+
+  function renderSnapshot(data, sourceLabel) {
+    snapshotStatus.textContent = sourceLabel;
+    const bookings = Array.isArray(data?.bookings) ? data.bookings.slice(0, 6) : [];
+    if (!bookings.length) {
+      mobileGrid.innerHTML = '<div class="empty-state">Chưa có booking nào trong snapshot.</div>';
+      return;
+    }
+
+    mobileGrid.innerHTML = bookings.map((booking) => `
+      <article class="room-card">
+        <span class="badge">${escapeHtml(booking.status || "")}</span>
+        <h3>${escapeHtml(booking.bookingCode || `GD-${booking.id || ""}`)}</h3>
+        <p class="muted">${escapeHtml(booking.hotelNames || "")}</p>
+        <p class="muted">${escapeHtml(booking.checkinLabel || "")} → ${escapeHtml(booking.checkoutLabel || "")}</p>
+        <strong>${escapeHtml(booking.totalFormatted || booking.amountLabel || "")}</strong>
+      </article>
+    `).join("");
+  }
+
+  (async function hydrateMobileHub() {
+    const cached = localStorage.getItem(snapshotKey);
+    if (cached) {
+      try {
+        renderSnapshot(JSON.parse(cached), "Đang dùng snapshot đã lưu trên thiết bị.");
+      } catch (_error) {
+        // ignore bad cache
+      }
+    }
+
+    try {
+      const response = await fetch("/api/customer/mobile-home", { credentials: "same-origin" });
+      const json = await response.json();
+      if (!json.ok) throw new Error(json.message || "Không thể tải mobile snapshot.");
+      localStorage.setItem(snapshotKey, JSON.stringify(json.data));
+      renderSnapshot(json.data, "Đã đồng bộ snapshot mới từ server.");
+    } catch (_error) {
+      if (!cached) {
+        snapshotStatus.textContent = "Không thể tải snapshot mới. Hãy kiểm tra kết nối và thử lại.";
+      }
+    }
+  })();
+</script>
+<%- include("../partials/footer") %>

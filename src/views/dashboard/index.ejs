@@ -1,0 +1,1017 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const scopeMeta = {
+    admin: { label: "Admin", accent: "#0ea5e9", soft: "rgba(14,165,233,.18)", gradient: "linear-gradient(135deg,#0ea5e9,#2563eb)", words: ["Users", "Health", "Backup", "AI"] },
+    letan: { label: "Lễ tân", accent: "#14b8a6", soft: "rgba(20,184,166,.18)", gradient: "linear-gradient(135deg,#0891b2,#14b8a6)", words: ["Booking", "Check-in", "Service", "Check-out"] },
+    ketoan: { label: "Kế toán", accent: "#f59e0b", soft: "rgba(245,158,11,.18)", gradient: "linear-gradient(135deg,#f59e0b,#fb7185)", words: ["Revenue", "Expense", "Debt", "Cashflow"] },
+    dichvu: { label: "Dịch vụ", accent: "#65a30d", soft: "rgba(101,163,13,.18)", gradient: "linear-gradient(135deg,#65a30d,#14b8a6)", words: ["Catalog", "Order", "Inspect", "Room feed"] },
+    quanly: { label: "Quản lý", accent: "#06b6d4", soft: "rgba(6,182,212,.18)", gradient: "linear-gradient(135deg,#06b6d4,#22c55e 48%,#f59e0b)", words: ["CRM", "Rooms", "eKYC", "Board"] },
+    cskh: { label: "CSKH", accent: "#fb7185", soft: "rgba(251,113,133,.18)", gradient: "linear-gradient(135deg,#fb7185,#f59e0b)", words: ["Feedback", "Reply", "Promo", "Broadcast"] }
+  };
+  const meta = scopeMeta[scope] || scopeMeta.letan;
+  const isLetan = scope === "letan";
+  const isCskh = scope === "cskh";
+  const isQuanly = scope === "quanly";
+  const primaryActions = actions;
+  const showLiveSections = !isCskh;
+%>
+
+<style>
+  .role-dash {
+    --dash-ink: #102033;
+    --dash-muted: #667085;
+    --dash-card: rgba(255,255,255,.78);
+    --dash-card-strong: rgba(255,255,255,.92);
+    --dash-line: rgba(16,32,51,.10);
+    --dash-accent: <%= meta.accent %>;
+    --dash-soft: <%= meta.soft %>;
+    --dash-gradient: <%= meta.gradient %>;
+    --dash-shadow: 0 24px 70px rgba(15,23,42,.16);
+    min-height: calc(100vh - 84px);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 34px 18px 56px;
+    color: var(--dash-ink);
+    background:
+      radial-gradient(circle at 6% 8%, rgba(20,184,166,.30), transparent 31%),
+      radial-gradient(circle at 84% 12%, rgba(14,165,233,.26), transparent 34%),
+      radial-gradient(circle at 48% 102%, rgba(163,230,53,.24), transparent 42%),
+      radial-gradient(circle at 18% 82%, rgba(251,113,133,.18), transparent 30%),
+      linear-gradient(135deg, #fbfffb 0%, #e9fbf6 42%, #f7fbff 100%);
+  }
+  .role-dash.is-letan{
+    background:
+      radial-gradient(circle at 8% 10%, rgba(20,184,166,.34), transparent 28%),
+      radial-gradient(circle at 88% 12%, rgba(251,113,133,.24), transparent 30%),
+      radial-gradient(circle at 52% 100%, rgba(251,191,36,.20), transparent 34%),
+      radial-gradient(circle at 28% 78%, rgba(14,165,233,.22), transparent 24%),
+      linear-gradient(135deg, #fcfffb 0%, #ecfff8 36%, #eef8ff 68%, #fff6eb 100%);
+  }
+  .role-dash.is-cskh{
+    background:
+      radial-gradient(circle at 8% 10%, rgba(251,113,133,.30), transparent 28%),
+      radial-gradient(circle at 86% 8%, rgba(245,158,11,.22), transparent 31%),
+      radial-gradient(circle at 50% 104%, rgba(20,184,166,.22), transparent 38%),
+      radial-gradient(circle at 16% 82%, rgba(14,165,233,.18), transparent 26%),
+      linear-gradient(135deg, #fffafa 0%, #fff7ed 38%, #eefcff 100%);
+  }
+  .role-dash::before,.role-dash::after{content:"";position:absolute;width:520px;height:520px;border-radius:999px;pointer-events:none;z-index:-1;opacity:.44;animation:dash-float 12s ease-in-out infinite alternate}
+  .role-dash::before{top:-240px;right:-140px;background:conic-gradient(from 160deg,rgba(14,165,233,.42),rgba(20,184,166,.32),rgba(163,230,53,.34),rgba(139,92,246,.28),rgba(14,165,233,.42))}
+  .role-dash::after{left:-220px;bottom:-260px;background:conic-gradient(from 20deg,rgba(251,113,133,.30),rgba(245,158,11,.28),rgba(20,184,166,.30),rgba(14,165,233,.24),rgba(251,113,133,.30));animation-delay:-4s}
+  .role-dash.is-letan::before{opacity:.58;background:conic-gradient(from 130deg,rgba(14,165,233,.56),rgba(20,184,166,.38),rgba(250,204,21,.34),rgba(251,113,133,.32),rgba(14,165,233,.56))}
+  .role-dash.is-letan::after{opacity:.52;background:conic-gradient(from 18deg,rgba(251,113,133,.34),rgba(245,158,11,.30),rgba(45,212,191,.30),rgba(59,130,246,.26),rgba(251,113,133,.34))}
+  .dash-shell{max-width:1220px;margin:0 auto;position:relative}
+  .dash-fantasy-scene{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    overflow:hidden;
+  }
+  .dash-fantasy-scene > *{position:absolute}
+  .dash-sun{
+    top:18px;
+    right:62px;
+    width:116px;
+    height:116px;
+    border-radius:999px;
+    background:radial-gradient(circle at 35% 35%, #fffbe8 0 18%, #fde68a 34%, #f59e0b 62%, rgba(245,158,11,.14) 76%, transparent 78%);
+    box-shadow:0 0 0 22px rgba(253,224,71,.16), 0 0 80px rgba(251,191,36,.32);
+    animation:dash-sunfloat 7s ease-in-out infinite;
+  }
+  .dash-sun::before,
+  .dash-sun::after{
+    content:"";
+    position:absolute;
+    inset:-18px;
+    border-radius:999px;
+    border:2px dashed rgba(251,191,36,.32);
+    animation:dash-spin 18s linear infinite;
+  }
+  .dash-sun::after{
+    inset:-34px;
+    border-color:rgba(245,158,11,.18);
+    animation-direction:reverse;
+    animation-duration:24s;
+  }
+  .dash-cloud{
+    height:42px;
+    border-radius:999px;
+    background:rgba(255,255,255,.68);
+    box-shadow:0 20px 50px rgba(148,163,184,.16);
+    filter:blur(.2px);
+  }
+  .dash-cloud::before,
+  .dash-cloud::after{
+    content:"";
+    position:absolute;
+    border-radius:999px;
+    background:inherit;
+  }
+  .dash-cloud--one{
+    top:58px;
+    left:48px;
+    width:132px;
+    animation:dash-cloud-sway 11s ease-in-out infinite;
+  }
+  .dash-cloud--one::before{width:58px;height:58px;left:18px;top:-24px}
+  .dash-cloud--one::after{width:74px;height:74px;right:16px;top:-30px}
+  .dash-cloud--two{
+    top:134px;
+    right:204px;
+    width:108px;
+    opacity:.78;
+    animation:dash-cloud-sway 13s ease-in-out infinite reverse;
+  }
+  .dash-cloud--two::before{width:48px;height:48px;left:14px;top:-20px}
+  .dash-cloud--two::after{width:60px;height:60px;right:12px;top:-24px}
+  .dash-rainbow{
+    top:88px;
+    right:128px;
+    width:240px;
+    height:128px;
+    border-radius:240px 240px 0 0;
+    border-top:12px solid rgba(244,114,182,.36);
+    border-left:12px solid rgba(251,191,36,.28);
+    border-right:12px solid rgba(59,130,246,.28);
+    opacity:.62;
+    transform:rotate(-4deg);
+    filter:blur(.2px);
+  }
+  .dash-rainbow::before{
+    content:"";
+    position:absolute;
+    inset:12px 14px 0;
+    border-radius:inherit;
+    border-top:10px solid rgba(45,212,191,.34);
+    border-left:10px solid rgba(251,113,133,.20);
+    border-right:10px solid rgba(14,165,233,.22);
+  }
+  .dash-wave{
+    left:-4%;
+    right:-4%;
+    bottom:126px;
+    height:84px;
+    background:
+      radial-gradient(circle at 10% 18%, rgba(255,255,255,.36), transparent 18%),
+      radial-gradient(circle at 40% 44%, rgba(255,255,255,.24), transparent 14%),
+      linear-gradient(180deg, rgba(125,211,252,.12), rgba(14,165,233,.10));
+    border-radius:46% 54% 0 0 / 100% 100% 0 0;
+    opacity:.72;
+    animation:dash-wave-sway 8s ease-in-out infinite;
+  }
+  .dash-leaf{
+    width:84px;
+    height:34px;
+    border-radius:100% 0 100% 0;
+    background:linear-gradient(135deg, rgba(74,222,128,.64), rgba(20,184,166,.52));
+    box-shadow:0 18px 34px rgba(20,184,166,.16);
+    transform-origin:left center;
+  }
+  .dash-leaf::after{
+    content:"";
+    position:absolute;
+    left:10px;
+    right:12px;
+    top:50%;
+    height:1.5px;
+    background:rgba(255,255,255,.52);
+    transform:translateY(-50%) rotate(-16deg);
+  }
+  .dash-leaf--one{left:18px;bottom:168px;transform:rotate(-18deg);animation:dash-leaf-sway 6s ease-in-out infinite}
+  .dash-leaf--two{left:60px;bottom:132px;transform:rotate(8deg) scale(.92);animation:dash-leaf-sway 7.4s ease-in-out infinite reverse}
+  .dash-leaf--three{right:26px;bottom:184px;transform:rotate(196deg);animation:dash-leaf-sway 6.8s ease-in-out infinite}
+  .dash-leaf--four{right:84px;bottom:138px;transform:rotate(172deg) scale(.88);animation:dash-leaf-sway 8s ease-in-out infinite reverse}
+  .dash-flower{
+    width:18px;
+    height:18px;
+    border-radius:999px;
+    background:radial-gradient(circle, #fff 0 18%, #f9a8d4 26%, #fb7185 60%, transparent 62%);
+    box-shadow:
+      0 -12px 0 rgba(253,164,175,.82),
+      0 12px 0 rgba(253,164,175,.78),
+      12px 0 0 rgba(251,191,36,.72),
+      -12px 0 0 rgba(45,212,191,.72);
+    opacity:.82;
+    filter:drop-shadow(0 6px 18px rgba(244,114,182,.16));
+  }
+  .dash-flower--one{left:138px;bottom:144px;animation:dash-petal-float 9s ease-in-out infinite}
+  .dash-flower--two{right:148px;bottom:118px;transform:scale(.86);animation:dash-petal-float 10s ease-in-out infinite reverse}
+  .dash-petal{
+    width:14px;
+    height:14px;
+    border-radius:14px 0 14px 0;
+    background:linear-gradient(135deg, rgba(253,164,175,.84), rgba(251,191,36,.62));
+    opacity:.68;
+  }
+  .dash-petal--one{top:210px;left:16%;animation:dash-fall 12s linear infinite}
+  .dash-petal--two{top:160px;left:32%;animation:dash-fall 9.5s linear infinite reverse}
+  .dash-petal--three{top:220px;right:18%;animation:dash-fall 11.5s linear infinite}
+  .dash-petal--four{top:190px;right:34%;animation:dash-fall 10.2s linear infinite reverse}
+  .role-dash.is-letan .dash-shell::before,
+  .role-dash.is-letan .dash-shell::after{
+    content:"";
+    position:absolute;
+    inset:auto;
+    pointer-events:none;
+    border-radius:999px;
+    filter:blur(6px);
+    opacity:.55;
+    z-index:0;
+  }
+  .role-dash.is-letan .dash-shell::before{
+    width:12px;height:12px;top:34px;right:320px;
+    background:#fff7c2;
+    box-shadow:
+      -120px 48px 0 2px rgba(255,255,255,.78),
+      60px 120px 0 1px rgba(190,242,255,.76),
+      -220px 220px 0 2px rgba(255,228,230,.72),
+      140px 260px 0 1px rgba(255,249,196,.76);
+    animation:dash-sparkle 7s ease-in-out infinite;
+  }
+  .role-dash.is-letan .dash-shell::after{
+    width:10px;height:10px;left:140px;bottom:180px;
+    background:#d9f99d;
+    box-shadow:
+      180px -90px 0 1px rgba(191,219,254,.76),
+      320px -40px 0 2px rgba(253,224,71,.68),
+      440px -180px 0 1px rgba(255,255,255,.86);
+    animation:dash-sparkle 6.2s ease-in-out infinite reverse;
+  }
+  .dash-hero{display:grid;grid-template-columns:minmax(0,1.08fr) 430px;gap:22px;align-items:stretch;margin-bottom:22px}
+  .dash-hero.is-compact{grid-template-columns:minmax(0,1fr) 340px}
+  .dash-card,.dash-hero-main,.dash-orbit,.dash-strip,.dash-action,.dash-stat,.dash-room,.dash-event{border:1px solid var(--dash-line);background:var(--dash-card);box-shadow:var(--dash-shadow);backdrop-filter:blur(24px)}
+  .dash-hero-main{position:relative;overflow:hidden;min-height:350px;border-radius:34px;padding:34px}
+  .dash-hero-main.is-compact{min-height:300px;padding:30px}
+  .role-dash.is-letan .dash-hero-main.is-compact{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.72)),
+      radial-gradient(circle at 88% 20%, rgba(251,191,36,.16), transparent 20%);
+  }
+  .dash-hero-main::before{content:"";position:absolute;inset:-1px;background:linear-gradient(120deg,rgba(255,255,255,.66),transparent 28%),radial-gradient(circle at 88% 18%,var(--dash-soft),transparent 31%);pointer-events:none}
+  .dash-eyebrow{display:inline-flex;align-items:center;gap:8px;position:relative;z-index:1;border-radius:999px;padding:7px 12px;background:var(--dash-soft);border:1px solid rgba(16,32,51,.08);color:var(--dash-accent);font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .dash-dot{width:8px;height:8px;border-radius:999px;background:var(--dash-accent);box-shadow:0 0 0 7px var(--dash-soft);animation:dash-pulse 1.8s ease-in-out infinite}
+  .dash-hero h1{position:relative;z-index:1;max-width:720px;margin:24px 0 14px;color:var(--dash-ink);font-size:clamp(38px,5.8vw,70px);line-height:.92;letter-spacing:-.07em}
+  .dash-hero h1 span{color:transparent;background:var(--dash-gradient);-webkit-background-clip:text;background-clip:text}
+  .dash-lead{position:relative;z-index:1;max-width:690px;margin:0;color:var(--dash-muted);font-size:16px;line-height:1.72}
+  .dash-lead.is-compact{max-width:760px;font-size:15px;line-height:1.64}
+  .dash-hero-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+  .dash-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;padding:10px 17px;color:var(--dash-ink);text-decoration:none;font-size:14px;font-weight:900;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.74);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .dash-button:hover{transform:translateY(-2px);border-color:var(--dash-accent);box-shadow:0 18px 42px var(--dash-soft)}
+  .dash-button--primary{color:#fff;border-color:transparent;background:var(--dash-gradient);box-shadow:0 18px 38px var(--dash-soft)}
+  .dash-pulse-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:34px}
+  .dash-pulse-grid.is-compact{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:24px}
+  .dash-pulse{border-radius:22px;padding:16px;background:rgba(255,255,255,.58);border:1px solid rgba(16,32,51,.08)}
+  .dash-pulse strong{display:block;font-size:28px;line-height:1;letter-spacing:-.05em;color:var(--dash-ink)}
+  .dash-pulse span{display:block;margin-top:8px;color:var(--dash-muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .dash-orbit{position:relative;overflow:hidden;border-radius:34px;min-height:350px;background:linear-gradient(160deg,rgba(255,255,255,.84),rgba(236,253,245,.62))}
+  .dash-orbit.is-compact{min-height:300px}
+  .role-dash.is-letan .dash-orbit.is-compact{
+    background:
+      linear-gradient(160deg, rgba(255,255,255,.88), rgba(239,253,250,.74)),
+      radial-gradient(circle at 26% 18%, rgba(251,191,36,.18), transparent 22%);
+  }
+  .dash-orbit-stage{position:absolute;inset:24px;border-radius:32px;background:linear-gradient(145deg,rgba(15,23,42,.86),rgba(12,74,110,.72));overflow:hidden}
+  .dash-orbit-stage::before{content:"";position:absolute;inset:24px;border:1px dashed rgba(226,232,240,.24);border-radius:999px;animation:dash-spin 18s linear infinite}
+  .dash-orbit-stage::after{content:"";position:absolute;width:160px;height:160px;left:calc(50% - 80px);top:calc(50% - 80px);border-radius:42px;background:var(--dash-gradient);box-shadow:0 24px 70px var(--dash-soft);transform:rotate(14deg);animation:dash-breathe 4.2s ease-in-out infinite}
+  .dash-orbit-word{position:absolute;z-index:2;display:inline-flex;align-items:center;border-radius:999px;padding:9px 12px;color:#eff6ff;background:rgba(15,23,42,.48);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);font-size:12px;font-weight:1000}
+  .dash-orbit-word:nth-child(1){left:28px;top:36px;animation:dash-drift-a 5.5s ease-in-out infinite}
+  .dash-orbit-word:nth-child(2){right:34px;top:88px;animation:dash-drift-b 6s ease-in-out infinite}
+  .dash-orbit-word:nth-child(3){left:46px;bottom:62px;animation:dash-drift-b 5.8s ease-in-out infinite reverse}
+  .dash-orbit-word:nth-child(4){right:42px;bottom:42px;animation:dash-drift-a 6.4s ease-in-out infinite reverse}
+  .dash-strip{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-radius:28px;padding:18px 20px;margin-bottom:22px;background:rgba(255,255,255,.66)}
+  .dash-strip strong{display:block;color:var(--dash-ink);font-size:18px}
+  .dash-strip span{display:block;margin-top:4px;color:var(--dash-muted);font-size:13px}
+  .dash-flow{display:flex;flex-wrap:wrap;gap:8px}
+  .dash-flow a,.dash-flow span{display:inline-flex;align-items:center;border-radius:999px;padding:8px 11px;background:var(--dash-soft);border:1px solid rgba(16,32,51,.08);color:var(--dash-accent);text-decoration:none;font-size:12px;font-weight:1000}
+  .dash-section{margin-top:22px}
+  .dash-section.is-compact{margin-top:18px}
+  .dash-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}
+  .dash-section-head h2{margin:0;color:var(--dash-ink);font-size:24px;letter-spacing:-.04em}
+  .dash-section-head p{margin:4px 0 0;color:var(--dash-muted);font-size:13px}
+  .dash-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .dash-grid.is-compact{gap:14px}
+  .dash-action{--card-accent:#0ea5e9;--card-glow:rgba(14,165,233,.20);position:relative;overflow:hidden;min-height:245px;grid-column:span 4;border-radius:30px;padding:22px;text-decoration:none;color:var(--dash-ink);transform:translateY(18px);opacity:0;animation:dash-rise .7s cubic-bezier(.22,1,.36,1) forwards;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.66))}
+  .dash-grid.is-compact .dash-action{min-height:208px;padding:20px}
+  .dash-action:nth-child(2){animation-delay:.06s}.dash-action:nth-child(3){animation-delay:.12s}.dash-action:nth-child(4){animation-delay:.18s}.dash-action:nth-child(5){animation-delay:.24s}.dash-action:nth-child(6){animation-delay:.30s}.dash-action:nth-child(7){animation-delay:.36s}.dash-action:nth-child(8){animation-delay:.42s}
+  .dash-action:nth-child(1),.dash-action:nth-child(4){grid-column:span 5}
+  .dash-action:nth-child(2),.dash-action:nth-child(5){grid-column:span 3}
+  .dash-grid.is-compact .dash-action,.dash-grid.is-compact .dash-action:nth-child(1),.dash-grid.is-compact .dash-action:nth-child(2),.dash-grid.is-compact .dash-action:nth-child(4),.dash-grid.is-compact .dash-action:nth-child(5){grid-column:span 6}
+  .dash-action:nth-child(1){--card-accent:#14b8a6;--card-glow:rgba(20,184,166,.24)}
+  .dash-action:nth-child(2){--card-accent:#0ea5e9;--card-glow:rgba(14,165,233,.24)}
+  .dash-action:nth-child(3){--card-accent:#8b5cf6;--card-glow:rgba(139,92,246,.22)}
+  .dash-action:nth-child(4){--card-accent:#f59e0b;--card-glow:rgba(245,158,11,.24)}
+  .dash-action:nth-child(5){--card-accent:#fb7185;--card-glow:rgba(251,113,133,.24)}
+  .dash-action:nth-child(6){--card-accent:#65a30d;--card-glow:rgba(101,163,13,.22)}
+  .dash-action:nth-child(7){--card-accent:#ec4899;--card-glow:rgba(236,72,153,.22)}
+  .dash-action:nth-child(8){--card-accent:#06b6d4;--card-glow:rgba(6,182,212,.22)}
+  .dash-action:hover{transform:translateY(-6px) rotate(-.25deg);box-shadow:0 30px 80px rgba(15,23,42,.20);border-color:var(--card-accent)}
+  .role-dash.is-letan .dash-grid.is-compact .dash-action{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.72)),
+      radial-gradient(circle at 100% 0%, var(--card-glow), transparent 34%);
+    box-shadow:0 26px 74px rgba(15,23,42,.14);
+  }
+  .role-dash.is-letan .dash-grid.is-compact{
+    grid-auto-rows:minmax(210px,auto);
+    gap:18px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action{
+    min-height:210px;
+    padding:22px;
+    border-color:rgba(17,34,51,.13);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.97), rgba(255,255,255,.80)),
+      radial-gradient(circle at 100% 0%, var(--card-glow), transparent 34%);
+    box-shadow:0 28px 78px rgba(18,38,63,.20);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5){
+    grid-column:span 4;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+    grid-column:span 5;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5){
+    grid-column:span 3;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4){
+    grid-column:span 4;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:hover{
+    box-shadow:0 36px 96px rgba(18,38,63,.25);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action::before{
+    width:56px;
+    height:56px;
+    right:28px;
+    top:24px;
+    border-radius:20px;
+    opacity:.94;
+    background:linear-gradient(135deg,var(--card-accent),rgba(255,255,255,.34));
+    box-shadow:0 18px 42px var(--card-glow);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action::after{
+    left:22px;
+    right:22px;
+    bottom:18px;
+    height:5px;
+    opacity:.82;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-code{
+    background:rgba(255,255,255,.88);
+    border-color:rgba(17,34,51,.11);
+    box-shadow:0 10px 26px rgba(18,38,63,.07);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-code::after{
+    display:none;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action h3{
+    margin:54px 0 10px;
+    color:#102033;
+    font-size:27px;
+    line-height:1.04;
+    letter-spacing:-.055em;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action p{
+    max-width:520px;
+    color:#5f6b7d;
+    font-size:14px;
+    line-height:1.58;
+    font-weight:720;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-open{
+    right:22px;
+    bottom:28px;
+    font-size:13px;
+    font-weight:1000;
+  }
+  .dash-action::before{content:"";position:absolute;width:180px;height:180px;right:-56px;top:-56px;border-radius:999px;background:radial-gradient(circle,var(--card-glow),transparent 68%);transition:transform .25s ease}
+  .dash-action:hover::before{transform:scale(1.2)}
+  .dash-action::after{content:"";position:absolute;left:22px;right:22px;bottom:18px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--card-accent),transparent);opacity:.62}
+  .dash-action h3{position:relative;z-index:1;margin:26px 0 10px;color:var(--dash-ink);font-size:23px;line-height:1.08;letter-spacing:-.045em}
+  .dash-action p{position:relative;z-index:1;margin:0;color:var(--dash-muted);line-height:1.58;font-size:14px}
+  .dash-code{position:relative;z-index:1;display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.72);border:1px solid rgba(16,32,51,.08);color:var(--card-accent);font-size:12px;font-weight:1000;letter-spacing:.06em}
+  .dash-code::after{content:"";display:inline-block;width:38px;height:10px;margin-left:8px;border-radius:999px;background:linear-gradient(90deg,var(--card-accent),transparent);opacity:.65}
+  .dash-open{position:absolute;z-index:1;right:20px;bottom:24px;color:var(--card-accent);font-size:13px;font-weight:1000}
+  .role-dash.is-cskh .dash-action{
+    grid-column:span 6;
+    min-height:218px;
+    border-color:rgba(17,34,51,.13);
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.78)),
+      radial-gradient(circle at 100% 0%,var(--card-glow),transparent 34%);
+    box-shadow:0 26px 74px rgba(18,38,63,.18);
+  }
+  .role-dash.is-cskh .dash-action::before{
+    width:54px;
+    height:54px;
+    right:26px;
+    top:24px;
+    border-radius:19px;
+    background:linear-gradient(135deg,var(--card-accent),rgba(255,255,255,.36));
+    box-shadow:0 18px 42px var(--card-glow);
+  }
+  .role-dash.is-cskh .dash-action::after{
+    height:5px;
+    opacity:.80;
+  }
+  .role-dash.is-cskh .dash-action h3{
+    margin:50px 0 10px;
+    color:#102033;
+    font-size:25px;
+    line-height:1.04;
+    letter-spacing:-.055em;
+  }
+  .role-dash.is-cskh .dash-action p{
+    max-width:520px;
+    color:#5f6b7d;
+    font-size:13.5px;
+    line-height:1.56;
+    font-weight:720;
+  }
+  .dash-stat{grid-column:span 4;border-radius:26px;padding:20px;background:rgba(255,255,255,.70)}
+  .role-dash.is-letan .dash-grid.is-compact .dash-stat{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.72)),
+      radial-gradient(circle at 100% 0%, rgba(20,184,166,.12), transparent 36%);
+  }
+  .dash-stat strong{display:block;color:var(--dash-ink);font-size:30px;line-height:1;letter-spacing:-.05em}
+  .dash-stat h3{margin:12px 0 6px;color:var(--dash-ink);font-size:17px}
+  .dash-stat p,.dash-event p,.dash-room p{margin:0;color:var(--dash-muted);font-size:13px;line-height:1.5}
+  .dash-event,.dash-room{grid-column:span 3;border-radius:26px;padding:18px;background:rgba(255,255,255,.68)}
+  .dash-grid.is-compact .dash-stat{grid-column:span 3}
+  .dash-grid.is-compact .dash-room{grid-column:span 4}
+  .role-dash.is-letan .dash-grid.is-compact .dash-room{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.74)),
+      radial-gradient(circle at 100% 0%, rgba(14,165,233,.10), transparent 34%);
+  }
+  .dash-event h3,.dash-room h3{margin:12px 0 8px;color:var(--dash-ink);font-size:17px;line-height:1.2}
+  .dash-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:var(--dash-soft);color:var(--dash-accent);font-size:11px;font-weight:1000;letter-spacing:.04em}
+  .dash-empty{grid-column:1/-1;border:1px dashed rgba(16,32,51,.14);border-radius:26px;padding:22px;background:rgba(255,255,255,.56);color:var(--dash-muted)}
+  .manager-dash{
+    --mgr-ink:#102033;
+    --mgr-muted:#64748b;
+    --mgr-line:rgba(16,32,51,.11);
+    --mgr-card:rgba(255,255,255,.78);
+    --mgr-strong:rgba(255,255,255,.94);
+    --mgr-cyan:#06b6d4;
+    --mgr-mint:#22c55e;
+    --mgr-lime:#a3e635;
+    --mgr-sun:#facc15;
+    --mgr-orange:#fb923c;
+    --mgr-pink:#fb7185;
+    --mgr-violet:#8b5cf6;
+    --mgr-shadow:0 28px 86px rgba(15,23,42,.16);
+    min-height:calc(100vh - 84px);
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+    padding:34px 18px 58px;
+    color:var(--mgr-ink);
+    background:
+      radial-gradient(circle at 8% 12%, rgba(34,197,94,.30), transparent 27%),
+      radial-gradient(circle at 82% 8%, rgba(6,182,212,.26), transparent 30%),
+      radial-gradient(circle at 48% 104%, rgba(250,204,21,.24), transparent 39%),
+      radial-gradient(circle at 18% 82%, rgba(251,113,133,.18), transparent 27%),
+      linear-gradient(135deg,#fbfffb 0%,#e9fbff 42%,#fff8ed 100%);
+  }
+  .manager-dash::before,
+  .manager-dash::after{content:"";position:absolute;pointer-events:none;z-index:-1}
+  .manager-dash::before{
+    width:640px;height:640px;right:-230px;top:-310px;border-radius:46% 54% 40% 60%;
+    opacity:.48;background:conic-gradient(from 140deg,rgba(6,182,212,.48),rgba(34,197,94,.36),rgba(250,204,21,.34),rgba(251,113,133,.26),rgba(6,182,212,.48));
+    animation:mgr-blob 16s ease-in-out infinite alternate;
+  }
+  .manager-dash::after{
+    width:520px;height:520px;left:-240px;bottom:-270px;border-radius:999px;
+    opacity:.36;background:conic-gradient(from 20deg,rgba(251,146,60,.38),rgba(163,230,53,.30),rgba(6,182,212,.28),rgba(139,92,246,.22),rgba(251,146,60,.38));
+    animation:mgr-orbit 14s ease-in-out infinite alternate;
+  }
+  .manager-shell{max-width:1240px;margin:0 auto;position:relative}
+  .manager-hero{display:grid;grid-template-columns:minmax(0,1.08fr) 390px;gap:22px;align-items:stretch;margin-bottom:20px}
+  .manager-panel,
+  .manager-hero-main,
+  .manager-radar,
+  .manager-action,
+  .manager-command,
+  .manager-live-panel{border:1px solid var(--mgr-line);background:var(--mgr-card);box-shadow:var(--mgr-shadow);backdrop-filter:blur(26px)}
+  .manager-hero-main{position:relative;overflow:hidden;min-height:366px;border-radius:36px;padding:36px}
+  .manager-hero-main::before{
+    content:"";position:absolute;inset:-1px;pointer-events:none;
+    background:
+      linear-gradient(120deg,rgba(255,255,255,.72),transparent 28%),
+      radial-gradient(circle at 86% 18%,rgba(6,182,212,.24),transparent 30%),
+      radial-gradient(circle at 18% 88%,rgba(163,230,53,.22),transparent 28%);
+  }
+  .manager-chip{position:relative;z-index:1;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;border:1px solid rgba(6,182,212,.22);background:rgba(6,182,212,.12);color:#087a92;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .manager-dot{width:8px;height:8px;border-radius:999px;background:var(--mgr-mint);box-shadow:0 0 0 7px rgba(34,197,94,.15);animation:dash-pulse 1.8s ease-in-out infinite}
+  .manager-hero h1{position:relative;z-index:1;max-width:760px;margin:26px 0 14px;color:var(--mgr-ink);font-size:clamp(42px,6.2vw,76px);line-height:.90;letter-spacing:-.075em}
+  .manager-hero h1 span{color:transparent;background:linear-gradient(96deg,#0891b2 0%,#22c55e 42%,#f59e0b 74%,#ec4899 100%);-webkit-background-clip:text;background-clip:text}
+  .manager-lead{position:relative;z-index:1;max-width:690px;margin:0;color:var(--mgr-muted);font-size:16px;line-height:1.72}
+  .manager-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+  .manager-button{display:inline-flex;align-items:center;justify-content:center;min-height:45px;border-radius:999px;padding:10px 18px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.76);color:var(--mgr-ink);text-decoration:none;font-size:14px;font-weight:950;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .manager-button:hover{transform:translateY(-2px);border-color:rgba(6,182,212,.36);box-shadow:0 18px 44px rgba(6,182,212,.16)}
+  .manager-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#22c55e);box-shadow:0 18px 42px rgba(34,197,94,.24)}
+  .manager-mini-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:34px}
+  .manager-mini{border-radius:23px;padding:16px;background:rgba(255,255,255,.60);border:1px solid rgba(16,32,51,.08)}
+  .manager-mini strong{display:block;color:var(--mgr-ink);font-size:30px;line-height:1;letter-spacing:-.055em}
+  .manager-mini span{display:block;margin-top:8px;color:var(--mgr-muted);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}
+  .manager-radar{position:relative;overflow:hidden;border-radius:36px;min-height:366px;background:linear-gradient(160deg,rgba(255,255,255,.88),rgba(236,253,245,.66))}
+  .manager-radar-stage{position:absolute;inset:24px;border-radius:32px;overflow:hidden;background:linear-gradient(145deg,rgba(8,47,73,.88),rgba(5,150,105,.74))}
+  .manager-radar-stage::before{content:"";position:absolute;inset:28px;border:1px dashed rgba(226,232,240,.28);border-radius:999px;animation:dash-spin 20s linear infinite}
+  .manager-radar-stage::after{content:"";position:absolute;width:168px;height:168px;left:calc(50% - 84px);top:calc(50% - 84px);border-radius:44px;background:linear-gradient(135deg,#06b6d4,#22c55e 52%,#facc15);box-shadow:0 24px 70px rgba(6,182,212,.24);transform:rotate(14deg);animation:dash-breathe 4.5s ease-in-out infinite}
+  .manager-radar-word{position:absolute;z-index:2;display:inline-flex;align-items:center;border-radius:999px;padding:9px 12px;color:#eff6ff;background:rgba(15,23,42,.48);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);font-size:12px;font-weight:1000}
+  .manager-radar-word:nth-child(1){left:28px;top:36px;animation:dash-drift-a 5.5s ease-in-out infinite}
+  .manager-radar-word:nth-child(2){right:34px;top:88px;animation:dash-drift-b 6s ease-in-out infinite}
+  .manager-radar-word:nth-child(3){left:46px;bottom:62px;animation:dash-drift-b 5.8s ease-in-out infinite reverse}
+  .manager-radar-word:nth-child(4){right:42px;bottom:42px;animation:dash-drift-a 6.4s ease-in-out infinite reverse}
+  .manager-command{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;border-radius:28px;padding:18px 20px;margin-bottom:20px;background:rgba(255,255,255,.68)}
+  .manager-command strong{display:block;color:var(--mgr-ink);font-size:18px}
+  .manager-command span{display:block;margin-top:4px;color:var(--mgr-muted);font-size:13px}
+  .manager-flow{display:flex;flex-wrap:wrap;gap:8px}
+  .manager-flow a{display:inline-flex;align-items:center;border-radius:999px;padding:8px 11px;background:rgba(6,182,212,.12);border:1px solid rgba(16,32,51,.08);color:#087a92;text-decoration:none;font-size:12px;font-weight:1000}
+  .manager-section{margin-top:22px}
+  .manager-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}
+  .manager-section-head h2{margin:0;color:var(--mgr-ink);font-size:25px;letter-spacing:-.04em}
+  .manager-section-head p{margin:4px 0 0;color:var(--mgr-muted);font-size:13px}
+  .manager-action-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .manager-action{--mgr-action:#06b6d4;--mgr-glow:rgba(6,182,212,.22);position:relative;overflow:hidden;min-height:222px;grid-column:span 3;border-radius:30px;padding:22px;text-decoration:none;color:var(--mgr-ink);background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.72)),radial-gradient(circle at 100% 0%,var(--mgr-glow),transparent 35%);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+  .manager-action:nth-child(1){--mgr-action:#06b6d4;--mgr-glow:rgba(6,182,212,.24);grid-column:span 4}
+  .manager-action:nth-child(2){--mgr-action:#22c55e;--mgr-glow:rgba(34,197,94,.24)}
+  .manager-action:nth-child(3){--mgr-action:#f59e0b;--mgr-glow:rgba(245,158,11,.24)}
+  .manager-action:nth-child(4){--mgr-action:#fb7185;--mgr-glow:rgba(251,113,133,.24);grid-column:span 4}
+  .manager-action:hover{transform:translateY(-6px);border-color:var(--mgr-action);box-shadow:0 34px 90px rgba(15,23,42,.22)}
+  .manager-action::before{content:"";position:absolute;width:56px;height:56px;right:26px;top:24px;border-radius:20px;background:linear-gradient(135deg,var(--mgr-action),rgba(255,255,255,.34));box-shadow:0 18px 42px var(--mgr-glow)}
+  .manager-action::after{content:"";position:absolute;left:22px;right:22px;bottom:18px;height:5px;border-radius:999px;background:linear-gradient(90deg,var(--mgr-action),transparent);opacity:.80}
+  .manager-code{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.82);border:1px solid rgba(16,32,51,.09);color:var(--mgr-action);font-size:12px;font-weight:1000;letter-spacing:.06em}
+  .manager-action h3{position:relative;z-index:1;margin:56px 0 10px;color:var(--mgr-ink);font-size:27px;line-height:1.04;letter-spacing:-.055em}
+  .manager-action p{position:relative;z-index:1;max-width:520px;margin:0;color:#5f6b7d;font-size:14px;line-height:1.58;font-weight:720}
+  .manager-open{position:absolute;z-index:1;right:22px;bottom:28px;color:var(--mgr-action);font-size:13px;font-weight:1000}
+  .manager-live-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,.76fr);gap:16px}
+  .manager-live-panel{border-radius:30px;padding:20px;background:rgba(255,255,255,.72)}
+  .manager-live-panel .dash-grid{gap:14px}
+  .manager-live-panel .dash-stat{grid-column:span 6;background:rgba(255,255,255,.76);box-shadow:0 18px 44px rgba(15,23,42,.09)}
+  .manager-live-panel .dash-event{grid-column:span 6;background:rgba(255,255,255,.74);box-shadow:0 18px 44px rgba(15,23,42,.08)}
+  .manager-room-panel{border-radius:30px;padding:20px;background:rgba(255,255,255,.72)}
+  .manager-room-panel .dash-stat{grid-column:span 2;background:rgba(255,255,255,.74);box-shadow:0 16px 40px rgba(15,23,42,.08)}
+  .manager-room-panel .dash-room{grid-column:span 3;background:rgba(255,255,255,.72);box-shadow:0 16px 40px rgba(15,23,42,.08)}
+  @keyframes mgr-blob{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(-24px,28px,0) rotate(16deg)}}
+  @keyframes mgr-orbit{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(32px,-18px,0) scale(1.04)}}
+  @keyframes dash-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(32px,24px,0) rotate(16deg)}}
+  @keyframes dash-sunfloat{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-8px,0) scale(1.04)}}
+  @keyframes dash-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
+  @keyframes dash-spin{to{transform:rotate(360deg)}}
+  @keyframes dash-breathe{0%,100%{transform:rotate(14deg) scale(1);border-radius:42px}50%{transform:rotate(22deg) scale(1.06);border-radius:64px}}
+  @keyframes dash-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}
+  @keyframes dash-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
+  @keyframes dash-rise{to{transform:translateY(0);opacity:1}}
+  @keyframes dash-sparkle{0%,100%{transform:scale(1);opacity:.42}50%{transform:scale(1.26);opacity:.88}}
+  @keyframes dash-cloud-sway{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(22px,-6px,0)}}
+  @keyframes dash-wave-sway{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,8px,0) scaleX(1.02)}}
+  @keyframes dash-leaf-sway{0%,100%{transform:rotate(var(--leaf-rot,0deg)) translate3d(0,0,0)}50%{transform:rotate(calc(var(--leaf-rot,0deg) + 8deg)) translate3d(2px,-8px,0)}}
+  @keyframes dash-petal-float{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-10px,0) scale(1.08)}}
+  @keyframes dash-fall{0%{transform:translate3d(0,0,0) rotate(0);opacity:0}10%{opacity:.72}100%{transform:translate3d(24px,340px,0) rotate(320deg);opacity:0}}
+  @media(max-width:1080px){.manager-hero,.manager-live-grid{grid-template-columns:1fr}.manager-radar{min-height:320px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4){grid-column:span 6}.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:span 4}}
+  @media(max-width:720px){.manager-dash{padding:20px 12px 42px}.manager-hero-main{min-height:auto;padding:24px;border-radius:28px}.manager-hero h1{font-size:42px}.manager-mini-grid,.manager-command{grid-template-columns:1fr}.manager-section-head{display:block}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4),.manager-live-panel .dash-stat,.manager-live-panel .dash-event,.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:1/-1}.manager-radar{display:none}}
+  @media(max-width:1080px){.dash-hero{grid-template-columns:1fr}.dash-orbit{min-height:320px}.dash-action,.dash-action:nth-child(1),.dash-action:nth-child(2),.dash-action:nth-child(4),.dash-action:nth-child(5),.dash-stat,.dash-event,.dash-room{grid-column:span 6}}
+  @media(max-width:720px){.role-dash{padding:20px 12px 42px}.dash-hero-main{min-height:auto;padding:24px;border-radius:28px}.dash-hero h1{font-size:42px}.dash-pulse-grid,.dash-strip{grid-template-columns:1fr}.dash-action,.dash-stat,.dash-event,.dash-room{grid-column:1/-1}.dash-section-head{display:block}.dash-sun{right:24px;top:34px;width:84px;height:84px}.dash-rainbow{right:10px;top:112px;width:156px;height:84px}.dash-cloud--two,.dash-leaf--three,.dash-leaf--four,.dash-flower--two{display:none}}
+  @media(prefers-reduced-motion:reduce){.role-dash::before,.role-dash::after,.dash-dot,.dash-orbit-stage::before,.dash-orbit-stage::after,.dash-orbit-word,.dash-action,.dash-sun,.dash-cloud,.dash-wave,.dash-leaf,.dash-flower,.dash-petal{animation:none}.dash-action{transform:none;opacity:1}}
+</style>
+
+<% if (isQuanly) { %>
+<main class="manager-dash">
+  <div class="manager-shell">
+    <section class="manager-hero" aria-label="Dashboard quản lý">
+      <div class="manager-hero-main">
+        <div class="manager-chip"><span class="manager-dot"></span> <%= meta.label %> command center</div>
+        <h1>Quản lý vận hành <span>realtime.</span></h1>
+        <p class="manager-lead"><%= hero.description %></p>
+        <div class="manager-actions">
+          <% if (actions[0]) { %><a class="manager-button manager-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
+          <% if (actions[1]) { %><a class="manager-button" href="<%= actions[1].href %>"><%= actions[1].label %></a><% } %>
+          <% if (actions[3]) { %><a class="manager-button" href="<%= actions[3].href %>"><%= actions[3].label %></a><% } %>
+        </div>
+        <div class="manager-mini-grid">
+          <div class="manager-mini"><strong><%= primaryActions.length %></strong><span>Lối vào UC</span></div>
+          <div class="manager-mini"><strong><%= cards.length %></strong><span>Trọng tâm</span></div>
+          <div class="manager-mini"><strong>Live</strong><span>KPI & phòng</span></div>
+        </div>
+      </div>
+      <aside class="manager-radar" aria-label="Bản đồ nghiệp vụ quản lý">
+        <div class="manager-radar-stage">
+          <% meta.words.forEach((word) => { %><span class="manager-radar-word"><%= word %></span><% }) %>
+        </div>
+      </aside>
+    </section>
+
+    <section class="manager-command">
+      <div>
+        <strong>Không gian điều phối của Quản lý</strong>
+        <span>Gom khách hàng, phòng, ưu đãi và room board thành một dashboard ra quyết định nhanh.</span>
+      </div>
+      <div class="manager-flow">
+        <% actions.forEach((item) => { %>
+          <a href="<%= item.href %>"><%= item.label %></a>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="manager-section">
+      <div class="manager-section-head">
+        <div>
+          <h2>Lối vào nghiệp vụ</h2>
+          <p>Các UC quản lý được đặt thành bento card lớn để mở đúng chức năng ngay.</p>
+        </div>
+      </div>
+      <div class="manager-action-grid">
+        <% primaryActions.forEach((item, index) => { %>
+          <a class="manager-action" href="<%= item.href %>">
+            <span class="manager-code">UC<%= String(index + 1).padStart(2, "0") %></span>
+            <h3><%= item.label %></h3>
+            <p><%= item.note %></p>
+            <span class="manager-open">Mở chức năng</span>
+          </a>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="manager-section">
+      <div class="manager-section-head">
+        <div>
+          <h2>Live KPI & hoạt động</h2>
+          <p>Dữ liệu quản trị đọc trực tiếp từ database và tự cập nhật theo sự kiện vận hành.</p>
+        </div>
+      </div>
+      <div class="manager-live-grid">
+        <section class="manager-live-panel" aria-label="KPI quản lý">
+          <div class="dash-grid" id="live-overview">
+            <article class="dash-stat"><strong>...</strong><h3>Đang tải KPI</h3><p>Đang đọc dashboard stats từ database.</p></article>
+          </div>
+        </section>
+        <section class="manager-live-panel" aria-label="Hoạt động gần đây">
+          <div class="dash-grid" id="recent-room-events">
+            <article class="dash-event">
+              <span class="dash-badge">Loading</span>
+              <h3>Đang tải sự kiện phòng</h3>
+              <p>Các thay đổi phòng và vận hành mới nhất sẽ xuất hiện tại đây.</p>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="manager-section">
+      <div class="manager-section-head">
+        <div>
+          <h2>Room board điều phối</h2>
+          <p>Tóm tắt sức khỏe tồn kho phòng và các phòng cần quản lý chú ý.</p>
+        </div>
+      </div>
+      <section class="manager-room-panel" aria-label="Room board quản lý">
+        <div class="dash-grid" id="live-room-summary">
+          <article class="dash-stat"><strong>...</strong><h3>Đang tải room board</h3><p>Đang đồng bộ trạng thái phòng.</p></article>
+        </div>
+        <div class="dash-grid" id="live-room-board" style="margin-top:16px"></div>
+      </section>
+    </section>
+  </div>
+</main>
+<% } else { %>
+<main class="role-dash <%= isLetan ? 'is-letan' : '' %> <%= isCskh ? 'is-cskh' : '' %>">
+  <div class="dash-shell">
+    <% if (isLetan) { %>
+    <div class="dash-fantasy-scene" aria-hidden="true">
+      <div class="dash-sun"></div>
+      <div class="dash-rainbow"></div>
+      <div class="dash-cloud dash-cloud--one"></div>
+      <div class="dash-cloud dash-cloud--two"></div>
+      <div class="dash-wave"></div>
+      <div class="dash-leaf dash-leaf--one" style="--leaf-rot:-18deg"></div>
+      <div class="dash-leaf dash-leaf--two" style="--leaf-rot:8deg"></div>
+      <div class="dash-leaf dash-leaf--three" style="--leaf-rot:196deg"></div>
+      <div class="dash-leaf dash-leaf--four" style="--leaf-rot:172deg"></div>
+      <div class="dash-flower dash-flower--one"></div>
+      <div class="dash-flower dash-flower--two"></div>
+      <div class="dash-petal dash-petal--one"></div>
+      <div class="dash-petal dash-petal--two"></div>
+      <div class="dash-petal dash-petal--three"></div>
+      <div class="dash-petal dash-petal--four"></div>
+    </div>
+    <% } %>
+    <section class="dash-hero <%= isLetan ? 'is-compact' : '' %>">
+      <div class="dash-hero-main <%= isLetan ? 'is-compact' : '' %>">
+        <div class="dash-eyebrow"><span class="dash-dot"></span> <%= meta.label %> command center</div>
+        <h1><%= hero.title %> <span><%= isLetan ? "Ít nhiễu hơn." : "Fresh workspace." %></span></h1>
+        <p class="dash-lead <%= isLetan ? 'is-compact' : '' %>">
+          <%= isLetan
+            ? "Dashboard lễ tân đã được gom lại để tập trung vào các tác vụ cần dùng liên tục trong ca trực: đặt phòng trực tiếp, check-in, check-out, sửa hoặc hủy booking và xử lý dịch vụ theo phòng."
+            : hero.description %>
+        </p>
+        <div class="dash-hero-actions">
+          <% if (actions[0]) { %><a class="dash-button dash-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
+          <% if (actions[1]) { %><a class="dash-button" href="<%= actions[1].href %>"><%= actions[1].label %></a><% } %>
+          <% if (actions[2]) { %><a class="dash-button" href="<%= actions[2].href %>"><%= actions[2].label %></a><% } %>
+        </div>
+        <div class="dash-pulse-grid <%= isLetan ? 'is-compact' : '' %>">
+          <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào UC</span></div>
+          <div class="dash-pulse"><strong><%= isLetan ? "Core" : cards.length %></strong><span><%= isLetan ? "Màn hình gọn" : "Trọng tâm" %></span></div>
+          <% if (!isLetan) { %>
+          <div class="dash-pulse"><strong><%= enableRoomBoard ? "Live" : "Focus" %></strong><span>Chế độ</span></div>
+          <% } %>
+        </div>
+      </div>
+      <aside class="dash-orbit <%= isLetan ? 'is-compact' : '' %>" aria-label="Minh họa scope dashboard">
+        <div class="dash-orbit-stage">
+          <% meta.words.forEach((word) => { %><span class="dash-orbit-word"><%= word %></span><% }) %>
+        </div>
+      </aside>
+    </section>
+
+    <% if (!isLetan) { %>
+    <section class="dash-strip">
+      <div>
+        <strong>Không gian làm việc của <%= meta.label %></strong>
+        <span>Các nghiệp vụ được gom lại thành action card rõ ràng, KPI cập nhật live từ database.</span>
+      </div>
+      <div class="dash-flow">
+        <% actions.slice(0, 4).forEach((item) => { %>
+          <a href="<%= item.href %>"><%= item.label %></a>
+        <% }) %>
+      </div>
+    </section>
+    <% } %>
+
+    <% if (!isLetan) { %>
+    <section class="dash-section">
+      <div class="dash-section-head">
+        <div>
+          <h2>Trọng tâm vận hành</h2>
+          <p>Các nhịp việc chính của actor này trong hệ thống.</p>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <% cards.forEach((card) => { %>
+          <article class="dash-stat">
+            <span class="dash-badge"><%= scope %></span>
+            <strong><%= card.value %></strong>
+            <h3><%= card.label %></h3>
+            <p><%= card.note %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+    <% } %>
+
+    <% if (showLiveSections) { %>
+    <section class="dash-section <%= isLetan ? 'is-compact' : '' %>">
+      <div class="dash-section-head">
+        <div>
+          <h2><%= (isLetan || isCskh) ? "Use case chính" : "Lối vào nghiệp vụ" %></h2>
+          <p><%= isLetan ? "Các thao tác lễ tân dùng nhiều nhất, bố cục bento giống dashboard khách hàng." : (isCskh ? "CSKH gom đúng hai cụm nghiệp vụ: quản lý phản hồi và quản lý eKYC." : "Nhấn thẳng vào tác vụ cần xử lý, không vòng vèo qua menu phụ.") %></p>
+        </div>
+      </div>
+      <div class="dash-grid <%= isLetan ? 'is-compact' : '' %>">
+        <% primaryActions.forEach((item, index) => { %>
+          <a class="dash-action" href="<%= item.href %>">
+            <span class="dash-code">UC<%= String(index + 1).padStart(2, "0") %></span>
+            <h3><%= item.label %></h3>
+            <p><%= item.note %></p>
+            <span class="dash-open"><%= (isLetan || isCskh) ? "Mở nghiệp vụ" : "Mở chức năng" %></span>
+          </a>
+        <% }) %>
+      </div>
+    </section>
+    <% } %>
+
+    <section class="dash-section <%= isLetan ? 'is-compact' : '' %>">
+      <div class="dash-section-head">
+        <div>
+          <h2><%= isLetan ? "Realtime vận hành" : "Live KPI" %></h2>
+          <p><%= isLetan ? "Gộp các chỉ số điều phối chính vào một cụm duy nhất để nhìn nhanh tình trạng phòng và lưu trú." : "Dữ liệu đọc trực tiếp từ hệ thống và tự làm mới khi có sự kiện realtime." %></p>
+        </div>
+      </div>
+      <div class="dash-grid <%= isLetan ? 'is-compact' : '' %>" id="live-overview">
+        <article class="dash-stat"><strong>...</strong><h3>Đang tải KPI</h3><p>Đang đọc dashboard stats từ database.</p></article>
+      </div>
+    </section>
+
+    <% if (enableRoomBoard) { %>
+      <section class="dash-section <%= isLetan ? 'is-compact' : '' %>">
+        <div class="dash-section-head">
+          <div>
+            <h2><%= isLetan ? "Phòng cần chú ý" : "Room Board" %></h2>
+            <p><%= isLetan ? "Chỉ giữ danh sách phòng gần nhất cần theo dõi, không lặp lại cụm số liệu ở trên." : "Trạng thái phòng realtime cho các actor cần điều phối vận hành." %></p>
+          </div>
+        </div>
+        <% if (!isLetan) { %>
+        <div class="dash-grid <%= isLetan ? 'is-compact' : '' %>" id="live-room-summary">
+          <article class="dash-stat"><strong>...</strong><h3>Đang tải room board</h3><p>Đang đồng bộ trạng thái phòng.</p></article>
+        </div>
+        <% } %>
+        <div class="dash-grid <%= isLetan ? 'is-compact' : '' %>" id="live-room-board" style="margin-top:16px"></div>
+      </section>
+    <% } %>
+
+    <% if (!isLetan && showLiveSections) { %>
+    <section class="dash-section">
+      <div class="dash-section-head">
+        <div>
+          <h2>Hoạt động gần đây</h2>
+          <p>Các thay đổi phòng, booking, dịch vụ và vận hành mới nhất.</p>
+        </div>
+      </div>
+      <div class="dash-grid" id="recent-room-events">
+        <article class="dash-event">
+          <span class="dash-badge">Loading</span>
+          <h3>Đang tải sự kiện phòng</h3>
+          <p>Sẽ hiển thị các thay đổi booking, check-in, checkout và kiểm tra phòng mới nhất.</p>
+        </article>
+      </div>
+    </section>
+    <% } %>
+  </div>
+</main>
+<% } %>
+
+<script>
+  (() => {
+    const scope = "<%= scope %>";
+    const enableRoomBoard = <%= enableRoomBoard ? "true" : "false" %>;
+    const showLiveSections = <%= showLiveSections ? "true" : "false" %>;
+    const overview = document.getElementById("live-overview");
+    const roomSummary = document.getElementById("live-room-summary");
+    const roomBoard = document.getElementById("live-room-board");
+    const recentEvents = document.getElementById("recent-room-events");
+    const escapeHtml = (value) => String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+    const renderOverview = (data) => {
+      const overviewItems = scope === "quanly"
+        ? [
+            { label: "Khách hàng", value: data.overview.totalCustomers, note: "Hồ sơ đang quản lý" },
+            { label: "Giao dịch", value: data.overview.totalTransactions, note: "Booking và thanh toán" },
+            { label: "Đã thu tháng", value: new Intl.NumberFormat("vi-VN").format(data.overview.monthlyRevenue || 0), note: "Giao dịch Paid trong tháng" },
+            { label: "Còn phải thu", value: new Intl.NumberFormat("vi-VN").format(data.overview.outstandingMonthlyRevenue || 0), note: "Booked/Stayed chưa chốt tiền" },
+            { label: "Khuyến mãi", value: data.overview.totalPromotions, note: "Chương trình ưu đãi đang quản lý" },
+            { label: "Phòng trống", value: data.overview.availableRooms, note: "Sẵn sàng mở bán" },
+            { label: "Bảo trì", value: data.overview.maintenanceRooms, note: "Cần theo dõi vận hành" }
+          ]
+        : scope === "letan"
+          ? [
+            { label: "Phòng trống", value: data.overview.availableRooms, note: "Sẵn sàng nhận khách" },
+            { label: "Đã đặt", value: data.overview.bookedRooms, note: "Booking chờ đến" },
+            { label: "Đang ở", value: data.overview.stayedRooms, note: "Khách đang lưu trú" },
+            { label: "Cần dọn", value: data.overview.cleaningRooms, note: "Chờ vệ sinh để mở lại" }
+            ]
+          : [
+            { label: "Phòng trống", value: data.overview.availableRooms, note: "Sẵn sàng mở bán" },
+            { label: "Đã đặt", value: data.overview.bookedRooms, note: "Phòng đã giữ chỗ" },
+            { label: "Đang ở", value: data.overview.stayedRooms, note: "Khách đang lưu trú" },
+            { label: "Cần dọn", value: data.overview.cleaningRooms, note: "Đang chờ vệ sinh" },
+            { label: "Bảo trì", value: data.overview.maintenanceRooms, note: "Không thể mở bán" },
+            { label: "Đã thu tháng", value: new Intl.NumberFormat("vi-VN").format(data.overview.monthlyRevenue || 0), note: "Chỉ tính giao dịch Paid" },
+            { label: "Còn phải thu", value: new Intl.NumberFormat("vi-VN").format(data.overview.outstandingMonthlyRevenue || 0), note: "Booking/lưu trú chưa thanh toán" }
+          ];
+
+      overview.innerHTML = overviewItems.map((item) => `
+        <article class="dash-stat">
+          <strong>${escapeHtml(item.value)}</strong>
+          <h3>${escapeHtml(item.label)}</h3>
+          <p>${escapeHtml(item.note)}</p>
+        </article>
+      `).join("");
+
+      if (scope === "letan") return;
+
+      recentEvents.innerHTML = (data.recentEvents || []).map((item) => {
+        const happenedAt = item.happenedAt
+          ? new Date(item.happenedAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
+          : "";
+        const meta = [item.note || "", happenedAt].filter(Boolean).join(" · ");
+
+        return `
+          <article class="dash-event">
+            <span class="dash-badge">${escapeHtml(item.source || item.category || "System")}</span>
+            <h3>${escapeHtml(item.title || [item.hotelName, item.roomNumber ? `P${item.roomNumber}` : ""].filter(Boolean).join(" · "))}</h3>
+            <p>${escapeHtml(item.detail || `${item.fromStatus || "?"} -> ${item.toStatus || "?"}`)}</p>
+            <p>${escapeHtml(meta || "Không có ghi chú")}</p>
+          </article>
+        `;
+      }).join("") || `
+        <article class="dash-empty">Chưa có sự kiện gần đây. Nhật ký trạng thái phòng sẽ xuất hiện tại đây khi có biến động.</article>
+      `;
+    };
+
+    const renderOverviewError = () => {
+      if (!overview) return;
+      overview.innerHTML = `
+        <article class="dash-empty">
+          Chưa tải được KPI realtime lúc này. Bạn vẫn có thể mở các chức năng lễ tân bình thường và tải lại trang sau.
+        </article>
+      `;
+    };
+
+    const renderRoomBoard = (data) => {
+      if (!enableRoomBoard || !roomBoard) return;
+
+      if (roomSummary && scope !== "letan") {
+        roomSummary.innerHTML = [
+          { label: "Phòng trống", value: data.summary.available },
+          { label: "Đã đặt", value: data.summary.booked },
+          { label: "Đang ở", value: data.summary.stayed },
+          { label: "Cần dọn", value: data.summary.cleaning },
+          { label: "Bảo trì", value: data.summary.maintenance }
+        ].map((item) => `
+          <article class="dash-stat">
+            <strong>${escapeHtml(item.value)}</strong>
+            <h3>${escapeHtml(item.label)}</h3>
+            <p>Theo room board thời gian thực</p>
+          </article>
+        `).join("");
+      }
+
+      roomBoard.innerHTML = data.items.slice(0, scope === "letan" ? 8 : 18).map((item) => `
+        <article class="dash-room">
+          <span class="dash-badge">${escapeHtml(item.trangThaiRealtime || item.trangThai)}</span>
+          <h3>${escapeHtml(item.khachSan)} · P${escapeHtml(item.soPhong)}</h3>
+          <p>${escapeHtml(item.loaiPhong)} · ${escapeHtml(item.tinhThanh)}</p>
+          <p>Trạng thái: ${escapeHtml(item.trangThai)} · Tình trạng: ${escapeHtml(item.tinhTrangPhong)}</p>
+        </article>
+      `).join("");
+    };
+
+    const renderRoomBoardError = () => {
+      if (roomSummary && scope !== "letan") {
+        roomSummary.innerHTML = `
+          <article class="dash-empty">
+            Chưa tải được room board realtime. Các lối vào nghiệp vụ vẫn hoạt động bình thường.
+          </article>
+        `;
+      }
+
+      if (roomBoard) {
+        roomBoard.innerHTML = "";
+      }
+    };
+
+    const loadStats = async () => {
+      if (!showLiveSections || !overview) return;
+      try {
+        const response = await fetch(`/api/dashboard/stats?scope=${scope}`, { credentials: "same-origin" });
+        const payload = await response.json();
+        if (payload.ok) {
+          renderOverview(payload.data);
+          return;
+        }
+      } catch (_error) {
+      }
+
+      renderOverviewError();
+    };
+
+    const loadRoomBoard = async () => {
+      if (!showLiveSections || !enableRoomBoard) return;
+      try {
+        const response = await fetch(`/api/dashboard/room-board?scope=${scope}`, { credentials: "same-origin" });
+        const payload = await response.json();
+        if (payload.ok) {
+          renderRoomBoard(payload.data);
+          return;
+        }
+      } catch (_error) {
+      }
+
+      renderRoomBoardError();
+    };
+
+    if (showLiveSections) {
+      loadStats();
+      loadRoomBoard();
+    }
+
+    if (showLiveSections && window.EventSource) {
+      const stream = new EventSource(`/api/realtime/stream?scope=${scope}`);
+      ["room_status_changed", "booking_created", "service_order_created", "service_catalog_updated"].forEach((eventName) => {
+        stream.addEventListener(eventName, () => {
+          loadStats();
+          loadRoomBoard();
+        });
+      });
+    }
+  })();
+</script>
+<%- include("../partials/footer") %>

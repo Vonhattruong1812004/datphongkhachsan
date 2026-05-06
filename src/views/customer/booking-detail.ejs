@@ -1,0 +1,166 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const statusClass = (status) => {
+    const value = String(status || "");
+    if (["DaHuy", "Cancelled"].includes(value)) return "is-cancelled";
+    if (["Paid", "CheckedOut"].includes(value)) return "is-paid";
+    if (["Stayed", "CheckedIn"].includes(value)) return "is-stay";
+    if (["Booked", "Moi"].includes(value)) return "is-booked";
+    return "is-muted";
+  };
+%>
+<style>
+  body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
+  .detail-shell{position:relative;overflow:hidden;max-width:1180px;margin:0 auto;padding:34px 18px 64px}
+  .detail-shell::before,.detail-shell::after{content:"";position:absolute;width:470px;height:470px;border-radius:999px;pointer-events:none;z-index:-1;opacity:.44;animation:detail-float 12s ease-in-out infinite alternate}
+  .detail-shell::before{right:-150px;top:-230px;background:conic-gradient(from 140deg,rgba(14,165,233,.44),rgba(20,184,166,.34),rgba(250,204,21,.28),rgba(251,113,133,.24),rgba(14,165,233,.44))}
+  .detail-shell::after{left:-180px;bottom:-230px;background:conic-gradient(from 20deg,rgba(251,113,133,.26),rgba(245,158,11,.22),rgba(45,212,191,.24),rgba(59,130,246,.22),rgba(251,113,133,.26));animation-delay:-4s}
+  .detail-card,.detail-hero{border:1px solid rgba(19,48,74,.12);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.72));box-shadow:0 26px 72px rgba(12,39,64,.14);backdrop-filter:blur(22px)}
+  .detail-hero{position:relative;overflow:hidden;padding:28px;margin-bottom:18px}
+  .detail-hero::before{content:"";position:absolute;right:34px;top:24px;width:110px;height:110px;border-radius:999px;background:radial-gradient(circle,#fff7d6 0 18%,#fde68a 35%,#f59e0b 64%,transparent 70%);box-shadow:0 0 0 22px rgba(253,224,71,.12),0 0 76px rgba(251,191,36,.24)}
+  .detail-chip{display:inline-flex;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .detail-chip.is-booked{color:#0369a1;background:rgba(14,165,233,.10);border-color:rgba(14,165,233,.20)}
+  .detail-chip.is-paid{color:#047857;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.20)}
+  .detail-chip.is-stay{color:#b45309;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.22)}
+  .detail-chip.is-cancelled{color:#be123c;background:rgba(244,63,94,.10);border-color:rgba(244,63,94,.18)}
+  .detail-hero h1{position:relative;margin:18px 0 10px;color:#102033;font-size:clamp(38px,5.6vw,66px);line-height:.94;letter-spacing:-.065em}
+  .detail-muted{color:#5f778f;line-height:1.65;font-size:14px}
+  .detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .detail-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:9px 15px;font-size:13px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 12px 28px rgba(12,39,64,.08)}
+  .detail-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e)}
+  .detail-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+  .detail-card{padding:22px;margin-bottom:18px}
+  .detail-card h2{margin:0 0 14px;color:#102033;font-size:25px;letter-spacing:-.045em}
+  .detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .detail-box{border-radius:20px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.68);padding:14px}
+  .detail-box span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .detail-box strong{display:block;margin-top:7px;color:#102033;font-size:17px;word-break:break-word}
+  .room-detail{border-radius:22px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.66);padding:16px;margin-bottom:12px}
+  .room-detail h3{margin:0 0 8px;color:#102033;font-size:21px}
+  .service-table{width:100%;border-collapse:separate;border-spacing:0 10px}
+  .service-table th{padding:0 10px 4px;color:#5f778f;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:.07em}
+  .service-table td{padding:12px 10px;background:rgba(255,255,255,.68);border-top:1px solid rgba(19,48,74,.08);border-bottom:1px solid rgba(19,48,74,.08);color:#14314b}
+  .service-table td:first-child{border-left:1px solid rgba(19,48,74,.08);border-radius:16px 0 0 16px}
+  .service-table td:last-child{border-right:1px solid rgba(19,48,74,.08);border-radius:0 16px 16px 0}
+  .detail-total{font-size:24px!important;color:#0f766e!important}
+  .detail-empty{border:1px dashed rgba(19,48,74,.16);border-radius:22px;padding:18px;background:rgba(255,255,255,.56);color:#5f778f}
+  @keyframes detail-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,20px,0) rotate(14deg)}}
+  @media(max-width:980px){.detail-layout{grid-template-columns:1fr}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:640px){.detail-shell{padding:22px 12px 48px}.detail-hero,.detail-card{border-radius:26px;padding:20px}.detail-grid{grid-template-columns:1fr}.service-table{display:block;overflow-x:auto;white-space:nowrap}.detail-hero::before{width:80px;height:80px;right:18px}}
+</style>
+
+<main class="detail-shell">
+  <section class="detail-hero">
+    <span class="detail-chip <%= statusClass(booking.status) %>"><%= booking.statusLabel %></span>
+    <h1><%= booking.bookingCode || `GD-${booking.id}` %></h1>
+    <p class="detail-muted">Chi tiết giao dịch tạo lúc <strong><%= booking.createdAtLabel %></strong>. Bạn có thể xem phòng, dịch vụ bổ sung, khuyến mãi, thanh toán và mở hóa đơn từ màn này.</p>
+    <div class="detail-actions">
+      <a class="detail-button detail-button--primary" href="/booking/invoice/<%= booking.id %>">Mở hóa đơn</a>
+      <% if (booking.editable) { %>
+        <a class="detail-button" href="/customer/bookings/<%= booking.id %>/edit">Sửa thông tin đặt phòng</a>
+      <% } %>
+      <% if (booking.cancelable) { %>
+        <form method="post" action="/customer/bookings/<%= booking.id %>/cancel">
+          <button class="detail-button" type="submit">Hủy booking</button>
+        </form>
+      <% } %>
+      <a class="detail-button" href="/customer/bookings">Quay lại lịch sử</a>
+    </div>
+  </section>
+
+  <div class="detail-layout">
+    <div>
+      <section class="detail-card">
+        <h2>Thông tin khách và thanh toán</h2>
+        <div class="detail-grid">
+          <div class="detail-box"><span>Khách</span><strong><%= booking.customer.name || "-" %></strong></div>
+          <div class="detail-box"><span>Số điện thoại</span><strong><%= booking.customer.phone || "-" %></strong></div>
+          <div class="detail-box"><span>Email</span><strong><%= booking.customer.email || "-" %></strong></div>
+          <div class="detail-box"><span>CCCD/CMND</span><strong><%= booking.customer.cccd || "-" %></strong></div>
+          <div class="detail-box"><span>Thanh toán</span><strong><%= booking.paymentMethodLabel %></strong></div>
+          <div class="detail-box"><span>Khuyến mãi</span><strong><%= booking.promotion ? booking.promotion.name : "Không áp dụng" %></strong></div>
+        </div>
+      </section>
+
+      <section class="detail-card">
+        <h2>Danh sách phòng</h2>
+        <% if (!booking.rooms.length) { %>
+          <div class="detail-empty">Không có thông tin phòng trong giao dịch này.</div>
+        <% } else { %>
+          <% booking.rooms.forEach((room) => { %>
+            <article class="room-detail">
+              <span class="detail-chip <%= statusClass(room.status) %>"><%= room.statusLabel %></span>
+              <h3><%= room.hotelName %> · Phòng <%= room.roomNumber %></h3>
+              <p class="detail-muted"><%= room.roomType %> · <%= room.bedType || "Giường tiêu chuẩn" %> · <%= room.view || "View nội khu" %> · <%= room.city %></p>
+              <div class="detail-grid">
+                <div class="detail-box"><span>Ngày ở</span><strong><%= room.checkinLabel %> → <%= room.checkoutLabel %></strong></div>
+                <div class="detail-box"><span>Số khách</span><strong><%= room.guests %> khách</strong></div>
+                <div class="detail-box"><span>Đơn giá</span><strong><%= room.unitPriceFormatted %></strong></div>
+                <div class="detail-box"><span>Tiền phòng</span><strong><%= room.amountFormatted %></strong></div>
+                <div class="detail-box"><span>Phụ thu</span><strong><%= room.surchargeFormatted %></strong></div>
+                <div class="detail-box"><span>Bồi thường</span><strong><%= room.damageFormatted %></strong></div>
+              </div>
+              <% if (room.note) { %><p class="detail-muted" style="margin-top:10px">Ghi chú: <%= room.note %></p><% } %>
+            </article>
+          <% }) %>
+        <% } %>
+      </section>
+
+      <section class="detail-card">
+        <h2>Dịch vụ bổ sung</h2>
+        <% if (!booking.services.length) { %>
+          <div class="detail-empty">Booking này chưa có dịch vụ bổ sung.</div>
+          <div class="detail-actions"><a class="detail-button" href="/customer/services">Đặt dịch vụ bổ sung</a></div>
+        <% } else { %>
+          <table class="service-table">
+            <thead>
+              <tr>
+                <th>Dịch vụ</th>
+                <th>Phòng</th>
+                <th>SL</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% booking.services.forEach((service) => { %>
+                <tr>
+                  <td><strong><%= service.name %></strong><% if (service.note) { %><div class="detail-muted"><%= service.note %></div><% } %></td>
+                  <td><%= service.roomNumber || "-" %></td>
+                  <td><%= service.quantity %></td>
+                  <td><%= service.unitPriceFormatted %></td>
+                  <td><strong><%= service.amountFormatted %></strong></td>
+                  <td><span class="detail-chip"><%= service.statusLabel %></span></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        <% } %>
+      </section>
+    </div>
+
+    <aside>
+      <section class="detail-card">
+        <h2>Tổng hợp hóa đơn</h2>
+        <div class="detail-grid" style="grid-template-columns:1fr">
+          <div class="detail-box"><span>Tiền phòng</span><strong><%= booking.summary.roomSubtotalFormatted %></strong></div>
+          <div class="detail-box"><span>Dịch vụ</span><strong><%= booking.summary.serviceTotalFormatted %></strong></div>
+          <div class="detail-box"><span>Phụ thu</span><strong><%= booking.summary.surchargeTotalFormatted %></strong></div>
+          <div class="detail-box"><span>Bồi thường</span><strong><%= booking.summary.damageTotalFormatted %></strong></div>
+          <div class="detail-box"><span>Tổng giao dịch</span><strong class="detail-total"><%= booking.summary.grandTotalFormatted %></strong></div>
+        </div>
+      </section>
+      <section class="detail-card">
+        <h2>Ghi chú</h2>
+        <p class="detail-muted"><%= booking.note || "Không có ghi chú." %></p>
+        <div class="detail-actions">
+          <a class="detail-button" href="/feedback/new">Gửi phản hồi</a>
+          <a class="detail-button" href="/booking/search">Đặt phòng mới</a>
+        </div>
+      </section>
+    </aside>
+  </div>
+</main>
+<%- include("../partials/footer") %>

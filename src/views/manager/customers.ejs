@@ -1,0 +1,547 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const filters = payload.filters || {};
+  const rows = payload.items || [];
+  const duplicateFocus = payload.duplicateFocus || [];
+  const formError = typeof errorMessage !== "undefined" ? errorMessage : "";
+  const success = typeof successMessage !== "undefined" ? successMessage : "";
+  const page = Number(payload.page || 1);
+  const totalPages = Number(payload.totalPages || 1);
+  const makeQuery = (overrides = {}) => {
+    const next = { ...filters, ...overrides };
+    Object.keys(next).forEach((key) => {
+      if (next[key] === undefined || next[key] === null || next[key] === "") delete next[key];
+    });
+    return new URLSearchParams(next).toString();
+  };
+  const pages = [];
+  for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i += 1) pages.push(i);
+%>
+
+<style>
+  .crm-home {
+    --crm-ink: #172033;
+    --crm-muted: #667085;
+    --crm-line: rgba(23, 32, 51, .10);
+    --crm-card: #ffffff;
+    --crm-soft: #f7fbff;
+    --crm-cyan: #00a6d6;
+    --crm-mint: #19b879;
+    --crm-sun: #f5b700;
+    --crm-coral: #ff6b6b;
+    --crm-berry: #d946ef;
+    --crm-blue: #3b82f6;
+    --crm-shadow: 0 18px 44px rgba(23, 32, 51, .09);
+    --crm-shadow-pop: 0 24px 56px rgba(0, 166, 214, .16);
+    min-height: calc(100vh - 84px);
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    padding: 24px 18px 54px;
+    color: var(--crm-ink);
+    background:
+      linear-gradient(118deg, transparent 0 58%, rgba(217, 70, 239, .08) 58% 68%, transparent 68%),
+      linear-gradient(64deg, transparent 0 18%, rgba(245, 183, 0, .10) 18% 27%, transparent 27%),
+      linear-gradient(135deg, rgba(255, 107, 107, .10), transparent 32%),
+      linear-gradient(225deg, rgba(0, 166, 214, .12), transparent 38%),
+      repeating-linear-gradient(90deg, rgba(23, 32, 51, .035) 0 1px, transparent 1px 44px),
+      linear-gradient(180deg, #fffefa 0%, #f5fcff 48%, #fff8fb 100%);
+  }
+  .crm-home::before,
+  .crm-home::after { content: ""; position: absolute; pointer-events: none; z-index: -1; }
+  .crm-home::before {
+    inset: 0 0 auto;
+    height: 9px;
+    background: linear-gradient(90deg, var(--crm-coral), var(--crm-sun), var(--crm-mint), var(--crm-cyan), var(--crm-berry));
+  }
+  .crm-home::after {
+    inset: auto 18px 18px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(23, 32, 51, .18), transparent);
+  }
+  .crm-shell { max-width: 1320px; margin: 0 auto; position: relative; }
+  .crm-panel,
+  .crm-hero-main,
+  .crm-table-panel {
+    border: 1px solid var(--crm-line);
+    background: var(--crm-card);
+    box-shadow: var(--crm-shadow);
+  }
+  .crm-hero { margin: 12px 0 16px; }
+  .crm-hero-main { position: relative; overflow: hidden; border-radius: 8px; padding: 26px 28px; color: #fff; background: #14243d; box-shadow: var(--crm-shadow-pop); }
+  .crm-hero-main::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    pointer-events: none;
+    background:
+      linear-gradient(100deg, rgba(255,107,107,.90), rgba(245,183,0,.82), rgba(25,184,121,.72), rgba(0,166,214,.72), rgba(217,70,239,.66)),
+      #14243d;
+    opacity: .94;
+  }
+  .crm-hero-main::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(20,36,61,.88), rgba(20,36,61,.50) 46%, rgba(20,36,61,.12)),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.18) 0 1px, transparent 1px 16px);
+  }
+  .crm-hero-content { position: relative; z-index: 1; max-width: 850px; }
+  .crm-chip { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.18); color: #fff; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0; }
+  .crm-dot { width: 8px; height: 8px; border-radius: 2px; background: #67e8f9; box-shadow: 0 0 0 4px rgba(103,232,249,.18); }
+  .crm-hero h1 { position: relative; z-index: 1; max-width: 760px; margin: 22px 0 10px; color: #fff; font-size: 54px; line-height: 1; letter-spacing: 0; }
+  .crm-hero h1 span { color: #fff2a8; }
+  .crm-lead { position: relative; z-index: 1; max-width: 760px; margin: 0; color: rgba(255,255,255,.82); font-size: 16px; line-height: 1.65; }
+  .crm-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
+  .crm-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 8px; padding: 9px 14px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--crm-ink); text-decoration: none; font-size: 14px; font-weight: 850; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease; }
+  .crm-button:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(23,32,51,.10); border-color: rgba(0,166,214,.32); }
+  .crm-button:disabled { cursor: not-allowed; opacity: .62; transform: none; box-shadow: none; }
+  .crm-button--primary { color: #fff; border-color: transparent; background: linear-gradient(135deg, #00a6d6, #19b879); box-shadow: 0 14px 28px rgba(0,166,214,.18); }
+  .crm-hero-main .crm-button { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.94); }
+  .crm-hero-main .crm-button--primary { background: #fff; color: #075985; box-shadow: 0 16px 34px rgba(5, 16, 31, .24); }
+  .crm-button--danger { color: #b42318; border-color: rgba(255,107,107,.28); background: #fff7f7; }
+  .crm-hero-mark { position: absolute; z-index: 1; right: 28px; bottom: 24px; width: min(290px, 28vw); display: grid; gap: 8px; }
+  .crm-mark-line { height: 12px; border-radius: 8px; background: rgba(255,255,255,.22); overflow: hidden; }
+  .crm-mark-line span { display: block; height: 100%; border-radius: inherit; background: #fff; }
+  .crm-mark-line:nth-child(1) span { width: 88%; background: #67e8f9; }
+  .crm-mark-line:nth-child(2) span { width: 62%; background: #fff2a8; }
+  .crm-mark-line:nth-child(3) span { width: 74%; background: #bbf7d0; }
+  .crm-mark-line:nth-child(4) span { width: 48%; background: #fecdd3; }
+  .crm-layout { display: grid; gap: 16px; align-items: start; }
+  .crm-filter-panel { position: relative; overflow: hidden; border-radius: 8px; padding: 18px; background: linear-gradient(180deg, #ffffff, #f9fdff); }
+  .crm-filter-panel::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: linear-gradient(90deg, var(--crm-coral), var(--crm-sun), var(--crm-mint), var(--crm-cyan)); }
+  .crm-panel,
+  .crm-table-panel { border-radius: 8px; padding: 18px; }
+  .crm-panel h2,
+  .crm-table-panel h2 { margin: 0; font-size: 23px; letter-spacing: 0; }
+  .crm-muted { color: var(--crm-muted); font-size: 13px; line-height: 1.55; }
+  .crm-alert { margin: 12px 0 0; border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(23,32,51,.10); font-size: 14px; font-weight: 800; line-height: 1.5; }
+  .crm-alert--error { color: #b42318; background: #fff4f4; border-color: rgba(255,107,107,.30); }
+  .crm-alert--success { color: #047857; background: #effcf6; border-color: rgba(25,184,121,.28); }
+  .crm-live-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; border-radius: 8px; padding: 7px 10px; color: #087894; background: #effbff; border: 1px solid rgba(0,166,214,.22); font-size: 12px; font-weight: 850; }
+  .crm-live-pill::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--crm-mint); }
+  .crm-table-panel { position: relative; overflow: hidden; }
+  .crm-table-panel::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: linear-gradient(90deg, var(--crm-cyan), var(--crm-mint), var(--crm-sun), var(--crm-coral)); }
+  .crm-table-panel.is-loading { opacity: .78; }
+  .crm-field-grid { display: grid; grid-template-columns: 1.2fr 1.6fr repeat(3, minmax(132px, .8fr)); gap: 10px; margin-top: 16px; }
+  .crm-field { position: relative; display: grid; gap: 7px; }
+  .crm-field::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 8px; background: linear-gradient(90deg, var(--crm-coral), var(--crm-sun), var(--crm-mint), var(--crm-cyan)); opacity: 0; transition: opacity .16s ease; }
+  .crm-field:focus-within::after { opacity: 1; }
+  .crm-field.is-wide { grid-column: 1 / -1; }
+  .crm-field label { color: #405066; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
+  .crm-field input,
+  .crm-field select { width: 100%; min-height: 42px; border-radius: 8px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--crm-ink); padding: 10px 12px; outline: none; font: inherit; }
+  .crm-field input:focus,
+  .crm-field select:focus { border-color: rgba(0,166,214,.55); box-shadow: 0 0 0 4px rgba(0,166,214,.12); }
+  .crm-table-wrap { overflow: auto; margin-top: 14px; border-radius: 8px; border: 1px solid rgba(23,32,51,.10); background: #fff; }
+  .crm-table { width: 100%; min-width: 920px; border-collapse: collapse; }
+  .crm-table th { position: sticky; top: 0; z-index: 1; padding: 12px 14px; color: #405066; font-size: 12px; text-align: left; text-transform: uppercase; letter-spacing: 0; background: #f4fbff; border-bottom: 1px solid rgba(23,32,51,.08); }
+  .crm-table td { padding: 14px; border-top: 1px solid rgba(23,32,51,.07); vertical-align: top; }
+  .crm-table tbody tr { transition: background .16s ease, box-shadow .16s ease; }
+  .crm-table tbody tr:hover { background: #fffdf2; box-shadow: inset 5px 0 0 var(--crm-coral); }
+  .crm-customer-cell { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .crm-avatar { display: inline-flex; width: 42px; height: 42px; align-items: center; justify-content: center; border-radius: 8px; color: #fff; background: linear-gradient(135deg, var(--crm-coral), var(--crm-cyan)); font-weight: 950; box-shadow: 0 10px 22px rgba(0,166,214,.16); text-transform: uppercase; }
+  .crm-code { display: inline-grid; gap: 4px; font-weight: 900; min-width: 0; }
+  .crm-code a { color: #0f7490; text-decoration: none; }
+  .crm-code a:hover { text-decoration: underline; }
+  .crm-status { display: inline-flex; align-items: center; border-radius: 8px; padding: 6px 9px; font-size: 12px; font-weight: 850; }
+  .crm-status--green { color: #047857; background: #effcf6; box-shadow: inset 0 0 0 1px rgba(25,184,121,.16); }
+  .crm-status--cyan { color: #087894; background: #effbff; box-shadow: inset 0 0 0 1px rgba(0,166,214,.16); }
+  .crm-status--sun { color: #8a5a00; background: #fff8d7; box-shadow: inset 0 0 0 1px rgba(245,183,0,.18); }
+  .crm-status--rose { color: #b42318; background: #fff4f4; box-shadow: inset 0 0 0 1px rgba(255,107,107,.18); }
+  .crm-status--slate { color: #475569; background: #f3f5f8; box-shadow: inset 0 0 0 1px rgba(71,85,105,.12); }
+  .crm-money { font-weight: 900; color: #047857; white-space: nowrap; }
+  .crm-health { display: inline-flex; min-width: 52px; justify-content: center; border-radius: 8px; padding: 6px 9px; color: #075985; background: #effbff; font-weight: 900; }
+  .crm-row-actions { display: grid; grid-template-columns: repeat(3, minmax(62px, max-content)); gap: 7px; align-items: start; margin: 0; }
+  .crm-row-actions form { margin: 0; }
+  .crm-row-actions .crm-button { min-height: 34px; padding: 7px 10px; font-size: 12px; }
+  .crm-row-actions .crm-button:first-child { background: #f8fbff; border-color: rgba(0,166,214,.20); color: #075985; }
+  .crm-pagination { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .crm-page { display: inline-flex; min-width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(23,32,51,.10); background: #fff; color: var(--crm-ink); text-decoration: none; font-weight: 850; }
+  .crm-page.is-active { color: #fff; background: linear-gradient(135deg, #00a6d6, #19b879); }
+  .crm-list { display: grid; gap: 10px; margin-top: 14px; }
+  .crm-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--crm-coral); }
+  @media (max-width: 1100px) {
+    .crm-field-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .crm-hero-mark { display: none; }
+  }
+  @media (max-width: 720px) {
+    .crm-home { padding: 18px 12px 42px; }
+    .crm-hero-main { min-height: auto; padding: 20px; }
+    .crm-hero h1 { font-size: 38px; }
+    .crm-hero-mark { display: none; }
+    .crm-field-grid { grid-template-columns: 1fr; }
+    .crm-field.is-wide { grid-column: auto; }
+    .crm-row-actions { grid-template-columns: 1fr; }
+  }
+</style>
+
+<main class="crm-home">
+  <div class="crm-shell">
+    <section class="crm-hero">
+      <div class="crm-hero-main">
+        <div class="crm-hero-content">
+          <div class="crm-chip"><span class="crm-dot"></span> Customer Workspace</div>
+          <h1>Quản lý <span>khách hàng</span></h1>
+          <p class="crm-lead">Một màn làm việc riêng cho CRM: tìm đúng khách, kiểm tra eKYC, xem dấu hiệu trùng, rồi đi thẳng sang chi tiết hoặc chỉnh sửa hồ sơ.</p>
+          <div class="crm-actions">
+            <a class="crm-button crm-button--primary" href="/manager/customers/new">Thêm khách hàng</a>
+            <a class="crm-button" href="/manager/customers/export.csv?<%= makeQuery({ page: undefined }) %>">Xuất CSV</a>
+            <a class="crm-button" href="/dashboard/quanly">Về dashboard</a>
+          </div>
+        </div>
+        <div class="crm-hero-mark" aria-hidden="true">
+          <div class="crm-mark-line"><span></span></div>
+          <div class="crm-mark-line"><span></span></div>
+          <div class="crm-mark-line"><span></span></div>
+          <div class="crm-mark-line"><span></span></div>
+        </div>
+      </div>
+    </section>
+    <% if (formError) { %><div class="crm-alert crm-alert--error"><%= formError %></div><% } %>
+    <% if (success) { %><div class="crm-alert crm-alert--success"><%= success %></div><% } %>
+
+    <section class="crm-layout">
+      <section class="crm-panel crm-filter-panel">
+        <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <h2>Thanh tìm kiếm</h2>
+            <p class="crm-muted">CCCD ưu tiên khớp chính xác. Các ô còn lại lọc realtime để thao tác nhanh ngay trên bảng.</p>
+          </div>
+          <a class="crm-button crm-button--primary" href="/manager/customers/new">Thêm khách hàng mới</a>
+        </div>
+        <form method="get" action="/manager/customers" id="crmFilterForm">
+          <div class="crm-field-grid">
+            <div class="crm-field">
+              <label for="cccd">CCCD chính xác</label>
+              <input id="cccd" name="cccd" value="<%= filters.cccd || "" %>" placeholder="012345678901" />
+            </div>
+            <div class="crm-field">
+              <label for="keyword">Từ khóa</label>
+              <input id="keyword" name="keyword" value="<%= filters.keyword || "" %>" placeholder="Tên, email, SĐT, địa chỉ..." />
+            </div>
+            <div class="crm-field">
+              <label for="trang_thai_ekyc">eKYC</label>
+              <select id="trang_thai_ekyc" name="trang_thai_ekyc">
+                <% (payload.ekycOptions || []).forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= filters.trang_thai_ekyc === option.value ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="crm-field">
+              <label for="loai_khach">Loại khách</label>
+              <select id="loai_khach" name="loai_khach">
+                <% (payload.customerTypeOptions || []).forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= filters.loai_khach === option.value ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="crm-field">
+              <label for="limit">Hiển thị</label>
+              <select id="limit" name="limit">
+                <% [10, 15, 25, 50].forEach((limit) => { %>
+                  <option value="<%= limit %>" <%= Number(filters.limit) === limit ? "selected" : "" %>><%= limit %> dòng</option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" name="page" value="1" />
+          <div class="crm-actions">
+            <button class="crm-button crm-button--primary" type="submit">Lọc khách hàng</button>
+            <a class="crm-button" href="/manager/customers">Đặt lại</a>
+            <span class="crm-live-pill" data-crm-live-state>Sẵn sàng lọc realtime</span>
+          </div>
+        </form>
+      </section>
+
+      <section class="crm-table-panel" data-crm-table-panel>
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <h2>Hồ sơ khách hàng</h2>
+              <p class="crm-muted" data-crm-result-caption>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRows %> hồ sơ.</p>
+            </div>
+            <div class="crm-actions" style="margin:0">
+              <a class="crm-button" href="/manager/customers/export.csv?<%= makeQuery({ page: undefined }) %>" data-crm-csv-link>CSV</a>
+              <a class="crm-button" href="/api/manager/customers?<%= makeQuery({}) %>" data-crm-json-link>JSON</a>
+            </div>
+          </div>
+          <div class="crm-table-wrap">
+            <table class="crm-table">
+              <thead>
+                <tr>
+                  <th>Khách hàng</th>
+                  <th>Liên hệ</th>
+                  <th>eKYC</th>
+                  <th>Booking</th>
+                  <th>Chi tiêu</th>
+                  <th>Sức khỏe</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody data-crm-table-body>
+                <% if (!rows.length) { %>
+                  <tr><td colspan="7" class="crm-muted">Không có dữ liệu khách hàng phù hợp.</td></tr>
+                <% } %>
+                <% rows.forEach((item) => { %>
+                  <tr>
+                    <td>
+                      <div class="crm-customer-cell">
+                        <span class="crm-avatar"><%= String(item.tenKh || "?").trim().slice(0, 1).toUpperCase() || "?" %></span>
+                        <span class="crm-code">
+                          <a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a>
+                          <span class="crm-muted">#<%= item.id %> · <%= item.typeLabel %></span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <strong><%= item.email || "Chưa email" %></strong>
+                      <div class="crm-muted"><%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></div>
+                    </td>
+                    <td>
+                      <span class="crm-status crm-status--<%= item.ekycMeta.tone %>"><%= item.ekycMeta.label %></span>
+                      <div class="crm-muted"><%= item.ekycMeta.hint %></div>
+                    </td>
+                    <td>
+                      <strong><%= item.transactionCount %> giao dịch</strong>
+                      <div class="crm-muted"><%= item.activeBookingCount %> đang mở · <%= item.lastBookingLabel %></div>
+                    </td>
+                    <td class="crm-money"><%= item.totalSpentFormatted %></td>
+                    <td><span class="crm-health"><%= item.healthScore %>%</span></td>
+                    <td>
+                      <div class="crm-row-actions">
+                        <a class="crm-button" href="/manager/customers/<%= item.id %>">Chi tiết</a>
+                        <a class="crm-button crm-button--primary" href="/manager/customers/<%= item.id %>/edit">Sửa</a>
+                        <form method="post" action="/manager/customers/<%= item.id %>/delete" onsubmit="return confirm('Xóa khách hàng này nếu chưa có giao dịch?')">
+                          <button class="crm-button crm-button--danger" type="submit" <%= item.canDelete ? "" : "disabled title='Khách đã có giao dịch nên không thể xóa'" %>>
+                            <%= item.canDelete ? "Xóa" : "Khóa xóa" %>
+                          </button>
+                        </form>
+                      </div>
+                      <% if (!item.canDelete) { %><div class="crm-muted" style="margin-top:6px">Đã có giao dịch nên chỉ cho sửa, không xóa.</div><% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% if (totalPages > 1) { %>
+            <nav class="crm-pagination" aria-label="Phân trang khách hàng" data-crm-pagination>
+              <% if (page > 1) { %><a class="crm-page" href="/manager/customers?<%= makeQuery({ page: page - 1 }) %>">Trước</a><% } %>
+              <% pages.forEach((item) => { %><a class="crm-page <%= item === page ? "is-active" : "" %>" href="/manager/customers?<%= makeQuery({ page: item }) %>"><%= item %></a><% }) %>
+              <% if (page < totalPages) { %><a class="crm-page" href="/manager/customers?<%= makeQuery({ page: page + 1 }) %>">Tiếp</a><% } %>
+            </nav>
+          <% } %>
+      </section>
+
+      <% if (duplicateFocus.length) { %>
+        <section class="crm-panel">
+          <h2>Gợi ý trùng mềm</h2>
+          <p class="crm-muted">Thuật toán đang dùng logic từ PHP cũ: tên gần giống, email gần giống, trùng đuôi SĐT hoặc CCCD gần giống.</p>
+          <div class="crm-list">
+            <% duplicateFocus.forEach((item) => { %>
+              <article class="crm-insight">
+                <span class="crm-status crm-status--<%= item.meta.tone %>"><%= item.meta.label %> · <%= item.scoreLabel %></span>
+                <h3 style="margin:10px 0 4px"><a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a></h3>
+                <p class="crm-muted"><%= item.email || "Chưa email" %> · <%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></p>
+                <p class="crm-muted"><%= (item.reasons || []).join(", ") %></p>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+      <% } %>
+    </section>
+  </div>
+</main>
+
+<script>
+  (() => {
+    const form = document.getElementById("crmFilterForm");
+    const cccd = document.getElementById("cccd");
+    const keyword = document.getElementById("keyword");
+    const tablePanel = document.querySelector("[data-crm-table-panel]");
+    const tableBody = document.querySelector("[data-crm-table-body]");
+    const resultCaption = document.querySelector("[data-crm-result-caption]");
+    const pagination = document.querySelector("[data-crm-pagination]");
+    const liveState = document.querySelector("[data-crm-live-state]");
+    const jsonLink = document.querySelector("[data-crm-json-link]");
+    const csvLink = document.querySelector("[data-crm-csv-link]");
+    let liveTimer = null;
+
+    if (cccd && keyword) {
+      cccd.addEventListener("input", () => {
+        if (cccd.value.trim()) keyword.value = "";
+        scheduleLiveSearch();
+      });
+      keyword.addEventListener("input", () => {
+        if (keyword.value.trim()) cccd.value = "";
+        scheduleLiveSearch();
+      });
+    }
+
+    if (form) {
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        loadCustomers(1, true);
+      });
+
+      form.querySelectorAll("select").forEach((select) => {
+        select.addEventListener("change", () => loadCustomers(1, true));
+      });
+    }
+
+    if (pagination) {
+      pagination.addEventListener("click", (event) => {
+        const link = event.target.closest("a");
+        if (!link) return;
+        const url = new URL(link.href, window.location.origin);
+        if (url.pathname !== "/manager/customers") return;
+        event.preventDefault();
+        loadCustomers(Number(url.searchParams.get("page") || 1), true);
+      });
+    }
+
+    function scheduleLiveSearch() {
+      clearTimeout(liveTimer);
+      liveTimer = setTimeout(() => loadCustomers(1, true), 260);
+    }
+
+    async function loadCustomers(page, pushState) {
+      if (!form || !tableBody) return;
+      const params = new URLSearchParams(new FormData(form));
+      params.set("page", String(page || 1));
+      if (params.get("cccd")) params.set("keyword", "");
+      const query = params.toString();
+      setLiveState("Đang lọc realtime...");
+      tablePanel?.classList.add("is-loading");
+
+      try {
+        const response = await fetch(`/api/manager/customers?${query}`, {
+          headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" }
+        });
+        const payload = await response.json();
+        if (!payload.ok) throw new Error(payload.message || "Không thể tải danh sách khách hàng.");
+        renderCustomers(payload.data);
+        updateLinks(query);
+        if (pushState) window.history.replaceState({}, "", `/manager/customers?${query}`);
+        setLiveState(`Đã cập nhật ${payload.data.items.length}/${payload.data.totalRows} hồ sơ`);
+      } catch (error) {
+        setLiveState(error && error.message ? error.message : "Không thể lọc realtime.");
+      } finally {
+        tablePanel?.classList.remove("is-loading");
+      }
+    }
+
+    function renderCustomers(data) {
+      tableBody.innerHTML = data.items.length
+        ? data.items.map(renderRow).join("")
+        : `<tr><td colspan="7" class="crm-muted">Không có dữ liệu khách hàng phù hợp.</td></tr>`;
+
+      if (resultCaption) {
+        resultCaption.textContent = `Trang ${data.page}/${data.totalPages}, đang hiển thị ${data.items.length} trên ${data.totalRows} hồ sơ.`;
+      }
+
+      if (pagination) {
+        pagination.innerHTML = renderPagination(data);
+        pagination.style.display = data.totalPages > 1 ? "" : "none";
+      }
+    }
+
+    function renderRow(item) {
+      return `
+        <tr>
+          <td>
+            <div class="crm-customer-cell">
+              <span class="crm-avatar">${escapeHtml(getInitial(item.tenKh))}</span>
+              <span class="crm-code">
+                <a href="/manager/customers/${Number(item.id)}">${escapeHtml(item.tenKh || "")}</a>
+                <span class="crm-muted">#${Number(item.id)} · ${escapeHtml(item.typeLabel || "")}</span>
+              </span>
+            </div>
+          </td>
+          <td>
+            <strong>${escapeHtml(item.email || "Chưa email")}</strong>
+            <div class="crm-muted">${escapeHtml(item.sdt || "Chưa SĐT")} · ${escapeHtml(item.cccd || "Chưa CCCD")}</div>
+          </td>
+          <td>
+            <span class="crm-status crm-status--${escapeAttr(item.ekycMeta?.tone || "slate")}">${escapeHtml(item.ekycMeta?.label || "Không rõ")}</span>
+            <div class="crm-muted">${escapeHtml(item.ekycMeta?.hint || "")}</div>
+          </td>
+          <td>
+            <strong>${Number(item.transactionCount || 0)} giao dịch</strong>
+            <div class="crm-muted">${Number(item.activeBookingCount || 0)} đang mở · ${escapeHtml(item.lastBookingLabel || "Chưa có booking")}</div>
+          </td>
+          <td class="crm-money">${escapeHtml(item.totalSpentFormatted || "0 đ")}</td>
+          <td><span class="crm-health">${Number(item.healthScore || 0)}%</span></td>
+          <td>
+            <div class="crm-row-actions">
+              <a class="crm-button" href="/manager/customers/${Number(item.id)}">Chi tiết</a>
+              <a class="crm-button crm-button--primary" href="/manager/customers/${Number(item.id)}/edit">Sửa</a>
+              <form method="post" action="/manager/customers/${Number(item.id)}/delete" onsubmit="return confirm('Xóa khách hàng này nếu chưa có giao dịch?')">
+                <button class="crm-button crm-button--danger" type="submit" ${item.canDelete ? "" : "disabled title='Khách đã có giao dịch nên không thể xóa'"}>
+                  ${item.canDelete ? "Xóa" : "Khóa xóa"}
+                </button>
+              </form>
+            </div>
+            ${item.canDelete ? "" : `<div class="crm-muted" style="margin-top:6px">Đã có giao dịch nên chỉ cho sửa, không xóa.</div>`}
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderPagination(data) {
+      if (data.totalPages <= 1) return "";
+      const pages = [];
+      const start = Math.max(1, Number(data.page) - 2);
+      const end = Math.min(Number(data.totalPages), Number(data.page) + 2);
+      if (data.page > 1) pages.push(pageLink(data.page - 1, "Trước"));
+      for (let page = start; page <= end; page += 1) {
+        pages.push(pageLink(page, String(page), page === data.page));
+      }
+      if (data.page < data.totalPages) pages.push(pageLink(data.page + 1, "Tiếp"));
+      return pages.join("");
+    }
+
+    function pageLink(page, label, active = false) {
+      const params = new URLSearchParams(new FormData(form));
+      params.set("page", String(page));
+      return `<a class="crm-page ${active ? "is-active" : ""}" href="/manager/customers?${params.toString()}">${escapeHtml(label)}</a>`;
+    }
+
+    function updateLinks(query) {
+      if (jsonLink) jsonLink.href = `/api/manager/customers?${query}`;
+      if (csvLink) {
+        const params = new URLSearchParams(query);
+        params.delete("page");
+        csvLink.href = `/manager/customers/export.csv?${params.toString()}`;
+      }
+    }
+
+    function setLiveState(message) {
+      if (liveState) liveState.textContent = message;
+    }
+
+    function getInitial(value) {
+      const name = String(value || "").trim();
+      return name ? name.slice(0, 1).toUpperCase() : "?";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(value) {
+      return String(value ?? "").replace(/[^a-z0-9_-]/gi, "");
+    }
+  })();
+</script>
+
+<%- include("../partials/footer") %>

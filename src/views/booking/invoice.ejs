@@ -1,0 +1,85 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<style>
+  body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
+  .invoice-shell{position:relative;max-width:1040px;margin:0 auto;padding:34px 18px 64px}
+  .invoice-card{position:relative;overflow:hidden;border:1px solid rgba(19,48,74,.12);border-radius:34px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.76));box-shadow:0 30px 80px rgba(12,39,64,.15);padding:30px}
+  .invoice-card::before{content:"";position:absolute;width:220px;height:220px;right:-70px;top:-70px;border-radius:999px;background:radial-gradient(circle,rgba(34,197,94,.22),transparent 66%)}
+  .invoice-chip{display:inline-flex;border-radius:999px;padding:7px 12px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.18);color:#047857;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .invoice-card h1{position:relative;margin:18px 0 10px;color:#102033;font-size:clamp(40px,6vw,72px);line-height:.92;letter-spacing:-.07em}
+  .invoice-muted{position:relative;color:#5f778f;line-height:1.65}
+  .invoice-summary{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
+  .invoice-box{border-radius:22px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.72);padding:16px}
+  .invoice-box span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .invoice-box strong{display:block;margin-top:8px;color:#102033;font-size:20px}
+  .invoice-room{position:relative;border-radius:24px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.70);padding:16px;margin-top:12px}
+  .invoice-room h3{margin:0 0 8px;color:#102033}
+  .invoice-table{position:relative;width:100%;border-collapse:separate;border-spacing:0 10px;margin-top:12px}
+  .invoice-table th{padding:0 10px 4px;color:#5f778f;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:.07em}
+  .invoice-table td{padding:12px 10px;background:rgba(255,255,255,.70);border-top:1px solid rgba(19,48,74,.08);border-bottom:1px solid rgba(19,48,74,.08);color:#14314b}
+  .invoice-table td:first-child{border-left:1px solid rgba(19,48,74,.08);border-radius:16px 0 0 16px}
+  .invoice-table td:last-child{border-right:1px solid rgba(19,48,74,.08);border-radius:0 16px 16px 0}
+  .invoice-section-title{position:relative;margin:22px 0 8px;color:#102033;font-size:22px;letter-spacing:-.04em}
+  .invoice-actions{position:relative;display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .invoice-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;box-shadow:0 14px 32px rgba(12,39,64,.08)}
+  .invoice-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);box-shadow:0 18px 38px rgba(20,184,166,.18)}
+  @media(max-width:760px){.invoice-card{padding:22px;border-radius:28px}.invoice-summary{grid-template-columns:1fr}.invoice-table{display:block;overflow-x:auto;white-space:nowrap}}
+</style>
+
+<main class="invoice-shell">
+  <section class="invoice-card">
+    <span class="invoice-chip">Đặt phòng thành công</span>
+    <h1>Booking đã được giữ chỗ.</h1>
+    <p class="invoice-muted">Mã giao dịch <strong><%= booking.bookingCode || `GD-${booking.id}` %></strong> đã được tạo trong hệ thống. Trạng thái hiện tại là <strong><%= booking.statusLabel || booking.status %></strong>, phương thức thanh toán <strong><%= booking.paymentMethodLabel || booking.paymentMethod %></strong>.</p>
+    <div class="invoice-summary">
+      <div class="invoice-box"><span>Tổng tiền</span><strong><%= booking.totalFormatted %></strong></div>
+      <div class="invoice-box"><span>Khách</span><strong><%= booking.customer.name %></strong></div>
+      <div class="invoice-box"><span>Liên hệ</span><strong><%= booking.customer.phone || booking.customer.email || "-" %></strong></div>
+      <div class="invoice-box"><span>Tiền phòng</span><strong><%= booking.summary?.roomSubtotalFormatted || "-" %></strong></div>
+      <div class="invoice-box"><span>Dịch vụ</span><strong><%= booking.summary?.serviceTotalFormatted || "0 đ" %></strong></div>
+      <div class="invoice-box"><span>Khuyến mãi</span><strong><%= booking.promotion ? booking.promotion.name : "Không áp dụng" %></strong></div>
+    </div>
+    <h2 class="invoice-section-title">Chi tiết phòng</h2>
+    <% booking.rooms.forEach((room) => { %>
+      <article class="invoice-room">
+        <h3><%= room.hotelName %> · Phòng <%= room.roomNumber %></h3>
+        <p class="invoice-muted"><%= room.roomType %> · <%= room.bedType || "Giường tiêu chuẩn" %> · <%= room.view || "View nội khu" %> · <%= room.city %></p>
+        <p class="invoice-muted"><%= room.checkinLabel %> → <%= room.checkoutLabel %> · <%= room.guests || 0 %> khách · <strong><%= room.amountFormatted %></strong></p>
+      </article>
+    <% }) %>
+    <h2 class="invoice-section-title">Dịch vụ bổ sung</h2>
+    <% if (!booking.services || !booking.services.length) { %>
+      <p class="invoice-muted">Booking này chưa có dịch vụ bổ sung.</p>
+    <% } else { %>
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Dịch vụ</th>
+            <th>Phòng</th>
+            <th>Số lượng</th>
+            <th>Đơn giá</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% booking.services.forEach((service) => { %>
+            <tr>
+              <td><strong><%= service.name %></strong></td>
+              <td><%= service.roomNumber || "-" %></td>
+              <td><%= service.quantity %></td>
+              <td><%= service.unitPriceFormatted %></td>
+              <td><strong><%= service.amountFormatted %></strong></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+    <div class="invoice-actions">
+      <a class="invoice-button invoice-button--primary" href="/customer/bookings/<%= booking.id %>">Xem chi tiết</a>
+      <a class="invoice-button invoice-button--primary" href="/customer/bookings">Về lịch sử booking</a>
+      <a class="invoice-button" href="/booking/search">Tiếp tục tìm phòng</a>
+      <a class="invoice-button" href="/customer/dashboard">Trang khách hàng</a>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

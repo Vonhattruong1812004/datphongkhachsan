@@ -1,0 +1,186 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const customer = detail.customer;
+  const bookings = detail.bookings || [];
+  const feedback = detail.feedback || [];
+  const audit = detail.audit || [];
+  const duplicates = detail.duplicateSuggestions || [];
+  const success = typeof successMessage !== "undefined" ? successMessage : "";
+  const error = typeof errorMessage !== "undefined" ? errorMessage : "";
+%>
+
+<style>
+  .cust-detail {
+    --ink: #172033;
+    --muted: #667085;
+    --line: rgba(23, 32, 51, .10);
+    --panel: #ffffff;
+    --cyan: #00a6d6;
+    --mint: #19b879;
+    --sun: #f5b700;
+    --coral: #ff6b6b;
+    --berry: #d946ef;
+    min-height: calc(100vh - 84px);
+    position: relative;
+    padding: 24px 18px 54px;
+    color: var(--ink);
+    background:
+      linear-gradient(135deg, rgba(255, 107, 107, .10), transparent 32%),
+      linear-gradient(225deg, rgba(0, 166, 214, .12), transparent 38%),
+      repeating-linear-gradient(90deg, rgba(23, 32, 51, .035) 0 1px, transparent 1px 44px),
+      linear-gradient(180deg, #fffefa 0%, #f5fcff 48%, #fff8fb 100%);
+  }
+  .cust-detail::before { content: ""; position: absolute; inset: 0 0 auto; height: 9px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan), var(--berry)); }
+  .cust-shell { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
+  .cust-hero,
+  .cust-panel,
+  .cust-kpi {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: 0 18px 44px rgba(23, 32, 51, .09);
+  }
+  .cust-hero { border-radius: 8px; padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; border-top: 5px solid var(--cyan); }
+  .cust-chip { display: inline-flex; border-radius: 8px; padding: 7px 10px; color: #087894; background: #effbff; border: 1px solid rgba(0,166,214,.22); font-size: 12px; font-weight: 900; letter-spacing: 0; text-transform: uppercase; }
+  .cust-hero h1 { margin: 14px 0 8px; font-size: 48px; line-height: 1; letter-spacing: 0; }
+  .cust-muted { color: var(--muted); font-size: 13px; line-height: 1.58; }
+  .cust-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .cust-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 8px; padding: 9px 14px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); text-decoration: none; font: inherit; font-size: 14px; font-weight: 850; cursor: pointer; }
+  .cust-button:disabled { cursor: not-allowed; opacity: .62; }
+  .cust-button--primary { color: #fff; border-color: transparent; background: linear-gradient(135deg, #00a6d6, #19b879); box-shadow: 0 14px 28px rgba(0,166,214,.18); }
+  .cust-button--danger { color: #b42318; border-color: rgba(255,107,107,.28); background: #fff7f7; }
+  .cust-alert { border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(23,32,51,.10); font-size: 14px; font-weight: 800; line-height: 1.5; }
+  .cust-alert--error { color: #b42318; background: #fff4f4; border-color: rgba(255,107,107,.30); }
+  .cust-alert--success { color: #047857; background: #effcf6; border-color: rgba(25,184,121,.28); }
+  .cust-status { display: inline-flex; align-items: center; border-radius: 8px; padding: 6px 9px; font-size: 12px; font-weight: 850; }
+  .cust-status--green { color: #047857; background: #effcf6; }
+  .cust-status--cyan { color: #087894; background: #effbff; }
+  .cust-status--sun { color: #8a5a00; background: #fff8d7; }
+  .cust-status--rose { color: #b42318; background: #fff4f4; }
+  .cust-status--slate { color: #475569; background: #f3f5f8; }
+  .cust-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .cust-kpi { position: relative; overflow: hidden; border-radius: 8px; padding: 16px; }
+  .cust-kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--cyan); }
+  .cust-kpi:nth-child(2)::before { background: var(--sun); }
+  .cust-kpi:nth-child(3)::before { background: var(--mint); }
+  .cust-kpi:nth-child(4)::before { background: var(--coral); }
+  .cust-kpi span { display: block; color: var(--muted); font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
+  .cust-kpi strong { display: block; margin-top: 10px; font-size: 26px; line-height: 1; letter-spacing: 0; }
+  .cust-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+  .cust-panel { border-radius: 8px; padding: 20px; }
+  .cust-panel h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
+  .cust-list { display: grid; gap: 10px; margin-top: 14px; }
+  .cust-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--coral); }
+  .cust-money { font-weight: 900; color: #047857; white-space: nowrap; }
+  .cust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  @media (max-width: 1040px) { .cust-hero, .cust-layout, .cust-grid { grid-template-columns: 1fr; } .cust-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .cust-detail { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 36px; } .cust-kpi-grid { grid-template-columns: 1fr; } }
+</style>
+
+<main class="cust-detail">
+  <div class="cust-shell">
+    <section class="cust-hero">
+      <div>
+        <span class="cust-chip">Hồ sơ khách hàng</span>
+        <h1><%= customer.tenKh %></h1>
+        <p class="cust-muted"><%= customer.email || "Chưa email" %> · <%= customer.sdt || "Chưa SĐT" %> · <%= customer.cccd || "Chưa CCCD" %></p>
+        <div class="cust-actions">
+          <a class="cust-button" href="/manager/customers">Danh sách</a>
+          <a class="cust-button cust-button--primary" href="/manager/customers/<%= customer.id %>/edit">Sửa hồ sơ</a>
+          <form method="post" action="/manager/customers/<%= customer.id %>/delete" onsubmit="return confirm('Xóa khách hàng này? Chỉ xóa được khi khách chưa có giao dịch.')">
+            <button class="cust-button cust-button--danger" type="submit" <%= customer.canDelete ? "" : "disabled title='Khách đã có giao dịch nên không thể xóa'" %>>
+              <%= customer.canDelete ? "Xóa hồ sơ" : "Không thể xóa" %>
+            </button>
+          </form>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <span class="cust-status cust-status--<%= customer.ekycMeta.tone %>"><%= customer.ekycMeta.label %></span>
+        <p class="cust-muted" style="margin:12px 0 0">#<%= customer.id %> · <%= customer.typeLabel %></p>
+      </div>
+    </section>
+
+    <% if (error) { %><div class="cust-alert cust-alert--error"><%= error %></div><% } %>
+    <% if (success) { %><div class="cust-alert cust-alert--success"><%= success %></div><% } %>
+
+    <section class="cust-kpi-grid">
+      <article class="cust-kpi"><span>Chi tiêu</span><strong class="cust-money"><%= customer.totalSpentFormatted %></strong></article>
+      <article class="cust-kpi"><span>Giao dịch</span><strong><%= customer.transactionCount %></strong></article>
+      <article class="cust-kpi"><span>Booking mở</span><strong><%= customer.activeBookingCount %></strong></article>
+      <article class="cust-kpi"><span>Sức khỏe</span><strong><%= customer.healthScore %>%</strong></article>
+    </section>
+
+    <section class="cust-layout">
+      <section class="cust-panel">
+        <h2>Hoạt động khách hàng</h2>
+        <div class="cust-grid">
+          <div>
+            <h3>Booking gần đây</h3>
+            <div class="cust-list">
+              <% if (!bookings.length) { %><div class="cust-insight cust-muted">Khách chưa có booking.</div><% } %>
+              <% bookings.forEach((booking) => { %>
+                <article class="cust-insight">
+                  <span class="cust-status cust-status--cyan"><%= booking.trangThai %></span>
+                  <h3 style="margin:10px 0 4px"><%= booking.bookingCode || `GD-${booking.id}` %> · <%= booking.tongTienFormatted %></h3>
+                  <p class="cust-muted"><%= booking.ngayGiaoDichLabel %> · <%= booking.roomCount %> phòng · <%= booking.hotelLabel || "Chưa gắn cơ sở" %></p>
+                </article>
+              <% }) %>
+            </div>
+          </div>
+          <div>
+            <h3>Feedback gần đây</h3>
+            <div class="cust-list">
+              <% if (!feedback.length) { %><div class="cust-insight cust-muted">Chưa có phản hồi từ khách này.</div><% } %>
+              <% feedback.forEach((fb) => { %>
+                <article class="cust-insight">
+                  <span class="cust-status cust-status--sun"><%= fb.stars %></span>
+                  <h3 style="margin:10px 0 4px"><%= fb.loaiDichVu || "Phản hồi" %> · <%= fb.tinhTrang || "ChuaXuLy" %></h3>
+                  <p class="cust-muted"><%= fb.ngayPhanHoiLabel %> · <%= fb.sentiment || "Neutral" %></p>
+                  <p class="cust-muted"><%= String(fb.noiDung || "").slice(0, 130) %></p>
+                </article>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin:22px 0 0">Audit log</h3>
+        <div class="cust-list">
+          <% if (!audit.length) { %><div class="cust-insight cust-muted">Chưa có lịch sử chỉnh sửa.</div><% } %>
+          <% audit.forEach((log) => { %>
+            <article class="cust-insight">
+              <span class="cust-status cust-status--slate"><%= log.hanhDong %></span>
+              <strong style="display:block;margin-top:8px"><%= log.usernameThucHien || "system" %></strong>
+              <p class="cust-muted"><%= log.ghichu || "" %> · <%= log.thoigianLabel %></p>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+
+      <aside class="cust-panel">
+        <h2>Đối soát hồ sơ</h2>
+        <% if (!customer.canDelete) { %>
+          <div class="cust-insight">
+            <span class="cust-status cust-status--rose">Khóa xóa</span>
+            <p class="cust-muted">Hồ sơ này đã có giao dịch nên hệ thống chỉ cho sửa, không xóa để bảo toàn lịch sử đặt phòng, công nợ và audit.</p>
+          </div>
+        <% } %>
+        <% if (duplicates.length) { %>
+          <div class="cust-list">
+            <% duplicates.forEach((item) => { %>
+              <article class="cust-insight">
+                <span class="cust-status cust-status--<%= item.meta.tone %>"><%= item.meta.label %> · <%= item.scoreLabel %></span>
+                <h3 style="margin:10px 0 4px"><a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a></h3>
+                <p class="cust-muted"><%= item.email || "Chưa email" %> · <%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></p>
+                <p class="cust-muted"><%= (item.reasons || []).join(", ") %></p>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="cust-muted">Chưa thấy hồ sơ nào có dấu hiệu trùng mềm với khách hàng này.</p>
+        <% } %>
+      </aside>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

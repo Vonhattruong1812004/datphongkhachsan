@@ -1,0 +1,272 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const searchQuery = new URLSearchParams(filters || {}).toString();
+  const roomHref = (room) => {
+    const params = new URLSearchParams(filters || {});
+    return `/booking/rooms/${room.id}${params.toString() ? `?${params.toString()}` : ""}`;
+  };
+%>
+<style>
+  body{
+    background:
+      radial-gradient(circle at 9% 10%, rgba(45,212,191,.24), transparent 25%),
+      radial-gradient(circle at 88% 12%, rgba(251,113,133,.16), transparent 27%),
+      radial-gradient(circle at 48% 100%, rgba(250,204,21,.16), transparent 30%),
+      linear-gradient(135deg,#fffef8 0%,#effffd 35%,#eef8ff 68%,#fff5ec 100%);
+    color:#14314b;
+  }
+  .guest-booking-shell{position:relative;overflow:hidden;max-width:1220px;margin:0 auto;padding:34px 18px 64px;color:#14314b}
+  .guest-booking-shell::before,.guest-booking-shell::after{content:"";position:absolute;border-radius:999px;pointer-events:none;z-index:-1;opacity:.48;animation:guest-booking-float 12s ease-in-out infinite alternate}
+  .guest-booking-shell::before{width:520px;height:520px;right:-170px;top:-230px;background:conic-gradient(from 130deg,rgba(14,165,233,.42),rgba(20,184,166,.34),rgba(250,204,21,.30),rgba(251,113,133,.24),rgba(14,165,233,.42))}
+  .guest-booking-shell::after{width:460px;height:460px;left:-180px;bottom:-220px;background:conic-gradient(from 30deg,rgba(251,113,133,.28),rgba(245,158,11,.22),rgba(45,212,191,.24),rgba(59,130,246,.22),rgba(251,113,133,.28));animation-delay:-4s}
+  .guest-hero{position:relative;overflow:hidden;border:1px solid rgba(19,48,74,.12);border-radius:34px;padding:34px;background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,255,255,.72));box-shadow:0 26px 72px rgba(12,39,64,.14);backdrop-filter:blur(22px);margin-bottom:22px}
+  .guest-hero::before{content:"";position:absolute;right:42px;top:28px;width:120px;height:120px;border-radius:999px;background:radial-gradient(circle,#fffbe8 0 18%,#fde68a 35%,#f59e0b 64%,transparent 70%);box-shadow:0 0 0 22px rgba(253,224,71,.14),0 0 76px rgba(251,191,36,.28);animation:guest-booking-sun 7s ease-in-out infinite}
+  .guest-hero::after{content:"";position:absolute;left:28px;bottom:22px;width:180px;height:64px;border-radius:999px;background:rgba(255,255,255,.62);box-shadow:90px -120px 0 -10px rgba(255,255,255,.48),720px -10px 0 -12px rgba(255,255,255,.42);animation:guest-booking-cloud 10s ease-in-out infinite}
+  .guest-kicker{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .guest-hero h1{position:relative;z-index:1;margin:22px 0 12px;font-size:clamp(42px,6vw,76px);line-height:.92;letter-spacing:-.07em;color:#102033}
+  .guest-hero h1 span{color:transparent;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);-webkit-background-clip:text;background-clip:text}
+  .guest-hero p{position:relative;z-index:1;max-width:760px;margin:0;color:#5f778f;line-height:1.72}
+  .guest-panel{position:relative;border:1px solid rgba(19,48,74,.12);border-radius:30px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.72));box-shadow:0 24px 66px rgba(12,39,64,.12);backdrop-filter:blur(20px);margin-bottom:22px}
+  .guest-panel h2{margin:0 0 8px;color:#102033;font-size:28px;letter-spacing:-.045em}
+  .guest-muted{color:#5f778f;font-size:13px;line-height:1.6}
+  .guest-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}
+  .guest-field{display:grid;gap:7px}
+  .guest-field label{color:#173651;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .guest-field input,.guest-field select{width:100%;min-height:48px;border-radius:16px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.92);color:#102033;padding:10px 14px;font:inherit;outline:none;box-shadow:0 10px 24px rgba(12,39,64,.06)}
+  .guest-field input:focus,.guest-field select:focus{border-color:rgba(14,165,233,.36);box-shadow:0 0 0 4px rgba(14,165,233,.10)}
+  .guest-field input.is-invalid,.guest-field select.is-invalid{border-color:rgba(239,71,111,.72);background:rgba(255,241,242,.94);box-shadow:0 0 0 4px rgba(239,71,111,.10)}
+  .guest-error-msg{min-height:16px;color:#be123c;font-size:12px;font-weight:800;line-height:1.35}
+  .guest-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .guest-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 14px 32px rgba(12,39,64,.08)}
+  .guest-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);box-shadow:0 18px 38px rgba(20,184,166,.18)}
+  .guest-button:hover{transform:translateY(-2px)}
+  .guest-search-alert{border-radius:18px;padding:13px 15px;margin-top:14px;background:rgba(239,71,111,.10);border:1px solid rgba(239,71,111,.20);color:#be123c;font-weight:800}
+  .room-grid-fresh{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:18px}
+  .room-fresh{position:relative;overflow:hidden;border-radius:28px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.70));box-shadow:0 24px 64px rgba(12,39,64,.13);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+  .room-fresh:hover{transform:translateY(-6px) rotate(-.25deg);border-color:rgba(14,165,233,.34);box-shadow:0 30px 80px rgba(12,39,64,.18)}
+  .room-fresh img{width:100%;height:210px;object-fit:cover;display:block;background:#e0f2fe}
+  .room-fresh__body{padding:18px}
+  .room-badge{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(14,165,233,.10);border:1px solid rgba(14,165,233,.16);color:#0c6e90;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
+  .room-fresh h3{margin:14px 0 8px;color:#102033;font-size:22px;letter-spacing:-.04em}
+  .room-fresh p{margin:0 0 8px;color:#5f778f;font-size:13px;line-height:1.55}
+  .room-price{display:block;margin:12px 0;color:#0f766e;font-size:22px;font-weight:1000;letter-spacing:-.04em}
+  .promo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+  .promo-card{border-radius:24px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.72);padding:18px;box-shadow:0 18px 44px rgba(12,39,64,.10)}
+  .promo-card h3{margin:10px 0;color:#102033}
+  .guest-empty{border:1px dashed rgba(19,48,74,.18);border-radius:24px;padding:22px;background:rgba(255,255,255,.58);color:#5f778f}
+  @keyframes guest-booking-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(30px,22px,0) rotate(14deg)}}
+  @keyframes guest-booking-sun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
+  @keyframes guest-booking-cloud{0%,100%{transform:translateX(0)}50%{transform:translateX(22px)}}
+  @media(max-width:1000px){.guest-form-grid,.room-grid-fresh,.promo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:680px){.guest-booking-shell{padding:22px 12px 48px}.guest-hero,.guest-panel{border-radius:26px;padding:22px}.guest-form-grid,.room-grid-fresh,.promo-grid{grid-template-columns:1fr}.guest-hero::before{width:82px;height:82px;right:22px}.guest-hero h1{font-size:42px}}
+</style>
+
+<main class="guest-booking-shell">
+  <section class="guest-hero">
+    <div class="guest-kicker">Khách hàng · Đặt phòng online</div>
+    <h1>Tìm phòng nghỉ dưỡng <span>đẹp đúng gu.</span></h1>
+    <p>Lọc phòng theo ngày ở, điểm đến, khách sạn, hạng phòng, view, loại giường và ngân sách. Hệ thống chỉ hiển thị phòng còn trống đúng dữ liệu PostgreSQL hiện tại.</p>
+  </section>
+
+  <section class="guest-panel">
+    <h2>Bộ lọc tìm phòng</h2>
+    <div class="guest-muted">Chọn ngày nhận/trả để kiểm tra trùng lịch booking. Nếu chưa chọn ngày, hệ thống chỉ hiển thị phòng đang ở trạng thái trống.</div>
+    <% if (typeof errorMessage !== "undefined" && errorMessage) { %>
+      <div class="guest-search-alert"><%= errorMessage %></div>
+    <% } %>
+    <form method="get" action="/booking/search" id="bookingSearchForm" novalidate>
+      <div class="guest-form-grid">
+        <div class="guest-field"><label>Điểm đến</label><input name="hotel_city" value="<%= filters.hotel_city %>" placeholder="VD: Đà Nẵng" /></div>
+        <div class="guest-field"><label>Khách sạn</label><input name="hotel_name" value="<%= filters.hotel_name %>" placeholder="Tên khu nghỉ dưỡng" /></div>
+        <div class="guest-field"><label>Loại phòng</label><input name="loai_phong" value="<%= filters.loai_phong %>" placeholder="Deluxe, Suite..." /></div>
+        <div class="guest-field"><label>Loại giường</label><input name="loai_giuong" value="<%= filters.loai_giuong %>" placeholder="King, Twin..." /></div>
+        <div class="guest-field"><label>View phòng</label><input name="view_phong" value="<%= filters.view_phong %>" placeholder="Biển, Vườn..." /></div>
+        <div class="guest-field">
+          <label for="search_so_khach">Số khách</label>
+          <input id="search_so_khach" name="so_khach" type="number" min="1" value="<%= filters.so_khach %>" />
+          <div class="guest-error-msg" id="err_search_so_khach"></div>
+        </div>
+        <div class="guest-field">
+          <label for="search_ngay_nhan">Ngày nhận</label>
+          <input id="search_ngay_nhan" name="ngay_nhan" type="date" value="<%= filters.ngay_nhan %>" />
+          <div class="guest-error-msg" id="err_search_ngay_nhan"></div>
+        </div>
+        <div class="guest-field">
+          <label for="search_ngay_tra">Ngày trả</label>
+          <input id="search_ngay_tra" name="ngay_tra" type="date" value="<%= filters.ngay_tra %>" />
+          <div class="guest-error-msg" id="err_search_ngay_tra"></div>
+        </div>
+        <div class="guest-field">
+          <label for="search_gia_goi_y">Ngân sách / đêm</label>
+          <input id="search_gia_goi_y" name="gia_goi_y" type="number" min="0" step="50000" value="<%= filters.gia_goi_y %>" />
+          <div class="guest-error-msg" id="err_search_gia_goi_y"></div>
+        </div>
+        <div class="guest-field"><label>Sắp xếp</label>
+          <select name="sort_by">
+            <option value="ai" <%= filters.sort_by === "ai" ? "selected" : "" %>>Gợi ý thông minh</option>
+            <option value="price_asc" <%= filters.sort_by === "price_asc" ? "selected" : "" %>>Giá thấp trước</option>
+            <option value="price_desc" <%= filters.sort_by === "price_desc" ? "selected" : "" %>>Giá cao trước</option>
+            <option value="capacity_fit" <%= filters.sort_by === "capacity_fit" ? "selected" : "" %>>Vừa số khách</option>
+          </select>
+        </div>
+      </div>
+      <div class="guest-actions">
+        <button class="guest-button guest-button--primary" type="submit">Tìm phòng phù hợp</button>
+        <a class="guest-button" href="/booking/search">Nhập lại</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="guest-panel">
+    <h2><%= rooms.length %> phòng phù hợp</h2>
+    <div class="guest-muted">Chọn một phòng để đi tiếp sang bước nhập thông tin, xem tóm tắt giá rồi mới xác nhận đặt phòng.</div>
+    <% if (!rooms.length) { %>
+      <div class="guest-empty" style="margin-top:16px">Không tìm thấy phòng phù hợp. Bạn thử đổi ngày ở, giảm tiêu chí lọc hoặc mở AI chat để được gợi ý nhanh hơn.</div>
+    <% } else { %>
+      <div class="room-grid-fresh">
+        <% rooms.forEach((room) => { %>
+          <article class="room-fresh">
+            <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
+            <div class="room-fresh__body">
+              <span class="room-badge"><%= room.tinhThanh %> · <%= room.khachSan %></span>
+              <h3><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h3>
+              <p><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View nội khu" %> · Tối đa <%= room.soKhachToiDa %> khách</p>
+              <p><%= room.diaChi || "Địa chỉ đang được cập nhật" %></p>
+              <strong class="room-price"><%= Number(room.gia).toLocaleString("vi-VN") %> đ / đêm</strong>
+              <div class="guest-actions">
+                <a class="guest-button guest-button--primary" href="<%= roomHref(room) %>">Đặt phòng</a>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <section class="guest-panel">
+    <h2>Ưu đãi đang áp dụng</h2>
+    <% if (!promotions.length) { %>
+      <div class="guest-empty">Chưa có chương trình khuyến mãi đang áp dụng.</div>
+    <% } else { %>
+      <div class="promo-grid">
+        <% promotions.forEach((promotion) => { %>
+          <article class="promo-card">
+            <span class="room-badge"><%= promotion.loaiUuDai %></span>
+            <h3><%= promotion.tenChuongTrinh %></h3>
+            <strong class="room-price"><%= Number(promotion.mucUuDai).toLocaleString("vi-VN") %><%= promotion.loaiUuDai === "PERCENT" ? "%" : " đ" %></strong>
+            <p class="guest-muted"><%= promotion.ngayBatDau || "" %> → <%= promotion.ngayKetThuc || "" %></p>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("bookingSearchForm");
+  if (!form) return;
+
+  const fields = {
+    so_khach: document.getElementById("search_so_khach"),
+    gia_goi_y: document.getElementById("search_gia_goi_y"),
+    ngay_nhan: document.getElementById("search_ngay_nhan"),
+    ngay_tra: document.getElementById("search_ngay_tra")
+  };
+  const errors = {
+    so_khach: document.getElementById("err_search_so_khach"),
+    gia_goi_y: document.getElementById("err_search_gia_goi_y"),
+    ngay_nhan: document.getElementById("err_search_ngay_nhan"),
+    ngay_tra: document.getElementById("err_search_ngay_tra")
+  };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayValue = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+
+  fields.ngay_nhan?.setAttribute("min", todayValue);
+  fields.ngay_tra?.setAttribute("min", todayValue);
+
+  function parseDate(value) {
+    if (!value) return null;
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function value(name) {
+    return String(fields[name]?.value || "").trim();
+  }
+
+  function setError(name, message) {
+    const field = fields[name];
+    const box = errors[name];
+    if (field) field.classList.add("is-invalid");
+    if (box) box.textContent = message;
+    return false;
+  }
+
+  function clearError(name) {
+    const field = fields[name];
+    const box = errors[name];
+    if (field) field.classList.remove("is-invalid");
+    if (box) box.textContent = "";
+  }
+
+  function validateField(name) {
+    clearError(name);
+    const current = value(name);
+
+    if (name === "so_khach" && current) {
+      const count = Number(current);
+      if (!Number.isInteger(count) || count < 1) return setError(name, "Số khách phải là số nguyên từ 1 trở lên.");
+    }
+
+    if (name === "gia_goi_y" && current) {
+      const budget = Number(current);
+      if (!Number.isFinite(budget) || budget < 0) return setError(name, "Ngân sách không được âm.");
+    }
+
+    if (name === "ngay_nhan") {
+      const checkinValue = value("ngay_nhan");
+      const checkoutValue = value("ngay_tra");
+      const checkin = parseDate(checkinValue);
+      if (checkinValue && !checkin) return setError(name, "Ngày nhận phòng không hợp lệ.");
+      if (checkin && checkin < today) return setError(name, "Ngày nhận phòng phải từ hôm nay trở đi.");
+      if (checkinValue && !checkoutValue) return setError("ngay_tra", "Vui lòng chọn ngày trả phòng để kiểm tra phòng trống.");
+      validateField("ngay_tra");
+    }
+
+    if (name === "ngay_tra") {
+      const checkinValue = value("ngay_nhan");
+      const checkoutValue = value("ngay_tra");
+      const checkin = parseDate(checkinValue);
+      const checkout = parseDate(checkoutValue);
+      if (checkoutValue && !checkout) return setError(name, "Ngày trả phòng không hợp lệ.");
+      if (checkout && checkout < today) return setError(name, "Ngày trả phòng không được nhỏ hơn hôm nay.");
+      if (!checkinValue && checkoutValue) return setError("ngay_nhan", "Vui lòng chọn ngày nhận phòng trước.");
+      if (checkin && checkout && checkout <= checkin) return setError(name, "Ngày trả phòng phải sau ngày nhận phòng.");
+    }
+
+    return true;
+  }
+
+  Object.keys(fields).forEach((name) => {
+    fields[name]?.addEventListener("input", () => validateField(name));
+    fields[name]?.addEventListener("change", () => validateField(name));
+    fields[name]?.addEventListener("blur", () => validateField(name));
+  });
+
+  form.addEventListener("submit", (event) => {
+    const ok = Object.keys(fields).every((name) => validateField(name));
+    if (!ok) {
+      event.preventDefault();
+      const firstInvalid = form.querySelector(".is-invalid");
+      firstInvalid?.focus();
+    }
+  });
+});
+</script>
+<%- include("../partials/footer") %>

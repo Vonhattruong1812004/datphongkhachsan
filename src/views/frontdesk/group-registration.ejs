@@ -1,0 +1,703 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+
+<style>
+  .fg-shell {
+    --fg-ink: #13304a;
+    --fg-muted: #5e768d;
+    --fg-line: rgba(19, 48, 74, 0.12);
+    --fg-card: rgba(255, 255, 255, 0.84);
+    --fg-shadow: 0 28px 80px rgba(12, 39, 64, 0.14);
+    min-height: calc(100vh - 84px);
+    position: relative;
+    overflow: hidden;
+    padding: 30px 18px 56px;
+    color: var(--fg-ink);
+    background:
+      radial-gradient(circle at 8% 10%, rgba(20, 184, 166, 0.3), transparent 28%),
+      radial-gradient(circle at 88% 14%, rgba(251, 113, 133, 0.2), transparent 28%),
+      radial-gradient(circle at 56% 100%, rgba(250, 204, 21, 0.18), transparent 30%),
+      linear-gradient(135deg, #fbfffb 0%, #ecfff8 36%, #eef8ff 68%, #fff6eb 100%);
+  }
+
+  .fg-shell::before,
+  .fg-shell::after {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.48;
+    animation: fg-float 12s ease-in-out infinite alternate;
+  }
+
+  .fg-shell::before {
+    top: -240px;
+    right: -160px;
+    background: conic-gradient(from 140deg, rgba(14,165,233,.46), rgba(20,184,166,.34), rgba(250,204,21,.3), rgba(251,113,133,.28), rgba(14,165,233,.46));
+  }
+
+  .fg-shell::after {
+    left: -220px;
+    bottom: -260px;
+    background: conic-gradient(from 20deg, rgba(251,113,133,.3), rgba(245,158,11,.26), rgba(45,212,191,.28), rgba(59,130,246,.24), rgba(251,113,133,.3));
+    animation-delay: -4s;
+  }
+
+  .fg-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    gap: 18px;
+  }
+
+  .fg-card,
+  .fg-hero,
+  .fg-form,
+  .fg-room-card,
+  .fg-note {
+    border: 1px solid var(--fg-line);
+    background: var(--fg-card);
+    box-shadow: var(--fg-shadow);
+    backdrop-filter: blur(22px);
+  }
+
+  .fg-hero {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+    border-radius: 34px;
+    padding: 30px;
+  }
+
+  .fg-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(120deg, rgba(255,255,255,.62), transparent 28%),
+      radial-gradient(circle at 86% 18%, rgba(250, 204, 21, 0.16), transparent 18%),
+      radial-gradient(circle at 18% 82%, rgba(20, 184, 166, 0.14), transparent 22%);
+    pointer-events: none;
+  }
+
+  .fg-chip {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(20, 184, 166, 0.12);
+    border: 1px solid rgba(20, 184, 166, 0.18);
+    color: #0f766e;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .fg-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #14b8a6;
+    box-shadow: 0 0 0 6px rgba(20,184,166,.12);
+    animation: fg-pulse 1.8s ease-in-out infinite;
+  }
+
+  .fg-hero h1 {
+    position: relative;
+    z-index: 1;
+    margin: 18px 0 10px;
+    max-width: 720px;
+    font-size: clamp(34px, 5vw, 60px);
+    line-height: 0.95;
+    letter-spacing: -0.07em;
+  }
+
+  .fg-hero h1 span {
+    color: transparent;
+    background: linear-gradient(96deg, #0891b2 0%, #10b981 42%, #f59e0b 72%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .fg-lead {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .fg-hero-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .fg-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 15px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.74);
+    border: 1px solid rgba(19, 48, 74, 0.1);
+    color: var(--fg-ink);
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .fg-kpis {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+
+  .fg-kpi {
+    border-radius: 24px;
+    padding: 16px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.74)),
+      radial-gradient(circle at 100% 0%, rgba(14,165,233,.12), transparent 36%);
+    border: 1px solid rgba(19, 48, 74, 0.08);
+  }
+
+  .fg-kpi strong {
+    display: block;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+
+  .fg-kpi span {
+    display: block;
+    margin-top: 8px;
+    color: var(--fg-muted);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .fg-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .fg-form {
+    border-radius: 30px;
+    padding: 24px;
+  }
+
+  .fg-side {
+    display: grid;
+    gap: 18px;
+  }
+
+  .fg-label {
+    display: inline-flex;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(14,165,233,.1);
+    border: 1px solid rgba(14,165,233,.14);
+    color: #0c6e90;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .fg-form h2,
+  .fg-note h3 {
+    margin: 0 0 6px;
+    font-size: 26px;
+    line-height: 1.04;
+    letter-spacing: -0.05em;
+  }
+
+  .fg-copy {
+    margin: 0 0 18px;
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1.68;
+  }
+
+  .fg-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .fg-field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .fg-field--full {
+    grid-column: 1 / -1;
+  }
+
+  .fg-field label {
+    color: var(--fg-ink);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .fg-field input,
+  .fg-field textarea {
+    width: 100%;
+    min-height: 50px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(19, 48, 74, 0.12);
+    background: rgba(255,255,255,.92);
+    color: var(--fg-ink);
+    font: inherit;
+    outline: none;
+    resize: vertical;
+  }
+
+  .fg-field textarea {
+    min-height: 152px;
+  }
+
+  .fg-field input:focus,
+  .fg-field textarea:focus {
+    border-color: rgba(14,165,233,.42);
+    box-shadow: 0 0 0 4px rgba(56,189,248,.12);
+  }
+
+  .fg-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .fg-button,
+  .fg-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .fg-button {
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6 50%, #22c55e);
+    box-shadow: 0 18px 32px rgba(20,184,166,.18);
+  }
+
+  .fg-link {
+    border: 1px solid rgba(19, 48, 74, 0.12);
+    background: rgba(255,255,255,.84);
+    color: var(--fg-ink);
+  }
+
+  .fg-note {
+    border-radius: 28px;
+    padding: 22px;
+  }
+
+  .fg-note ul {
+    margin: 14px 0 0;
+    padding-left: 18px;
+    color: var(--fg-muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .fg-note code,
+  .fg-help code {
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(14,165,233,.08);
+    color: #0c6e90;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+
+  .fg-flash {
+    border-radius: 22px;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .fg-flash--error {
+    background: rgba(254, 226, 226, 0.82);
+    border: 1px solid rgba(239, 68, 68, 0.16);
+    color: #991b1b;
+  }
+
+  .fg-flash--success {
+    background: rgba(220, 252, 231, 0.82);
+    border: 1px solid rgba(34, 197, 94, 0.16);
+    color: #166534;
+  }
+
+  .fg-room-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .fg-room-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24px;
+    padding: 18px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.74)),
+      radial-gradient(circle at 100% 0%, rgba(14,165,233,.12), transparent 34%);
+  }
+
+  .fg-room-card::before {
+    content: "";
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    top: -60px;
+    right: -60px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(20,184,166,.14), transparent 66%);
+  }
+
+  .fg-room-card h3 {
+    position: relative;
+    margin: 10px 0 8px;
+    font-size: 20px;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+  }
+
+  .fg-room-card p,
+  .fg-help {
+    position: relative;
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 13px;
+    line-height: 1.64;
+  }
+
+  .fg-room-card strong {
+    position: relative;
+    display: inline-flex;
+    margin-top: 12px;
+    font-size: 18px;
+  }
+
+  .fg-badge {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(20,184,166,.12);
+    border: 1px solid rgba(20,184,166,.16);
+    color: #0f766e;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .fg-help {
+    margin-top: 10px;
+  }
+
+  .fg-example {
+    margin-top: 14px;
+    border-radius: 18px;
+    padding: 14px;
+    background: rgba(15,23,42,.04);
+    border: 1px solid rgba(19,48,74,.08);
+  }
+
+  @keyframes fg-float {
+    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+    to { transform: translate3d(28px, 22px, 0) rotate(16deg); }
+  }
+
+  @keyframes fg-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(.72); opacity: .7; }
+  }
+
+  @media (max-width: 1040px) {
+    .fg-hero,
+    .fg-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .fg-shell {
+      padding: 18px 12px 40px;
+    }
+
+    .fg-hero,
+    .fg-form,
+    .fg-note {
+      border-radius: 26px;
+      padding: 22px;
+    }
+
+    .fg-fields,
+    .fg-room-list {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<main class="fg-shell">
+  <div class="fg-wrap">
+    <section class="fg-hero">
+      <div>
+        <div class="fg-chip">
+          <span class="fg-chip-dot"></span>
+          Frontdesk account flow
+        </div>
+        <h1>Đăng ký tài khoản đoàn <span>và giữ nhịp booking nhóm thật gọn.</span></h1>
+        <p class="fg-lead">
+          Luồng này bám theo UC lễ tân ở bản PHP: tạo trưởng đoàn, thêm thành viên, sinh tài khoản khách hàng
+          và chuẩn bị dữ liệu để gắn tiếp vào booking nhóm. Giao diện đã được làm lại để đồng bộ với dashboard,
+          sáng hơn, sạch hơn và dễ thao tác hơn.
+        </p>
+        <div class="fg-hero-actions">
+          <a class="fg-pill" href="/dashboard/letan">Về dashboard lễ tân</a>
+          <a class="fg-pill" href="/frontdesk/direct-booking">Mở đặt phòng trực tiếp</a>
+          <a class="fg-pill" href="/ekyc/review">Review eKYC</a>
+        </div>
+      </div>
+
+      <aside class="fg-kpis">
+        <div class="fg-kpi">
+          <strong>01</strong>
+          <span>Trưởng đoàn</span>
+        </div>
+        <div class="fg-kpi">
+          <strong>N</strong>
+          <span>Thành viên</span>
+        </div>
+        <div class="fg-kpi">
+          <strong>Hybrid</strong>
+          <span>Tài khoản + booking</span>
+        </div>
+      </aside>
+    </section>
+
+    <% if (error) { %>
+      <section class="fg-flash fg-flash--error"><%= error %></section>
+    <% } %>
+
+    <% if (result) { %>
+      <section class="fg-flash fg-flash--success">
+        Đăng ký đoàn thành công: <strong><%= result.bookingCode %></strong> · <strong><%= result.totalFormatted %></strong>
+      </section>
+    <% } %>
+
+    <section class="fg-grid">
+      <article class="fg-form">
+        <div class="fg-label">Bước 1</div>
+        <h2>Tìm phòng cho đoàn</h2>
+        <p class="fg-copy">Nhập thời gian lưu trú và số người trước để hệ thống lấy ra danh sách phòng phù hợp cho booking nhóm.</p>
+
+        <form method="get" action="/frontdesk/group-registration">
+          <div class="fg-fields">
+            <div class="fg-field">
+              <label for="ngay_den">Ngày đến</label>
+              <input id="ngay_den" name="ngay_den" value="<%= search.ngay_den %>" required />
+            </div>
+            <div class="fg-field">
+              <label for="ngay_di">Ngày đi</label>
+              <input id="ngay_di" name="ngay_di" value="<%= search.ngay_di %>" required />
+            </div>
+            <div class="fg-field">
+              <label for="so_nguoi">Số người</label>
+              <input id="so_nguoi" name="so_nguoi" type="number" min="1" value="<%= search.so_nguoi %>" required />
+            </div>
+          </div>
+
+          <div class="fg-actions">
+            <button class="fg-button" type="submit">Tìm phòng cho đoàn</button>
+            <a class="fg-link" href="/dashboard/letan">Quay lại lễ tân</a>
+          </div>
+        </form>
+      </article>
+
+      <aside class="fg-side">
+        <section class="fg-note">
+          <div class="fg-label">Đối chiếu PHP</div>
+          <h3>Logic nghiệp vụ đang bám theo bản cũ</h3>
+          <p class="fg-copy">
+            PHP có UC đăng ký đoàn riêng cho lễ tân. Bản Node hiện giữ được phần tạo trưởng đoàn, thành viên và tài khoản,
+            sau đó cho phép nối thẳng vào booking nhóm để đỡ thao tác vòng.
+          </p>
+          <ul>
+            <li>Ưu tiên đúng thông tin trưởng đoàn để sinh tài khoản và gắn đầu mối liên hệ.</li>
+            <li>Thành viên và dịch vụ đang nhận qua JSON để giữ logic backend linh hoạt trước khi tách thành wizard UI đầy đủ.</li>
+            <li>Nếu cần, mình có thể làm tiếp bản nhập thành viên trực quan thay cho JSON thô.</li>
+          </ul>
+        </section>
+      </aside>
+    </section>
+
+    <% if (payload.search) { %>
+      <section class="fg-form">
+        <div class="fg-label">Bước 2</div>
+        <h2>Phòng khả dụng cho đoàn</h2>
+        <p class="fg-copy">Chọn danh sách phòng sẽ dùng cho đoàn. Bên dưới là các phòng lấy từ kết quả tìm kiếm hiện tại.</p>
+
+        <% if (!payload.search.items.length) { %>
+          <div class="fg-note">
+            <h3>Không còn phòng phù hợp</h3>
+            <p class="fg-copy">Khoảng ngày này hiện chưa còn phòng đáp ứng số người hoặc điều kiện tìm kiếm cho đoàn.</p>
+          </div>
+        <% } else { %>
+          <div class="fg-room-list">
+            <% payload.search.items.forEach((room) => { %>
+              <article class="fg-room-card">
+                <span class="fg-badge"><%= room.tinhTrangPhong %></span>
+                <h3><%= room.khachSan %> · P<%= room.soPhong %></h3>
+                <p><%= room.loaiPhong %> · <%= room.loaiGiuong || "" %> · <%= room.viewPhong || "" %></p>
+                <strong><%= room.giaFormatted %></strong>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="fg-grid">
+        <article class="fg-form">
+          <div class="fg-label">Bước 3</div>
+          <h2>Tạo đoàn và booking nhóm</h2>
+          <p class="fg-copy">
+            Form này vẫn dùng đúng backend hiện có. Các trường JSON giữ nguyên để không làm lệch logic xử lý,
+            nhưng đã được trình bày rõ hơn để dễ nhập liệu và đối chiếu.
+          </p>
+
+          <form method="post" action="/frontdesk/group-registration">
+            <input type="hidden" name="ngay_den" value="<%= search.ngay_den %>" />
+            <input type="hidden" name="ngay_di" value="<%= search.ngay_di %>" />
+            <input type="hidden" name="so_nguoi" value="<%= search.so_nguoi %>" />
+
+            <div class="fg-fields">
+              <div class="fg-field">
+                <label for="room_ids">Room ids</label>
+                <input id="room_ids" name="room_ids" required placeholder="1,2 hoặc 12,15,18" />
+                <p class="fg-help">Nhập danh sách mã phòng sẽ gán cho đoàn, cách nhau bằng dấu phẩy.</p>
+              </div>
+              <div class="fg-field">
+                <label for="group_name">Tên đoàn</label>
+                <input id="group_name" name="group_name" placeholder="Đoàn công tác / du lịch" />
+              </div>
+              <div class="fg-field">
+                <label for="leader_ten_kh">Trưởng đoàn</label>
+                <input id="leader_ten_kh" name="leader_ten_kh" required />
+              </div>
+              <div class="fg-field">
+                <label for="leader_cccd">CCCD trưởng đoàn</label>
+                <input id="leader_cccd" name="leader_cccd" required />
+              </div>
+              <div class="fg-field">
+                <label for="leader_sdt">SĐT trưởng đoàn</label>
+                <input id="leader_sdt" name="leader_sdt" />
+              </div>
+              <div class="fg-field">
+                <label for="leader_email">Email trưởng đoàn</label>
+                <input id="leader_email" name="leader_email" required />
+              </div>
+              <div class="fg-field">
+                <label for="leader_diachi">Địa chỉ</label>
+                <input id="leader_diachi" name="leader_diachi" />
+              </div>
+              <div class="fg-field">
+                <label for="ma_khuyen_mai">Khuyến mãi</label>
+                <input id="ma_khuyen_mai" name="ma_khuyen_mai" list="promotion-list" />
+              </div>
+              <div class="fg-field fg-field--full">
+                <label for="ghi_chu">Ghi chú</label>
+                <input id="ghi_chu" name="ghi_chu" />
+              </div>
+              <div class="fg-field fg-field--full">
+                <label for="members_json">Danh sách thành viên JSON</label>
+                <textarea id="members_json" name="members_json" rows="8">[]</textarea>
+                <div class="fg-example">
+                  <p class="fg-help">Ví dụ: <code>[{"ten_khach":"Nguyen Van B","cccd":"012345678901","sdt":"0900000000","email":"b@example.com","dia_chi":"Da Nang"}]</code></p>
+                </div>
+              </div>
+              <div class="fg-field fg-field--full">
+                <label for="services_json">Dịch vụ JSON</label>
+                <textarea id="services_json" name="services_json" rows="6">[]</textarea>
+                <div class="fg-example">
+                  <p class="fg-help">Ví dụ: <code>[{"service_id":1,"room_id":12,"quantity":2,"note":"welcome set"}]</code></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="fg-actions">
+              <button class="fg-button" type="submit">Tạo đoàn và đặt phòng</button>
+              <a class="fg-link" href="/frontdesk/direct-booking">Chuyển sang direct booking</a>
+            </div>
+
+            <datalist id="promotion-list">
+              <% payload.promotions.forEach((item) => { %>
+                <option value="<%= item.id %>"><%= item.tenChuongTrinh %> · <%= item.loaiUuDai %> · <%= item.mucUuDai %></option>
+              <% }) %>
+            </datalist>
+          </form>
+        </article>
+
+        <aside class="fg-side">
+          <section class="fg-note">
+            <div class="fg-label">Gợi ý nhập liệu</div>
+            <h3>Giữ đúng logic hiện tại</h3>
+            <p class="fg-copy">
+              Backend Node đang hỗ trợ tạo tài khoản khách trong luồng này, nên trước mắt mình giữ nguyên schema
+              nhận <code>members_json</code> và <code>services_json</code> để không làm gãy nghiệp vụ.
+            </p>
+            <ul>
+              <li>Nhập <code>room_ids</code> đúng các mã phòng trong danh sách khả dụng vừa hiển thị.</li>
+              <li>Trưởng đoàn là đầu mối chính để tạo tài khoản và liên kết booking.</li>
+              <li>Nếu bạn muốn, bước tiếp theo mình có thể thay hoàn toàn JSON bằng giao diện nhập thành viên từng dòng giống PHP.</li>
+            </ul>
+          </section>
+        </aside>
+      </section>
+    <% } %>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

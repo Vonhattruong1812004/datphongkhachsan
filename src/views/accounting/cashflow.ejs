@@ -1,0 +1,808 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const filters = payload.filters || {};
+  const rows = payload.rows || [];
+  const summary = payload.summary || {};
+  const typeOptions = payload.typeOptions || [];
+  const groupOptions = payload.groupOptions || [];
+  const statusOptions = payload.statusOptions || [];
+  const typeBreakdown = payload.typeBreakdown || [];
+  const groupBreakdown = payload.groupBreakdown || [];
+  const statusBreakdown = payload.statusBreakdown || [];
+  const dailyTrend = payload.dailyTrend || [];
+  const hotelOptions = payload.hotelOptions || [];
+  const page = Number(payload.currentPage || 1);
+  const totalPages = Number(payload.totalPages || 1);
+  const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
+  const csvQuery = makeQuery({ format: "csv" });
+  const jsonQuery = makeQuery({ format: "json" });
+  const pages = [];
+  const firstPage = Math.max(1, page - 2);
+  const lastPage = Math.min(totalPages, page + 2);
+  for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
+  const maxTrend = Math.max(...dailyTrend.map((item) => Math.max(Number(item.tongThu || 0), Number(item.tongChi || 0))), 1);
+%>
+
+<style>
+  .flow-home {
+    --ink: #102033;
+    --muted: #667085;
+    --line: rgba(16, 32, 51, .10);
+    --glass: rgba(255, 255, 255, .80);
+    --strong: rgba(255, 255, 255, .94);
+    --cyan: #12bff3;
+    --mint: #20d6a3;
+    --lime: #b7ef4a;
+    --sun: #ffd166;
+    --orange: #ff9f7a;
+    --pink: #ff6aa2;
+    --violet: #8068ff;
+    --shadow: 0 24px 70px rgba(16, 32, 51, .14);
+    min-height: calc(100vh - 84px);
+    padding: 34px 18px 58px;
+    color: var(--ink);
+    background:
+      linear-gradient(120deg, rgba(32, 214, 163, .20), transparent 32%),
+      linear-gradient(250deg, rgba(255, 159, 122, .18), transparent 34%),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.72) 0 12px, rgba(240,253,250,.72) 12px 24px),
+      linear-gradient(135deg, #fbfffd 0%, #eefcff 44%, #fff8eb 100%);
+  }
+
+  .flow-wrap {
+    max-width: 1260px;
+    margin: 0 auto;
+  }
+
+  .flow-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.14fr) minmax(320px, .86fr);
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 16px;
+  }
+
+  .flow-hero-main,
+  .flow-kpi,
+  .flow-filter,
+  .flow-panel,
+  .flow-table-panel,
+  .flow-alert {
+    border: 1px solid var(--line);
+    background: var(--glass);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(24px);
+  }
+
+  .flow-hero-main {
+    position: relative;
+    overflow: hidden;
+    border-radius: 30px;
+    padding: 30px;
+  }
+
+  .flow-hero-main::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(98deg, rgba(18, 191, 243, .20), transparent 34%),
+      linear-gradient(164deg, transparent 0 53%, rgba(255, 209, 102, .24) 53% 68%, transparent 68%),
+      linear-gradient(28deg, transparent 0 72%, rgba(255, 106, 162, .16) 72% 86%, transparent 86%);
+  }
+
+  .flow-hero-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .flow-chip,
+  .flow-tag,
+  .flow-pill,
+  .flow-status,
+  .flow-type,
+  .flow-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .flow-chip {
+    padding: 7px 12px;
+    border: 1px solid rgba(18, 191, 243, .28);
+    background: rgba(18, 191, 243, .13);
+    color: #03657c;
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+  }
+
+  .flow-spark {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--cyan);
+    box-shadow: 0 0 0 7px rgba(18, 191, 243, .13);
+  }
+
+  .flow-hero h1 {
+    max-width: 760px;
+    margin: 24px 0 12px;
+    font-size: 56px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .flow-hero h1 span {
+    color: transparent;
+    background: linear-gradient(96deg, #0891b2 0%, #10b981 32%, #f59e0b 62%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .flow-lead {
+    max-width: 760px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .flow-tags,
+  .flow-actions,
+  .flow-form-actions,
+  .flow-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .flow-tags {
+    margin-top: 20px;
+  }
+
+  .flow-tag {
+    padding: 8px 11px;
+    border: 1px solid rgba(16, 32, 51, .08);
+    background: rgba(255, 255, 255, .70);
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .flow-actions {
+    margin-top: 22px;
+  }
+
+  .flow-button {
+    min-height: 43px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(16, 32, 51, .12);
+    border-radius: 999px;
+    padding: 10px 17px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .78);
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .flow-button--primary {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #08a5c8, #20d6a3);
+    box-shadow: 0 16px 36px rgba(32, 214, 163, .25);
+  }
+
+  .flow-button--hot {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #ff9f7a, #ff6aa2);
+    box-shadow: 0 16px 36px rgba(255, 106, 162, .22);
+  }
+
+  .flow-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 42px rgba(18, 191, 243, .16);
+  }
+
+  .flow-kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    height: 100%;
+  }
+
+  .flow-kpi {
+    min-height: 142px;
+    border-radius: 24px;
+    padding: 18px;
+    background: var(--strong);
+  }
+
+  .flow-kpi strong {
+    display: block;
+    margin-top: 12px;
+    font-size: 23px;
+    line-height: 1.1;
+  }
+
+  .flow-kpi span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .flow-kpi.is-green { border-color: rgba(32, 214, 163, .30); }
+  .flow-kpi.is-orange { border-color: rgba(255, 159, 122, .34); }
+  .flow-kpi.is-cyan { border-color: rgba(18, 191, 243, .30); }
+  .flow-kpi.is-violet { border-color: rgba(128, 104, 255, .30); }
+
+  .flow-layout {
+    display: grid;
+    grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .flow-side-stack {
+    display: grid;
+    gap: 16px;
+  }
+
+  .flow-filter,
+  .flow-panel,
+  .flow-table-panel,
+  .flow-alert {
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .flow-filter h2,
+  .flow-panel h2,
+  .flow-table-panel h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .flow-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .flow-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .flow-field.is-wide {
+    grid-column: 1 / -1;
+  }
+
+  .flow-field label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .flow-field input,
+  .flow-field select {
+    width: 100%;
+    min-height: 43px;
+    border: 1px solid rgba(16, 32, 51, .12);
+    border-radius: 14px;
+    padding: 10px 12px;
+    color: var(--ink);
+    background: rgba(255, 255, 255, .88);
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .flow-form-actions {
+    margin-top: 16px;
+  }
+
+  .flow-alert {
+    margin-bottom: 16px;
+    background: rgba(255, 246, 214, .88);
+    border-color: rgba(245, 158, 11, .25);
+    color: #8a4b00;
+    font-weight: 800;
+  }
+
+  .flow-alert p {
+    margin: 0;
+  }
+
+  .flow-breakdown,
+  .flow-trend,
+  .flow-groups {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .flow-break-row,
+  .flow-trend-row {
+    display: grid;
+    grid-template-columns: minmax(96px, .7fr) minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .flow-meter {
+    height: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(16, 32, 51, .08);
+  }
+
+  .flow-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--cyan), var(--mint), var(--sun));
+  }
+
+  .flow-pill {
+    padding: 7px 10px;
+    background: rgba(255, 255, 255, .72);
+    border: 1px solid rgba(16, 32, 51, .08);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .flow-group-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(16, 32, 51, .08);
+    background: rgba(255, 255, 255, .64);
+  }
+
+  .flow-group-row span,
+  .flow-muted {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .flow-type,
+  .flow-status,
+  .flow-group {
+    padding: 7px 10px;
+    border: 1px solid rgba(16, 32, 51, .08);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .flow-type--green,
+  .flow-status--green,
+  .flow-group--green { color: #047857; background: rgba(32, 214, 163, .16); }
+  .flow-type--orange,
+  .flow-status--orange,
+  .flow-group--orange { color: #9a3412; background: rgba(255, 159, 122, .18); }
+  .flow-status--sun { color: #92400e; background: rgba(255, 209, 102, .22); }
+  .flow-status--rose { color: #be123c; background: rgba(255, 106, 162, .14); }
+  .flow-status--blue { color: #1d4ed8; background: rgba(59, 130, 246, .13); }
+  .flow-status--violet,
+  .flow-group--violet { color: #6d28d9; background: rgba(128, 104, 255, .14); }
+  .flow-group--cyan { color: #0369a1; background: rgba(18, 191, 243, .14); }
+  .flow-group--pink { color: #be185d; background: rgba(255, 106, 162, .14); }
+  .flow-group--lime { color: #3f6212; background: rgba(183, 239, 74, .20); }
+  .flow-type--slate,
+  .flow-status--slate,
+  .flow-group--slate { color: #475569; background: rgba(100, 116, 139, .14); }
+
+  .flow-table-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .flow-table-head p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .flow-table-wrap {
+    overflow-x: auto;
+  }
+
+  .flow-table {
+    width: 100%;
+    min-width: 940px;
+    border-collapse: separate;
+    border-spacing: 0 9px;
+  }
+
+  .flow-table th {
+    padding: 0 12px 6px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .flow-table td {
+    padding: 13px 12px;
+    border-top: 1px solid rgba(16, 32, 51, .08);
+    border-bottom: 1px solid rgba(16, 32, 51, .08);
+    background: rgba(255, 255, 255, .75);
+    font-size: 14px;
+    vertical-align: middle;
+  }
+
+  .flow-table td:first-child {
+    border-left: 1px solid rgba(16, 32, 51, .08);
+    border-radius: 18px 0 0 18px;
+  }
+
+  .flow-table td:last-child {
+    border-right: 1px solid rgba(16, 32, 51, .08);
+    border-radius: 0 18px 18px 0;
+  }
+
+  .flow-code {
+    display: grid;
+    gap: 3px;
+    font-weight: 950;
+  }
+
+  .flow-money {
+    font-weight: 1000;
+  }
+
+  .flow-money.is-in { color: #047857; }
+  .flow-money.is-out { color: #c2410c; }
+  .flow-money.is-net { color: #0369a1; }
+
+  .flow-empty {
+    border: 1px dashed rgba(16, 32, 51, .18);
+    border-radius: 22px;
+    padding: 22px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, .62);
+  }
+
+  .flow-pagination {
+    justify-content: center;
+    margin-top: 18px;
+  }
+
+  .flow-page {
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(16, 32, 51, .10);
+    color: var(--ink);
+    background: rgba(255,255,255,.78);
+    text-decoration: none;
+    font-weight: 950;
+  }
+
+  .flow-page.is-active {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #08a5c8, #20d6a3);
+  }
+
+  @media (max-width: 1080px) {
+    .flow-hero,
+    .flow-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .flow-home {
+      padding: 20px 12px 42px;
+    }
+    .flow-hero-main,
+    .flow-filter,
+    .flow-panel,
+    .flow-table-panel {
+      border-radius: 24px;
+      padding: 18px;
+    }
+    .flow-hero h1 {
+      font-size: 40px;
+    }
+    .flow-kpi-grid,
+    .flow-field-grid {
+      grid-template-columns: 1fr;
+    }
+    .flow-table-head,
+    .flow-group-row {
+      display: block;
+    }
+    .flow-break-row,
+    .flow-trend-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<main class="flow-home">
+  <div class="flow-wrap">
+    <section class="flow-hero" aria-label="Thu chi hợp nhất">
+      <div class="flow-hero-main">
+        <div class="flow-hero-content">
+          <div class="flow-chip"><span class="flow-spark"></span> Unified cashflow</div>
+          <h1>Thu chi <span>hợp nhất</span></h1>
+          <p class="flow-lead">Một timeline duy nhất cho dòng thu từ giao dịch đặt phòng và dòng chi vận hành, hỗ trợ đối chiếu nhanh theo cơ sở, nhóm, trạng thái và kỳ kế toán.</p>
+          <div class="flow-tags">
+            <span class="flow-tag"><%= payload.rangeLabel %></span>
+            <span class="flow-tag"><%= payload.hotelContext.label %></span>
+            <span class="flow-tag"><%= payload.totalRecords %> dòng tiền</span>
+            <span class="flow-tag">Cập nhật <%= payload.generatedAtLabel %></span>
+          </div>
+          <div class="flow-actions">
+            <a class="flow-button flow-button--primary" href="/api/accounting/cashflow?<%= csvQuery %>">Xuất CSV</a>
+            <a class="flow-button" href="/api/accounting/cashflow?<%= jsonQuery %>">JSON</a>
+            <a class="flow-button flow-button--hot" href="/accounting/reports?loai_baocao=tonghop&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Báo cáo tổng hợp</a>
+          </div>
+        </div>
+      </div>
+
+      <aside class="flow-kpi-grid" aria-label="KPI thu chi">
+        <article class="flow-kpi is-green"><span>Tổng thu</span><strong><%= summary.tongThuFormatted %></strong></article>
+        <article class="flow-kpi is-orange"><span>Tổng chi</span><strong><%= summary.tongChiFormatted %></strong></article>
+        <article class="flow-kpi is-cyan"><span>Dòng tiền thuần</span><strong><%= summary.dongTienThuanFormatted %></strong></article>
+        <article class="flow-kpi is-violet"><span>Tỷ lệ net / thu</span><strong><%= summary.cashflowRatioFormatted %></strong></article>
+      </aside>
+    </section>
+
+    <% if (payload.warnings && payload.warnings.length) { %>
+      <section class="flow-alert">
+        <% payload.warnings.forEach((warning) => { %>
+          <p><%= warning %></p>
+        <% }) %>
+      </section>
+    <% } %>
+
+    <section class="flow-layout">
+      <aside class="flow-side-stack">
+        <section class="flow-filter">
+          <h2>Bộ lọc</h2>
+          <form method="get" action="/accounting/cashflow">
+            <div class="flow-field-grid">
+              <div class="flow-field">
+                <label for="tu_ngay">Từ ngày</label>
+                <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
+              </div>
+              <div class="flow-field">
+                <label for="den_ngay">Đến ngày</label>
+                <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
+              </div>
+              <div class="flow-field">
+                <label for="loai_dong_tien">Loại dòng tiền</label>
+                <select id="loai_dong_tien" name="loai_dong_tien">
+                  <% typeOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= filters.loai_dong_tien === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="flow-field">
+                <label for="nhom">Nhóm</label>
+                <select id="nhom" name="nhom">
+                  <% groupOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= filters.nhom === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="flow-field">
+                <label for="trang_thai">Trạng thái</label>
+                <select id="trang_thai" name="trang_thai">
+                  <% statusOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="flow-field">
+                <label for="limit">Hiển thị</label>
+                <select id="limit" name="limit">
+                  <% [15, 25, 50, 100].forEach((limit) => { %>
+                    <option value="<%= limit %>" <%= Number(filters.limit) === limit ? "selected" : "" %>><%= limit %> dòng</option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="flow-field is-wide">
+                <label for="hotel_id">Cơ sở</label>
+                <select id="hotel_id" name="hotel_id">
+                  <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
+                  <% hotelOptions.forEach((hotel) => { %>
+                    <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>>
+                      <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="flow-field is-wide">
+                <label for="search">Tìm kiếm</label>
+                <input id="search" name="search" value="<%= filters.search %>" placeholder="Mã, khách hàng, chi phí, nội dung, cơ sở..." />
+              </div>
+            </div>
+            <input type="hidden" name="page" value="1" />
+            <div class="flow-form-actions">
+              <button class="flow-button flow-button--primary" type="submit">Lọc thu chi</button>
+              <a class="flow-button" href="/accounting/cashflow">Đặt lại</a>
+            </div>
+          </form>
+        </section>
+
+        <section class="flow-panel">
+          <h2>Cơ cấu thu chi</h2>
+          <div class="flow-breakdown">
+            <% if (!typeBreakdown.length) { %>
+              <div class="flow-empty">Chưa có dữ liệu thu chi trong kỳ này.</div>
+            <% } %>
+            <% typeBreakdown.forEach((item) => {
+              const base = Math.max(Number(summary.tongThu || 0), Number(summary.tongChi || 0), 1);
+              const pct = Math.round((Number(item.total || 0) / base) * 100);
+            %>
+              <div class="flow-break-row">
+                <span class="flow-type flow-type--<%= item.meta.tone %>"><%= item.meta.label %></span>
+                <div class="flow-meter"><span style="width:<%= Math.max(5, pct) %>%"></span></div>
+                <span class="flow-pill"><%= item.count %> · <%= item.totalFormatted %></span>
+              </div>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="flow-panel">
+          <h2>Trạng thái</h2>
+          <div class="flow-breakdown">
+            <% if (!statusBreakdown.length) { %>
+              <div class="flow-empty">Chưa có dữ liệu trạng thái.</div>
+            <% } %>
+            <% statusBreakdown.slice(0, 6).forEach((item) => { %>
+              <div class="flow-break-row">
+                <span class="flow-status flow-status--<%= item.meta.tone %>"><%= item.meta.label %></span>
+                <div class="flow-meter"><span style="width:<%= Math.max(5, Math.round((Number(item.total || 0) / Math.max(Number(summary.tongThu || 0), Number(summary.tongChi || 0), 1)) * 100)) %>%"></span></div>
+                <span class="flow-pill"><%= item.count %> · <%= item.totalFormatted %></span>
+              </div>
+            <% }) %>
+          </div>
+        </section>
+      </aside>
+
+      <section class="flow-side-stack">
+        <section class="flow-panel">
+          <h2>Nhóm dòng tiền</h2>
+          <div class="flow-groups">
+            <% if (!groupBreakdown.length) { %>
+              <div class="flow-empty">Chưa có dữ liệu nhóm.</div>
+            <% } %>
+            <% groupBreakdown.forEach((item) => { %>
+              <article class="flow-group-row">
+                <div>
+                  <span class="flow-group flow-group--<%= item.meta.tone %>"><%= item.meta.label %></span>
+                  <div class="flow-muted" style="margin-top:7px"><%= item.count %> dòng tiền</div>
+                </div>
+                <strong class="<%= item.nhom === 'datphong' ? 'flow-money is-in' : 'flow-money is-out' %>"><%= item.totalFormatted %></strong>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="flow-panel">
+          <h2>Xu hướng theo ngày</h2>
+          <div class="flow-trend">
+            <% if (!dailyTrend.length) { %>
+              <div class="flow-empty">Không có xu hướng để hiển thị.</div>
+            <% } %>
+            <% dailyTrend.slice(-10).forEach((item) => { %>
+              <div class="flow-trend-row">
+                <strong><%= item.dateLabel %></strong>
+                <div>
+                  <div class="flow-meter"><span style="width:<%= Math.max(5, Math.round((Number(item.tongThu || 0) / maxTrend) * 100)) %>%"></span></div>
+                  <div class="flow-meter" style="margin-top:5px"><span style="width:<%= Math.max(5, Math.round((Number(item.tongChi || 0) / maxTrend) * 100)) %>%; background:linear-gradient(90deg, var(--orange), var(--pink))"></span></div>
+                </div>
+                <span class="flow-money is-net"><%= item.dongTienThuanFormatted %></span>
+              </div>
+            <% }) %>
+          </div>
+          <% if (payload.bestNetDay) { %>
+            <p class="flow-muted" style="margin:14px 0 0">Ngày net tốt nhất: <strong><%= payload.bestNetDay.dateLabel %></strong> với <strong><%= payload.bestNetDay.dongTienThuanFormatted %></strong>.</p>
+          <% } %>
+        </section>
+
+        <section class="flow-table-panel">
+          <div class="flow-table-head">
+            <div>
+              <h2>Timeline thu chi</h2>
+              <p>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRecords %> dòng tiền.</p>
+            </div>
+            <span class="flow-pill">Thu: <%= summary.soDongThu %> · Chi: <%= summary.soDongChi %></span>
+          </div>
+
+          <% if (!payload.hasData) { %>
+            <div class="flow-empty">Không có dòng thu chi phù hợp với bộ lọc hiện tại.</div>
+          <% } else { %>
+            <div class="flow-table-wrap">
+              <table class="flow-table">
+                <thead>
+                  <tr>
+                    <th>Loại</th>
+                    <th>Mã</th>
+                    <th>Ngày</th>
+                    <th>Đối tượng</th>
+                    <th>Nhóm</th>
+                    <th>Cơ sở</th>
+                    <th>Số tiền</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% rows.forEach((row) => { %>
+                    <tr>
+                      <td><span class="flow-type flow-type--<%= row.typeMeta.tone %>"><%= row.typeMeta.symbol %> <%= row.typeMeta.label %></span></td>
+                      <td>
+                        <span class="flow-code">
+                          <%= row.maThamChieu %>
+                          <span class="flow-muted">#<%= row.maSo %></span>
+                        </span>
+                      </td>
+                      <td><%= row.ngayLabel %></td>
+                      <td>
+                        <strong><%= row.doiTuong %></strong>
+                        <div class="flow-muted"><%= row.noiDung %></div>
+                      </td>
+                      <td><span class="flow-group flow-group--<%= row.groupMeta.tone %>"><%= row.groupMeta.label %></span></td>
+                      <td><%= row.hotelLabel %></td>
+                      <td class="<%= row.loaiDongTien === 'thu' ? 'flow-money is-in' : 'flow-money is-out' %>"><%= row.typeMeta.symbol %><%= row.soTienFormatted %></td>
+                      <td>
+                        <span class="flow-status flow-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
+                        <div class="flow-muted" style="margin-top:5px"><%= row.statusMeta.hint %></div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+
+            <% if (totalPages > 1) { %>
+              <nav class="flow-pagination" aria-label="Phân trang thu chi">
+                <% if (page > 1) { %>
+                  <a class="flow-page" href="/accounting/cashflow?<%= makeQuery({ page: page - 1 }) %>">Trước</a>
+                <% } %>
+                <% if (firstPage > 1) { %>
+                  <a class="flow-page" href="/accounting/cashflow?<%= makeQuery({ page: 1 }) %>">1</a>
+                <% } %>
+                <% pages.forEach((item) => { %>
+                  <a class="flow-page <%= item === page ? "is-active" : "" %>" href="/accounting/cashflow?<%= makeQuery({ page: item }) %>"><%= item %></a>
+                <% }) %>
+                <% if (lastPage < totalPages) { %>
+                  <a class="flow-page" href="/accounting/cashflow?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a>
+                <% } %>
+                <% if (page < totalPages) { %>
+                  <a class="flow-page" href="/accounting/cashflow?<%= makeQuery({ page: page + 1 }) %>">Tiếp</a>
+                <% } %>
+              </nav>
+            <% } %>
+          <% } %>
+        </section>
+      </section>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

@@ -1,0 +1,1333 @@
+<%
+const userName = currentUser?.username || currentUser?.Username || "letan";
+const selectedRooms = Array.isArray(form?.selected_rooms) ? form.selected_rooms.map(Number) : [];
+const searchRooms = payload?.search?.items || [];
+const roomLookup = new Map(searchRooms.map((room) => [Number(room.id), room]));
+const roomGuests = form?.room_guests || {};
+const serviceQuantities = form?.service_quantities || {};
+const serviceRooms = form?.service_rooms || {};
+const paymentPending = Boolean(result?.paymentPending);
+const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
+%>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
+  <title><%= title %> · Bento Resort</title>
+  <script>
+    (() => {
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+      const nativeFetch = window.fetch;
+
+      if (!token || !nativeFetch || window.__abcCsrfFetchReady) {
+        return;
+      }
+
+      window.__abcCsrfFetchReady = true;
+      window.fetch = (input, init = {}) => {
+        const method = String(init.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+        const sameOrigin = typeof input === "string"
+          ? input.startsWith("/") || input.startsWith(window.location.origin)
+          : input instanceof Request
+            ? new URL(input.url, window.location.href).origin === window.location.origin
+            : true;
+
+        if (sameOrigin && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+          const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+          if (!headers.has("x-csrf-token")) {
+            headers.set("x-csrf-token", token);
+          }
+          return nativeFetch(input, { ...init, headers });
+        }
+
+        return nativeFetch(input, init);
+      };
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-body: #f7fff9;
+      --bg-chip: rgba(255, 255, 255, 0.82);
+      --border-soft: rgba(19, 48, 74, 0.16);
+      --text-main: #14314b;
+      --text-soft: #5f778f;
+      --text-strong: #102033;
+      --accent: #0ea5e9;
+      --accent-2: #14b8a6;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --shadow-strong: 0 24px 70px rgba(12, 39, 64, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; min-height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 8% 8%, rgba(20,184,166,.26), transparent 26%),
+        radial-gradient(circle at 88% 12%, rgba(251,113,133,.18), transparent 28%),
+        radial-gradient(circle at 56% 100%, rgba(250,204,21,.14), transparent 30%),
+        var(--bg-body);
+      color: var(--text-main);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(255, 255, 255, 0.78);
+      border-bottom: 1px solid rgba(19, 48, 74, 0.1);
+      box-shadow: 0 18px 40px rgba(12, 39, 64, 0.08);
+    }
+
+    .topbar-inner, .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+
+    .topbar-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(from 210deg, #0ea5e9, #4f46e5, #22c55e, #0ea5e9);
+      color: #fff;
+      font-weight: 800;
+      box-shadow: 0 16px 38px rgba(37, 99, 235, 0.55);
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--text-strong);
+    }
+
+    .brand-subtitle {
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .user-pill, .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(19, 48, 74, 0.12);
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 12px;
+    }
+
+    .nav-link.logout {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      color: #fff;
+    }
+
+    .container { padding-top: 24px; padding-bottom: 36px; }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .page-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--bg-chip);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: var(--text-soft);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 10px 0 8px;
+      font-size: 28px;
+      color: var(--text-strong);
+      line-height: 1.15;
+    }
+
+    .page-subtitle {
+      max-width: 780px;
+      color: var(--text-soft);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      color: var(--text-main);
+      text-decoration: none;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.92);
+      box-shadow: var(--shadow-strong);
+      white-space: nowrap;
+    }
+
+    .alert {
+      border-radius: 16px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      border: 1px solid transparent;
+      box-shadow: var(--shadow-strong);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .alert ul { margin: 8px 0 0 18px; padding: 0; }
+    .alert-error {
+      background: rgba(127, 29, 29, 0.9);
+      border-color: rgba(248, 113, 113, 0.45);
+      color: #fee2e2;
+    }
+    .alert-success {
+      background: rgba(20, 83, 45, 0.92);
+      border-color: rgba(74, 222, 128, 0.35);
+      color: #dcfce7;
+    }
+    .alert-warning {
+      background: rgba(113, 63, 18, 0.94);
+      border-color: rgba(251, 191, 36, 0.45);
+      color: #fff7ed;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.35fr);
+      gap: 20px;
+    }
+
+    .card {
+      border-radius: 22px;
+      border: 1px solid rgba(19, 48, 74, 0.12);
+      background:
+        radial-gradient(circle at 0 0, rgba(14, 165, 233, 0.1), transparent 55%),
+        rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow-strong);
+      padding: 18px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 19px;
+      color: var(--text-strong);
+    }
+
+    .card-tag {
+      font-size: 11px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(19, 48, 74, 0.12);
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .caption {
+      margin: 0 0 12px;
+      color: var(--text-soft);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 10px 0 14px;
+      background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.28), transparent);
+    }
+
+    .section-title {
+      margin: 14px 0 8px;
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .section-title span {
+      color: var(--text-soft);
+      font-weight: 500;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 5px;
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    label .note {
+      color: var(--text-soft);
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(19, 48, 74, 0.14);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text-strong);
+      font-size: 13px;
+      outline: none;
+    }
+
+    input::placeholder { color: rgba(148, 163, 184, 0.8); }
+    input:focus, select:focus {
+      border-color: rgba(59, 130, 246, 0.75);
+      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+    }
+
+    input[readonly] { color: var(--text-soft); }
+    .input-error { border-color: rgba(248, 113, 113, 0.75) !important; }
+    .error-msg { min-height: 16px; margin-top: 4px; color: #fecaca; font-size: 11px; }
+
+    .button-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button, .button-secondary, .button-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .button {
+      border: none;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 16px 35px rgba(37, 99, 235, 0.42);
+    }
+
+    .button-secondary, .button-link {
+      border: 1px solid rgba(19, 48, 74, 0.14);
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .danger-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      background: rgba(127, 29, 29, 0.82);
+      color: #fee2e2;
+      font-size: 12px;
+    }
+
+    .room-list {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(19, 48, 74, 0.12);
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+    }
+
+    th {
+      color: #36506a;
+      background: rgba(255, 255, 255, 0.92);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    tbody tr:hover { background: rgba(14, 165, 233, 0.08); }
+
+    .table-empty {
+      text-align: center;
+      padding: 18px;
+      color: var(--text-soft);
+      font-size: 13px;
+    }
+
+    .room-guests-wrapper {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px dashed rgba(19, 48, 74, 0.22);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .room-guests-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .room-guest-card {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(19, 48, 74, 0.12);
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .room-guest-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .room-guest-title small {
+      color: var(--text-soft);
+      font-weight: 500;
+    }
+
+    .totals {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.18);
+      font-size: 13px;
+      line-height: 1.9;
+    }
+
+    .totals strong { color: var(--text-strong); }
+    .totals .grand-total { font-size: 16px; color: #86efac; }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner, .container { padding-left: 12px; padding-right: 12px; }
+      .page-header { flex-direction: column; }
+      .row { grid-template-columns: 1fr; }
+      .button-row { align-items: stretch; }
+      .button-group { width: 100%; }
+      .button, .button-secondary, .button-link { width: 100%; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-logo">BB</div>
+        <div>
+          <div class="brand-title">Bento Booking</div>
+          <div class="brand-subtitle">Bảng điều khiển · Lễ tân</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="user-pill">Đang đăng nhập · <strong><%= userName %></strong></div>
+        <a class="nav-link" href="/frontdesk">Trang lễ tân</a>
+        <a class="nav-link logout" href="/auth/logout">Đăng xuất</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="page-header">
+      <div>
+        <div class="page-chip">Đặt phòng trực tiếp V2 · Lễ tân</div>
+        <h1>Đặt phòng tại quầy</h1>
+        <div class="page-subtitle">
+          Bám đúng UC PHP cũ: tìm phòng theo ngày và số khách, chọn nhiều phòng, nhập trưởng đoàn, gán khách theo phòng, chọn dịch vụ theo phòng và tự tạo tài khoản cho đoàn.
+        </div>
+      </div>
+      <a class="back-link" href="/frontdesk">Quay lại trang lễ tân</a>
+    </section>
+
+    <% if (error) { %>
+      <section class="alert alert-error"><strong>Có lỗi xảy ra:</strong><div><%= error %></div></section>
+    <% } %>
+
+    <% if (success) { %>
+      <section
+        id="paymentHoldAlert"
+        class="alert <%= paymentPending ? 'alert-warning' : 'alert-success' %>"
+        data-payment-expires-at="<%= result?.expiresAt || '' %>"
+        data-payment-hold-id="<%= result?.holdId || '' %>"
+      >
+        <strong><%= success %></strong>
+        <% if (result) { %>
+          <div><%= paymentPending ? `Mã giữ chỗ #${result.holdId}` : `Mã giao dịch #${result.transactionId}` %> · Tổng tiền <%= result.totalFormatted %></div>
+          <% if (result.paymentTransfer) { %>
+            <div style="margin-top:12px;display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center;">
+              <img src="<%= result.paymentTransfer.qrImageUrl %>" alt="QR cọc SePay" style="width:112px;height:112px;border-radius:16px;background:#fff;border:1px solid rgba(15,23,42,.12);padding:6px;" />
+              <div>
+                <div><strong>Tiền phòng:</strong> <%= result.roomAmountFormatted %> · <strong>Dịch vụ:</strong> <%= result.serviceAmountFormatted %></div>
+                <div><strong>Khuyến mãi:</strong> - <%= result.discountAmountFormatted %> · <strong>Tổng hóa đơn:</strong> <%= result.totalFormatted %></div>
+                <div><strong>Cọc 50%:</strong> <%= result.depositAmountFormatted %></div>
+                <div><strong>Nội dung:</strong> <code><%= result.paymentTransfer.content %></code></div>
+                <div><strong>Hạn giữ phòng:</strong> <span id="paymentCountdown"><%= result.paymentTransfer.expiresInMinutes %>:00</span></div>
+                <div><%= result.paymentTransfer.bankName %> · <%= result.paymentTransfer.accountNo %> · <%= result.paymentTransfer.accountName %></div>
+                <div><strong>Trạng thái:</strong> <span id="paymentStatusLine">Chưa tạo giao dịch thật. Sau khi SePay xác nhận cọc, hệ thống mới tạo đoàn, khách hàng và giao dịch.</span></div>
+              </div>
+            </div>
+          <% } %>
+        <% } %>
+      </section>
+    <% } %>
+
+    <% if (createdAccounts.length) { %>
+      <section class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+          <h2 class="card-title">Tài khoản vừa tạo</h2>
+          <div class="card-tag">Hoàn tất</div>
+        </div>
+        <p class="caption">Hệ thống đã tạo tài khoản cho trưởng đoàn và các thành viên đi cùng trong booking này.</p>
+        <div class="room-list">
+          <table>
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Username</th>
+                <th>Password</th>
+                <th>Vai trò</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% createdAccounts.forEach((account) => { %>
+                <tr>
+                  <td><%= account.hoTen %></td>
+                  <td><strong><%= account.username %></strong></td>
+                  <td><%= account.password %></td>
+                  <td><%= account.vaiTro %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    <% } %>
+
+    <div id="clientErrors" class="alert alert-error" style="display:none;">
+      <strong>Có lỗi phía trình duyệt:</strong>
+      <ul id="clientErrorsList"></ul>
+    </div>
+
+    <form method="post" action="/frontdesk/direct-booking" id="formDatPhongV2">
+      <input type="hidden" id="services_json" name="services_json" value="" />
+      <div class="grid">
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Trưởng đoàn & thông tin booking</h2>
+            <div class="card-tag">Bước 1</div>
+          </div>
+          <p class="caption">Mỗi giao dịch tạo một đoàn riêng, đúng flow trực tiếp tại quầy của hệ thống PHP cũ.</p>
+          <div class="divider"></div>
+
+          <div class="field">
+            <label>Họ tên trưởng đoàn <span class="note">Bắt buộc</span></label>
+            <input id="leader_ten_kh" name="leader_ten_kh" value="<%= form.leader_ten_kh %>" placeholder="Nguyen Van A" />
+            <div class="error-msg" id="err_leader_ten_kh"></div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>CCCD trưởng đoàn <span class="note">9-12 chữ số</span></label>
+              <input id="leader_cccd" name="leader_cccd" value="<%= form.leader_cccd %>" placeholder="012345678901" />
+              <div class="error-msg" id="err_leader_cccd"></div>
+            </div>
+            <div class="field">
+              <label>Số điện thoại <span class="note">Bắt đầu bằng 0</span></label>
+              <input id="leader_sdt" name="leader_sdt" value="<%= form.leader_sdt %>" placeholder="0900000000" />
+              <div class="error-msg" id="err_leader_sdt"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Email <span class="note">Bắt buộc</span></label>
+              <input id="leader_email" type="email" name="leader_email" value="<%= form.leader_email %>" placeholder="leader@example.com" />
+              <div class="error-msg" id="err_leader_email"></div>
+            </div>
+            <div class="field">
+              <label>Địa chỉ <span class="note">Không bắt buộc</span></label>
+              <input name="leader_diachi" value="<%= form.leader_diachi %>" placeholder="Dia chi lien he" />
+            </div>
+          </div>
+
+          <div class="section-title">Thông tin đặt phòng <span>Tìm phòng trước, sau đó mới chốt booking</span></div>
+
+          <div class="row">
+            <div class="field">
+              <label>Ngày đến</label>
+              <input id="ngay_den" type="date" name="ngay_den" value="<%= form.ngay_den %>" />
+              <div class="error-msg" id="err_ngay_den"></div>
+            </div>
+            <div class="field">
+              <label>Ngày đi</label>
+              <input id="ngay_di" type="date" name="ngay_di" value="<%= form.ngay_di %>" />
+              <div class="error-msg" id="err_ngay_di"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Số đêm</label>
+              <input id="so_dem_display" value="<%= form.so_dem || '' %>" readonly />
+              <input id="so_dem" type="hidden" name="so_dem" value="<%= form.so_dem || '' %>" />
+            </div>
+            <div class="field">
+              <label>Số khách ước tính</label>
+              <input id="so_nguoi" type="number" min="1" name="so_nguoi" value="<%= form.so_nguoi %>" />
+              <div class="error-msg" id="err_so_nguoi"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Khuyến mãi</label>
+              <select name="ma_khuyen_mai" id="ma_khuyen_mai">
+                <option value="">-- Không áp dụng --</option>
+                <% payload.promotions.forEach((promotion) => { %>
+                  <option
+                    value="<%= promotion.id %>"
+                    data-discount-type="<%= promotion.loaiUuDai %>"
+                    data-discount-value="<%= promotion.mucUuDai %>"
+                    <%= String(form.ma_khuyen_mai) === String(promotion.id) ? "selected" : "" %>
+                  >
+                    <%= promotion.tenChuongTrinh %> · <%= promotion.loaiUuDai %> · <%= promotion.mucUuDai %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="field">
+              <label>Ghi chú chung</label>
+              <input name="ghichu" value="<%= form.ghichu %>" placeholder="Yeu cau dac biet, luu y booking..." />
+            </div>
+          </div>
+
+          <div class="button-row">
+            <span></span>
+            <div class="button-group">
+              <a class="button-link" href="/frontdesk/direct-booking">Làm mới</a>
+              <button class="button-secondary" type="submit" name="btn_action" value="search">Tìm phòng phù hợp</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2 class="card-title">Phòng, khách theo phòng và dịch vụ</h2>
+            <div class="card-tag">Bước 2-3</div>
+          </div>
+          <p class="caption">
+            Chọn ít nhất một phòng sau khi tìm kiếm. Nếu khách ở từng phòng khác trưởng đoàn thì nhập riêng thông tin theo phòng.
+          </p>
+          <div class="divider"></div>
+
+          <div class="section-title">Danh sách phòng phù hợp</div>
+          <div class="room-list">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Phòng</th>
+                  <th>Loại</th>
+                  <th>Sức chứa</th>
+                  <th>Giá / đêm</th>
+                  <th>View</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (!hasSearch) { %>
+                  <tr><td class="table-empty" colspan="6">Chưa tìm kiếm. Nhập ngày đến, ngày đi và số khách rồi bấm “Tìm phòng phù hợp”.</td></tr>
+                <% } else if (!searchRooms.length) { %>
+                  <tr><td class="table-empty" colspan="6">Không còn phòng phù hợp cho bộ lọc hiện tại.</td></tr>
+                <% } else { %>
+                  <% searchRooms.forEach((room) => { %>
+                    <tr data-room-id="<%= room.id %>" data-room-name="<%= room.soPhong %>" data-room-price="<%= room.gia %>">
+                      <td>
+                        <input
+                          type="checkbox"
+                          class="room-checkbox"
+                          name="rooms[]"
+                          value="<%= room.id %>"
+                          <%= selectedRooms.includes(Number(room.id)) ? "checked" : "" %>
+                        />
+                      </td>
+                      <td><strong>P<%= room.soPhong %></strong></td>
+                      <td><%= room.loaiPhong %></td>
+                      <td><%= room.soKhachToiDa %> khách</td>
+                      <td><%= room.giaFormatted %></td>
+                      <td><%= room.viewPhong || "-" %></td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="room-guests-wrapper" id="roomGuestsWrapper">
+            <div class="room-guests-header">
+              <strong>Khách theo từng phòng</strong>
+              <span>Để trống nghĩa là dùng thông tin trưởng đoàn cho phòng đó.</span>
+            </div>
+            <div id="roomGuestsContainer">
+              <% selectedRooms.forEach((roomId) => {
+                const guest = roomGuests[String(roomId)] || {};
+                const roomMeta = roomLookup.get(Number(roomId));
+                const roomLabel = roomMeta?.soPhong ? `Phòng ${roomMeta.soPhong}` : `Phòng #${roomId}`;
+              %>
+                <div class="room-guest-card" data-room-id="<%= roomId %>">
+                  <div class="room-guest-title">
+                    <span><%= roomLabel %></span>
+                    <small>Để trống = dùng trưởng đoàn</small>
+                  </div>
+                  <div class="field">
+                    <label>Tên khách phòng</label>
+                    <input name="room_guests[<%= roomId %>][TenKhach]" value="<%= guest.TenKhach || '' %>" placeholder="Nếu khác trưởng đoàn" />
+                  </div>
+                  <div class="row">
+                    <div class="field">
+                      <label>CCCD khách</label>
+                      <input name="room_guests[<%= roomId %>][CCCD]" value="<%= guest.CCCD || '' %>" placeholder="9-12 chữ số" />
+                    </div>
+                    <div class="field">
+                      <label>SĐT khách</label>
+                      <input name="room_guests[<%= roomId %>][SDT]" value="<%= guest.SDT || '' %>" placeholder="Nếu khác trưởng đoàn" />
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="field">
+                      <label>Email khách</label>
+                      <input type="email" name="room_guests[<%= roomId %>][Email]" value="<%= guest.Email || '' %>" placeholder="Nếu khác trưởng đoàn" />
+                    </div>
+                    <div class="field">
+                      <label>Địa chỉ khách</label>
+                      <input name="room_guests[<%= roomId %>][DiaChi]" value="<%= guest.DiaChi || '' %>" placeholder="Nếu khác trưởng đoàn" />
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-title">Dịch vụ kèm theo <span>Số lượng > 0 bắt buộc phải gán vào một phòng đã chọn</span></div>
+
+          <% if (!payload.services.length) { %>
+            <div class="caption">Hiện chưa có dịch vụ hoạt động.</div>
+          <% } else { %>
+            <div class="room-list">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Dịch vụ</th>
+                    <th>Giá</th>
+                    <th>Số lượng</th>
+                    <th>Phòng sử dụng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% payload.services.forEach((service) => { %>
+                    <tr>
+                      <td><%= service.tenDichVu %></td>
+                      <td><%= service.giaDichVuFormatted %></td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          style="width:90px;"
+                          class="js-service-qty"
+                          name="services[<%= service.id %>]"
+                          data-price="<%= service.giaDichVu %>"
+                          value="<%= serviceQuantities[String(service.id)] || 0 %>"
+                        />
+                      </td>
+                      <td>
+                        <select
+                          class="js-service-room"
+                          name="services_room[<%= service.id %>]"
+                          data-selected-room="<%= serviceRooms[String(service.id)] || '' %>"
+                        >
+                          <option value="">-- Chọn phòng --</option>
+                          <% selectedRooms.forEach((roomId) => {
+                            const roomMeta = roomLookup.get(Number(roomId));
+                            const roomLabel = roomMeta?.soPhong ? `Phòng ${roomMeta.soPhong}` : `Phòng #${roomId}`;
+                          %>
+                            <option value="<%= roomId %>" <%= String(serviceRooms[String(service.id)] || '') === String(roomId) ? "selected" : "" %>><%= roomLabel %></option>
+                          <% }) %>
+                        </select>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+
+          <div class="totals">
+            <div>Tiền phòng: <strong id="sumRoom">0 đ</strong></div>
+            <div>Tiền dịch vụ: <strong id="sumService">0 đ</strong></div>
+            <div>Khuyến mãi: <strong id="sumDiscount">- 0 đ</strong></div>
+            <div class="grand-total">Tổng thanh toán: <strong id="sumTotal">0 đ</strong></div>
+          </div>
+
+          <div class="button-row" style="margin-top:16px;">
+            <div class="danger-banner" id="btnDanger">Thiếu hoặc sai thông tin. Vui lòng kiểm tra lại các ô màu đỏ.</div>
+            <div class="button-group">
+              <button class="button" type="submit" name="btn_action" value="book">Giữ phòng & tạo QR cọc</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("formDatPhongV2");
+      const clientErrors = document.getElementById("clientErrors");
+      const clientErrorsList = document.getElementById("clientErrorsList");
+      const btnDanger = document.getElementById("btnDanger");
+      const roomGuestsContainer = document.getElementById("roomGuestsContainer");
+
+      const fields = {
+        leader_ten_kh: document.getElementById("leader_ten_kh"),
+        leader_cccd: document.getElementById("leader_cccd"),
+        leader_sdt: document.getElementById("leader_sdt"),
+        leader_email: document.getElementById("leader_email"),
+        ngay_den: document.getElementById("ngay_den"),
+        ngay_di: document.getElementById("ngay_di"),
+        so_nguoi: document.getElementById("so_nguoi")
+      };
+
+      const errsDom = {
+        leader_ten_kh: document.getElementById("err_leader_ten_kh"),
+        leader_cccd: document.getElementById("err_leader_cccd"),
+        leader_sdt: document.getElementById("err_leader_sdt"),
+        leader_email: document.getElementById("err_leader_email"),
+        ngay_den: document.getElementById("err_ngay_den"),
+        ngay_di: document.getElementById("err_ngay_di"),
+        so_nguoi: document.getElementById("err_so_nguoi")
+      };
+
+      const touched = {
+        leader_ten_kh: false,
+        leader_cccd: false,
+        leader_sdt: false,
+        leader_email: false,
+        ngay_den: false,
+        ngay_di: false,
+        so_nguoi: false
+      };
+
+      function setError(name, message) {
+        if (!fields[name]) return;
+        fields[name].classList.add("input-error");
+        if (errsDom[name]) errsDom[name].textContent = message;
+      }
+
+      function clearError(name) {
+        if (!fields[name]) return;
+        fields[name].classList.remove("input-error");
+        if (errsDom[name]) errsDom[name].textContent = "";
+      }
+
+      function formatVnd(value) {
+        return new Intl.NumberFormat("vi-VN").format(Number(value || 0)) + " đ";
+      }
+
+      function calcSoDem() {
+        const ngayDen = fields.ngay_den.value;
+        const ngayDi = fields.ngay_di.value;
+        const soDemHidden = document.getElementById("so_dem");
+        const soDemDisplay = document.getElementById("so_dem_display");
+
+        if (!ngayDen || !ngayDi) {
+          soDemHidden.value = "";
+          soDemDisplay.value = "";
+          return 0;
+        }
+
+        const diffMs = new Date(ngayDi).getTime() - new Date(ngayDen).getTime();
+        const nights = diffMs > 0 ? Math.round(diffMs / (1000 * 60 * 60 * 24)) : 0;
+
+        soDemHidden.value = nights || "";
+        soDemDisplay.value = nights || "";
+        return nights;
+      }
+
+      const countdownEl = document.getElementById("paymentCountdown");
+      const countdownSource = document.querySelector("[data-payment-expires-at]");
+      const expiresAt = countdownSource?.getAttribute("data-payment-expires-at") || "";
+      const paymentHoldId = countdownSource?.getAttribute("data-payment-hold-id") || "";
+      const paymentStatusLine = document.getElementById("paymentStatusLine");
+      const paymentHoldAlert = document.getElementById("paymentHoldAlert");
+      if (countdownEl && expiresAt) {
+        const deadline = new Date(expiresAt).getTime();
+        const renderCountdown = () => {
+          const remaining = Math.max(0, deadline - Date.now());
+          const seconds = Math.ceil(remaining / 1000);
+          const minutesText = String(Math.floor(seconds / 60)).padStart(2, "0");
+          const secondsText = String(seconds % 60).padStart(2, "0");
+          countdownEl.textContent = `${minutesText}:${secondsText}`;
+          if (seconds <= 0) {
+            countdownEl.textContent = "Đã hết hạn";
+            clearInterval(timer);
+          }
+        };
+        const timer = setInterval(renderCountdown, 1000);
+        renderCountdown();
+      }
+
+      if (paymentHoldId && paymentStatusLine) {
+        const renderPaidState = (data) => {
+          paymentStatusLine.innerHTML = `Thanh toán cọc thành công. Đã tạo giao dịch #${data.transactionId}${data.bookingCode ? ` · Mã đặt chỗ ${data.bookingCode}` : ""}.`;
+          if (paymentHoldAlert) {
+            paymentHoldAlert.classList.remove("alert-warning");
+            paymentHoldAlert.classList.add("alert-success");
+          }
+          if (countdownEl) {
+            countdownEl.textContent = "Đã thanh toán";
+          }
+        };
+
+        const renderExpiredState = () => {
+          paymentStatusLine.textContent = "Mã giữ phòng đã hết hạn thanh toán. Vui lòng tạo QR giữ phòng mới.";
+          if (countdownEl) {
+            countdownEl.textContent = "Đã hết hạn";
+          }
+        };
+
+        const pollPaymentStatus = async () => {
+          try {
+            const response = await fetch(`/api/frontdesk/direct-booking/holds/${paymentHoldId}`, {
+              headers: { Accept: "application/json" }
+            });
+            const payload = await response.json();
+            const data = payload?.data || {};
+            if (data.status === "PAID") {
+              renderPaidState(data);
+              clearInterval(paymentPollTimer);
+            } else if (data.status === "EXPIRED") {
+              renderExpiredState();
+              clearInterval(paymentPollTimer);
+            }
+          } catch (_error) {
+            // Giữ polling im lặng để lễ tân không bị nhiễu nếu mạng chập chờn.
+          }
+        };
+
+        const paymentPollTimer = setInterval(pollPaymentStatus, 3000);
+        pollPaymentStatus();
+      }
+
+      function validateField(name, fromSubmit = false) {
+        if (!fromSubmit && !touched[name]) {
+          clearError(name);
+          return;
+        }
+
+        const value = (fields[name]?.value || "").trim();
+        clearError(name);
+
+        switch (name) {
+          case "leader_ten_kh":
+            if (!value) {
+              setError(name, "Vui lòng nhập họ tên trưởng đoàn.");
+            }
+            break;
+          case "leader_cccd":
+            if (!/^\d{9,12}$/.test(value)) {
+              setError(name, "CCCD trưởng đoàn phải gồm 9-12 chữ số.");
+            }
+            break;
+          case "leader_sdt":
+            if (!/^(0|\+84)\d{8,10}$/.test(value)) {
+              setError(name, "Số điện thoại trưởng đoàn không hợp lệ.");
+            }
+            break;
+          case "leader_email":
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+              setError(name, "Email trưởng đoàn không hợp lệ.");
+            }
+            break;
+          case "ngay_den":
+          case "ngay_di": {
+            const ngayDen = fields.ngay_den.value;
+            const ngayDi = fields.ngay_di.value;
+            clearError("ngay_den");
+            clearError("ngay_di");
+            if (!ngayDen) setError("ngay_den", "Vui lòng chọn ngày đến.");
+            if (!ngayDi) setError("ngay_di", "Vui lòng chọn ngày đi.");
+            if (ngayDen && ngayDi && new Date(ngayDi).getTime() <= new Date(ngayDen).getTime()) {
+              setError("ngay_di", "Ngày đi phải lớn hơn ngày đến.");
+            }
+            calcSoDem();
+            break;
+          }
+          case "so_nguoi":
+            if (Number(value || 0) <= 0) {
+              setError(name, "Số khách phải lớn hơn 0.");
+            }
+            break;
+        }
+      }
+
+      Object.keys(fields).forEach((name) => {
+        fields[name].addEventListener("blur", () => {
+          touched[name] = true;
+          validateField(name, false);
+        });
+        fields[name].addEventListener("input", () => {
+          if (touched[name]) validateField(name, false);
+          if (name === "ngay_den" || name === "ngay_di") {
+            calcTotalMoney();
+          }
+        });
+      });
+
+      function getSelectedRooms() {
+        return Array.from(document.querySelectorAll(".room-checkbox:checked")).map((checkbox) => {
+          const row = checkbox.closest("tr");
+          return {
+            id: checkbox.value,
+            name: row?.getAttribute("data-room-name") || checkbox.value
+          };
+        });
+      }
+
+      function buildRoomGuestCard(roomId, roomName) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "room-guest-card";
+        wrapper.dataset.roomId = roomId;
+        wrapper.innerHTML = `
+          <div class="room-guest-title">
+            <span>Phòng ${roomName}</span>
+            <small>Để trống = dùng trưởng đoàn</small>
+          </div>
+          <div class="field">
+            <label>Tên khách phòng</label>
+            <input name="room_guests[${roomId}][TenKhach]" placeholder="Nếu khác trưởng đoàn" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>CCCD khách</label>
+              <input name="room_guests[${roomId}][CCCD]" placeholder="9-12 chữ số" />
+            </div>
+            <div class="field">
+              <label>SĐT khách</label>
+              <input name="room_guests[${roomId}][SDT]" placeholder="Nếu khác trưởng đoàn" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label>Email khách</label>
+              <input type="email" name="room_guests[${roomId}][Email]" placeholder="Nếu khác trưởng đoàn" />
+            </div>
+            <div class="field">
+              <label>Địa chỉ khách</label>
+              <input name="room_guests[${roomId}][DiaChi]" placeholder="Nếu khác trưởng đoàn" />
+            </div>
+          </div>
+        `;
+        return wrapper;
+      }
+
+      function syncRoomGuestCards() {
+        const selectedRooms = getSelectedRooms();
+        const selectedIds = selectedRooms.map((room) => String(room.id));
+
+        Array.from(roomGuestsContainer.querySelectorAll(".room-guest-card")).forEach((card) => {
+          if (!selectedIds.includes(card.dataset.roomId || "")) {
+            card.remove();
+          }
+        });
+
+        selectedRooms.forEach((room) => {
+          if (!roomGuestsContainer.querySelector(`.room-guest-card[data-room-id="${room.id}"]`)) {
+            roomGuestsContainer.appendChild(buildRoomGuestCard(room.id, room.name));
+          }
+        });
+      }
+
+      function updateServiceRoomOptions() {
+        const selectedRooms = getSelectedRooms();
+        document.querySelectorAll(".js-service-room").forEach((select) => {
+          const current = select.getAttribute("data-selected-room") || select.value || "";
+          select.innerHTML = '<option value="">-- Chọn phòng --</option>';
+          selectedRooms.forEach((room) => {
+            const option = document.createElement("option");
+            option.value = room.id;
+            option.textContent = `Phòng ${room.name}`;
+            if (String(current) === String(room.id)) {
+              option.selected = true;
+            }
+            select.appendChild(option);
+          });
+          if (!selectedRooms.some((room) => String(room.id) === String(current))) {
+            select.value = "";
+          }
+        });
+      }
+
+      function calcTotalMoney() {
+        const soDem = calcSoDem();
+        let sumRoom = 0;
+        let sumService = 0;
+        let discount = 0;
+
+        document.querySelectorAll(".room-checkbox:checked").forEach((checkbox) => {
+          const row = checkbox.closest("tr");
+          const price = Number(row?.getAttribute("data-room-price") || 0);
+          sumRoom += price * soDem;
+        });
+
+        document.querySelectorAll('input[name^="services["]').forEach((input) => {
+          const quantity = Number(input.value || 0);
+          const price = Number(input.getAttribute("data-price") || 0);
+          if (quantity > 0) {
+            sumService += quantity * price;
+          }
+        });
+
+        const promotion = document.getElementById("ma_khuyen_mai");
+        const selectedOption = promotion?.options[promotion.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          const type = selectedOption.getAttribute("data-discount-type") || "";
+          const value = Number(selectedOption.getAttribute("data-discount-value") || 0);
+          const subtotal = sumRoom + sumService;
+          discount = type === "FIXED" ? value : subtotal * (value / 100);
+          discount = Math.min(discount, subtotal);
+        }
+
+        const total = Math.max(0, sumRoom + sumService - discount);
+        document.getElementById("sumRoom").textContent = formatVnd(sumRoom);
+        document.getElementById("sumService").textContent = formatVnd(sumService);
+        document.getElementById("sumDiscount").textContent = "- " + formatVnd(discount);
+        document.getElementById("sumTotal").textContent = formatVnd(total);
+      }
+
+      function collectServiceSelections() {
+        const selections = [];
+        document.querySelectorAll('input[name^="services["]').forEach((input) => {
+          const quantity = Number(input.value || 0);
+          const match = (input.getAttribute("name") || "").match(/services\[(\d+)\]/);
+          if (!match || quantity <= 0) return;
+
+          const select = document.querySelector(`select[name="services_room[${match[1]}]"]`);
+          selections.push({
+            service_id: Number(match[1]),
+            room_id: Number(select?.value || 0),
+            quantity,
+            note: ""
+          });
+        });
+        return selections;
+      }
+
+      document.querySelectorAll(".room-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          syncRoomGuestCards();
+          updateServiceRoomOptions();
+          calcTotalMoney();
+        });
+      });
+
+      document.addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        const targetName = target.getAttribute("name") || "";
+
+        if (target.classList.contains("js-service-room")) {
+          const match = targetName.match(/services_room\[(\d+)\]/);
+          const qtyInput = match ? document.querySelector(`input[name="services[${match[1]}]"]`) : null;
+          if (target.value && qtyInput && Number(qtyInput.value || 0) <= 0) {
+            qtyInput.value = "1";
+          }
+          calcTotalMoney();
+          return;
+        }
+
+        if (
+          target.id === "ma_khuyen_mai" ||
+          target.id === "ngay_den" ||
+          target.id === "ngay_di" ||
+          targetName.startsWith("services[")
+        ) {
+          calcTotalMoney();
+        }
+      });
+
+      document.addEventListener("input", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if ((target.getAttribute("name") || "").startsWith("services[")) {
+          const match = (target.getAttribute("name") || "").match(/services\[(\d+)\]/);
+          const select = match ? document.querySelector(`select[name="services_room[${match[1]}]"]`) : null;
+          const selectedRooms = getSelectedRooms();
+          if (Number(target.value || 0) > 0 && select && !select.value && selectedRooms.length === 1) {
+            select.value = selectedRooms[0].id;
+          }
+          calcTotalMoney();
+        }
+      });
+
+      form.addEventListener("submit", (event) => {
+        const submitter = event.submitter;
+        const action = submitter?.value || "search";
+        const servicesJsonInput = document.getElementById("services_json");
+        if (servicesJsonInput) {
+          servicesJsonInput.value = JSON.stringify(collectServiceSelections());
+        }
+
+        clientErrors.style.display = "none";
+        clientErrorsList.innerHTML = "";
+        btnDanger.style.display = "none";
+
+        Object.keys(fields).forEach((name) => validateField(name, true));
+
+        const errors = Object.keys(errsDom)
+          .map((name) => errsDom[name]?.textContent || "")
+          .filter(Boolean);
+
+        if (action === "book") {
+          if (!document.querySelector(".room-checkbox:checked")) {
+            errors.push("Vui lòng chọn ít nhất một phòng trước khi đặt.");
+          }
+
+          document.querySelectorAll('input[name^="services["]').forEach((input) => {
+            const quantity = Number(input.value || 0);
+            if (quantity > 0) {
+              const match = (input.getAttribute("name") || "").match(/services\[(\d+)\]/);
+              if (!match) return;
+              const select = document.querySelector(`select[name="services_room[${match[1]}]"]`);
+              if (select && !select.value) {
+                errors.push(`Dịch vụ ${match[1]} có số lượng > 0 nhưng chưa chọn phòng sử dụng.`);
+              }
+            }
+          });
+        }
+
+        if (errors.length) {
+          event.preventDefault();
+          errors.forEach((message) => {
+            const li = document.createElement("li");
+            li.textContent = message;
+            clientErrorsList.appendChild(li);
+          });
+          clientErrors.style.display = "block";
+          btnDanger.style.display = "inline-flex";
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+
+      syncRoomGuestCards();
+      updateServiceRoomOptions();
+      calcTotalMoney();
+    });
+  </script>
+</body>
+</html>

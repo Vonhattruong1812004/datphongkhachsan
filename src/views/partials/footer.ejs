@@ -1,0 +1,368 @@
+<aside class="floating-assist" aria-label="AI Concierge và liên hệ nhanh">
+  <div class="floating-assist__fab-stack">
+    <a
+      class="floating-assist__fab-link floating-assist__fab-link--zalo"
+      href="https://zalo.me/0333204860"
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Liên hệ Zalo 0333204860"
+      title="Zalo 0333204860"
+    >
+      <span class="floating-assist__fab-icon" aria-hidden="true">
+        <span class="floating-assist__fab-label">Zalo</span>
+      </span>
+    </a>
+
+    <button class="floating-assist__toggle" type="button" id="floatingAiToggle" aria-label="Mở AI Concierge" title="AI Concierge">
+      <span class="floating-assist__toggle-badge"></span>
+      <span class="floating-assist__toggle-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
+          <path d="M12 3C6.477 3 2 6.91 2 11.733c0 2.195.925 4.2 2.46 5.739L4 22l4.19-2.11c1.16.33 2.39.51 3.81.51 5.523 0 10-3.91 10-8.667C22 6.91 17.523 3 12 3Z" fill="rgba(255,255,255,.94)"/>
+          <path d="M8 10.5h8M8 13.5h5" stroke="#0f766e" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </span>
+    </button>
+  </div>
+
+  <section class="floating-assist__drawer" id="floatingAiDrawer" hidden>
+    <header class="floating-assist__head">
+      <div>
+        <div class="floating-assist__eyebrow">AI Concierge</div>
+        <h2 class="floating-assist__title">Trợ lý đặt phòng</h2>
+        <div class="floating-assist__subtitle">Hỏi bằng tiếng Việt, AI sẽ gợi ý phòng, bộ lọc và CTA tiếp theo.</div>
+      </div>
+      <button class="floating-assist__close" type="button" id="floatingAiClose" aria-label="Đóng AI Concierge">×</button>
+    </header>
+
+    <div class="floating-assist__body" id="floatingAiMessages"></div>
+
+    <form class="floating-assist__form" id="floatingAiForm">
+      <textarea
+        class="floating-assist__input"
+        id="floatingAiInput"
+        placeholder="Ví dụ: cần phòng deluxe view biển cho 2 người ở Đà Nẵng cuối tuần này, ngân sách 2 triệu"
+      ></textarea>
+      <div class="floating-assist__submit-row">
+        <div class="floating-assist__hint">AI sẽ xếp hạng phòng, trả lời nhanh và dẫn bạn sang bước đặt phòng phù hợp.</div>
+        <button class="floating-assist__submit" type="submit" id="floatingAiSubmit">Gửi yêu cầu</button>
+      </div>
+    </form>
+  </section>
+
+</aside>
+
+<script>
+  (function registerFloatingAiConcierge() {
+    const HISTORY_KEY = "abc_ai_widget_history_v2";
+    const OPEN_KEY = "abc_ai_widget_open_v1";
+    const STARTERS = [
+      "Tìm phòng gần biển cho 2 người cuối tuần này",
+      "Phòng nào hợp cho gia đình có trẻ em?",
+      "Tôi muốn phòng view đẹp nhưng ngân sách mềm",
+      "Gợi ý combo nghỉ dưỡng có ăn sáng và hồ bơi"
+    ];
+
+    const toggle = document.getElementById("floatingAiToggle");
+    const closeButton = document.getElementById("floatingAiClose");
+    const drawer = document.getElementById("floatingAiDrawer");
+    const messages = document.getElementById("floatingAiMessages");
+    const form = document.getElementById("floatingAiForm");
+    const input = document.getElementById("floatingAiInput");
+    const submit = document.getElementById("floatingAiSubmit");
+
+    if (!toggle || !drawer || !messages || !form || !input || !submit) {
+      return;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function readHistory() {
+      try {
+        return JSON.parse(sessionStorage.getItem(HISTORY_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function writeHistory(items) {
+      sessionStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(-14)));
+    }
+
+    function openWidget() {
+      drawer.hidden = false;
+      sessionStorage.setItem(OPEN_KEY, "1");
+      window.setTimeout(() => input.focus(), 40);
+    }
+
+    function closeWidget() {
+      drawer.hidden = true;
+      sessionStorage.removeItem(OPEN_KEY);
+    }
+
+    function renderWelcome() {
+      return `
+        <div class="floating-assist__message floating-assist__message--assistant">
+          <h4>Xin chào, mình là AI Concierge.</h4>
+          <p>Bạn có thể hỏi nhu cầu đặt phòng, xin gợi ý theo ngân sách, lịch đi, view yêu thích hoặc hỏi thêm về check-in, eKYC và thanh toán.</p>
+          <div class="floating-assist__starter-grid">
+            ${STARTERS.map((item) => `<button type="button" class="floating-assist__starter" data-ai-starter="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAssistantPayload(payload) {
+      if (!payload) {
+        return `<div class="floating-assist__message floating-assist__message--assistant"><p class="floating-assist__empty">Không có dữ liệu từ AI Concierge.</p></div>`;
+      }
+
+      const top = payload.recommendations?.top_pick || null;
+      const alternatives = Array.isArray(payload.recommendations?.alternatives) ? payload.recommendations.alternatives : [];
+      const filters = payload.extracted_filters || {};
+      const filterChips = [
+        filters.hotel_city ? `Thành phố ${filters.hotel_city}` : "",
+        filters.loai_phong ? `Loại ${filters.loai_phong}` : "",
+        filters.view_phong ? `View ${filters.view_phong}` : "",
+        Number(filters.so_khach || 0) > 0 ? `${filters.so_khach} khách` : "",
+        Number(filters.gia_goi_y || 0) > 0 ? `${Number(filters.gia_goi_y).toLocaleString("vi-VN")} đ` : ""
+      ].filter(Boolean);
+
+      return `
+        <div class="floating-assist__message floating-assist__message--assistant">
+          <h4>${escapeHtml(payload.faq?.answer || "AI đã phân tích xong nhu cầu của bạn.")}</h4>
+          ${filterChips.length ? `<div class="floating-assist__chips">${filterChips.map((item) => `<span class="floating-assist__chip">${escapeHtml(item)}</span>`).join("")}</div>` : ""}
+          ${top ? `
+            <div class="floating-assist__card">
+              <div class="floating-assist__card-title">
+                <span class="floating-assist__badge">${escapeHtml(top.recommendation?.label || "AI Top Pick")}</span>
+                <span class="floating-assist__price">${Number(top.gia || 0).toLocaleString("vi-VN")} đ / đêm</span>
+              </div>
+              <h5>${escapeHtml(top.loaiPhong || "")} - phòng ${escapeHtml(top.soPhong || "")}</h5>
+              <p class="floating-assist__meta">${escapeHtml(top.khachSan || "")}${top.tinhThanh ? ` · ${escapeHtml(top.tinhThanh)}` : ""}</p>
+              <p>${escapeHtml(top.recommendation?.summary || "")}</p>
+              ${Array.isArray(top.recommendation?.reasons) && top.recommendation.reasons.length ? `<div class="floating-assist__chips">${top.recommendation.reasons.slice(0, 3).map((item) => `<span class="floating-assist__chip">${escapeHtml(item)}</span>`).join("")}</div>` : ""}
+            </div>
+          ` : ""}
+          ${alternatives.length ? `
+            <div class="floating-assist__alternatives">
+              ${alternatives.slice(0, 3).map((item) => `
+                <div class="floating-assist__card" style="margin-top:0;flex:1 1 180px;">
+                  <span class="floating-assist__badge">${escapeHtml(item.recommendation?.label || "Alternative")}</span>
+                  <p style="margin-top:8px;"><strong>${escapeHtml(item.loaiPhong || "")}</strong> · P${escapeHtml(item.soPhong || "")}</p>
+                  <p class="floating-assist__meta">${escapeHtml(item.khachSan || "")}</p>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
+          <div class="floating-assist__actions">
+            <a class="floating-assist__action floating-assist__action--primary" href="${escapeHtml(top ? `/booking/rooms/${top.id}` : (payload.cta?.href || "/booking/search"))}">${top ? "Đặt phòng này" : "Mở tìm phòng"}</a>
+            <a class="floating-assist__action" href="${escapeHtml(payload.cta?.href || "/booking/search")}">${escapeHtml(payload.cta?.label || "Xem danh sách phòng")}</a>
+            <a class="floating-assist__action" href="https://zalo.me/0333204860" target="_blank" rel="noreferrer">Hỏi thêm qua Zalo</a>
+          </div>
+          ${Array.isArray(payload.follow_up_prompts) && payload.follow_up_prompts.length ? `
+            <div class="floating-assist__starter-grid">
+              ${payload.follow_up_prompts.map((item) => `<button type="button" class="floating-assist__starter" data-ai-starter="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      const items = readHistory();
+      if (!items.length) {
+        messages.innerHTML = renderWelcome();
+      } else {
+        messages.innerHTML = items.map((item) => {
+          if (item.role === "assistant" && item.payload) {
+            return renderAssistantPayload(item.payload);
+          }
+
+          return `
+            <div class="floating-assist__message floating-assist__message--${item.role === "user" ? "user" : "assistant"}">
+              <p>${escapeHtml(item.text || "")}</p>
+            </div>
+          `;
+        }).join("");
+      }
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function pushHistory(entry) {
+      const items = readHistory();
+      items.push(entry);
+      writeHistory(items);
+      renderHistory();
+    }
+
+    async function submitMessage(message) {
+      const trimmed = String(message || "").trim();
+      if (!trimmed) {
+        return;
+      }
+
+      openWidget();
+      pushHistory({ role: "user", text: trimmed });
+      input.value = "";
+      submit.disabled = true;
+      pushHistory({ role: "assistant", text: "AI đang phân tích nhu cầu và tìm phòng phù hợp..." });
+
+      try {
+        const response = await fetch("/api/ai/concierge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ message: trimmed })
+        });
+
+        const json = await response.json();
+        if (!json.ok) {
+          throw new Error(json.message || "Không thể xử lý AI Concierge.");
+        }
+
+        const items = readHistory();
+        items.pop();
+        writeHistory(items);
+        pushHistory({ role: "assistant", payload: json.data });
+      } catch (error) {
+        const items = readHistory();
+        items.pop();
+        writeHistory(items);
+        pushHistory({
+          role: "assistant",
+          text: error instanceof Error ? error.message : "Không thể xử lý AI Concierge lúc này."
+        });
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    toggle.addEventListener("click", () => {
+      if (drawer.hidden) openWidget();
+      else closeWidget();
+    });
+
+    closeButton?.addEventListener("click", closeWidget);
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitMessage(input.value);
+    });
+
+    messages.addEventListener("click", (event) => {
+      const starter = event.target.closest("[data-ai-starter]");
+      if (!starter) return;
+      submitMessage(starter.getAttribute("data-ai-starter") || "");
+    });
+
+    window.addEventListener("abc:ai-widget-open", openWidget);
+
+    if (sessionStorage.getItem(OPEN_KEY) === "1") {
+      openWidget();
+    }
+
+    renderHistory();
+  })();
+
+  (function registerPwa() {
+    const isStandalone = function () {
+      return Boolean(
+        (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+        window.navigator.standalone === true
+      );
+    };
+
+    if (!("serviceWorker" in navigator)) {
+      window.__abcPwaState = {
+        supported: false,
+        installed: isStandalone(),
+        installAvailable: false,
+        hasWaitingUpdate: false,
+        online: navigator.onLine
+      };
+      return;
+    }
+
+    const state = window.__abcPwaState = window.__abcPwaState || {
+      supported: true,
+      installed: isStandalone(),
+      installAvailable: false,
+      hasWaitingUpdate: false,
+      online: navigator.onLine
+    };
+
+    const dispatchState = function () {
+      state.installed = isStandalone();
+      state.online = navigator.onLine;
+      window.dispatchEvent(new CustomEvent("abc:pwa-state", { detail: state }));
+    };
+
+    window.__abcPwaInstall = async function () {
+      if (!state.installPrompt) return false;
+      state.installPrompt.prompt();
+      const choice = await state.installPrompt.userChoice;
+      state.installAvailable = false;
+      state.installPrompt = null;
+      state.installed = choice && choice.outcome === "accepted" ? true : isStandalone();
+      dispatchState();
+      return choice && choice.outcome === "accepted";
+    };
+
+    window.addEventListener("beforeinstallprompt", function (event) {
+      event.preventDefault();
+      state.installPrompt = event;
+      state.installAvailable = true;
+      dispatchState();
+      window.dispatchEvent(new CustomEvent("abc:pwa-install-available", { detail: state }));
+    });
+
+    window.addEventListener("appinstalled", function () {
+      state.installed = true;
+      state.installAvailable = false;
+      state.installPrompt = null;
+      dispatchState();
+    });
+
+    window.addEventListener("online", dispatchState);
+    window.addEventListener("offline", dispatchState);
+
+    navigator.serviceWorker.register("/sw.js").then(function (registration) {
+      if (registration.waiting) {
+        state.hasWaitingUpdate = true;
+        dispatchState();
+      }
+
+      registration.addEventListener("updatefound", function () {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener("statechange", function () {
+          if (worker.state === "installed" && navigator.serviceWorker.controller) {
+            state.hasWaitingUpdate = true;
+            dispatchState();
+          }
+        });
+      });
+
+      window.__abcPwaApplyUpdate = function () {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+      };
+
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        window.location.reload();
+      });
+    }).catch(function () {
+      state.supported = false;
+    }).finally(dispatchState);
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,656 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const filters = payload.filters || {};
+  const reportType = filters.loai_baocao || "doanhthu";
+  const hotelOptions = payload.hotelOptions || [];
+  const queryString = new URLSearchParams(filters).toString();
+  const csvQueryString = new URLSearchParams({ ...filters, format: "csv" }).toString();
+  const jsonQueryString = new URLSearchParams({ ...filters, format: "json" }).toString();
+  const isRevenue = reportType === "doanhthu";
+  const isExpense = reportType === "chiphi";
+  const isSummary = reportType === "tonghop";
+%>
+
+<style>
+  .report-home {
+    --report-ink: #112233;
+    --report-muted: #667085;
+    --report-card: rgba(255, 255, 255, .76);
+    --report-card-strong: rgba(255, 255, 255, .92);
+    --report-line: rgba(17, 34, 51, .10);
+    --report-mint: #21cfa6;
+    --report-cyan: #18bff2;
+    --report-yellow: #ffd166;
+    --report-pink: #ff6fa3;
+    --report-violet: #8b6bff;
+    --report-shadow: 0 28px 86px rgba(18, 38, 63, .16);
+    min-height: calc(100vh - 84px);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: 34px 18px 58px;
+    color: var(--report-ink);
+    background:
+      radial-gradient(circle at 9% 12%, rgba(33, 207, 166, .30), transparent 27%),
+      radial-gradient(circle at 82% 10%, rgba(255, 111, 163, .18), transparent 30%),
+      radial-gradient(circle at 46% 104%, rgba(183, 239, 74, .22), transparent 38%),
+      linear-gradient(135deg, #fbfffb 0%, #eafcff 39%, #fff7ed 100%);
+  }
+
+  .report-home::before,
+  .report-home::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .report-home::before {
+    width: 620px;
+    height: 620px;
+    top: -310px;
+    right: -170px;
+    border-radius: 48% 52% 42% 58%;
+    opacity: .38;
+    background: conic-gradient(from 180deg, rgba(24,191,242,.48), rgba(33,207,166,.34), rgba(183,239,74,.32), rgba(255,111,163,.25), rgba(24,191,242,.48));
+  }
+
+  .report-home::after {
+    width: 520px;
+    height: 520px;
+    left: -230px;
+    bottom: -260px;
+    border-radius: 999px;
+    opacity: .30;
+    background: conic-gradient(from 20deg, rgba(255,159,122,.34), rgba(255,209,102,.30), rgba(24,191,242,.26), rgba(139,107,255,.24), rgba(255,159,122,.34));
+  }
+
+  .report-wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .report-hero,
+  .report-card,
+  .report-form-card,
+  .report-table-card,
+  .report-warning {
+    border: 1px solid var(--report-line);
+    background: var(--report-card);
+    box-shadow: var(--report-shadow);
+    backdrop-filter: blur(26px);
+  }
+
+  .report-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+    gap: 18px;
+    align-items: stretch;
+    border-radius: 38px;
+    padding: 28px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 18px;
+  }
+
+  .report-hero::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .70), transparent 34%),
+      radial-gradient(circle at 90% 12%, rgba(24, 191, 242, .22), transparent 30%),
+      radial-gradient(circle at 12% 96%, rgba(183, 239, 74, .18), transparent 28%);
+  }
+
+  .report-hero-main,
+  .report-hero-side {
+    position: relative;
+    z-index: 1;
+  }
+
+  .report-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 7px 12px;
+    border: 1px solid rgba(33, 207, 166, .24);
+    background: rgba(33, 207, 166, .12);
+    color: #087763;
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+  }
+
+  .report-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--report-mint);
+    box-shadow: 0 0 0 7px rgba(33, 207, 166, .14);
+  }
+
+  .report-hero h1 {
+    max-width: 780px;
+    margin: 24px 0 12px;
+    color: var(--report-ink);
+    font-size: 58px;
+    line-height: .98;
+  }
+
+  .report-hero h1 span {
+    color: transparent;
+    background: linear-gradient(96deg, #0891b2 0%, #10b981 43%, #f59e0b 72%, #ec4899 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .report-lead {
+    max-width: 720px;
+    margin: 0;
+    color: var(--report-muted);
+    font-size: 16px;
+    line-height: 1.7;
+  }
+
+  .report-tags,
+  .report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .report-tags {
+    margin-top: 20px;
+  }
+
+  .report-tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 11px;
+    color: var(--report-ink);
+    background: rgba(255, 255, 255, .68);
+    border: 1px solid rgba(17, 34, 51, .08);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .report-actions {
+    margin-top: 22px;
+  }
+
+  .report-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 43px;
+    border-radius: 999px;
+    padding: 10px 17px;
+    border: 1px solid rgba(17, 34, 51, .12);
+    background: rgba(255, 255, 255, .76);
+    color: var(--report-ink);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 950;
+    cursor: pointer;
+  }
+
+  .report-button--primary {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #08a5c8, #21cfa6);
+    box-shadow: 0 18px 42px rgba(33, 207, 166, .24);
+  }
+
+  .report-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(24, 191, 242, .34);
+    box-shadow: 0 18px 44px rgba(24, 191, 242, .16);
+  }
+
+  .report-side-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    height: 100%;
+  }
+
+  .report-side-stat {
+    border-radius: 26px;
+    padding: 18px;
+    background: rgba(255, 255, 255, .60);
+    border: 1px solid rgba(17, 34, 51, .08);
+  }
+
+  .report-side-stat strong {
+    display: block;
+    color: var(--report-ink);
+    font-size: 25px;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+
+  .report-side-stat span {
+    display: block;
+    margin-top: 8px;
+    color: var(--report-muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .report-form-card {
+    border-radius: 30px;
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+
+  .report-form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .report-field {
+    grid-column: span 2;
+  }
+
+  .report-field.is-small {
+    grid-column: span 1;
+  }
+
+  .report-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--report-muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .report-field input,
+  .report-field select {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 16px;
+    border: 1px solid rgba(17, 34, 51, .12);
+    background: rgba(255, 255, 255, .82);
+    color: var(--report-ink);
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .report-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .report-warning {
+    border-radius: 24px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    color: #92400e;
+    background: rgba(255, 209, 102, .20);
+  }
+
+  .report-warning p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .report-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .report-card {
+    border-radius: 28px;
+    padding: 18px;
+    background: rgba(255, 255, 255, .72);
+  }
+
+  .report-card strong {
+    display: block;
+    color: var(--report-ink);
+    font-size: 25px;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+
+  .report-card span {
+    display: block;
+    margin-top: 8px;
+    color: var(--report-muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .report-table-card {
+    border-radius: 30px;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  .report-table-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .report-table-head h2 {
+    margin: 0;
+    color: var(--report-ink);
+    font-size: 25px;
+  }
+
+  .report-table-head p {
+    margin: 5px 0 0;
+    color: var(--report-muted);
+    font-size: 13px;
+  }
+
+  .report-table-wrap {
+    overflow-x: auto;
+  }
+
+  .report-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+
+  .report-table th {
+    padding: 0 12px 6px;
+    color: var(--report-muted);
+    font-size: 12px;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .report-table td {
+    padding: 13px 12px;
+    background: rgba(255, 255, 255, .72);
+    border-top: 1px solid rgba(17, 34, 51, .08);
+    border-bottom: 1px solid rgba(17, 34, 51, .08);
+    color: var(--report-ink);
+    font-size: 14px;
+  }
+
+  .report-table td:first-child {
+    border-left: 1px solid rgba(17, 34, 51, .08);
+    border-radius: 18px 0 0 18px;
+    font-weight: 950;
+  }
+
+  .report-table td:last-child {
+    border-right: 1px solid rgba(17, 34, 51, .08);
+    border-radius: 0 18px 18px 0;
+  }
+
+  .report-money {
+    font-weight: 950;
+  }
+
+  .report-money.is-profit {
+    color: #0f766e;
+  }
+
+  .report-money.is-loss {
+    color: #be123c;
+  }
+
+  .report-empty {
+    border: 1px dashed rgba(17, 34, 51, .16);
+    border-radius: 28px;
+    padding: 24px;
+    color: var(--report-muted);
+    background: rgba(255, 255, 255, .58);
+  }
+
+  @media (max-width: 1080px) {
+    .report-hero,
+    .report-side-grid {
+      grid-template-columns: 1fr;
+    }
+    .report-field,
+    .report-field.is-small {
+      grid-column: span 3;
+    }
+    .report-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .report-home {
+      padding: 20px 12px 42px;
+    }
+    .report-hero {
+      border-radius: 30px;
+      padding: 22px;
+    }
+    .report-hero h1 {
+      font-size: 42px;
+    }
+    .report-form-grid,
+    .report-kpis {
+      grid-template-columns: 1fr;
+    }
+    .report-field,
+    .report-field.is-small {
+      grid-column: 1 / -1;
+    }
+    .report-table-head {
+      display: block;
+    }
+  }
+</style>
+
+<main class="report-home">
+  <div class="report-wrap">
+    <section class="report-hero" aria-label="Báo cáo kế toán">
+      <div class="report-hero-main">
+        <div class="report-chip"><span class="report-pulse"></span> Accounting reports</div>
+        <h1>Báo cáo <span>kế toán</span></h1>
+        <p class="report-lead">Tổng hợp doanh thu, chi phí và lợi nhuận theo ngày, kỳ báo cáo và phạm vi cơ sở.</p>
+        <div class="report-tags">
+          <span class="report-tag"><%= payload.rangeLabel %></span>
+          <span class="report-tag"><%= payload.hotelContext.label %></span>
+          <span class="report-tag">Tạo lúc <%= payload.generatedAtLabel %></span>
+        </div>
+        <div class="report-actions">
+          <a class="report-button report-button--primary" href="/api/accounting/reports?<%= csvQueryString %>">Xuất CSV</a>
+          <a class="report-button" href="/api/accounting/reports?<%= jsonQueryString %>">JSON</a>
+          <a class="report-button" href="/accounting/cashflow">Thu chi hợp nhất</a>
+        </div>
+      </div>
+
+      <aside class="report-hero-side" aria-label="Tóm tắt báo cáo">
+        <div class="report-side-grid">
+          <div class="report-side-stat"><strong><%= payload.summary.totalRevenueFormatted %></strong><span>Doanh thu ghi nhận</span></div>
+          <div class="report-side-stat"><strong><%= payload.summary.paidRevenueFormatted %></strong><span>Đã thu</span></div>
+          <div class="report-side-stat"><strong><%= payload.summary.totalExpenseFormatted %></strong><span>Chi phí</span></div>
+          <div class="report-side-stat"><strong><%= payload.summary.outstandingRevenueFormatted %></strong><span>Còn phải thu</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="report-form-card">
+      <form method="get" action="/accounting/reports">
+        <div class="report-form-grid">
+          <div class="report-field">
+            <label for="loai_baocao">Loại báo cáo</label>
+            <select id="loai_baocao" name="loai_baocao">
+              <option value="doanhthu" <%= reportType === "doanhthu" ? "selected" : "" %>>Doanh thu</option>
+              <option value="chiphi" <%= reportType === "chiphi" ? "selected" : "" %>>Chi phí</option>
+              <option value="tonghop" <%= reportType === "tonghop" ? "selected" : "" %>>Tổng hợp</option>
+            </select>
+          </div>
+
+          <div class="report-field is-small">
+            <label for="ky_han">Kỳ hạn</label>
+            <select id="ky_han" name="ky_han">
+              <option value="ngay" <%= filters.ky_han === "ngay" ? "selected" : "" %>>Ngày</option>
+              <option value="thang" <%= filters.ky_han === "thang" ? "selected" : "" %>>Tháng</option>
+              <option value="khoang" <%= filters.ky_han === "khoang" ? "selected" : "" %>>Khoảng</option>
+            </select>
+          </div>
+
+          <div class="report-field is-small">
+            <label for="tu_ngay">Từ ngày</label>
+            <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
+          </div>
+
+          <div class="report-field is-small">
+            <label for="den_ngay">Đến ngày</label>
+            <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
+          </div>
+
+          <div class="report-field">
+            <label for="hotel_id">Cơ sở</label>
+            <select id="hotel_id" name="hotel_id">
+              <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
+              <% hotelOptions.forEach((hotel) => { %>
+                <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>>
+                  <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+
+        <div class="report-form-actions">
+          <button class="report-button report-button--primary" type="submit">Tạo báo cáo</button>
+          <a class="report-button" href="/accounting/reports">Đặt lại</a>
+        </div>
+      </form>
+    </section>
+
+    <% if (payload.warnings && payload.warnings.length) { %>
+      <section class="report-warning">
+        <% payload.warnings.forEach((warning) => { %>
+          <p><%= warning %></p>
+        <% }) %>
+      </section>
+    <% } %>
+
+    <section class="report-kpis" aria-label="Chỉ số báo cáo">
+      <article class="report-card"><strong><%= payload.summary.revenueTransactionCount %></strong><span>Số giao dịch</span></article>
+      <article class="report-card"><strong><%= payload.summary.expenseVoucherCount %></strong><span>Số phiếu chi</span></article>
+      <article class="report-card"><strong><%= payload.summary.averageRevenuePerTransactionFormatted %></strong><span>TB / giao dịch</span></article>
+      <article class="report-card"><strong><%= payload.summary.paidCoverageFormatted %></strong><span>Tỷ lệ đã thu</span></article>
+    </section>
+
+    <section class="report-table-card">
+      <div class="report-table-head">
+        <div>
+          <h2>
+            <% if (isRevenue) { %>Bảng doanh thu theo ngày<% } %>
+            <% if (isExpense) { %>Bảng chi phí theo ngày<% } %>
+            <% if (isSummary) { %>Bảng tổng hợp theo ngày<% } %>
+          </h2>
+          <p><%= payload.noData ? "Không có dữ liệu trong kỳ đã chọn." : `${payload.dailySummary.length || payload.revenue.rows.length || payload.expense.rows.length} dòng dữ liệu.` %></p>
+        </div>
+      </div>
+
+      <% if (payload.noData) { %>
+        <div class="report-empty">Không có dữ liệu phù hợp với bộ lọc hiện tại.</div>
+      <% } else { %>
+        <div class="report-table-wrap">
+          <table class="report-table">
+            <% if (isRevenue) { %>
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Số giao dịch</th>
+                  <th>Doanh thu ghi nhận</th>
+                  <th>Đã thu</th>
+                  <th>Còn phải thu</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% payload.revenue.rows.forEach((row) => { %>
+                  <tr>
+                    <td><%= row.dateLabel %></td>
+                    <td><%= row.transactionCount %></td>
+                    <td class="report-money"><%= row.revenueFormatted %></td>
+                    <td class="report-money"><%= row.paidRevenueFormatted %></td>
+                    <td class="report-money"><%= row.outstandingRevenueFormatted %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            <% } %>
+
+            <% if (isExpense) { %>
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Số phiếu chi</th>
+                  <th>Tổng chi phí</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% payload.expense.rows.forEach((row) => { %>
+                  <tr>
+                    <td><%= row.dateLabel %></td>
+                    <td><%= row.voucherCount %></td>
+                    <td class="report-money"><%= row.expenseFormatted %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            <% } %>
+
+            <% if (isSummary) { %>
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Giao dịch</th>
+                  <th>Doanh thu ghi nhận</th>
+                  <th>Đã thu</th>
+                  <th>Còn phải thu</th>
+                  <th>Phiếu chi</th>
+                  <th>Chi phí</th>
+                  <th>Lợi nhuận ghi nhận</th>
+                  <th>Lợi nhuận đã thu</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% payload.dailySummary.forEach((row) => { %>
+                  <tr>
+                    <td><%= row.dateLabel %></td>
+                    <td><%= row.revenueTransactionCount %></td>
+                    <td class="report-money"><%= row.revenueFormatted %></td>
+                    <td class="report-money"><%= row.paidRevenueFormatted %></td>
+                    <td class="report-money"><%= row.outstandingRevenueFormatted %></td>
+                    <td><%= row.expenseVoucherCount %></td>
+                    <td class="report-money"><%= row.expenseFormatted %></td>
+                    <td class="report-money <%= row.profit >= 0 ? 'is-profit' : 'is-loss' %>"><%= row.profitFormatted %></td>
+                    <td class="report-money <%= row.realizedProfit >= 0 ? 'is-profit' : 'is-loss' %>"><%= row.realizedProfitFormatted %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            <% } %>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

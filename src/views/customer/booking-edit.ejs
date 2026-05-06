@@ -1,0 +1,255 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const booking = payload.booking;
+  const room = payload.room;
+%>
+<style>
+  body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),radial-gradient(circle at 48% 100%,rgba(250,204,21,.15),transparent 30%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
+  .cust-edit-shell{position:relative;overflow:hidden;max-width:1180px;margin:0 auto;padding:34px 18px 64px}
+  .cust-edit-shell::before,.cust-edit-shell::after{content:"";position:absolute;width:460px;height:460px;border-radius:999px;pointer-events:none;z-index:-1;opacity:.46;animation:cust-edit-float 12s ease-in-out infinite alternate}
+  .cust-edit-shell::before{right:-160px;top:-220px;background:conic-gradient(from 130deg,rgba(14,165,233,.46),rgba(20,184,166,.34),rgba(250,204,21,.28),rgba(251,113,133,.26),rgba(14,165,233,.46))}
+  .cust-edit-shell::after{left:-170px;bottom:-230px;background:conic-gradient(from 20deg,rgba(251,113,133,.28),rgba(245,158,11,.24),rgba(45,212,191,.26),rgba(59,130,246,.22),rgba(251,113,133,.28));animation-delay:-4s}
+  .cust-edit-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:20px;align-items:start}
+  .cust-edit-card{border:1px solid rgba(19,48,74,.12);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74));box-shadow:0 26px 72px rgba(12,39,64,.14);backdrop-filter:blur(22px);padding:24px}
+  .cust-edit-room{overflow:hidden;padding:0}
+  .cust-edit-room img{width:100%;height:260px;object-fit:cover;display:block;background:#e0f2fe}
+  .cust-edit-room__body{padding:22px}
+  .cust-edit-chip{display:inline-flex;border-radius:999px;padding:6px 11px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .cust-edit-card h1,.cust-edit-card h2{margin:14px 0 10px;color:#102033;letter-spacing:-.05em}
+  .cust-edit-card h1{font-size:clamp(34px,5vw,58px);line-height:.95}
+  .cust-edit-card h2{font-size:26px}
+  .cust-edit-muted{color:#5f778f;line-height:1.65;font-size:14px}
+  .cust-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+  .cust-edit-field{display:grid;gap:7px}
+  .cust-edit-field label{font-size:12px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;color:#173651}
+  .cust-edit-field input,.cust-edit-field select{width:100%;min-height:48px;border-radius:16px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.92);color:#102033;padding:10px 14px;font:inherit;outline:none;box-shadow:0 10px 24px rgba(12,39,64,.06)}
+  .cust-edit-field input:focus,.cust-edit-field select:focus{border-color:rgba(14,165,233,.36);box-shadow:0 0 0 4px rgba(14,165,233,.10)}
+  .cust-edit-field input.is-invalid,.cust-edit-field select.is-invalid{border-color:rgba(239,71,111,.72);background:rgba(255,241,242,.94);box-shadow:0 0 0 4px rgba(239,71,111,.10)}
+  .cust-edit-error-msg{min-height:16px;color:#be123c;font-size:12px;font-weight:800;line-height:1.35}
+  .cust-edit-alert{border-radius:18px;padding:13px 15px;margin:16px 0;background:rgba(239,71,111,.10);border:1px solid rgba(239,71,111,.20);color:#be123c;font-weight:800}
+  .cust-edit-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .cust-edit-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 14px 32px rgba(12,39,64,.08)}
+  .cust-edit-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);box-shadow:0 18px 38px rgba(20,184,166,.18)}
+  .cust-edit-price{display:block;margin:12px 0;color:#0f766e;font-size:28px;font-weight:1000;letter-spacing:-.05em}
+  .cust-edit-note{display:grid;gap:10px;margin-top:16px}
+  .cust-edit-note div{border-radius:18px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.66);padding:13px;color:#5f778f;font-size:13px;line-height:1.5}
+  @keyframes cust-edit-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,22px,0) rotate(14deg)}}
+  @media(max-width:980px){.cust-edit-layout{grid-template-columns:1fr}.cust-edit-room{order:-1}}
+  @media(max-width:640px){.cust-edit-shell{padding:22px 12px 48px}.cust-edit-grid{grid-template-columns:1fr}.cust-edit-card{border-radius:26px;padding:20px}.cust-edit-room{padding:0}.cust-edit-room__body{padding:20px}}
+</style>
+
+<main class="cust-edit-shell">
+  <div class="cust-edit-layout">
+    <section class="cust-edit-card">
+      <span class="cust-edit-chip">Khách hàng · Sửa booking</span>
+      <h1>Cập nhật thông tin đặt phòng.</h1>
+      <p class="cust-edit-muted">Bạn có thể sửa thông tin liên hệ, số khách, ngày nhận/trả và khuyến mãi khi booking còn ở trạng thái giữ phòng. Nếu cần đổi phòng hoặc booking nhiều phòng, vui lòng liên hệ lễ tân.</p>
+      <% if (errorMessage) { %>
+        <div class="cust-edit-alert"><%= errorMessage %></div>
+      <% } %>
+      <form method="post" action="/customer/bookings/<%= booking.id %>/edit" id="customerBookingEditForm" novalidate>
+        <div class="cust-edit-grid">
+          <div class="cust-edit-field">
+            <label for="ten_khach">Họ tên *</label>
+            <input id="ten_khach" name="ten_khach" required value="<%= formValues.ten_khach %>" autocomplete="name" />
+            <div class="cust-edit-error-msg" id="err_ten_khach"></div>
+          </div>
+          <div class="cust-edit-field">
+            <label for="cccd">CCCD/CMND *</label>
+            <input id="cccd" name="cccd" required value="<%= formValues.cccd %>" inputmode="numeric" autocomplete="off" />
+            <div class="cust-edit-error-msg" id="err_cccd"></div>
+          </div>
+          <div class="cust-edit-field">
+            <label for="sdt">Số điện thoại *</label>
+            <input id="sdt" name="sdt" required value="<%= formValues.sdt %>" inputmode="tel" autocomplete="tel" />
+            <div class="cust-edit-error-msg" id="err_sdt"></div>
+          </div>
+          <div class="cust-edit-field">
+            <label for="email">Email *</label>
+            <input id="email" name="email" type="email" required value="<%= formValues.email %>" autocomplete="email" />
+            <div class="cust-edit-error-msg" id="err_email"></div>
+          </div>
+          <div class="cust-edit-field">
+            <label for="so_nguoi">Số khách *</label>
+            <input id="so_nguoi" name="so_nguoi" type="number" min="1" max="<%= room.soKhachToiDa %>" required value="<%= formValues.so_nguoi %>" />
+            <div class="cust-edit-error-msg" id="err_so_nguoi"></div>
+          </div>
+          <div class="cust-edit-field">
+            <label for="ma_km">Khuyến mãi</label>
+            <select id="ma_km" name="ma_km">
+              <option value="">Không áp dụng</option>
+              <% payload.promotions.forEach((promotion) => { %>
+                <option value="<%= promotion.id %>" <%= String(formValues.ma_km) === String(promotion.id) ? "selected" : "" %>>
+                  <%= promotion.tenChuongTrinh %> · <%= promotion.loaiUuDai === "PERCENT" ? `${promotion.mucUuDai}%` : `${Number(promotion.mucUuDai).toLocaleString("vi-VN")} đ` %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="cust-edit-field">
+            <label for="ngay_nhan">Ngày nhận *</label>
+            <input id="ngay_nhan" name="ngay_nhan" type="date" required value="<%= formValues.ngay_nhan %>" />
+            <div class="cust-edit-error-msg" id="err_ngay_nhan"></div>
+          </div>
+          <div class="cust-edit-field">
+            <label for="ngay_tra">Ngày trả *</label>
+            <input id="ngay_tra" name="ngay_tra" type="date" required value="<%= formValues.ngay_tra %>" />
+            <div class="cust-edit-error-msg" id="err_ngay_tra"></div>
+          </div>
+        </div>
+        <div class="cust-edit-actions">
+          <button class="cust-edit-button cust-edit-button--primary" type="submit">Lưu cập nhật</button>
+          <a class="cust-edit-button" href="/customer/bookings/<%= booking.id %>">Quay lại chi tiết</a>
+          <a class="cust-edit-button" href="/customer/bookings">Lịch sử booking</a>
+        </div>
+      </form>
+    </section>
+
+    <aside class="cust-edit-card cust-edit-room">
+      <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
+      <div class="cust-edit-room__body">
+        <span class="cust-edit-chip"><%= room.tinhThanh %> · <%= room.khachSan %></span>
+        <h2><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h2>
+        <p class="cust-edit-muted"><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View nội khu" %> · tối đa <%= room.soKhachToiDa %> khách.</p>
+        <strong class="cust-edit-price"><%= Number(room.gia).toLocaleString("vi-VN") %> đ / đêm</strong>
+        <div class="cust-edit-note">
+          <div>Mã booking: <strong><%= booking.bookingCode || `GD-${booking.id}` %></strong></div>
+          <div>Tổng hiện tại: <strong><%= booking.totalFormatted %></strong></div>
+          <div>Hệ thống sẽ kiểm tra trùng lịch lần nữa trước khi lưu.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("customerBookingEditForm");
+  if (!form) return;
+
+  const fields = {
+    ten_khach: document.getElementById("ten_khach"),
+    cccd: document.getElementById("cccd"),
+    sdt: document.getElementById("sdt"),
+    email: document.getElementById("email"),
+    so_nguoi: document.getElementById("so_nguoi"),
+    ngay_nhan: document.getElementById("ngay_nhan"),
+    ngay_tra: document.getElementById("ngay_tra")
+  };
+  const errors = {
+    ten_khach: document.getElementById("err_ten_khach"),
+    cccd: document.getElementById("err_cccd"),
+    sdt: document.getElementById("err_sdt"),
+    email: document.getElementById("err_email"),
+    so_nguoi: document.getElementById("err_so_nguoi"),
+    ngay_nhan: document.getElementById("err_ngay_nhan"),
+    ngay_tra: document.getElementById("err_ngay_tra")
+  };
+  const maxGuests = Number(fields.so_nguoi?.getAttribute("max") || "<%= room.soKhachToiDa %>" || 1);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayValue = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+
+  fields.ngay_nhan?.setAttribute("min", todayValue);
+  fields.ngay_tra?.setAttribute("min", todayValue);
+
+  function parseDate(value) {
+    if (!value) return null;
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function value(name) {
+    return String(fields[name]?.value || "").trim();
+  }
+
+  function setError(name, message) {
+    const field = fields[name];
+    const box = errors[name];
+    if (field) field.classList.add("is-invalid");
+    if (box) box.textContent = message;
+    return false;
+  }
+
+  function clearError(name) {
+    const field = fields[name];
+    const box = errors[name];
+    if (field) field.classList.remove("is-invalid");
+    if (box) box.textContent = "";
+  }
+
+  function validateField(name, showEmpty = false) {
+    clearError(name);
+    const current = value(name);
+
+    if (name === "ten_khach") {
+      if (!current) return showEmpty ? setError(name, "Vui lòng nhập họ tên.") : true;
+      if (current.length < 2) return setError(name, "Họ tên phải có ít nhất 2 ký tự.");
+      if (!/^[\p{L}\s'.-]+$/u.test(current)) return setError(name, "Họ tên không được chứa số hoặc ký tự lạ.");
+    }
+
+    if (name === "cccd") {
+      if (!current) return showEmpty ? setError(name, "Vui lòng nhập CCCD/CMND.") : true;
+      if (!/^\d+$/.test(current)) return setError(name, "CCCD/CMND chỉ được nhập số.");
+      if (!/^\d{9,12}$/.test(current)) return setError(name, "CCCD/CMND phải gồm 9-12 chữ số.");
+    }
+
+    if (name === "sdt") {
+      if (!current) return showEmpty ? setError(name, "Vui lòng nhập số điện thoại.") : true;
+      if (!/^\+?\d+$/.test(current)) return setError(name, "Số điện thoại chỉ được nhập số, hoặc +84 ở đầu.");
+      if (!/^(0|\+84)\d{8,10}$/.test(current)) return setError(name, "Số điện thoại không hợp lệ. Ví dụ: 0333204860 hoặc +84333204860.");
+    }
+
+    if (name === "email") {
+      if (!current) return showEmpty ? setError(name, "Vui lòng nhập email.") : true;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(current)) return setError(name, "Email không hợp lệ.");
+    }
+
+    if (name === "so_nguoi") {
+      const count = Number(current);
+      if (!current) return showEmpty ? setError(name, "Vui lòng nhập số khách.") : true;
+      if (!Number.isInteger(count) || count < 1) return setError(name, "Số khách phải là số nguyên từ 1 trở lên.");
+      if (count > maxGuests) return setError(name, `Phòng này tối đa ${maxGuests} khách.`);
+    }
+
+    if (name === "ngay_nhan") {
+      const checkin = parseDate(current);
+      if (!current) return showEmpty ? setError(name, "Vui lòng chọn ngày nhận phòng.") : true;
+      if (!checkin) return setError(name, "Ngày nhận phòng không hợp lệ.");
+      if (checkin < today) return setError(name, "Ngày nhận phòng phải từ hôm nay trở đi.");
+      validateField("ngay_tra", false);
+    }
+
+    if (name === "ngay_tra") {
+      const checkin = parseDate(value("ngay_nhan"));
+      const checkout = parseDate(current);
+      if (!current) return showEmpty ? setError(name, "Vui lòng chọn ngày trả phòng.") : true;
+      if (!checkout) return setError(name, "Ngày trả phòng không hợp lệ.");
+      if (checkout < today) return setError(name, "Ngày trả phòng không được nhỏ hơn hôm nay.");
+      if (checkin && checkout <= checkin) return setError(name, "Ngày trả phòng phải sau ngày nhận phòng.");
+    }
+
+    return true;
+  }
+
+  Object.keys(fields).forEach((name) => {
+    fields[name]?.addEventListener("input", () => validateField(name, false));
+    fields[name]?.addEventListener("change", () => validateField(name, false));
+    fields[name]?.addEventListener("blur", () => validateField(name, true));
+  });
+
+  form.addEventListener("submit", (event) => {
+    const ok = Object.keys(fields).every((name) => validateField(name, true));
+    if (!ok) {
+      event.preventDefault();
+      const firstInvalid = form.querySelector(".is-invalid");
+      firstInvalid?.focus();
+    }
+  });
+});
+</script>
+<%- include("../partials/footer") %>

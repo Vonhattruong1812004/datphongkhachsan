@@ -1,0 +1,451 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const data = typeof payload !== "undefined" ? payload : {};
+  const filters = data.filters || {};
+  const items = data.items || [];
+  const summary = data.summary || {};
+  const serviceTypes = data.serviceTypes || ["Lưu trú", "Nhà hàng", "SPA", "Giặt là", "Dịch vụ khác"];
+  const selected = detail && detail.detail ? detail.detail : null;
+  const replies = detail && detail.replies ? detail.replies : [];
+  const success = typeof successMessage !== "undefined" ? successMessage : "";
+  const error = typeof errorMessage !== "undefined" ? errorMessage : "";
+  const pageMode = typeof mode !== "undefined" && mode ? mode : "feedback";
+  const advisoryMode = pageMode === "advisory";
+  const currentUserName = (typeof currentUser !== "undefined" && currentUser ? (currentUser.displayName || currentUser.username) : "") || "CSKH";
+  const totalRows = Number(data.totalRows || 0);
+  const currentPage = Number(data.page || 1);
+  const totalPages = Number(data.totalPages || 1);
+  const avgRating = Number(summary.danh_gia_tb || 0);
+  const doneRate = Number(summary.tong || 0) ? Math.round(Number(summary.da_xu_ly || 0) * 100 / Number(summary.tong || 1)) : 0;
+  const filterKeys = ["keyword", "trang_thai", "danh_gia", "loai_dich_vu", "sentiment", "tu_ngay", "den_ngay", "page", "id"];
+  const statuses = [
+    { value: "all", label: "Tất cả" },
+    { value: "ChuaXuLy", label: "Chưa xử lý" },
+    { value: "DangXuLy", label: "Đang xử lý" },
+    { value: "DaXuLy", label: "Đã xử lý" }
+  ];
+  const ratings = [
+    { value: "all", label: "Tất cả" },
+    { value: "5", label: "5 sao" },
+    { value: "4plus", label: "Từ 4 sao" },
+    { value: "3minus", label: "Từ 3 sao trở xuống" },
+    { value: "4", label: "4 sao" },
+    { value: "3", label: "3 sao" },
+    { value: "2", label: "2 sao" },
+    { value: "1", label: "1 sao" }
+  ];
+  const sentiments = [
+    { value: "all", label: "Tất cả" },
+    { value: "Negative", label: "Tiêu cực" },
+    { value: "Neutral", label: "Trung lập" },
+    { value: "Positive", label: "Tích cực" }
+  ];
+  const statusOptions = statuses.filter((item) => item.value !== "all");
+  const baseManagePath = advisoryMode ? "/feedback/advisory/manage" : "/feedback/manage";
+
+  function numberText(value) {
+    return Number(value || 0).toLocaleString("vi-VN");
+  }
+
+  function selectedAttr(actual, expected) {
+    return String(actual || "all") === String(expected) ? "selected" : "";
+  }
+
+  function toneClass(tone) {
+    return `is-${tone || "neutral"}`;
+  }
+
+  function statusLabel(status) {
+    return ({ ChuaXuLy: "Chưa xử lý", DangXuLy: "Đang xử lý", DaXuLy: "Đã xử lý" }[status] || status || "Chưa xử lý");
+  }
+
+  function statusTone(status) {
+    return ({ ChuaXuLy: "pending", DangXuLy: "processing", DaXuLy: "done" }[status] || "pending");
+  }
+
+  function sentimentLabel(sentiment) {
+    return ({ Positive: "Tích cực", Neutral: "Trung lập", Negative: "Tiêu cực" }[sentiment] || "Trung lập");
+  }
+
+  function sentimentTone(sentiment) {
+    return ({ Positive: "positive", Neutral: "neutral", Negative: "negative" }[sentiment] || "neutral");
+  }
+
+  function buildQuery(extra) {
+    const merged = Object.assign({}, filters, { page: currentPage }, extra || {});
+    const params = [];
+    filterKeys.forEach(function (key) {
+      const value = merged[key];
+      if (value === undefined || value === null || value === "" || value === "all") return;
+      if (key === "page" && Number(value) <= 1) return;
+      params.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    });
+    return params.length ? `?${params.join("&")}` : "";
+  }
+
+  const activeId = selected ? selected.id : "";
+  const returnTo = `${baseManagePath}${buildQuery({ id: activeId })}`;
+%>
+
+<style>
+  body{background:radial-gradient(circle at 7% 8%,rgba(33,207,166,.30),transparent 30%),radial-gradient(circle at 84% 10%,rgba(255,111,163,.20),transparent 32%),radial-gradient(circle at 50% 104%,rgba(183,239,74,.22),transparent 38%),linear-gradient(135deg,#fbfffb 0%,#eafcff 42%,#fff7ed 100%);color:#112233}
+  .fb-ops{--ink:#112233;--muted:#667085;--line:rgba(17,34,51,.10);--card:rgba(255,255,255,.76);--card-strong:rgba(255,255,255,.92);--cyan:#18bff2;--mint:#21cfa6;--lime:#b7ef4a;--pink:#ff6fa3;--violet:#8b6bff;--yellow:#ffd166;--orange:#ff9f7a;--shadow:0 28px 86px rgba(18,38,63,.17);position:relative;isolation:isolate;overflow:hidden;max-width:1240px;margin:0 auto;padding:34px 18px 62px;color:var(--ink)}
+  .fb-ops::before,.fb-ops::after{content:"";position:absolute;pointer-events:none;z-index:-1;border-radius:999px;opacity:.42;animation:fb-float 14s ease-in-out infinite alternate}
+  .fb-ops::before{width:580px;height:580px;right:-210px;top:-260px;background:conic-gradient(from 160deg,rgba(24,191,242,.48),rgba(33,207,166,.34),rgba(183,239,74,.30),rgba(255,111,163,.24),rgba(24,191,242,.48))}
+  .fb-ops::after{width:500px;height:500px;left:-220px;bottom:-260px;background:conic-gradient(from 20deg,rgba(255,159,122,.32),rgba(255,209,102,.30),rgba(24,191,242,.26),rgba(139,107,255,.22),rgba(255,159,122,.32));animation-delay:-4s}
+  .fb-hero,.fb-panel,.fb-card,.fb-stat,.fb-detail,.fb-filter{border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);backdrop-filter:blur(26px)}
+  .fb-hero{position:relative;overflow:hidden;border-radius:38px;padding:34px;margin-bottom:18px;display:grid;grid-template-columns:minmax(0,1.04fr) 360px;gap:22px;align-items:stretch}
+  .fb-hero::before{content:"";position:absolute;inset:-1px;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.72),transparent 28%),radial-gradient(circle at 86% 18%,rgba(24,191,242,.24),transparent 30%),radial-gradient(circle at 16% 88%,rgba(183,239,74,.20),transparent 28%)}
+  .fb-hero-main,.fb-radar{position:relative;z-index:1}
+  .fb-kicker{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;border:1px solid rgba(33,207,166,.24);background:rgba(33,207,166,.12);color:#087763;font-size:12px;font-weight:1000;letter-spacing:.09em;text-transform:uppercase}
+  .fb-dot{width:8px;height:8px;border-radius:999px;background:var(--mint);box-shadow:0 0 0 7px rgba(33,207,166,.14);animation:fb-pulse 1.8s ease-in-out infinite}
+  .fb-hero h1{margin:25px 0 12px;color:var(--ink);font-size:clamp(40px,6vw,72px);line-height:.91;letter-spacing:-.075em}
+  .fb-hero h1 span{color:transparent;background:linear-gradient(96deg,#0891b2 0%,#10b981 43%,#f59e0b 72%,#ec4899 100%);-webkit-background-clip:text;background-clip:text}
+  .fb-lead{max-width:720px;margin:0;color:var(--muted);font-size:16px;line-height:1.72}
+  .fb-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .fb-button{display:inline-flex;align-items:center;justify-content:center;min-height:45px;border-radius:999px;padding:10px 18px;border:1px solid rgba(17,34,51,.12);background:rgba(255,255,255,.78);color:var(--ink);text-decoration:none;font-size:14px;font-weight:950;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .fb-button:hover{transform:translateY(-2px);border-color:rgba(24,191,242,.34);box-shadow:0 18px 44px rgba(24,191,242,.16)}
+  .fb-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#08a5c8,#21cfa6);box-shadow:0 18px 42px rgba(33,207,166,.24)}
+  .fb-button--danger{color:#fff;border-color:transparent;background:linear-gradient(135deg,#f43f5e,#ff9f7a)}
+  .fb-radar{min-height:270px;border-radius:32px;overflow:hidden;background:linear-gradient(145deg,rgba(14,38,58,.90),rgba(12,86,110,.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+  .fb-radar-ring{position:absolute;inset:36px;border-radius:999px;border:1px dashed rgba(255,255,255,.26);animation:fb-spin 22s linear infinite}
+  .fb-radar-core{position:absolute;left:50%;top:50%;width:138px;height:138px;border-radius:44px;transform:translate(-50%,-50%) rotate(14deg);background:linear-gradient(135deg,rgba(103,232,249,.96),rgba(183,239,74,.86));box-shadow:0 26px 76px rgba(33,207,166,.34);animation:fb-core 4.8s ease-in-out infinite}
+  .fb-radar-word{position:absolute;z-index:2;border-radius:999px;padding:8px 11px;color:#f8fbff;background:rgba(15,23,42,.46);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(16px);font-size:12px;font-weight:1000}
+  .fb-radar-word:nth-child(3){left:28px;top:34px;animation:fb-drift-a 5.5s ease-in-out infinite}
+  .fb-radar-word:nth-child(4){right:28px;top:82px;animation:fb-drift-b 6.2s ease-in-out infinite}
+  .fb-radar-word:nth-child(5){left:38px;bottom:62px;animation:fb-drift-b 5.8s ease-in-out infinite reverse}
+  .fb-radar-word:nth-child(6){right:32px;bottom:38px;animation:fb-drift-a 6.5s ease-in-out infinite reverse}
+  .fb-alert{border-radius:22px;padding:14px 16px;margin:0 0 16px;border:1px solid rgba(18,48,71,.10);font-weight:850}
+  .fb-alert--success{background:rgba(16,185,129,.13);color:#047857;border-color:rgba(16,185,129,.22)}
+  .fb-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.24)}
+  .fb-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:18px 0}
+  .fb-stat{border-radius:25px;padding:17px;background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.66));position:relative;overflow:hidden}
+  .fb-stat::after{content:"";position:absolute;right:-34px;top:-40px;width:112px;height:112px;border-radius:999px;background:radial-gradient(circle,var(--accent,rgba(24,191,242,.18)),transparent 68%)}
+  .fb-stat span{display:block;color:var(--muted);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.07em}
+  .fb-stat strong{display:block;margin-top:8px;color:var(--ink);font-size:30px;letter-spacing:-.055em;line-height:1}
+  .fb-stat small{display:block;margin-top:8px;color:var(--muted);font-size:12px;font-weight:800}
+  .fb-stat.is-red{--accent:rgba(244,63,94,.25)}.fb-stat.is-blue{--accent:rgba(24,191,242,.25)}.fb-stat.is-green{--accent:rgba(33,207,166,.25)}.fb-stat.is-yellow{--accent:rgba(255,209,102,.32)}.fb-stat.is-violet{--accent:rgba(139,107,255,.22)}
+  .fb-filter{border-radius:30px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.70));margin-bottom:18px}
+  .fb-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px}
+  .fb-section-head h2{margin:0;color:var(--ink);font-size:26px;letter-spacing:-.05em}
+  .fb-section-head p{margin:5px 0 0;color:var(--muted);font-size:13px;line-height:1.55}
+  .fb-filter-grid{display:grid;grid-template-columns:1.4fr repeat(3,minmax(130px,1fr));gap:12px}
+  .fb-field{display:grid;gap:7px}
+  .fb-field label{font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em;color:#173651}
+  .fb-field input,.fb-field select,.fb-field textarea{width:100%;border-radius:18px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);color:var(--ink);padding:12px 13px;font:inherit;outline:none;box-sizing:border-box}
+  .fb-field input,.fb-field select{min-height:49px}
+  .fb-field textarea{min-height:128px;resize:vertical;line-height:1.55}
+  .fb-field input:focus,.fb-field select:focus,.fb-field textarea:focus{border-color:rgba(24,191,242,.48);box-shadow:0 0 0 4px rgba(24,191,242,.12)}
+  .fb-layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:start}
+  .fb-panel,.fb-detail{border-radius:32px;padding:24px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.70))}
+  .fb-list{display:grid;gap:12px}
+  .fb-card{display:block;border-radius:26px;padding:18px;background:rgba(255,255,255,.66);text-decoration:none;color:var(--ink);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .fb-card:hover,.fb-card.is-active{transform:translateY(-3px);border-color:rgba(24,191,242,.32);box-shadow:0 26px 62px rgba(18,38,63,.18)}
+  .fb-card.is-active{background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(236,253,245,.70))}
+  .fb-card-head,.fb-detail-head,.fb-reply-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .fb-card h3,.fb-detail h2{margin:0;color:var(--ink);letter-spacing:-.045em}
+  .fb-card h3{font-size:20px}.fb-detail h2{font-size:28px}
+  .fb-muted{color:var(--muted);font-size:14px;line-height:1.66}
+  .fb-content{white-space:pre-line;color:#334155;line-height:1.62;margin:12px 0 0}
+  .fb-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .fb-badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:1000;letter-spacing:.04em;background:rgba(148,163,184,.12);color:#475569;border:1px solid rgba(17,34,51,.06)}
+  .fb-badge.is-done{background:rgba(34,197,94,.12);color:#047857;border-color:rgba(34,197,94,.16)}
+  .fb-badge.is-processing{background:rgba(24,191,242,.13);color:#0369a1;border-color:rgba(24,191,242,.18)}
+  .fb-badge.is-pending{background:rgba(245,158,11,.13);color:#b45309;border-color:rgba(245,158,11,.18)}
+  .fb-badge.is-positive{background:rgba(34,197,94,.12);color:#047857;border-color:rgba(34,197,94,.16)}
+  .fb-badge.is-neutral{background:rgba(148,163,184,.13);color:#475569;border-color:rgba(148,163,184,.16)}
+  .fb-badge.is-negative{background:rgba(244,63,94,.13);color:#be123c;border-color:rgba(244,63,94,.18)}
+  .fb-stars{color:#f59e0b;font-size:13px;letter-spacing:.06em;font-weight:1000;white-space:nowrap}
+  .fb-reply-preview,.fb-reply-item,.fb-empty,.fb-priority{border-radius:22px;padding:14px;background:rgba(255,255,255,.62);border:1px solid rgba(17,34,51,.08)}
+  .fb-reply-preview{margin-top:12px;background:rgba(33,207,166,.10);border-color:rgba(33,207,166,.16)}
+  .fb-detail-block{border-radius:24px;padding:16px;margin-top:14px;background:rgba(255,255,255,.60);border:1px solid rgba(17,34,51,.08)}
+  .fb-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+  .fb-info{border-radius:18px;padding:12px;background:rgba(255,255,255,.62);border:1px solid rgba(17,34,51,.07)}
+  .fb-info span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:950}
+  .fb-info strong{display:block;margin-top:4px;color:var(--ink);font-size:14px;word-break:break-word}
+  .fb-attachment{display:block;margin-top:12px;border-radius:20px;overflow:hidden;border:1px solid rgba(17,34,51,.10);background:rgba(255,255,255,.68)}
+  .fb-attachment img{display:block;width:100%;max-height:260px;object-fit:cover}
+  .fb-form-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .fb-thread{display:grid;gap:10px;margin-top:12px}
+  .fb-reply-item{background:rgba(255,255,255,.70)}
+  .fb-empty{text-align:center;color:var(--muted);font-weight:850;border-style:dashed}
+  .fb-priority{margin-top:12px;background:rgba(244,63,94,.10);border-color:rgba(244,63,94,.16);color:#9f1239;font-weight:850;line-height:1.55}
+  .fb-pages{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:18px}
+  .fb-page{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid rgba(17,34,51,.09);color:var(--ink);text-decoration:none;font-weight:950}
+  .fb-page.is-active{color:#fff;background:linear-gradient(135deg,#08a5c8,#21cfa6);border-color:transparent}
+  @keyframes fb-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
+  @keyframes fb-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
+  @keyframes fb-spin{to{transform:rotate(360deg)}}
+  @keyframes fb-core{0%,100%{transform:translate(-50%,-50%) rotate(14deg) scale(1);border-radius:44px}50%{transform:translate(-50%,-50%) rotate(24deg) scale(1.07);border-radius:70px}}
+  @keyframes fb-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}
+  @keyframes fb-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
+  @media(max-width:1080px){.fb-hero,.fb-layout{grid-template-columns:1fr}.fb-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fb-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fb-radar{min-height:250px}}
+  @media(max-width:680px){.fb-ops{padding:22px 12px 48px}.fb-hero,.fb-panel,.fb-detail,.fb-filter{border-radius:26px;padding:20px}.fb-hero h1{font-size:44px}.fb-stats,.fb-filter-grid,.fb-detail-grid{grid-template-columns:1fr}.fb-section-head,.fb-card-head,.fb-detail-head{display:block}.fb-button{width:100%}}
+  @media(prefers-reduced-motion:reduce){.fb-ops::before,.fb-ops::after,.fb-dot,.fb-radar-ring,.fb-radar-core,.fb-radar-word{animation:none}}
+</style>
+
+<main class="fb-ops">
+  <section class="fb-hero" aria-label="Quản lý phản hồi khách hàng">
+    <div class="fb-hero-main">
+      <span class="fb-kicker"><span class="fb-dot"></span> <%= advisoryMode ? "UC · Trả lời tư vấn" : "UC · Quản lý phản hồi" %></span>
+      <h1><%= advisoryMode ? "Inbox tư vấn CSKH <span>trả lời nhanh, bám đúng ngữ cảnh.</span>" : "Trung tâm CSKH <span>đọc đúng, xử lý gọn.</span>" %></h1>
+      <p class="fb-lead">
+        <%= advisoryMode
+          ? "Màn này gom riêng các câu hỏi tư vấn và hỏi đáp từ khách hàng: xem nội dung, booking context, phản hồi lại từng case và theo dõi follow-up trong một luồng riêng."
+          : "Màn này gom đúng nghiệp vụ từ hệ thống cũ: lọc phản hồi, xem đánh giá/sentiment, cập nhật trạng thái, trả lời khách và lưu lịch sử xử lý trong một luồng." %>
+      </p>
+      <div class="fb-actions">
+        <a class="fb-button fb-button--primary" href="#feedbackQueue"><%= advisoryMode ? "Xử lý tư vấn" : "Xử lý phản hồi" %></a>
+        <a class="fb-button" href="/dashboard/cskh">Dashboard CSKH</a>
+        <a class="fb-button" href="<%= advisoryMode ? "/feedback/manage" : "/feedback/advisory/manage" %>"><%= advisoryMode ? "Xem phản hồi thường" : "Xem inbox tư vấn" %></a>
+      </div>
+    </div>
+    <aside class="fb-radar" aria-label="Minh họa vận hành phản hồi">
+      <div class="fb-radar-ring"></div>
+      <div class="fb-radar-core"></div>
+      <span class="fb-radar-word"><%= advisoryMode ? "Câu hỏi" : "Sentiment" %></span>
+      <span class="fb-radar-word"><%= advisoryMode ? "Booking context" : "Rating 1-5" %></span>
+      <span class="fb-radar-word">Trả lời</span>
+      <span class="fb-radar-word">Đóng xử lý</span>
+    </aside>
+  </section>
+
+  <% if (success) { %><div class="fb-alert fb-alert--success"><%= success %></div><% } %>
+  <% if (error) { %><div class="fb-alert fb-alert--error"><%= error %></div><% } %>
+
+  <section class="fb-stats" aria-label="Tổng quan phản hồi">
+    <article class="fb-stat is-blue"><span><%= advisoryMode ? "Tổng câu hỏi" : "Tổng phản hồi" %></span><strong><%= numberText(summary.tong) %></strong><small>Theo bộ lọc hiện tại</small></article>
+    <article class="fb-stat is-red"><span>Chưa xử lý</span><strong><%= numberText(summary.chua_xu_ly) %></strong><small>Cần ưu tiên tiếp nhận</small></article>
+    <article class="fb-stat is-yellow"><span>Đang xử lý</span><strong><%= numberText(summary.dang_xu_ly) %></strong><small>Đã nhận, chưa đóng</small></article>
+    <article class="fb-stat is-green"><span>Đã xử lý</span><strong><%= numberText(summary.da_xu_ly) %></strong><small><%= doneRate %>% hoàn tất</small></article>
+    <article class="fb-stat is-violet"><span>Đánh giá TB</span><strong><%= avgRating ? avgRating.toFixed(1) : "0.0" %>/5</strong><small><%= numberText(summary.tieu_cuc) %> phản hồi tiêu cực</small></article>
+  </section>
+
+  <section class="fb-filter" aria-label="Bộ lọc phản hồi">
+    <div class="fb-section-head">
+      <div>
+        <h2>Bộ lọc nghiệp vụ</h2>
+        <p><%= advisoryMode ? "Tìm nhanh theo khách hàng, nội dung câu hỏi, trạng thái, sentiment và khoảng ngày. Loại dịch vụ được khóa ở Tư vấn." : "Tìm nhanh theo khách hàng, nội dung, trạng thái, rating, dịch vụ, cảm xúc và khoảng ngày." %></p>
+      </div>
+      <a class="fb-button" href="<%= baseManagePath %>">Xóa lọc</a>
+    </div>
+    <form method="get" action="<%= baseManagePath %>">
+      <div class="fb-filter-grid">
+        <div class="fb-field">
+          <label>Từ khóa</label>
+          <input name="keyword" value="<%= filters.keyword || "" %>" placeholder="Tên, email, SĐT, nội dung..." />
+        </div>
+        <div class="fb-field">
+          <label>Trạng thái</label>
+          <select name="trang_thai">
+            <% statuses.forEach(function (item) { %>
+              <option value="<%= item.value %>" <%= selectedAttr(filters.trang_thai, item.value) %>><%= item.label %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="fb-field">
+          <label>Đánh giá</label>
+          <select name="danh_gia">
+            <% ratings.forEach(function (item) { %>
+              <option value="<%= item.value %>" <%= selectedAttr(filters.danh_gia, item.value) %>><%= item.label %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="fb-field">
+          <label>Cảm xúc</label>
+          <select name="sentiment">
+            <% sentiments.forEach(function (item) { %>
+              <option value="<%= item.value %>" <%= selectedAttr(filters.sentiment, item.value) %>><%= item.label %></option>
+            <% }) %>
+          </select>
+        </div>
+        <% if (advisoryMode) { %>
+          <input type="hidden" name="loai_dich_vu" value="Tư vấn" />
+          <div class="fb-field">
+            <label>Loại dịch vụ</label>
+            <input value="Tư vấn / hỏi đáp" disabled />
+          </div>
+        <% } else { %>
+          <div class="fb-field">
+            <label>Loại dịch vụ</label>
+            <select name="loai_dich_vu">
+              <option value="all" <%= selectedAttr(filters.loai_dich_vu, "all") %>>Tất cả</option>
+              <% serviceTypes.forEach(function (type) { %>
+                <option value="<%= type %>" <%= selectedAttr(filters.loai_dich_vu, type) %>><%= type %></option>
+              <% }) %>
+            </select>
+          </div>
+        <% } %>
+        <div class="fb-field">
+          <label>Từ ngày</label>
+          <input type="date" name="tu_ngay" value="<%= filters.tu_ngay || "" %>" />
+        </div>
+        <div class="fb-field">
+          <label>Đến ngày</label>
+          <input type="date" name="den_ngay" value="<%= filters.den_ngay || "" %>" />
+        </div>
+        <div class="fb-field">
+          <label>&nbsp;</label>
+          <button class="fb-button fb-button--primary" type="submit">Lọc phản hồi</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="fb-layout" id="feedbackQueue">
+    <section class="fb-panel" aria-label="Danh sách phản hồi">
+      <div class="fb-section-head">
+        <div>
+          <h2><%= advisoryMode ? "Hàng đợi tư vấn" : "Hàng đợi phản hồi" %></h2>
+          <p><%= numberText(totalRows) %> <%= advisoryMode ? "câu hỏi" : "phản hồi" %> phù hợp. Chọn một mục để xem chi tiết, đổi trạng thái hoặc trả lời.</p>
+        </div>
+        <span class="fb-badge is-negative"><%= numberText(summary.tieu_cuc) %> tiêu cực</span>
+      </div>
+
+      <div class="fb-list">
+        <% if (items.length === 0) { %>
+          <div class="fb-empty">Không có <%= advisoryMode ? "yêu cầu tư vấn" : "phản hồi" %> phù hợp với bộ lọc hiện tại.</div>
+        <% } %>
+        <% items.forEach(function (item) { %>
+          <a class="fb-card <%= selected && Number(selected.id) === Number(item.id) ? "is-active" : "" %>" href="<%= baseManagePath %><%= buildQuery({ id: item.id }) %>">
+            <div class="fb-card-head">
+              <div>
+                <h3><%= item.tenKh || "Khách chưa xác định" %></h3>
+                <div class="fb-muted"><%= item.loaiDichVu || "Dịch vụ" %> · #<%= item.id %> · <%= item.ngayTaoLabel || "" %></div>
+              </div>
+              <div class="fb-stars"><%= item.stars || "" %></div>
+            </div>
+            <div class="fb-meta">
+              <span class="fb-badge <%= toneClass(item.statusTone || statusTone(item.trangThai)) %>"><%= item.statusLabel || statusLabel(item.trangThai) %></span>
+              <span class="fb-badge <%= toneClass(item.sentimentTone || sentimentTone(item.sentiment)) %>"><%= item.sentimentLabel || sentimentLabel(item.sentiment) %></span>
+              <% if (item.sdt) { %><span class="fb-badge"><%= item.sdt %></span><% } %>
+              <% if (item.attachmentUrl) { %><span class="fb-badge">Có ảnh</span><% } %>
+            </div>
+            <p class="fb-content"><%= item.noiDung || "" %></p>
+            <% if (item.noiDungTraLoiMoiNhat) { %>
+              <div class="fb-reply-preview">
+                <strong>Trả lời gần nhất</strong>
+                <p class="fb-muted" style="margin:6px 0 0;"><%= item.noiDungTraLoiMoiNhat %></p>
+                <div class="fb-muted" style="font-size:12px;"><%= item.nguoiTraLoiMoiNhat || "Nhân viên CSKH" %> · <%= item.ngayTraLoiMoiNhatLabel || "" %></div>
+              </div>
+            <% } %>
+          </a>
+        <% }) %>
+      </div>
+
+      <% if (totalPages > 1) { %>
+        <nav class="fb-pages" aria-label="Phân trang phản hồi">
+          <% for (let pageNo = 1; pageNo <= totalPages; pageNo++) { %>
+            <a class="fb-page <%= pageNo === currentPage ? "is-active" : "" %>" href="<%= baseManagePath %><%= buildQuery({ page: pageNo, id: "" }) %>"><%= pageNo %></a>
+          <% } %>
+        </nav>
+      <% } %>
+    </section>
+
+    <aside class="fb-detail" aria-label="Chi tiết phản hồi">
+      <% if (!selected) { %>
+        <div class="fb-empty">Chọn một <%= advisoryMode ? "yêu cầu tư vấn" : "phản hồi" %> ở hàng đợi để xem chi tiết xử lý.</div>
+      <% } else { %>
+        <div class="fb-detail-head">
+          <div>
+            <h2>#<%= selected.id %> · <%= selected.tenKh || "Khách hàng" %></h2>
+            <p class="fb-muted" style="margin:7px 0 0;"><%= selected.loaiDichVu || "Dịch vụ" %> · <%= selected.ngayTaoLabel || "" %></p>
+          </div>
+          <div class="fb-stars"><%= selected.stars || "" %></div>
+        </div>
+
+        <div class="fb-meta">
+          <span class="fb-badge <%= toneClass(selected.statusTone || statusTone(selected.trangThai)) %>"><%= selected.statusLabel || statusLabel(selected.trangThai) %></span>
+          <span class="fb-badge <%= toneClass(selected.sentimentTone || sentimentTone(selected.sentiment)) %>"><%= selected.sentimentLabel || sentimentLabel(selected.sentiment) %></span>
+          <span class="fb-badge">Điểm cảm xúc: <%= selected.diemCamXuc ?? 0 %></span>
+        </div>
+
+        <% if ((selected.sentiment || "Neutral") === "Negative" || selected.trangThai === "ChuaXuLy") { %>
+          <div class="fb-priority">Ưu tiên xử lý: <%= advisoryMode ? "câu hỏi này" : "phản hồi này" %> đang có tín hiệu cần CSKH theo sát, nên trả lời rõ hướng xử lý hoặc chuyển trạng thái phù hợp.</div>
+        <% } %>
+
+        <div class="fb-detail-grid">
+          <div class="fb-info"><span>Email</span><strong><%= selected.email || "Chưa có" %></strong></div>
+          <div class="fb-info"><span>Số điện thoại</span><strong><%= selected.sdt || "Chưa có" %></strong></div>
+          <div class="fb-info"><span>CCCD</span><strong><%= selected.cccd || "Chưa có" %></strong></div>
+          <div class="fb-info"><span>Nhân viên</span><strong><%= currentUserName %></strong></div>
+        </div>
+
+        <div class="fb-detail-block">
+          <strong><%= advisoryMode ? "Nội dung khách đang hỏi" : "Nội dung khách gửi" %></strong>
+          <p class="fb-content"><%= selected.noiDung || "" %></p>
+          <% if (selected.attachmentUrl) { %>
+            <a class="fb-attachment" href="<%= selected.attachmentUrl %>" target="_blank" rel="noopener">
+              <img src="<%= selected.attachmentUrl %>" alt="Ảnh đính kèm phản hồi #<%= selected.id %>" />
+            </a>
+          <% } %>
+        </div>
+
+        <div class="fb-detail-block">
+          <strong>Cập nhật trạng thái nhanh</strong>
+          <form method="post" action="/feedback/<%= selected.id %>/status">
+            <input type="hidden" name="return_to" value="<%= returnTo %>" />
+            <div class="fb-field" style="margin-top:10px;">
+              <label>Trạng thái mới</label>
+              <select name="status">
+                <% statusOptions.forEach(function (item) { %>
+                  <option value="<%= item.value %>" <%= selectedAttr(selected.trangThai, item.value) %>><%= item.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="fb-form-actions">
+              <button class="fb-button" type="submit">Lưu trạng thái</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="fb-detail-block">
+          <strong><%= advisoryMode ? "Trả lời tư vấn" : "Trả lời khách hàng" %></strong>
+          <p class="fb-muted" style="margin:6px 0 0;"><%= advisoryMode ? "Mỗi lần gửi trả lời sẽ lưu thành một mốc hội thoại của case tư vấn. Bạn có thể để trạng thái Đang xử lý nếu còn cần follow-up." : "Theo nghiệp vụ cũ, gửi trả lời sẽ lưu lịch sử vào chi tiết phản hồi. Mặc định đóng trạng thái là đã xử lý." %></p>
+          <form method="post" action="/feedback/<%= selected.id %>/reply">
+            <input type="hidden" name="return_to" value="<%= returnTo %>" />
+            <div class="fb-field" style="margin-top:10px;">
+              <label>Sau khi trả lời</label>
+              <select name="status">
+                <% statusOptions.forEach(function (item) { %>
+                  <option value="<%= item.value %>" <%= selectedAttr(item.value, "DaXuLy") %>><%= item.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="fb-field" style="margin-top:10px;">
+              <label>Nội dung trả lời</label>
+              <textarea name="reply" required minlength="2" placeholder="Nhập nội dung trả lời rõ hướng xử lý, xin lỗi/cảm ơn nếu cần và cam kết bước tiếp theo..."></textarea>
+            </div>
+            <div class="fb-form-actions">
+              <button class="fb-button fb-button--primary" type="submit">Gửi trả lời</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="fb-detail-block">
+          <div class="fb-reply-head">
+            <strong>Lịch sử trả lời</strong>
+            <span class="fb-badge"><%= replies.length %> mục</span>
+          </div>
+          <div class="fb-thread">
+            <% if (replies.length === 0) { %>
+                  <div class="fb-empty">Chưa có trả lời nào. Đây là <%= advisoryMode ? "câu hỏi" : "phản hồi" %> cần CSKH tiếp nhận đầu tiên.</div>
+            <% } %>
+            <% replies.forEach(function (reply) { %>
+              <article class="fb-reply-item">
+                <div class="fb-reply-head">
+                  <strong><%= reply.tennv || "Nhân viên CSKH" %></strong>
+                  <span class="fb-muted" style="font-size:12px;"><%= reply.ngayTraLoiLabel || reply.ngaytraloi || "" %></span>
+                </div>
+                <p class="fb-content"><%= reply.noidungtraloi || "" %></p>
+              </article>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+    </aside>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

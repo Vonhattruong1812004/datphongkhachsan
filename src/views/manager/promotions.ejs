@@ -1,0 +1,450 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const promotions = payload.promotions || [];
+  const stats = payload.stats || {};
+  const noticeState = notice || {};
+  const draftData = (typeof promotionDraft !== "undefined" && promotionDraft) ? promotionDraft : {};
+  const editPromotionId = Number(draftData.promotion_id || payload.editPromotionId || 0);
+  const editingPromotion = editPromotionId ? promotions.find((item) => Number(item.id) === editPromotionId) : null;
+  const promotionForm = {
+    promotion_id: draftData.promotion_id || editingPromotion?.id || "",
+    ten_chuong_trinh: draftData.ten_chuong_trinh || editingPromotion?.tenChuongTrinh || "",
+    ngay_bat_dau: draftData.ngay_bat_dau || editingPromotion?.startDate || "",
+    ngay_ket_thuc: draftData.ngay_ket_thuc || editingPromotion?.endDate || "",
+    muc_uu_dai: draftData.muc_uu_dai || editingPromotion?.mucUuDai || "",
+    doi_tuong: draftData.doi_tuong || editingPromotion?.doiTuong || "TatCa",
+    trang_thai: draftData.trang_thai || editingPromotion?.trangThai || "DangApDung",
+    loai_uu_dai: draftData.loai_uu_dai || editingPromotion?.loaiUuDai || "PERCENT"
+  };
+  const statusLabel = (status) => ({
+    DangApDung: "Đang áp dụng",
+    TamNgung: "Tạm ngưng",
+    HetHan: "Hết hạn"
+  }[status] || status || "Không rõ");
+  const typeLabel = (type) => type === "PERCENT" ? "Phần trăm" : "Số tiền cố định";
+  const timelineLabel = (item) => item.isExpiredByDate ? "Đã quá hạn theo ngày" : (item.isUpcoming ? "Sắp bắt đầu" : (item.isActiveWindow ? "Đang nằm trong thời gian áp dụng" : "Ngoài khung ngày"));
+  const attentionPromotions = promotions.filter((item) => item.trangThai !== "DangApDung" || item.isExpiredByDate || item.totalUsageCount > 0).slice(0, 6);
+%>
+
+<style>
+  .promo-home {
+    --promo-ink: #172033;
+    --promo-muted: #667085;
+    --promo-line: rgba(23, 32, 51, .10);
+    --promo-card: rgba(255, 255, 255, .88);
+    --promo-cyan: #00a6d6;
+    --promo-mint: #19b879;
+    --promo-sun: #f5b700;
+    --promo-coral: #ff6b6b;
+    --promo-berry: #d946ef;
+    --promo-shadow: 0 18px 44px rgba(23, 32, 51, .09);
+    --promo-shadow-pop: 0 24px 56px rgba(0, 166, 214, .16);
+    min-height: calc(100vh - 84px);
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    padding: 24px 18px 54px;
+    color: var(--promo-ink);
+    background:
+      linear-gradient(118deg, transparent 0 58%, rgba(217, 70, 239, .08) 58% 68%, transparent 68%),
+      linear-gradient(64deg, transparent 0 18%, rgba(245, 183, 0, .10) 18% 27%, transparent 27%),
+      linear-gradient(135deg, rgba(255, 107, 107, .10), transparent 32%),
+      linear-gradient(225deg, rgba(0, 166, 214, .12), transparent 38%),
+      repeating-linear-gradient(90deg, rgba(23, 32, 51, .035) 0 1px, transparent 1px 44px),
+      linear-gradient(180deg, #fffefa 0%, #f5fcff 48%, #fff8fb 100%);
+  }
+  .promo-home::before,
+  .promo-home::after { content:""; position:absolute; pointer-events:none; z-index:-1; }
+  .promo-home::before {
+    inset:0 0 auto;
+    height:9px;
+    background:linear-gradient(90deg,var(--promo-coral),var(--promo-sun),var(--promo-mint),var(--promo-cyan),var(--promo-berry));
+  }
+  .promo-home::after {
+    inset:auto 18px 18px;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(23,32,51,.18),transparent);
+  }
+  .promo-shell{max-width:1540px;margin:0 auto;position:relative}
+  .promo-panel,.promo-hero-main,.promo-table-panel{border:1px solid var(--promo-line);background:var(--promo-card);box-shadow:var(--promo-shadow)}
+  .promo-hero{margin:12px 0 16px}
+  .promo-hero-main{position:relative;overflow:hidden;border-radius:8px;padding:26px 28px;color:#fff;background:#14243d;box-shadow:var(--promo-shadow-pop)}
+  .promo-hero-main::before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(255,107,107,.90),rgba(245,183,0,.82),rgba(25,184,121,.72),rgba(0,166,214,.72),rgba(217,70,239,.66)),#14243d;opacity:.94}
+  .promo-hero-main::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,36,61,.88),rgba(20,36,61,.50) 46%,rgba(20,36,61,.12)),repeating-linear-gradient(135deg,rgba(255,255,255,.18) 0 1px,transparent 1px 16px)}
+  .promo-hero-content{position:relative;z-index:1;max-width:850px}
+  .promo-chip{display:inline-flex;align-items:center;gap:8px;border-radius:8px;padding:7px 10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;text-transform:uppercase}
+  .promo-dot{width:8px;height:8px;border-radius:2px;background:#67e8f9;box-shadow:0 0 0 4px rgba(103,232,249,.18)}
+  .promo-hero h1{margin:22px 0 10px;color:#fff;font-size:54px;line-height:1;letter-spacing:0}
+  .promo-hero h1 span{color:#fff2a8}
+  .promo-lead{max-width:760px;margin:0;color:rgba(255,255,255,.82);font-size:16px;line-height:1.65}
+  .promo-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
+  .promo-button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;border-radius:8px;padding:9px 14px;border:1px solid rgba(23,32,51,.12);background:#fff;color:var(--promo-ink);text-decoration:none;font-size:14px;font-weight:850;cursor:pointer;transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease}
+  .promo-button:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(23,32,51,.10);border-color:rgba(0,166,214,.32)}
+  .promo-button:disabled{cursor:not-allowed;opacity:.62;transform:none;box-shadow:none}
+  .promo-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#00a6d6,#19b879);box-shadow:0 14px 28px rgba(0,166,214,.18)}
+  .promo-button--danger{color:#b42318;border-color:rgba(255,107,107,.28);background:#fff7f7}
+  .promo-hero-main .promo-button{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.94)}
+  .promo-hero-main .promo-button--primary{background:#fff;color:#075985;box-shadow:0 16px 34px rgba(5,16,31,.24)}
+  .promo-hero-mark{position:absolute;z-index:1;right:28px;bottom:24px;width:min(290px,28vw);display:grid;gap:8px}
+  .promo-mark-line{height:12px;border-radius:8px;background:rgba(255,255,255,.22);overflow:hidden}
+  .promo-mark-line span{display:block;height:100%;border-radius:inherit;background:#fff}
+  .promo-mark-line:nth-child(1) span{width:84%;background:#67e8f9}
+  .promo-mark-line:nth-child(2) span{width:60%;background:#fff2a8}
+  .promo-mark-line:nth-child(3) span{width:76%;background:#bbf7d0}
+  .promo-mark-line:nth-child(4) span{width:56%;background:#fecdd3}
+  .promo-alert{margin:0 0 12px;border-radius:8px;padding:12px 14px;border:1px solid rgba(23,32,51,.10);font-size:14px;font-weight:800;line-height:1.5}
+  .promo-alert--error{color:#b42318;background:#fff4f4;border-color:rgba(255,107,107,.30)}
+  .promo-alert--success{color:#047857;background:#effcf6;border-color:rgba(25,184,121,.28)}
+  .promo-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .promo-stat{border-radius:8px;padding:16px;background:rgba(255,255,255,.86);border:1px solid rgba(23,32,51,.10);box-shadow:var(--promo-shadow)}
+  .promo-stat strong{display:block;font-size:30px;line-height:1}
+  .promo-stat span{display:block;margin-top:8px;color:var(--promo-muted);font-size:12px;font-weight:850;text-transform:uppercase}
+  .promo-layout{display:grid;grid-template-columns:minmax(0,1.42fr) 300px;gap:16px;align-items:start}
+  .promo-panel,.promo-table-panel{border-radius:8px;padding:18px}
+  .promo-panel h2,.promo-table-panel h2{margin:0;font-size:23px}
+  .promo-muted{color:var(--promo-muted);font-size:13px;line-height:1.55}
+  .promo-field-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+  .promo-field{display:grid;gap:7px}
+  .promo-field.is-wide{grid-column:1 / -1}
+  .promo-field label{color:#405066;font-size:12px;font-weight:850;text-transform:uppercase}
+  .promo-field input,.promo-field select,.promo-field textarea{width:100%;min-height:42px;border-radius:8px;border:1px solid rgba(23,32,51,.12);background:#fff;color:var(--promo-ink);padding:10px 12px;outline:none;font:inherit}
+  .promo-field textarea{min-height:84px;resize:vertical}
+  .promo-field input:focus,.promo-field select:focus,.promo-field textarea:focus{border-color:rgba(0,166,214,.55);box-shadow:0 0 0 4px rgba(0,166,214,.12)}
+  .promo-form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .promo-filter-grid{display:grid;grid-template-columns:1.55fr repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+  .promo-live-pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;border-radius:8px;padding:7px 10px;color:#087894;background:#effbff;border:1px solid rgba(0,166,214,.22);font-size:12px;font-weight:850}
+  .promo-live-pill::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--promo-mint)}
+  .promo-table-panel{position:relative;overflow:hidden}
+  .promo-table-panel::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--promo-cyan),var(--promo-mint),var(--promo-sun),var(--promo-coral))}
+  .promo-table-wrap{overflow:auto;margin-top:14px;border-radius:8px;border:1px solid rgba(23,32,51,.10);background:#fff}
+  .promo-table{width:100%;min-width:980px;border-collapse:collapse;table-layout:fixed}
+  .promo-table th{position:sticky;top:0;z-index:1;padding:12px;color:#405066;font-size:12px;text-align:left;text-transform:uppercase;background:#f4fbff;border-bottom:1px solid rgba(23,32,51,.08)}
+  .promo-table td{padding:12px;border-top:1px solid rgba(23,32,51,.07);vertical-align:top;word-break:break-word}
+  .promo-table tbody tr:hover{background:#fffdf2;box-shadow:inset 5px 0 0 var(--promo-coral)}
+  .promo-code{display:grid;gap:4px;min-width:0}
+  .promo-code strong{font-size:17px}
+  .promo-code span{color:var(--promo-muted);font-size:12px}
+  .promo-status{display:inline-flex;align-items:center;border-radius:8px;padding:6px 9px;font-size:12px;font-weight:850}
+  .promo-status--green{color:#047857;background:#effcf6;box-shadow:inset 0 0 0 1px rgba(25,184,121,.16)}
+  .promo-status--cyan{color:#087894;background:#effbff;box-shadow:inset 0 0 0 1px rgba(0,166,214,.16)}
+  .promo-status--amber{color:#8a5a00;background:#fff8d7;box-shadow:inset 0 0 0 1px rgba(245,183,0,.18)}
+  .promo-status--rose{color:#b42318;background:#fff4f4;box-shadow:inset 0 0 0 1px rgba(255,107,107,.18)}
+  .promo-status--berry{color:#9d174d;background:#fdf2f8;box-shadow:inset 0 0 0 1px rgba(217,70,239,.16)}
+  .promo-status--slate{color:#475569;background:#f3f5f8;box-shadow:inset 0 0 0 1px rgba(71,85,105,.12)}
+  .promo-value{font-weight:900;color:#047857}
+  .promo-row-actions{display:grid;grid-template-columns:repeat(2,minmax(68px,max-content));gap:7px}
+  .promo-row-actions form{margin:0}
+  .promo-row-actions .promo-button{min-height:34px;padding:7px 10px;font-size:12px}
+  .promo-preview{margin-top:14px;display:grid;gap:12px;padding:14px;border-radius:8px;border:1px solid rgba(23,32,51,.10);background:linear-gradient(180deg,#ffffff,#f8fbff)}
+  .promo-preview-meta{display:grid;gap:6px}
+  .promo-preview-meta strong{font-size:17px}
+  .promo-insight-list{display:grid;gap:10px;margin-top:14px}
+  .promo-insight{border-radius:8px;padding:14px;background:#fff;border:1px solid rgba(23,32,51,.08);border-left:5px solid var(--promo-coral)}
+  .promo-empty{border:1px dashed rgba(23,32,51,.14);border-radius:8px;padding:18px;color:var(--promo-muted);background:rgba(255,255,255,.78)}
+  .promo-no-results{display:none}
+  .promo-table th:nth-child(1), .promo-table td:nth-child(1){width:20%}
+  .promo-table th:nth-child(2), .promo-table td:nth-child(2){width:16%}
+  .promo-table th:nth-child(3), .promo-table td:nth-child(3){width:13%}
+  .promo-table th:nth-child(4), .promo-table td:nth-child(4){width:14%}
+  .promo-table th:nth-child(5), .promo-table td:nth-child(5){width:15%}
+  .promo-table th:nth-child(6), .promo-table td:nth-child(6){width:12%}
+  .promo-table th:nth-child(7), .promo-table td:nth-child(7){width:10%}
+  @media(max-width:1280px){.promo-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.promo-layout{grid-template-columns:1fr}.promo-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-hero-mark{display:none}.promo-table{min-width:0;table-layout:auto}}
+  @media(max-width:720px){.promo-home{padding:18px 12px 42px}.promo-hero-main{min-height:auto;padding:20px}.promo-hero h1{font-size:38px}.promo-summary{grid-template-columns:1fr 1fr}.promo-filter-grid,.promo-field-grid{grid-template-columns:1fr}.promo-field.is-wide{grid-column:auto}.promo-row-actions{grid-template-columns:1fr}}
+</style>
+
+<main class="promo-home">
+  <div class="promo-shell">
+    <section class="promo-hero">
+      <div class="promo-hero-main">
+        <div class="promo-hero-content">
+          <div class="promo-chip"><span class="promo-dot"></span> CSKH Promotion Workspace</div>
+          <h1>Quản lý <span>khuyến mãi</span></h1>
+          <p class="promo-lead">Một UC riêng cho actor CSKH: tạo chương trình ưu đãi, mã chăm sóc khách quay lại, kiểm tra khung thời gian, phân biệt giảm phần trăm hay giảm cố định, theo dõi usage thực tế và khóa xóa khi đã phát sinh giao dịch.</p>
+          <div class="promo-actions">
+            <a class="promo-button promo-button--primary" href="/dashboard/cskh">Về dashboard</a>
+            <a class="promo-button" href="/api/manager/promotions">Promotions API</a>
+            <% if (promotionForm.promotion_id) { %><a class="promo-button" href="/manager/promotions">Tạo khuyến mãi mới</a><% } %>
+          </div>
+        </div>
+        <div class="promo-hero-mark" aria-hidden="true">
+          <div class="promo-mark-line"><span></span></div>
+          <div class="promo-mark-line"><span></span></div>
+          <div class="promo-mark-line"><span></span></div>
+          <div class="promo-mark-line"><span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <% if (noticeState.error) { %><div class="promo-alert promo-alert--error"><%= noticeState.error %></div><% } %>
+    <% if (noticeState.success) { %><div class="promo-alert promo-alert--success"><%= noticeState.success %></div><% } %>
+
+    <section class="promo-summary" aria-label="Tóm tắt khuyến mãi">
+      <article class="promo-stat"><strong><%= stats.total || 0 %></strong><span>Tổng chương trình</span></article>
+      <article class="promo-stat"><strong><%= stats.active || 0 %></strong><span>Đang áp dụng</span></article>
+      <article class="promo-stat"><strong><%= stats.paused || 0 %></strong><span>Tạm ngưng</span></article>
+      <article class="promo-stat"><strong><%= stats.expired || 0 %></strong><span>Hết hạn / quá ngày</span></article>
+      <article class="promo-stat"><strong><%= stats.inUse || 0 %></strong><span>Đã phát sinh</span></article>
+    </section>
+
+    <section class="promo-layout">
+      <div style="display:grid;gap:16px">
+        <section class="promo-panel">
+          <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <h2>Form quản lý khuyến mãi</h2>
+              <p class="promo-muted">Giữ đúng nghiệp vụ cũ của `code2`, nhưng đặt vào nhịp CSKH: bắt buộc ngày bắt đầu, ngày kết thúc, mức ưu đãi hợp lệ, tên chương trình không trùng và phần trăm không vượt quá 100%.</p>
+            </div>
+            <span class="promo-live-pill"><%= promotionForm.promotion_id ? "Đang sửa chương trình hiện có" : "Sẵn sàng tạo chương trình mới" %></span>
+          </div>
+
+          <form method="post" action="/manager/promotions" id="promotionForm">
+            <input type="hidden" name="promotion_id" value="<%= promotionForm.promotion_id %>" />
+            <div class="promo-field-grid">
+              <div class="promo-field is-wide">
+                <label for="ten_chuong_trinh">Tên chương trình</label>
+                <input id="ten_chuong_trinh" name="ten_chuong_trinh" value="<%= promotionForm.ten_chuong_trinh %>" maxlength="150" required />
+              </div>
+              <div class="promo-field">
+                <label for="ngay_bat_dau">Ngày bắt đầu</label>
+                <input id="ngay_bat_dau" name="ngay_bat_dau" type="date" value="<%= promotionForm.ngay_bat_dau %>" required />
+              </div>
+              <div class="promo-field">
+                <label for="ngay_ket_thuc">Ngày kết thúc</label>
+                <input id="ngay_ket_thuc" name="ngay_ket_thuc" type="date" value="<%= promotionForm.ngay_ket_thuc %>" required />
+              </div>
+              <div class="promo-field">
+                <label for="loai_uu_dai">Loại ưu đãi</label>
+                <select id="loai_uu_dai" name="loai_uu_dai" required>
+                  <option value="PERCENT" <%= promotionForm.loai_uu_dai === "PERCENT" ? "selected" : "" %>>Phần trăm</option>
+                  <option value="FIXED" <%= promotionForm.loai_uu_dai === "FIXED" ? "selected" : "" %>>Số tiền cố định</option>
+                </select>
+              </div>
+              <div class="promo-field">
+                <label for="muc_uu_dai">Mức ưu đãi</label>
+                <input id="muc_uu_dai" name="muc_uu_dai" type="number" min="0" step="0.01" value="<%= promotionForm.muc_uu_dai %>" required />
+              </div>
+              <div class="promo-field">
+                <label for="trang_thai">Trạng thái</label>
+                <select id="trang_thai" name="trang_thai" required>
+                  <option value="DangApDung" <%= promotionForm.trang_thai === "DangApDung" ? "selected" : "" %>>Đang áp dụng</option>
+                  <option value="TamNgung" <%= promotionForm.trang_thai === "TamNgung" ? "selected" : "" %>>Tạm ngưng</option>
+                  <option value="HetHan" <%= promotionForm.trang_thai === "HetHan" ? "selected" : "" %>>Hết hạn</option>
+                </select>
+              </div>
+              <div class="promo-field is-wide">
+                <label for="doi_tuong">Đối tượng áp dụng</label>
+                <textarea id="doi_tuong" name="doi_tuong" placeholder="Ví dụ: TatCa, khách đoàn, khách thân thiết, booking trực tiếp, dịp lễ..."><%= promotionForm.doi_tuong %></textarea>
+              </div>
+            </div>
+            <div class="promo-form-actions">
+              <button class="promo-button promo-button--primary" type="submit"><%= promotionForm.promotion_id ? "Lưu thay đổi" : "Tạo khuyến mãi" %></button>
+              <% if (promotionForm.promotion_id) { %><a class="promo-button" href="/manager/promotions">Tạo mới</a><% } %>
+            </div>
+          </form>
+        </section>
+
+        <section class="promo-panel">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <h2>Thanh lọc nhanh</h2>
+              <p class="promo-muted">Lọc realtime theo tên chương trình, trạng thái, loại ưu đãi và tình trạng timeline.</p>
+            </div>
+            <span class="promo-live-pill" data-promo-live-state>Sẵn sàng lọc realtime</span>
+          </div>
+          <div class="promo-filter-grid">
+            <div class="promo-field">
+              <label for="promo_keyword">Từ khóa</label>
+              <input id="promo_keyword" placeholder="Tên chương trình, đối tượng..." />
+            </div>
+            <div class="promo-field">
+              <label for="promo_status_filter">Trạng thái</label>
+              <select id="promo_status_filter">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="DangApDung">Đang áp dụng</option>
+                <option value="TamNgung">Tạm ngưng</option>
+                <option value="HetHan">Hết hạn</option>
+              </select>
+            </div>
+            <div class="promo-field">
+              <label for="promo_type_filter">Loại ưu đãi</label>
+              <select id="promo_type_filter">
+                <option value="all">Tất cả loại</option>
+                <option value="PERCENT">Phần trăm</option>
+                <option value="FIXED">Số tiền cố định</option>
+              </select>
+            </div>
+            <div class="promo-field">
+              <label for="promo_timeline_filter">Timeline</label>
+              <select id="promo_timeline_filter">
+                <option value="all">Tất cả timeline</option>
+                <option value="active">Đang trong thời gian</option>
+                <option value="upcoming">Sắp bắt đầu</option>
+                <option value="expired">Đã quá hạn</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="promo-table-panel">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <h2>Danh sách khuyến mãi</h2>
+              <p class="promo-muted" data-promo-caption>Đang hiển thị <%= promotions.length %>/<%= promotions.length %> chương trình.</p>
+            </div>
+            <div class="promo-actions" style="margin:0">
+              <a class="promo-button" href="/api/manager/promotions">JSON</a>
+              <a class="promo-button" href="/dashboard/quanly">Dashboard</a>
+            </div>
+          </div>
+
+          <div class="promo-table-wrap">
+            <table class="promo-table">
+              <thead>
+                <tr>
+                  <th>Chương trình</th>
+                  <th>Khung ngày</th>
+                  <th>Ưu đãi</th>
+                  <th>Đối tượng</th>
+                  <th>Trạng thái</th>
+                  <th>Usage</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody data-promo-table-body>
+                <% if (!promotions.length) { %>
+                  <tr><td colspan="7" class="promo-muted">Chưa có chương trình khuyến mãi nào trong hệ thống.</td></tr>
+                <% } %>
+                <% promotions.forEach((item) => { %>
+                  <tr
+                    data-promo-row
+                    data-status="<%= item.trangThai %>"
+                    data-type="<%= item.loaiUuDai %>"
+                    data-timeline="<%= item.isExpiredByDate ? "expired" : (item.isUpcoming ? "upcoming" : (item.isActiveWindow ? "active" : "other")) %>"
+                    data-keyword="<%= [item.tenChuongTrinh, item.doiTuong || '', statusLabel(item.trangThai), typeLabel(item.loaiUuDai)].join(' ').toLowerCase() %>"
+                  >
+                    <td>
+                      <div class="promo-code">
+                        <strong><%= item.tenChuongTrinh %></strong>
+                        <span>Mã KM #<%= item.id %></span>
+                      </div>
+                    </td>
+                    <td>
+                      <strong><%= item.startDate || "Chưa đặt" %> → <%= item.endDate || "Chưa đặt" %></strong>
+                      <div class="promo-muted"><%= timelineLabel(item) %></div>
+                    </td>
+                    <td>
+                      <div class="promo-value"><%= item.valueLabel %></div>
+                      <div class="promo-muted"><span class="promo-status promo-status--<%= item.typeTone %>"><%= typeLabel(item.loaiUuDai) %></span></div>
+                    </td>
+                    <td>
+                      <strong><%= item.doiTuong || "TatCa" %></strong>
+                    </td>
+                    <td>
+                      <span class="promo-status promo-status--<%= item.statusTone %>"><%= statusLabel(item.trangThai) %></span>
+                      <div class="promo-muted" style="margin-top:6px"><span class="promo-status promo-status--<%= item.timelineTone %>"><%= timelineLabel(item) %></span></div>
+                    </td>
+                    <td>
+                      <strong><%= item.totalUsageCount %> lượt gắn</strong>
+                      <div class="promo-muted"><%= item.bookingUsageCount %> giao dịch · <%= item.detailUsageCount %> chi tiết phòng</div>
+                    </td>
+                    <td>
+                      <div class="promo-row-actions">
+                        <a class="promo-button" href="/manager/promotions?edit_promotion=<%= item.id %>">Sửa</a>
+                        <form method="post" action="/manager/promotions/<%= item.id %>/delete" onsubmit="return confirm('Xóa khuyến mãi này? Chương trình đã phát sinh giao dịch sẽ bị khóa xóa.');">
+                          <button class="promo-button promo-button--danger" type="submit" <%= item.canDelete ? "" : "disabled title='Khuyến mãi đã phát sinh nên không thể xóa.'" %>><%= item.canDelete ? "Xóa" : "Khóa xóa" %></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+                <tr class="promo-no-results" data-promo-empty-row><td colspan="7" class="promo-muted">Không có chương trình phù hợp với bộ lọc hiện tại.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <aside style="display:grid;gap:16px">
+        <section class="promo-panel">
+          <h2><%= promotionForm.promotion_id ? "Snapshot chương trình đang sửa" : "Snapshot thao tác" %></h2>
+          <p class="promo-muted">Preview nhanh cấu hình ưu đãi trước khi lưu.</p>
+          <div class="promo-preview">
+            <div class="promo-preview-meta">
+              <strong><%= promotionForm.ten_chuong_trinh || "Tạo chương trình mới" %></strong>
+              <span class="promo-muted"><%= promotionForm.ngay_bat_dau || "--" %> → <%= promotionForm.ngay_ket_thuc || "--" %></span>
+              <span class="promo-muted"><%= promotionForm.loai_uu_dai === "PERCENT" ? "Phần trăm" : "Số tiền cố định" %> · <%= promotionForm.muc_uu_dai || 0 %><%= promotionForm.loai_uu_dai === "PERCENT" ? "%" : " VND" %></span>
+              <span class="promo-muted">Đối tượng: <%= promotionForm.doi_tuong || "TatCa" %></span>
+              <span class="promo-muted">Trạng thái: <%= statusLabel(promotionForm.trang_thai) %></span>
+            </div>
+          </div>
+        </section>
+
+        <section class="promo-panel">
+          <h2>Chương trình cần chú ý</h2>
+          <p class="promo-muted">Những khuyến mãi đã phát sinh, đang tạm ngưng hoặc đã quá hạn để quản lý ra quyết định nhanh.</p>
+          <% if (!attentionPromotions.length) { %>
+            <div class="promo-empty">Hiện chưa có chương trình nào cần chú ý.</div>
+          <% } else { %>
+            <div class="promo-insight-list">
+              <% attentionPromotions.forEach((item) => { %>
+                <article class="promo-insight">
+                  <span class="promo-status promo-status--<%= item.statusTone %>"><%= statusLabel(item.trangThai) %></span>
+                  <h3 style="margin:10px 0 4px"><a href="/manager/promotions?edit_promotion=<%= item.id %>"><%= item.tenChuongTrinh %></a></h3>
+                  <p class="promo-muted"><%= item.valueLabel %> · <%= item.doiTuong || "TatCa" %></p>
+                  <p class="promo-muted"><%= timelineLabel(item) %> · <%= item.totalUsageCount %> lượt gắn</p>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
+      </aside>
+    </section>
+  </div>
+</main>
+
+<script>
+  (() => {
+    const keywordInput = document.getElementById("promo_keyword");
+    const statusFilter = document.getElementById("promo_status_filter");
+    const typeFilter = document.getElementById("promo_type_filter");
+    const timelineFilter = document.getElementById("promo_timeline_filter");
+    const rows = Array.from(document.querySelectorAll("[data-promo-row]"));
+    const caption = document.querySelector("[data-promo-caption]");
+    const liveState = document.querySelector("[data-promo-live-state]");
+    const emptyRow = document.querySelector("[data-promo-empty-row]");
+
+    [keywordInput, statusFilter, typeFilter, timelineFilter].forEach((element) => {
+      if (!element) return;
+      element.addEventListener("input", applyFilters);
+      element.addEventListener("change", applyFilters);
+    });
+
+    function applyFilters() {
+      const keyword = String(keywordInput?.value || "").trim().toLowerCase();
+      const status = String(statusFilter?.value || "all");
+      const type = String(typeFilter?.value || "all");
+      const timeline = String(timelineFilter?.value || "all");
+      let visibleCount = 0;
+
+      rows.forEach((row) => {
+        const matchesKeyword = !keyword || String(row.getAttribute("data-keyword") || "").includes(keyword);
+        const matchesStatus = status === "all" || String(row.getAttribute("data-status") || "") === status;
+        const matchesType = type === "all" || String(row.getAttribute("data-type") || "") === type;
+        const matchesTimeline = timeline === "all" || String(row.getAttribute("data-timeline") || "") === timeline;
+        const visible = matchesKeyword && matchesStatus && matchesType && matchesTimeline;
+        row.style.display = visible ? "" : "none";
+        if (visible) visibleCount += 1;
+      });
+
+      if (caption) caption.textContent = `Đang hiển thị ${visibleCount}/${rows.length} chương trình.`;
+      if (liveState) liveState.textContent = visibleCount ? `Đã lọc ${visibleCount} chương trình phù hợp` : "Không có chương trình phù hợp";
+      if (emptyRow) emptyRow.style.display = visibleCount ? "none" : "";
+    }
+
+    applyFilters();
+  })();
+</script>
+
+<%- include("../partials/footer") %>

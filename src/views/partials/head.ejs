@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Bento Resort" />
+  <meta name="application-name" content="Bento Resort" />
+  <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
+  <title><%= title %> · Bento Resort</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/app-icon-192.png" />
+  <link rel="stylesheet" href="/app.css" />
+  <script>
+    (() => {
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+      const nativeFetch = window.fetch;
+
+      if (!token || !nativeFetch || window.__abcCsrfFetchReady) {
+        return;
+      }
+
+      window.__abcCsrfFetchReady = true;
+      window.fetch = (input, init = {}) => {
+        const method = String(init.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+        const sameOrigin = typeof input === "string"
+          ? input.startsWith("/") || input.startsWith(window.location.origin)
+          : input instanceof Request
+            ? new URL(input.url, window.location.href).origin === window.location.origin
+            : true;
+
+        if (sameOrigin && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+          const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+          if (!headers.has("x-csrf-token")) {
+            headers.set("x-csrf-token", token);
+          }
+          return nativeFetch(input, { ...init, headers });
+        }
+
+        return nativeFetch(input, init);
+      };
+    })();
+  </script>
+</head>
+<body>

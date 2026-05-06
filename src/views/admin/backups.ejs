@@ -1,0 +1,110 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Admin Backup</div>
+    <h2>Sao luu he thong va cau hinh van hanh</h2>
+    <p class="muted">Phan nay giu logic goc cua he thong cu, nhung da them metadata ro rang de backup/restore an toan hon tren PostgreSQL.</p>
+
+    <% if (success) { %>
+      <div class="flash flash--success"><%= success %></div>
+    <% } %>
+    <% if (error) { %>
+      <div class="flash flash--error"><%= error %></div>
+    <% } %>
+
+    <div class="dashboard-grid" style="margin-top:16px;">
+      <article class="dashboard-card"><strong><%= payload.backups.length %></strong><h3>Backup files</h3></article>
+      <article class="dashboard-card"><strong><%= payload.hotelSummary.count %></strong><h3>Hotels in scope</h3></article>
+      <article class="dashboard-card"><strong><%= payload.autoBackupConfig.enabled ? "ON" : "OFF" %></strong><h3>Auto backup</h3></article>
+    </div>
+
+    <div class="nav-links" style="margin-top:16px;">
+      <a class="chip" href="/admin/restore">Restore</a>
+      <a class="chip" href="/admin/diagnostics">Diagnostics</a>
+      <a class="chip" href="/api/admin/backups">Backup JSON</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Auto Backup</div>
+    <h3>Thiet lap sao luu tu dong</h3>
+    <form method="post" action="/admin/backups/config">
+      <div class="field-grid">
+        <div class="field">
+          <label>Che do</label>
+          <select name="mode">
+            <option value="auto" <%= payload.autoBackupConfig.enabled ? "selected" : "" %>>Tu dong backup khi gan hook van hanh</option>
+            <option value="manual" <%= !payload.autoBackupConfig.enabled ? "selected" : "" %>>Tat auto backup</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Backup root</label>
+          <input value="storage/backups" readonly />
+        </div>
+      </div>
+      <p class="muted">Cap nhat gan nhat: <%= payload.autoBackupConfig.updated_at || "Chua co" %> · boi <%= payload.autoBackupConfig.updated_by || "system" %></p>
+      <p class="muted">Lan auto backup cuoi: <%= payload.autoBackupConfig.last_backup || "Chua co" %></p>
+      <div class="nav-links" style="margin-top:16px;">
+        <button class="button button--primary" type="submit">Luu cau hinh</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Manual Backup</div>
+    <h3>Tao backup SQL moi</h3>
+    <form method="post" action="/admin/backups">
+      <div class="field-grid">
+        <div class="field">
+          <label>Ten file</label>
+          <input name="ten_file" value="abc_resort_backup" required />
+        </div>
+        <div class="field">
+          <label>Thu muc con</label>
+          <input name="thu_muc" placeholder="vd: nightly" />
+        </div>
+        <div class="field">
+          <label>Hinh thuc</label>
+          <select name="hinh_thuc">
+            <option value="toan_bo">Toan bo</option>
+            <option value="hom_nay">Hom nay</option>
+            <option value="chon_ngay">Chon ngay</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ngay backup neu chon ngay</label>
+          <input type="date" name="ngay_chon" />
+        </div>
+      </div>
+      <div class="nav-links" style="margin-top:16px;">
+        <button class="button button--primary" type="submit">Tao backup</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Backup Files</div>
+    <h3>Danh sach backup kha dung</h3>
+    <% if (!payload.backups.length) { %>
+      <div class="empty-state">Chua co file backup nao trong `storage/backups`.</div>
+    <% } else { %>
+      <div class="room-grid room-grid--wide">
+        <% payload.backups.forEach((item) => { %>
+          <article class="room-card">
+            <span class="badge"><%= item.backupType || "sql" %></span>
+            <h3><%= item.name %></h3>
+            <p class="muted">Tao luc: <%= item.createdAt || "N/A" %></p>
+            <p class="muted">Kich thuoc: <%= (item.size / 1024).toFixed(1) %> KB</p>
+            <p class="muted">Scope: <%= item.backupScope || "system_wide" %> · Hotels: <%= item.hotelCount %></p>
+            <div class="nav-links" style="margin-top:12px;">
+              <a class="chip" href="/admin/restore?file=<%= encodeURIComponent(item.name) %>">Restore</a>
+              <a class="chip" href="/admin/backups?file=<%= encodeURIComponent(item.name) %>">Preview</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+<%- include("../partials/footer") %>

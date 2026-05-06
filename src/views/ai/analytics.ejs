@@ -1,0 +1,58 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">AI Analytics</div>
+    <h2>Thong ke concierge, recommendation va service conversion</h2>
+    <div class="dashboard-grid">
+      <article class="dashboard-card"><strong><%= payload.summary.totalAiRequests %></strong><h3>Total AI requests</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.conciergeCount %></strong><h3>Concierge calls</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.recommendationCount %></strong><h3>Recommendation calls</h3></article>
+    </div>
+    <p class="muted" style="margin-top:16px;">Mode: <%= payload.provider.mode %> · Provider: <%= payload.provider.provider %> · <%= payload.provider.summary %></p>
+    <div class="nav-links" style="margin-top:16px;">
+      <a class="chip" href="/api/ai/analytics">Analytics JSON</a>
+      <a class="chip" href="/ai/concierge">AI Concierge</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Daily Trend</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.dailyTrend.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge">trend</span>
+          <h3><%= item.day %></h3>
+          <p class="muted"><%= item.total %> requests</p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Hotel Breakdown</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.hotelBreakdown.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge">hotel</span>
+          <h3><%= item.hotelName %></h3>
+          <p class="muted"><%= item.total %> booking records</p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-eyebrow">Top Services</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.topServices.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge">service</span>
+          <h3><%= item.serviceName %></h3>
+          <p class="muted"><%= item.total %> orders · <%= Number(item.revenue || 0).toLocaleString("vi-VN") %> VND</p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

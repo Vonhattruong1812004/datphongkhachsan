@@ -1,0 +1,236 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const profile = payload.profile || {};
+  const stats = payload.stats || {};
+  const quickTopics = payload.quickTopics || [];
+  const recentBookings = payload.recentBookings || [];
+  const advisoryMoments = payload.advisoryMoments || [];
+  const channels = payload.channels || [];
+  const favoriteHotels = payload.favoriteHotels || [];
+  const displayName = profile.tenKh || user?.displayName || "Quý khách";
+%>
+<style>
+  body{background:radial-gradient(circle at 8% 8%,rgba(14,165,233,.24),transparent 30%),radial-gradient(circle at 88% 10%,rgba(20,184,166,.22),transparent 32%),radial-gradient(circle at 52% 100%,rgba(251,113,133,.16),transparent 38%),linear-gradient(135deg,#f8fffe 0%,#eefbff 44%,#fff8f1 100%);color:#102033}
+  .adv-shell{position:relative;overflow:hidden;max-width:1260px;margin:0 auto;padding:34px 18px 64px}
+  .adv-shell::before,.adv-shell::after{content:"";position:absolute;pointer-events:none;border-radius:999px;z-index:-1;opacity:.42;animation:adv-orbit 14s ease-in-out infinite alternate}
+  .adv-shell::before{right:-180px;top:-240px;width:520px;height:520px;background:conic-gradient(from 120deg,rgba(14,165,233,.42),rgba(20,184,166,.36),rgba(250,204,21,.28),rgba(251,113,133,.20),rgba(14,165,233,.42))}
+  .adv-shell::after{left:-210px;bottom:-260px;width:520px;height:520px;background:conic-gradient(from 30deg,rgba(251,113,133,.22),rgba(245,158,11,.20),rgba(45,212,191,.28),rgba(14,165,233,.20),rgba(251,113,133,.22));animation-delay:-4s}
+  .adv-hero,.adv-stat,.adv-panel,.adv-card,.adv-channel,.adv-booking{border:1px solid rgba(16,32,51,.10);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.72));box-shadow:0 26px 72px rgba(12,39,64,.12);backdrop-filter:blur(22px)}
+  .adv-hero{position:relative;overflow:hidden;border-radius:38px;padding:32px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:center}
+  .adv-hero::before{content:"";position:absolute;right:46px;top:30px;width:132px;height:132px;border-radius:42px;background:linear-gradient(135deg,rgba(14,165,233,.24),rgba(20,184,166,.18),rgba(251,113,133,.15));transform:rotate(18deg);animation:adv-breathe 5.5s ease-in-out infinite}
+  .adv-kicker{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;border:1px solid rgba(20,184,166,.18);background:rgba(20,184,166,.12);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .adv-dot{width:8px;height:8px;border-radius:999px;background:#14b8a6;box-shadow:0 0 0 7px rgba(20,184,166,.12);animation:adv-pulse 1.8s ease-in-out infinite}
+  .adv-hero h1{position:relative;margin:20px 0 12px;color:#102033;font-size:clamp(40px,6vw,74px);line-height:.92;letter-spacing:-.07em}
+  .adv-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 46%,#fb7185);-webkit-background-clip:text;background-clip:text}
+  .adv-muted{color:#5f778f;font-size:14px;line-height:1.65}
+  .adv-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .adv-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:999px;border:1px solid rgba(18,48,71,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:9px 15px;font-size:13px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 12px 28px rgba(12,39,64,.08);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .adv-button:hover{transform:translateY(-2px);border-color:rgba(14,165,233,.28);box-shadow:0 18px 40px rgba(12,39,64,.12)}
+  .adv-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e)}
+  .adv-button--support{border-color:rgba(251,113,133,.18);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,241,242,.88));color:#be123c}
+  .adv-focus{position:relative;z-index:1;border-radius:28px;padding:20px;background:rgba(255,255,255,.62);border:1px solid rgba(16,32,51,.08)}
+  .adv-focus strong{display:block;color:#102033;font-size:28px;letter-spacing:-.05em}
+  .adv-focus span{display:block;margin-top:8px;color:#5f778f;font-size:13px;line-height:1.6}
+  .adv-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
+  .adv-stat{border-radius:24px;padding:17px}
+  .adv-stat span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .adv-stat strong{display:block;margin-top:8px;color:#102033;font-size:28px;letter-spacing:-.05em}
+  .adv-layout{display:grid;grid-template-columns:minmax(0,1.1fr) .9fr;gap:18px;align-items:start}
+  .adv-panel{border-radius:30px;padding:22px}
+  .adv-panel-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:16px}
+  .adv-panel h2{margin:0;color:#102033;font-size:30px;letter-spacing:-.05em}
+  .adv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .adv-card{position:relative;overflow:hidden;border-radius:28px;padding:18px}
+  .adv-card::before{content:"";position:absolute;right:-34px;top:-34px;width:120px;height:120px;border-radius:999px;background:radial-gradient(circle,rgba(14,165,233,.14),transparent 70%)}
+  .adv-badge{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.06em;text-transform:uppercase}
+  .adv-card h3,.adv-channel h3,.adv-booking h3{margin:12px 0 8px;color:#102033;font-size:24px;letter-spacing:-.045em}
+  .adv-card p,.adv-channel p,.adv-booking p{margin:0;color:#5f778f;font-size:14px;line-height:1.6}
+  .adv-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .adv-chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .adv-chip{display:inline-flex;align-items:center;border-radius:999px;padding:8px 11px;border:1px solid rgba(16,32,51,.08);background:rgba(255,255,255,.72);color:#14314b;font-size:12px;font-weight:900}
+  .adv-moments{display:grid;gap:12px}
+  .adv-line{border-radius:22px;padding:16px;border:1px solid rgba(16,32,51,.08);background:rgba(255,255,255,.62)}
+  .adv-line span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .adv-line strong{display:block;margin-top:7px;color:#102033;font-size:18px}
+  .adv-line p{margin:8px 0 0;color:#5f778f;font-size:13px;line-height:1.55}
+  .adv-channel-list,.adv-booking-list{display:grid;gap:12px}
+  .adv-channel,.adv-booking{border-radius:24px;padding:18px}
+  .adv-channel .adv-button,.adv-booking .adv-button{margin-top:14px}
+  .adv-empty{border:1px dashed rgba(16,32,51,.14);border-radius:24px;padding:22px;background:rgba(255,255,255,.58);color:#5f778f}
+  @keyframes adv-orbit{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
+  @keyframes adv-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
+  @keyframes adv-breathe{0%,100%{transform:rotate(18deg) scale(1)}50%{transform:rotate(25deg) scale(1.04)}}
+  @media(max-width:1080px){.adv-hero,.adv-layout{grid-template-columns:1fr}.adv-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:700px){.adv-shell{padding:22px 12px 48px}.adv-hero,.adv-panel,.adv-stat,.adv-card,.adv-channel,.adv-booking{border-radius:26px;padding:20px}.adv-stats,.adv-grid{grid-template-columns:1fr}.adv-focus{display:none}}
+</style>
+
+<main class="adv-shell">
+  <section class="adv-hero">
+    <div>
+      <span class="adv-kicker"><span class="adv-dot"></span> UC07 · Tư vấn & hỗ trợ</span>
+      <h1>Hỏi nhanh mọi điều <span>trước, trong và sau chuyến đi.</span></h1>
+      <p class="adv-muted">Một nơi riêng để bạn hỏi về chọn phòng, booking, check-in, eKYC, dịch vụ và các thắc mắc cần CSKH hỗ trợ. AI Concierge trả lời trước, còn khi cần người thật hệ thống sẽ đưa bạn sang đúng kênh CSKH.</p>
+      <div class="adv-actions">
+        <button class="adv-button adv-button--primary" type="button" data-open-ai>Chat với AI Concierge</button>
+        <a class="adv-button adv-button--support" href="/feedback/advisory/new">Gửi yêu cầu cho CSKH</a>
+        <a class="adv-button" href="/customer/dashboard">Về dashboard</a>
+      </div>
+    </div>
+    <aside class="adv-focus">
+      <strong><%= displayName %></strong>
+      <span><%= payload.activeStay ? "Bạn đang có lưu trú mở, có thể hỏi thêm về dịch vụ, checkout hoặc hỗ trợ tại chỗ." : (payload.nextStay ? "Bạn đang có booking sắp tới, nên dùng UC này để hỏi về check-in, eKYC và chuẩn bị chuyến đi." : "Chưa có booking mở, nhưng bạn vẫn có thể hỏi AI để được tư vấn phòng và hành trình phù hợp.") %></span>
+      <div class="adv-chip-grid">
+        <% if (profile.email) { %><span class="adv-chip"><%= profile.email %></span><% } %>
+        <% if (profile.sdt) { %><span class="adv-chip"><%= profile.sdt %></span><% } %>
+        <% if (!profile.email && !profile.sdt) { %><span class="adv-chip">Hồ sơ sẵn sàng để bắt đầu tư vấn</span><% } %>
+      </div>
+    </aside>
+  </section>
+
+  <section class="adv-stats">
+    <article class="adv-stat"><span>Tổng booking</span><strong><%= stats.totalBookings || 0 %></strong></article>
+    <article class="adv-stat"><span>Booking sắp tới</span><strong><%= stats.bookedCount || 0 %></strong></article>
+    <article class="adv-stat"><span>Dịch vụ đã dùng</span><strong><%= stats.serviceLineCount || 0 %></strong></article>
+    <article class="adv-stat"><span>Cơ sở quen thuộc</span><strong><%= stats.favoriteHotelCount || 0 %></strong></article>
+  </section>
+
+  <section class="adv-layout">
+    <div>
+      <section class="adv-panel">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Bắt đầu cuộc tư vấn</h2>
+            <p class="adv-muted">Chọn một chủ đề có sẵn để mở chat với câu hỏi đúng ngữ cảnh, hoặc chuyển thẳng sang CSKH nếu cần hỗ trợ thủ công.</p>
+          </div>
+        </div>
+
+        <div class="adv-grid">
+          <% quickTopics.forEach((topic) => { %>
+            <article class="adv-card">
+              <span class="adv-badge"><%= topic.key.toUpperCase() %></span>
+              <h3><%= topic.title %></h3>
+              <p><%= topic.description %></p>
+              <div class="adv-card-actions">
+                <button class="adv-button adv-button--primary" type="button" data-open-ai data-ai-prompt="<%= topic.prompt %>">Mở chat</button>
+                <% if (topic.key === "support") { %>
+                  <a class="adv-button adv-button--support" href="/feedback/advisory/new">Sang CSKH</a>
+                <% } %>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="adv-panel" style="margin-top:18px;">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Booking để hỏi đúng ngữ cảnh</h2>
+            <p class="adv-muted">AI và CSKH sẽ hỗ trợ nhanh hơn nếu bạn bám vào booking gần nhất hoặc lịch lưu trú sắp tới.</p>
+          </div>
+        </div>
+
+        <% if (!recentBookings.length) { %>
+          <div class="adv-empty">Chưa có booking nào để gắn ngữ cảnh. Bạn vẫn có thể dùng UC này để hỏi về chọn phòng, báo giá và chuẩn bị chuyến đi.</div>
+        <% } else { %>
+          <div class="adv-booking-list">
+            <% recentBookings.forEach((booking) => { %>
+              <article class="adv-booking">
+                <span class="adv-badge"><%= booking.statusLabel || "Booking" %></span>
+                <h3><%= booking.bookingCode || `GD-${booking.id}` %></h3>
+                <p><%= booking.hotelNames || "Chưa có tên cơ sở" %></p>
+                <p><%= booking.checkinLabel || "-" %> -> <%= booking.checkoutLabel || "-" %> · <%= booking.totalFormatted || "-" %></p>
+                <button
+                  class="adv-button"
+                  type="button"
+                  data-open-ai
+                  data-ai-prompt="Tôi muốn được tư vấn thêm cho booking <%= booking.bookingCode || `GD-${booking.id}` %> tại <%= booking.hotelNames || 'resort' %>, vui lòng giải thích các bước tiếp theo."
+                >
+                  Hỏi theo booking này
+                </button>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+    </div>
+
+    <div>
+      <section class="adv-panel">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Tình huống nổi bật</h2>
+            <p class="adv-muted">Các mốc này giúp AI và CSKH hiểu bạn đang ở giai đoạn nào trong hành trình.</p>
+          </div>
+        </div>
+        <div class="adv-moments">
+          <% advisoryMoments.forEach((item) => { %>
+            <article class="adv-line">
+              <span><%= item.label %></span>
+              <strong><%= item.value %></strong>
+              <p><%= item.detail %></p>
+            </article>
+          <% }) %>
+        </div>
+        <% if (favoriteHotels.length) { %>
+          <div class="adv-chip-grid">
+            <% favoriteHotels.forEach((hotel) => { %>
+              <span class="adv-chip"><%= hotel.hotelName %><%= hotel.city ? ` · ${hotel.city}` : "" %></span>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="adv-panel" style="margin-top:18px;">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Kênh hỗ trợ</h2>
+            <p class="adv-muted">Chọn đúng kênh theo mức độ cần hỗ trợ: AI trước, CSKH khi cần theo dõi trực tiếp.</p>
+          </div>
+        </div>
+        <div class="adv-channel-list">
+          <% channels.forEach((channel) => { %>
+            <article class="adv-channel">
+              <span class="adv-badge"><%= channel.key.toUpperCase() %></span>
+              <h3><%= channel.label %></h3>
+              <p><%= channel.description %></p>
+              <% if (channel.key === "ai") { %>
+                <button class="adv-button adv-button--primary" type="button" data-open-ai>Mở AI Concierge</button>
+              <% } else if (channel.key === "zalo") { %>
+                <a class="adv-button" href="<%= channel.href %>" target="_blank" rel="noreferrer">Mở Zalo hỗ trợ</a>
+              <% } else { %>
+                <a class="adv-button adv-button--support" href="<%= channel.href %>">Tạo yêu cầu</a>
+              <% } %>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<script>
+  (function () {
+    function openAi(prompt) {
+      window.dispatchEvent(new CustomEvent("abc:ai-widget-open"));
+
+      window.setTimeout(function () {
+        const input = document.getElementById("floatingAiInput");
+        if (!input) return;
+        if (prompt) {
+          input.value = prompt;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        input.focus();
+      }, 80);
+    }
+
+    document.querySelectorAll("[data-open-ai]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        openAi(button.getAttribute("data-ai-prompt") || "");
+      });
+    });
+  })();
+</script>
+
+<%- include("../partials/footer") %>

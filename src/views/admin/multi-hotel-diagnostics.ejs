@@ -1,0 +1,54 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<main class="container">
+  <section class="panel">
+    <div class="section-eyebrow">Multi-Hotel Diagnostics</div>
+    <h2>Schema, module va inventory theo co so</h2>
+    <div class="dashboard-grid">
+      <article class="dashboard-card"><strong><%= payload.summary.ready %></strong><h3>Ready modules</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.partial %></strong><h3>Partial modules</h3></article>
+      <article class="dashboard-card"><strong><%= payload.summary.blocked %></strong><h3>Blocked modules</h3></article>
+    </div>
+    <div class="nav-links" style="margin-top:16px;">
+      <a class="chip" href="/api/admin/diagnostics/multi-hotel">Multi-hotel JSON</a>
+      <a class="chip" href="/admin/diagnostics">Tong hop</a>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-eyebrow">Schema Checks</div>
+    <div class="room-grid room-grid--wide">
+      <% Object.entries(payload.schema).forEach(([key, value]) => { %>
+        <article class="room-card">
+          <span class="badge"><%= value ? "ready" : "partial" %></span>
+          <h3><%= key %></h3>
+          <p class="muted"><%= value ? "Da san sang." : "Can bo sung de khoa scope da co so hon." %></p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-eyebrow">Hotels</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.hotels.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge"><%= item.tinhThanh || "N/A" %></span>
+          <h3><%= item.tenKhachSan %></h3>
+          <p class="muted"><%= item.roomCount %> phong</p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-eyebrow">Modules</div>
+    <div class="room-grid room-grid--wide">
+      <% payload.modules.forEach((item) => { %>
+        <article class="room-card">
+          <span class="badge"><%= item.status %></span>
+          <h3><%= item.name %></h3>
+          <p class="muted"><%= item.detail %></p>
+        </article>
+      <% }) %>
+    </div>
+  </section>
+</main>
+<%- include("../partials/footer") %>

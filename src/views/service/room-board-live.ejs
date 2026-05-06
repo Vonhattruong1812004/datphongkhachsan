@@ -1,0 +1,281 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const roomFeed = payload.roomFeed || { summary: {}, items: [], generatedAt: null };
+  const rooms = roomFeed.items || [];
+  const statusTone = (room) => {
+    const status = room.trangThaiRealtime || room.trangThai || "";
+    if (status === "Available" || status === "Trong") return "ok";
+    if (status === "Cleaning") return "cleaning";
+    if (status === "Maintenance" || room.trangThai === "BaoTri") return "danger";
+    if (room.trangThai === "Stayed") return "stayed";
+    if (room.trangThai === "Booked") return "booked";
+    return "muted";
+  };
+  const statusLabel = (room) => room.trangThaiRealtime || room.trangThai || "Unknown";
+  const priorityLabel = (room) => {
+    if (room.trangThaiRealtime === "Maintenance" || room.trangThai === "BaoTri") return "Cần bảo trì";
+    if (room.trangThaiRealtime === "Cleaning") return "Cần vệ sinh";
+    if (room.trangThai === "Stayed") return "Đang có khách";
+    if (room.trangThai === "Booked") return "Sắp nhận khách";
+    if (room.trangThai === "Trong") return "Sẵn sàng";
+    return "Theo dõi";
+  };
+  const realtimeScopeByRole = {
+    1: "admin",
+    2: "letan",
+    4: "dichvu",
+    6: "quanly"
+  };
+  const realtimeScope = realtimeScopeByRole[Number(currentUser?.maVaiTro || 0)] || "dichvu";
+%>
+
+<style>
+  .board-shell{
+    --ink:#102033;
+    --muted:#667085;
+    --line:rgba(16,32,51,.10);
+    --card:rgba(255,255,255,.80);
+    --blue:#0ea5e9;
+    --teal:#14b8a6;
+    --lime:#a3e635;
+    --amber:#f59e0b;
+    --rose:#fb7185;
+    --slate:#64748b;
+    --shadow:0 26px 76px rgba(15,23,42,.16);
+    min-height:calc(100vh - 84px);
+    padding:34px 18px 56px;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 7% 8%,rgba(20,184,166,.28),transparent 31%),
+      radial-gradient(circle at 86% 10%,rgba(14,165,233,.26),transparent 34%),
+      radial-gradient(circle at 48% 105%,rgba(163,230,53,.20),transparent 40%),
+      linear-gradient(135deg,#fbfffb 0%,#e9fbf6 42%,#f7fbff 100%);
+  }
+  .board-wrap{max-width:1240px;margin:0 auto}
+  .board-hero,.board-card,.board-stat,.board-room{border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
+  .board-hero{position:relative;overflow:hidden;border-radius:34px;padding:34px;margin-bottom:18px}
+  .board-chip{display:inline-flex;align-items:center;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.22);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .board-hero h1{max-width:780px;margin:22px 0 12px;font-size:clamp(38px,5.8vw,68px);line-height:.92;letter-spacing:-.07em}
+  .board-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 52%,#65a30d);-webkit-background-clip:text;background-clip:text}
+  .board-lead{max-width:780px;margin:0;color:var(--muted);font-size:16px;line-height:1.7}
+  .board-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .board-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;padding:10px 17px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.76);color:var(--ink);text-decoration:none;font-weight:950;cursor:pointer}
+  .board-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 18px 38px rgba(20,184,166,.22)}
+  .board-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent}
+  .board-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}
+  .board-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
+  .board-card{border-radius:30px;padding:22px;margin-bottom:18px}
+  .board-card h2{margin:0 0 8px;font-size:24px;letter-spacing:-.04em}
+  .board-muted{color:var(--muted);font-size:13px;line-height:1.55}
+  .board-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0}
+  .board-stat{border-radius:22px;padding:16px;background:rgba(255,255,255,.58);border:1px solid rgba(16,32,51,.08)}
+  .board-stat strong{display:block;font-size:28px;line-height:1;letter-spacing:-.05em}
+  .board-stat span{display:block;margin-top:8px;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .board-toolbar{display:grid;grid-template-columns:1fr 220px 220px;gap:12px;margin:16px 0}
+  .board-toolbar input,.board-toolbar select{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.76);color:var(--ink);font:inherit;outline:none}
+  .board-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .board-room{grid-column:span 4;position:relative;overflow:hidden;border-radius:28px;padding:18px;background:rgba(255,255,255,.72)}
+  .board-room::after{content:"";position:absolute;left:18px;right:18px;bottom:14px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--accent,var(--blue)),transparent);opacity:.72}
+  .board-room h3{margin:16px 0 8px;font-size:24px;letter-spacing:-.045em}
+  .board-room p{margin:0 0 6px;color:var(--muted);font-size:13px;line-height:1.5}
+  .board-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:rgba(100,116,139,.12);color:#475569;font-size:11px;font-weight:1000;letter-spacing:.04em}
+  .tone-ok{--accent:var(--teal)}.tone-ok .board-badge{background:rgba(20,184,166,.14);color:#0f766e}
+  .tone-cleaning{--accent:var(--blue)}.tone-cleaning .board-badge{background:rgba(14,165,233,.14);color:#0369a1}
+  .tone-danger{--accent:var(--rose)}.tone-danger .board-badge{background:rgba(251,113,133,.15);color:#be123c}
+  .tone-stayed{--accent:var(--lime)}.tone-stayed .board-badge{background:rgba(163,230,53,.18);color:#4d7c0f}
+  .tone-booked{--accent:var(--amber)}.tone-booked .board-badge{background:rgba(245,158,11,.15);color:#b45309}
+  .tone-muted{--accent:var(--slate)}
+  .board-mini-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-bottom:12px}
+  .board-mini{display:inline-flex;align-items:center;min-height:34px;border-radius:999px;padding:7px 11px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.75);color:var(--ink);text-decoration:none;font-size:12px;font-weight:950}
+  .board-empty{border:1px dashed rgba(16,32,51,.14);border-radius:22px;padding:22px;background:rgba(255,255,255,.58);color:var(--muted)}
+  @media(max-width:1040px){.board-room{grid-column:span 6}.board-toolbar{grid-template-columns:1fr}}
+  @media(max-width:720px){.board-shell{padding:20px 12px 42px}.board-hero{padding:24px}.board-summary{grid-template-columns:1fr}.board-room{grid-column:1/-1}}
+</style>
+
+<main class="board-shell">
+  <div class="board-wrap">
+    <% if (notice?.error) { %><div class="board-alert board-alert--error"><%= notice.error %></div><% } %>
+    <% if (notice?.success) { %><div class="board-alert board-alert--success"><%= notice.success %></div><% } %>
+
+    <section class="board-hero" aria-label="Room board live">
+      <span class="board-chip">UC · Room board live</span>
+      <h1>Room board <span>live.</span></h1>
+      <p class="board-lead">
+        Trang này chỉ theo dõi snapshot phòng realtime cho bộ phận dịch vụ: phòng đang ở, booked,
+        cleaning, maintenance và các phòng cần ưu tiên xử lý trước khi chuyển ca.
+      </p>
+      <div class="board-actions">
+        <a class="board-button board-button--primary" href="/dashboard/dichvu">Quay lại dashboard</a>
+        <a class="board-button" href="/service/room-inspection">Kiểm tra tình trạng phòng</a>
+        <a class="board-button" href="/api/service/room-feed">Room board API</a>
+      </div>
+    </section>
+
+    <section class="board-card">
+      <h2>Snapshot vận hành</h2>
+      <p class="board-muted">Dữ liệu được lấy từ trạng thái phòng, realtime status và giao dịch/phòng đang mở. Trang tự refresh nhẹ qua API để bắt thay đổi mới.</p>
+
+      <div class="board-summary">
+        <div class="board-stat"><strong id="boardTotal"><%= rooms.length %></strong><span>Tổng phòng feed</span></div>
+        <div class="board-stat"><strong id="boardAvailable"><%= roomFeed.summary.available || 0 %></strong><span>Available</span></div>
+        <div class="board-stat"><strong id="boardStayed"><%= roomFeed.summary.stayed || 0 %></strong><span>Đang ở</span></div>
+        <div class="board-stat"><strong id="boardCleaning"><%= roomFeed.summary.cleaning || 0 %></strong><span>Cleaning</span></div>
+        <div class="board-stat"><strong id="boardMaintenance"><%= roomFeed.summary.maintenance || 0 %></strong><span>Maintenance</span></div>
+      </div>
+
+      <div class="board-toolbar">
+        <input id="boardSearch" placeholder="Tìm phòng, khách, booking, khách sạn..." />
+        <select id="boardStatus">
+          <option value="">Tất cả trạng thái</option>
+          <option value="Maintenance">Maintenance / Bảo trì</option>
+          <option value="Cleaning">Cleaning</option>
+          <option value="Stayed">Stayed</option>
+          <option value="Booked">Booked</option>
+          <option value="Available">Available / Trống</option>
+        </select>
+        <select id="boardPriority">
+          <option value="">Tất cả ưu tiên</option>
+          <option value="Cần bảo trì">Cần bảo trì</option>
+          <option value="Cần vệ sinh">Cần vệ sinh</option>
+          <option value="Đang có khách">Đang có khách</option>
+          <option value="Sắp nhận khách">Sắp nhận khách</option>
+        </select>
+      </div>
+
+      <% if (!rooms.length) { %>
+        <div class="board-empty">Chưa có dữ liệu phòng trong room board.</div>
+      <% } else { %>
+        <div class="board-grid" id="roomBoardGrid">
+          <% rooms.forEach((room) => { %>
+            <article class="board-room tone-<%= statusTone(room) %>"
+              data-search="<%= [room.soPhong, room.hotelName, room.hotelCity, room.bookingCode, room.guestName, room.loaiPhong].filter(Boolean).join(" ").toLowerCase() %>"
+              data-status="<%= statusLabel(room) %> <%= room.trangThai %>"
+              data-priority="<%= priorityLabel(room) %>">
+              <span class="board-badge"><%= statusLabel(room) %></span>
+              <h3><%= room.hotelName %> · P<%= room.soPhong %></h3>
+              <p><%= room.loaiPhong %> · <%= room.hotelCity || "Chưa rõ cơ sở" %></p>
+              <p><%= room.bookingCode || "Không có giao dịch mở" %> · <%= room.guestName || "Chưa gắn khách" %></p>
+              <p><strong><%= priorityLabel(room) %></strong></p>
+              <div class="board-mini-actions">
+                <a class="board-mini" href="/service/room-inspection?room_id=<%= room.id %>">Kiểm tra phòng</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const searchInput = document.getElementById("boardSearch");
+  const statusSelect = document.getElementById("boardStatus");
+  const prioritySelect = document.getElementById("boardPriority");
+  const grid = document.getElementById("roomBoardGrid");
+
+  function applyFilters() {
+    if (!grid) return;
+    const keyword = (searchInput?.value || "").trim().toLowerCase();
+    const status = statusSelect?.value || "";
+    const priority = prioritySelect?.value || "";
+    grid.querySelectorAll(".board-room").forEach((card) => {
+      const matchText = !keyword || (card.dataset.search || "").includes(keyword);
+      const matchStatus = !status || (card.dataset.status || "").includes(status);
+      const matchPriority = !priority || (card.dataset.priority || "") === priority;
+      card.style.display = matchText && matchStatus && matchPriority ? "" : "none";
+    });
+  }
+
+  searchInput?.addEventListener("input", applyFilters);
+  statusSelect?.addEventListener("change", applyFilters);
+  prioritySelect?.addEventListener("change", applyFilters);
+
+  function text(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "\"": "&quot;",
+      "'": "&#39;"
+    }[char]));
+  }
+
+  function statusTone(room) {
+    const status = room.trangThaiRealtime || room.trangThai || "";
+    if (status === "Available" || status === "Trong") return "ok";
+    if (status === "Cleaning") return "cleaning";
+    if (status === "Maintenance" || room.trangThai === "BaoTri") return "danger";
+    if (room.trangThai === "Stayed") return "stayed";
+    if (room.trangThai === "Booked") return "booked";
+    return "muted";
+  }
+
+  function priorityLabel(room) {
+    if (room.trangThaiRealtime === "Maintenance" || room.trangThai === "BaoTri") return "Cần bảo trì";
+    if (room.trangThaiRealtime === "Cleaning") return "Cần vệ sinh";
+    if (room.trangThai === "Stayed") return "Đang có khách";
+    if (room.trangThai === "Booked") return "Sắp nhận khách";
+    if (room.trangThai === "Trong") return "Sẵn sàng";
+    return "Theo dõi";
+  }
+
+  function renderRoom(room) {
+    const status = room.trangThaiRealtime || room.trangThai || "Unknown";
+    const priority = priorityLabel(room);
+    const search = [room.soPhong, room.hotelName, room.hotelCity, room.bookingCode, room.guestName, room.loaiPhong].filter(Boolean).join(" ").toLowerCase();
+    return `
+      <article class="board-room tone-${statusTone(room)}"
+        data-search="${text(search)}"
+        data-status="${text(status)} ${text(room.trangThai)}"
+        data-priority="${text(priority)}">
+        <span class="board-badge">${text(status)}</span>
+        <h3>${text(room.hotelName)} · P${text(room.soPhong)}</h3>
+        <p>${text(room.loaiPhong)} · ${text(room.hotelCity || "Chưa rõ cơ sở")}</p>
+        <p>${text(room.bookingCode || "Không có giao dịch mở")} · ${text(room.guestName || "Chưa gắn khách")}</p>
+        <p><strong>${text(priority)}</strong></p>
+        <div class="board-mini-actions">
+          <a class="board-mini" href="/service/room-inspection?room_id=${encodeURIComponent(room.id)}">Kiểm tra phòng</a>
+        </div>
+      </article>
+    `;
+  }
+
+  async function refreshBoard() {
+    try {
+      const response = await fetch("/api/service/room-feed", { credentials: "same-origin" });
+      if (!response.ok) return;
+      const payload = await response.json();
+      if (!payload?.ok || !payload.data) return;
+      if (grid) {
+        grid.innerHTML = (payload.data.items || []).map(renderRoom).join("");
+      }
+      const total = document.getElementById("boardTotal");
+      const available = document.getElementById("boardAvailable");
+      const stayed = document.getElementById("boardStayed");
+      const cleaning = document.getElementById("boardCleaning");
+      const maintenance = document.getElementById("boardMaintenance");
+      if (total) total.textContent = String(payload.data.items?.length || 0);
+      if (available) available.textContent = String(payload.data.summary?.available || 0);
+      if (stayed) stayed.textContent = String(payload.data.summary?.stayed || 0);
+      if (cleaning) cleaning.textContent = String(payload.data.summary?.cleaning || 0);
+      if (maintenance) maintenance.textContent = String(payload.data.summary?.maintenance || 0);
+      applyFilters();
+    } catch (_error) {
+      // Keep the rendered snapshot if the live refresh is unavailable.
+    }
+  }
+
+  if (window.EventSource) {
+    const stream = new EventSource("/api/realtime/stream?scope=<%= realtimeScope %>");
+    ["room_status_changed", "service_order_created", "service_order_updated"].forEach((eventName) => {
+      stream.addEventListener(eventName, refreshBoard);
+    });
+  }
+
+  window.setInterval(refreshBoard, 30000);
+});
+</script>
+
+<%- include("../partials/footer") %>

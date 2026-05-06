@@ -1,0 +1,603 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const stats = payload.stats || {};
+  const form = payload.form || {};
+  const templates = payload.templates || [];
+  const audiences = payload.audiences || [];
+  const channels = payload.channels || [];
+  const preview = payload.preview || { items: [], total: 0 };
+  const recentCampaigns = payload.recentCampaigns || [];
+  const selectedCampaign = payload.selectedCampaign || null;
+%>
+
+<style>
+  .care-broadcast {
+    --care-ink: #132238;
+    --care-muted: #617086;
+    --care-line: rgba(19, 34, 56, .10);
+    --care-panel: rgba(255, 255, 255, .82);
+    --care-shadow: 0 28px 86px rgba(18, 38, 63, .16);
+    min-height: calc(100vh - 84px);
+    padding: 34px 18px 58px;
+    color: var(--care-ink);
+    background:
+      radial-gradient(circle at 10% 10%, rgba(24, 191, 242, .16), transparent 26%),
+      radial-gradient(circle at 92% 12%, rgba(255, 111, 163, .18), transparent 24%),
+      radial-gradient(circle at 50% 110%, rgba(255, 209, 102, .22), transparent 34%),
+      linear-gradient(135deg, #fffdfb 0%, #f7fbff 52%, #fff6f8 100%);
+  }
+
+  .care-broadcast__wrap {
+    max-width: 1480px;
+    margin: 0 auto;
+  }
+
+  .care-broadcast__hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) 360px;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .care-broadcast__card,
+  .care-broadcast__panel,
+  .care-broadcast__side,
+  .care-broadcast__stat,
+  .care-broadcast__list,
+  .care-broadcast__campaign {
+    border: 1px solid var(--care-line);
+    background: var(--care-panel);
+    box-shadow: var(--care-shadow);
+    backdrop-filter: blur(20px);
+  }
+
+  .care-broadcast__card {
+    border-radius: 34px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .care-broadcast__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 12px;
+    color: #be185d;
+    border: 1px solid rgba(236, 72, 153, .18);
+    background: rgba(236, 72, 153, .08);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .care-broadcast__pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #ec4899;
+    box-shadow: 0 0 0 7px rgba(236, 72, 153, .14);
+  }
+
+  .care-broadcast__card h1 {
+    margin: 22px 0 12px;
+    font-size: clamp(38px, 5vw, 68px);
+    line-height: .94;
+    letter-spacing: -.06em;
+  }
+
+  .care-broadcast__card h1 span {
+    color: transparent;
+    background: linear-gradient(95deg, #ec4899 0%, #f59e0b 40%, #14b8a6 76%, #0ea5e9 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .care-broadcast__lead {
+    max-width: 760px;
+    margin: 0;
+    color: var(--care-muted);
+    font-size: 15px;
+    line-height: 1.72;
+  }
+
+  .care-broadcast__chips,
+  .care-broadcast__hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .care-broadcast__chips {
+    margin-top: 22px;
+  }
+
+  .care-broadcast__chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 11px;
+    background: rgba(255, 255, 255, .86);
+    border: 1px solid rgba(19, 34, 56, .08);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .care-broadcast__hero-actions {
+    margin-top: 26px;
+  }
+
+  .care-broadcast__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    border: 1px solid rgba(19, 34, 56, .12);
+    color: var(--care-ink);
+    background: rgba(255, 255, 255, .86);
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+
+  .care-broadcast__button--primary {
+    color: #fff;
+    border-color: transparent;
+    background: linear-gradient(135deg, #ec4899, #f59e0b);
+    box-shadow: 0 18px 42px rgba(236, 72, 153, .22);
+  }
+
+  .care-broadcast__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 30px;
+  }
+
+  .care-broadcast__stat {
+    border-radius: 24px;
+    padding: 16px;
+  }
+
+  .care-broadcast__stat strong {
+    display: block;
+    font-size: 28px;
+    letter-spacing: -.05em;
+  }
+
+  .care-broadcast__stat span {
+    display: block;
+    margin-top: 8px;
+    color: var(--care-muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .care-broadcast__side {
+    border-radius: 34px;
+    padding: 22px;
+    background:
+      linear-gradient(155deg, rgba(255,255,255,.88), rgba(255,244,248,.68)),
+      radial-gradient(circle at top right, rgba(236,72,153,.18), transparent 34%);
+  }
+
+  .care-broadcast__side h2,
+  .care-broadcast__panel h2,
+  .care-broadcast__section h2 {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: -.03em;
+  }
+
+  .care-broadcast__side p,
+  .care-broadcast__meta,
+  .care-broadcast__hint,
+  .care-broadcast__panel p {
+    color: var(--care-muted);
+    font-size: 13px;
+    line-height: 1.62;
+  }
+
+  .care-broadcast__stack {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .care-broadcast__mini {
+    border-radius: 22px;
+    padding: 14px;
+    border: 1px solid rgba(19, 34, 56, .08);
+    background: rgba(255, 255, 255, .84);
+  }
+
+  .care-broadcast__mini strong {
+    display: block;
+    font-size: 14px;
+  }
+
+  .care-broadcast__section {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) 400px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .care-broadcast__panel {
+    border-radius: 30px;
+    padding: 24px;
+  }
+
+  .care-broadcast__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .care-broadcast__field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .care-broadcast__field--full {
+    grid-column: 1 / -1;
+  }
+
+  .care-broadcast__field label {
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--care-muted);
+  }
+
+  .care-broadcast__field input,
+  .care-broadcast__field select,
+  .care-broadcast__field textarea {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid rgba(19, 34, 56, .12);
+    padding: 12px 14px;
+    background: rgba(255,255,255,.92);
+    color: var(--care-ink);
+    font: inherit;
+  }
+
+  .care-broadcast__field textarea {
+    min-height: 160px;
+    resize: vertical;
+  }
+
+  .care-broadcast__template-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .care-broadcast__template {
+    border-radius: 24px;
+    padding: 16px;
+    border: 1px solid rgba(19, 34, 56, .10);
+    background: rgba(255,255,255,.82);
+  }
+
+  .care-broadcast__template strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .care-broadcast__template span {
+    display: block;
+    color: var(--care-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .care-broadcast__preview-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .care-broadcast__list {
+    border-radius: 26px;
+    padding: 10px;
+  }
+
+  .care-broadcast__recipient,
+  .care-broadcast__campaign {
+    display: grid;
+    gap: 6px;
+    border-radius: 20px;
+    padding: 14px;
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(19, 34, 56, .08);
+  }
+
+  .care-broadcast__recipient + .care-broadcast__recipient,
+  .care-broadcast__campaign + .care-broadcast__campaign {
+    margin-top: 10px;
+  }
+
+  .care-broadcast__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 12px;
+  }
+
+  .care-broadcast__badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: rgba(236, 72, 153, .11);
+    color: #be185d;
+    font-size: 11px;
+    font-weight: 1000;
+    letter-spacing: .04em;
+  }
+
+  .care-broadcast__empty {
+    border: 1px dashed rgba(19, 34, 56, .16);
+    border-radius: 24px;
+    padding: 22px;
+    text-align: center;
+    color: var(--care-muted);
+    background: rgba(255,255,255,.64);
+  }
+
+  .care-broadcast__flash {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    font-weight: 700;
+  }
+
+  .care-broadcast__flash--success {
+    color: #0f766e;
+    background: rgba(16, 185, 129, .12);
+    border: 1px solid rgba(16, 185, 129, .20);
+  }
+
+  .care-broadcast__flash--error {
+    color: #b91c1c;
+    background: rgba(239, 68, 68, .10);
+    border: 1px solid rgba(239, 68, 68, .18);
+  }
+
+  @media (max-width: 1200px) {
+    .care-broadcast__hero,
+    .care-broadcast__section {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .care-broadcast__stats,
+    .care-broadcast__grid,
+    .care-broadcast__template-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .care-broadcast {
+      padding: 22px 12px 42px;
+    }
+
+    .care-broadcast__card,
+    .care-broadcast__side,
+    .care-broadcast__panel {
+      padding: 20px;
+      border-radius: 24px;
+    }
+  }
+</style>
+
+<main class="care-broadcast">
+  <div class="care-broadcast__wrap">
+    <% if (successMessage) { %>
+      <div class="care-broadcast__flash care-broadcast__flash--success"><%= successMessage %></div>
+    <% } %>
+    <% if (errorMessage) { %>
+      <div class="care-broadcast__flash care-broadcast__flash--error"><%= errorMessage %></div>
+    <% } %>
+
+    <section class="care-broadcast__hero">
+      <div class="care-broadcast__card">
+        <div class="care-broadcast__eyebrow"><span class="care-broadcast__pulse"></span> UC mới cho CSKH</div>
+        <h1>Gửi <span>tin nhắn hàng loạt</span> để giữ chân khách</h1>
+        <p class="care-broadcast__lead">
+          UC này dành cho các chiến dịch outbound của CSKH: nhắc check-in, nhắc check-out,
+          cảm ơn sau lưu trú, xác nhận đặt phòng thành công
+          và chăm sóc lại khách cũ. Màn hình này tách riêng khỏi phản hồi và tư vấn để đội CSKH xử lý đúng vai trò.
+        </p>
+
+        <div class="care-broadcast__chips">
+          <span class="care-broadcast__chip"><%= Number(stats.contactableCustomers || 0).toLocaleString("vi-VN") %> khách có thể liên hệ</span>
+          <span class="care-broadcast__chip"><%= Number(stats.upcomingCheckinCount || 0).toLocaleString("vi-VN") %> khách sắp check-in</span>
+          <span class="care-broadcast__chip"><%= Number(stats.todayCheckoutCount || 0).toLocaleString("vi-VN") %> khách check-out hôm nay</span>
+        </div>
+
+        <div class="care-broadcast__hero-actions">
+          <a class="care-broadcast__button care-broadcast__button--primary" href="#broadcast-form">Soạn chiến dịch</a>
+          <a class="care-broadcast__button" href="/dashboard/cskh">Về dashboard CSKH</a>
+          <a class="care-broadcast__button" href="/feedback/advisory/manage">Qua inbox tư vấn</a>
+        </div>
+
+        <div class="care-broadcast__stats">
+          <div class="care-broadcast__stat"><strong><%= Number(stats.totalCustomers || 0).toLocaleString("vi-VN") %></strong><span>Tổng khách</span></div>
+          <div class="care-broadcast__stat"><strong><%= Number(stats.withEmail || 0).toLocaleString("vi-VN") %></strong><span>Có email</span></div>
+          <div class="care-broadcast__stat"><strong><%= Number(stats.withPhone || 0).toLocaleString("vi-VN") %></strong><span>Có số điện thoại</span></div>
+        </div>
+      </div>
+
+      <aside class="care-broadcast__side">
+        <h2>Tín hiệu outbound</h2>
+        <p class="care-broadcast__meta">CSKH có thể chọn tệp gửi theo đúng nghiệp vụ thay vì gửi thủ công từng khách.</p>
+        <div class="care-broadcast__stack">
+          <div class="care-broadcast__mini">
+            <strong><%= Number(stats.winbackCount || 0).toLocaleString("vi-VN") %> khách cần chăm sóc lại</strong>
+            <p class="care-broadcast__meta">Nhóm đã lâu chưa quay lại, phù hợp cho chiến dịch giữ chân.</p>
+          </div>
+          <div class="care-broadcast__mini">
+            <strong><%= Number(stats.upcomingCheckinCount || 0).toLocaleString("vi-VN") %> khách sắp check-in</strong>
+            <p class="care-broadcast__meta">Phù hợp để nhắc eKYC, giấy tờ, giờ nhận phòng và các hỗ trợ trước chuyến đi.</p>
+          </div>
+          <div class="care-broadcast__mini">
+            <strong><%= Number(stats.todayCheckoutCount || 0).toLocaleString("vi-VN") %> khách check-out hôm nay</strong>
+            <p class="care-broadcast__meta">Phù hợp để nhắc dịch vụ phát sinh, thời gian trả phòng và hỗ trợ checkout mượt hơn.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="care-broadcast__section">
+      <div class="care-broadcast__panel" id="broadcast-form">
+        <div class="care-broadcast__preview-head">
+          <div>
+            <h2>Soạn chiến dịch gửi hàng loạt</h2>
+            <p class="care-broadcast__meta">Chọn đúng mẫu gửi, đúng tệp khách và để hệ thống build outbound queue cho CSKH.</p>
+          </div>
+        </div>
+
+        <div class="care-broadcast__template-grid">
+          <% templates.forEach((item) => { %>
+            <article class="care-broadcast__template">
+              <strong><%= item.label %></strong>
+              <span><%= item.message %></span>
+            </article>
+          <% }) %>
+        </div>
+
+        <form method="post" action="/feedback/broadcast/send" class="care-broadcast__grid">
+          <div class="care-broadcast__field">
+            <label for="template_key">Mẫu chiến dịch</label>
+            <select id="template_key" name="template_key">
+              <% templates.forEach((item) => { %>
+                <option value="<%= item.key %>" <%= form.template_key === item.key ? "selected" : "" %>><%= item.label %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="care-broadcast__field">
+            <label for="audience_key">Tệp khách nhận tin</label>
+            <select id="audience_key" name="audience_key">
+              <% audiences.forEach((item) => { %>
+                <option value="<%= item.value %>" <%= form.audience_key === item.value ? "selected" : "" %>><%= item.label %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="care-broadcast__field">
+            <label for="channel">Kênh gửi</label>
+            <select id="channel" name="channel">
+              <% channels.forEach((item) => { %>
+                <option value="<%= item.value %>" <%= form.channel === item.value ? "selected" : "" %>><%= item.label %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="care-broadcast__field">
+            <label for="send_timing">Nhịp gửi</label>
+            <select id="send_timing" name="send_timing">
+              <option value="now" <%= form.send_timing === "now" ? "selected" : "" %>>Đưa vào queue ngay</option>
+              <option value="shift" <%= form.send_timing === "shift" ? "selected" : "" %>>Để ca CSKH xử lý trong ca</option>
+            </select>
+          </div>
+
+          <div class="care-broadcast__field care-broadcast__field--full">
+            <label for="title">Tiêu đề chiến dịch</label>
+            <input id="title" name="title" maxlength="140" value="<%= form.title || "" %>" />
+          </div>
+
+          <div class="care-broadcast__field care-broadcast__field--full">
+            <label for="message">Nội dung tin nhắn</label>
+            <textarea id="message" name="message" maxlength="1200"><%= form.message || "" %></textarea>
+            <div class="care-broadcast__hint">Nên viết ngắn, rõ hành động cần khách thực hiện và giữ giọng CSKH thân thiện.</div>
+          </div>
+          <div class="care-broadcast__field care-broadcast__field--full">
+            <button class="care-broadcast__button care-broadcast__button--primary" type="submit">Đưa vào outbound queue</button>
+          </div>
+        </form>
+      </div>
+
+      <aside class="care-broadcast__panel">
+        <div class="care-broadcast__preview-head">
+          <div>
+            <h2>Preview tệp khách</h2>
+            <p class="care-broadcast__meta"><%= preview.audienceLabel %> · <strong><%= Number(preview.total || 0).toLocaleString("vi-VN") %></strong> người nhận phù hợp.</p>
+          </div>
+        </div>
+
+        <div class="care-broadcast__list">
+          <% if (preview.items && preview.items.length) { %>
+            <% preview.items.forEach((item) => { %>
+              <article class="care-broadcast__recipient">
+                <div class="care-broadcast__row">
+                  <strong><%= item.customerName %></strong>
+                  <span class="care-broadcast__badge"><%= item.bookingLabel %></span>
+                </div>
+                <div class="care-broadcast__meta"><%= item.target %></div>
+                <div class="care-broadcast__meta"><%= item.reason || "Tệp outbound phù hợp" %></div>
+                <div class="care-broadcast__row care-broadcast__meta">
+                  <span><%= item.hotelLabel %></span>
+                  <span><%= item.checkinLabel || "-" %> -> <%= item.checkoutLabel || "-" %></span>
+                </div>
+              </article>
+            <% }) %>
+          <% } else { %>
+            <div class="care-broadcast__empty">Chưa có khách phù hợp với tệp gửi hiện tại.</div>
+          <% } %>
+        </div>
+
+        <div style="margin-top:16px">
+          <h2>Lịch sử chiến dịch gần đây</h2>
+          <p class="care-broadcast__meta">Giữ dấu vết outbound queue để CSKH biết ca trước đã gửi gì, cho ai và với mục tiêu nào.</p>
+        </div>
+
+        <div class="care-broadcast__list" style="margin-top:12px">
+          <% if (recentCampaigns.length) { %>
+            <% recentCampaigns.forEach((item) => { %>
+              <article class="care-broadcast__campaign">
+                <div class="care-broadcast__row">
+                  <strong><%= item.title %></strong>
+                  <span class="care-broadcast__badge"><%= item.statusLabel %></span>
+                </div>
+                <div class="care-broadcast__meta"><%= item.audienceLabel %> · <%= item.channelLabel %> · <%= item.recipientSummary %></div>
+                <div class="care-broadcast__row care-broadcast__meta">
+                  <span><%= item.createdByName || "Hệ thống / CSKH" %></span>
+                  <span><%= item.createdAtLabel %></span>
+                </div>
+              </article>
+            <% }) %>
+          <% } else { %>
+            <div class="care-broadcast__empty">Chưa có chiến dịch outbound nào được tạo.</div>
+          <% } %>
+        </div>
+
+        <% if (selectedCampaign) { %>
+          <div style="margin-top:16px">
+            <h2>Chiến dịch đang chọn</h2>
+            <p class="care-broadcast__meta"><strong><%= selectedCampaign.title %></strong> · <%= selectedCampaign.audienceLabel %> · <%= selectedCampaign.channelLabel %></p>
+          </div>
+        <% } %>
+      </aside>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

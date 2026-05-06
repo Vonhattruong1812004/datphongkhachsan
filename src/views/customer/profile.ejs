@@ -1,0 +1,191 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const statusTone = String(profile.trangThaiEkyc || "ChuaXacThuc");
+  const completed = [profile.tenKh, profile.email, profile.sdt, profile.cccd, profile.diaChi].filter(Boolean).length;
+  const completion = Math.round((completed / 5) * 100);
+  const statusLabel = {
+    DaXacThuc: "Đã xác thực",
+    ThatBai: "Xác thực thất bại",
+    DangXuLy: "Đang xử lý",
+    ChuaXacThuc: "Chưa xác thực"
+  }[statusTone] || statusTone;
+%>
+<style>
+  body{background:radial-gradient(circle at 7% 8%,rgba(20,184,166,.30),transparent 30%),radial-gradient(circle at 86% 10%,rgba(14,165,233,.24),transparent 32%),radial-gradient(circle at 54% 100%,rgba(163,230,53,.20),transparent 38%),linear-gradient(135deg,#fbfffb 0%,#e9fbf6 42%,#f7fbff 100%);color:#102033}
+  .profile-shell{--ink:#102033;--muted:#667085;--line:rgba(16,32,51,.10);--card:rgba(255,255,255,.78);--teal:#14b8a6;--blue:#0ea5e9;--violet:#8b5cf6;--coral:#fb7185;position:relative;overflow:hidden;max-width:1220px;margin:0 auto;padding:34px 18px 64px}
+  .profile-shell::before,.profile-shell::after{content:"";position:absolute;width:520px;height:520px;border-radius:999px;pointer-events:none;z-index:-1;opacity:.42;animation:profile-float 13s ease-in-out infinite alternate}
+  .profile-shell::before{right:-180px;top:-240px;background:conic-gradient(from 140deg,rgba(14,165,233,.42),rgba(20,184,166,.34),rgba(163,230,53,.28),rgba(139,92,246,.22),rgba(14,165,233,.42))}
+  .profile-shell::after{left:-210px;bottom:-260px;background:conic-gradient(from 30deg,rgba(251,113,133,.24),rgba(245,158,11,.22),rgba(45,212,191,.28),rgba(14,165,233,.20),rgba(251,113,133,.24));animation-delay:-5s}
+  .profile-hero,.profile-card,.profile-panel,.profile-stat{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.70));box-shadow:0 26px 72px rgba(12,39,64,.13);backdrop-filter:blur(22px)}
+  .profile-hero{position:relative;overflow:hidden;border-radius:36px;padding:32px;margin-bottom:18px;display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:22px;align-items:center}
+  .profile-hero::after{content:"";position:absolute;right:48px;bottom:-58px;width:210px;height:210px;border-radius:60px;background:linear-gradient(135deg,rgba(20,184,166,.26),rgba(14,165,233,.16));transform:rotate(18deg);animation:profile-breathe 5s ease-in-out infinite}
+  .profile-kicker{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .profile-dot{width:8px;height:8px;border-radius:999px;background:var(--teal);box-shadow:0 0 0 7px rgba(20,184,166,.12);animation:profile-pulse 1.8s ease-in-out infinite}
+  .profile-hero h1{position:relative;margin:20px 0 10px;color:var(--ink);font-size:clamp(40px,6vw,72px);line-height:.92;letter-spacing:-.07em}
+  .profile-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 48%,#65a30d);-webkit-background-clip:text;background-clip:text}
+  .profile-muted{color:var(--muted);line-height:1.65;font-size:14px}
+  .profile-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+  .profile-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:999px;border:1px solid rgba(18,48,71,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:9px 15px;font-size:13px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 12px 28px rgba(12,39,64,.08)}
+  .profile-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e)}
+  .profile-identity{position:relative;z-index:1;border-radius:28px;padding:20px;background:rgba(255,255,255,.62);border:1px solid rgba(16,32,51,.08)}
+  .profile-avatar{width:84px;height:84px;border-radius:28px;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#a3e635);display:grid;place-items:center;color:white;font-size:32px;font-weight:1000;box-shadow:0 18px 44px rgba(20,184,166,.18)}
+  .profile-pill{display:inline-flex;border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.70);border:1px solid rgba(16,32,51,.08);font-size:12px;font-weight:900;color:#14314b;margin-top:12px}
+  .profile-pill.is-ok{color:#047857;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.2)}
+  .profile-pill.is-warn{color:#b45309;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.22)}
+  .profile-pill.is-bad{color:#be123c;background:rgba(244,63,94,.10);border-color:rgba(244,63,94,.18)}
+  .profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+  .profile-stat{border-radius:24px;padding:17px}
+  .profile-stat span{display:block;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+  .profile-stat strong{display:block;margin-top:8px;color:var(--ink);font-size:28px;letter-spacing:-.05em}
+  .profile-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+  .profile-panel{border-radius:30px;padding:22px}
+  .profile-panel h2,.profile-card h3{margin:0;color:var(--ink);letter-spacing:-.05em}
+  .profile-panel h2{font-size:30px}
+  .profile-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+  .profile-field{display:grid;gap:7px}
+  .profile-field.is-wide{grid-column:1/-1}
+  .profile-field label{font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em;color:#173651}
+  .profile-field input{width:100%;min-height:48px;border-radius:17px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);color:#102033;padding:10px 13px;font:inherit;outline:none;box-sizing:border-box}
+  .profile-field input:focus{border-color:rgba(14,165,233,.46);box-shadow:0 0 0 4px rgba(14,165,233,.12)}
+  .profile-field input:disabled{background:rgba(226,232,240,.45);color:#64748b}
+  .profile-error-text{min-height:16px;color:#be123c;font-size:12px;font-weight:800}
+  .profile-note{font-size:12px;color:var(--muted);line-height:1.55}
+  .profile-alert{border-radius:22px;padding:14px 16px;margin:0 0 16px;border:1px solid rgba(18,48,71,.10);font-weight:800}
+  .profile-alert--success{background:rgba(16,185,129,.13);color:#047857;border-color:rgba(16,185,129,.22)}
+  .profile-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.24)}
+  .profile-side{display:grid;gap:14px}
+  .profile-card{border-radius:28px;padding:20px}
+  .profile-progress{height:12px;border-radius:999px;background:rgba(15,23,42,.08);overflow:hidden;margin:12px 0}
+  .profile-progress span{display:block;height:100%;width:<%= completion %>%;border-radius:inherit;background:linear-gradient(90deg,#0ea5e9,#14b8a6,#a3e635)}
+  .profile-checklist{display:grid;gap:10px;margin-top:14px}
+  .profile-check{display:flex;align-items:center;gap:9px;color:#38546b;font-size:13px;font-weight:800}
+  .profile-check::before{content:"";width:11px;height:11px;border-radius:999px;background:#cbd5e1}
+  .profile-check.is-done::before{background:#14b8a6;box-shadow:0 0 0 5px rgba(20,184,166,.11)}
+  @keyframes profile-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
+  @keyframes profile-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
+  @keyframes profile-breathe{0%,100%{transform:rotate(18deg) scale(1)}50%{transform:rotate(25deg) scale(1.04)}}
+  @media(max-width:980px){.profile-hero,.profile-layout{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:640px){.profile-shell{padding:22px 12px 48px}.profile-hero,.profile-panel,.profile-card{border-radius:26px;padding:20px}.profile-form,.profile-stats{grid-template-columns:1fr}.profile-identity{display:none}}
+</style>
+
+<main class="profile-shell">
+  <section class="profile-hero">
+    <div>
+      <span class="profile-kicker"><span class="profile-dot"></span> UC03 · Hồ sơ cá nhân</span>
+      <h1>Thông tin của bạn <span>luôn sẵn sàng.</span></h1>
+      <p class="profile-muted">Cập nhật email, số điện thoại và địa chỉ để hệ thống gửi thông báo booking, hóa đơn, dịch vụ và hỗ trợ check-in chính xác hơn.</p>
+      <div class="profile-actions">
+        <a class="profile-button profile-button--primary" href="/ekyc">Mở eKYC</a>
+        <a class="profile-button" href="/customer/dashboard">Về dashboard</a>
+        <a class="profile-button" href="/customer/bookings">Lịch sử booking</a>
+      </div>
+    </div>
+    <aside class="profile-identity">
+      <div class="profile-avatar"><%= (profile.tenKh || "KH").trim().slice(0, 2).toUpperCase() %></div>
+      <h3 style="margin:16px 0 6px"><%= profile.tenKh || "Khách hàng" %></h3>
+      <div class="profile-muted"><%= profile.email || "Chưa có email" %></div>
+      <span class="profile-pill <%= statusTone === "DaXacThuc" ? "is-ok" : statusTone === "ThatBai" ? "is-bad" : "is-warn" %>">eKYC: <%= statusLabel %></span>
+    </aside>
+  </section>
+
+  <% if (successMessage) { %><div class="profile-alert profile-alert--success"><%= successMessage %></div><% } %>
+  <% if (errorMessage) { %><div class="profile-alert profile-alert--error"><%= errorMessage %></div><% } %>
+
+  <section class="profile-stats">
+    <article class="profile-stat"><span>Hoàn thiện hồ sơ</span><strong><%= completion %>%</strong></article>
+    <article class="profile-stat"><span>Loại khách</span><strong><%= profile.loaiKhach || "Cá nhân" %></strong></article>
+    <article class="profile-stat"><span>eKYC</span><strong><%= statusLabel %></strong></article>
+  </section>
+
+  <section class="profile-layout">
+    <form class="profile-panel" method="post" action="/customer/profile" id="customerProfileForm" novalidate>
+      <h2>Cập nhật liên hệ</h2>
+      <p class="profile-muted">Theo nghiệp vụ cũ, họ tên và CCCD là thông tin định danh nên không chỉnh trực tiếp tại màn này. Nếu cần đổi CCCD, hãy gửi lại eKYC.</p>
+      <div class="profile-form">
+        <div class="profile-field">
+          <label>Họ tên</label>
+          <input value="<%= profile.tenKh || "" %>" disabled />
+          <div class="profile-note">Không chỉnh sửa tại UC này.</div>
+        </div>
+        <div class="profile-field">
+          <label>CCCD/CMND</label>
+          <input value="<%= profile.cccd || "" %>" disabled />
+          <div class="profile-note">Đồng bộ qua hồ sơ eKYC.</div>
+        </div>
+        <div class="profile-field">
+          <label>Email *</label>
+          <input id="profileEmail" name="email" type="email" value="<%= profile.email || "" %>" required placeholder="name@example.com" />
+          <div class="profile-error-text" id="errEmail"></div>
+        </div>
+        <div class="profile-field">
+          <label>Số điện thoại *</label>
+          <input id="profilePhone" name="sdt" value="<%= profile.sdt || "" %>" required placeholder="0901234567 hoặc +84901234567" />
+          <div class="profile-error-text" id="errPhone"></div>
+        </div>
+        <div class="profile-field is-wide">
+          <label>Địa chỉ</label>
+          <input name="dia_chi" value="<%= profile.diaChi || "" %>" placeholder="Địa chỉ nhận thông báo hoặc hỗ trợ vận hành" />
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="profile-button profile-button--primary" type="submit">Lưu thay đổi</button>
+        <button class="profile-button" type="reset">Nhập lại</button>
+      </div>
+    </form>
+
+    <aside class="profile-side">
+      <article class="profile-card">
+        <h3>Mức độ sẵn sàng</h3>
+        <div class="profile-progress"><span></span></div>
+        <p class="profile-muted">Hồ sơ càng đầy đủ thì quá trình đặt phòng, nhận phòng và hỗ trợ sau lưu trú càng nhanh.</p>
+      </article>
+      <article class="profile-card">
+        <h3>Checklist</h3>
+        <div class="profile-checklist">
+          <div class="profile-check <%= profile.tenKh ? "is-done" : "" %>">Có họ tên</div>
+          <div class="profile-check <%= profile.email ? "is-done" : "" %>">Có email nhận thông báo</div>
+          <div class="profile-check <%= profile.sdt ? "is-done" : "" %>">Có số điện thoại liên hệ</div>
+          <div class="profile-check <%= profile.cccd ? "is-done" : "" %>">Có CCCD/CMND</div>
+          <div class="profile-check <%= statusTone === "DaXacThuc" ? "is-done" : "" %>">Hoàn tất eKYC</div>
+        </div>
+      </article>
+    </aside>
+  </section>
+</main>
+
+<script>
+  (function () {
+    const form = document.getElementById("customerProfileForm");
+    const email = document.getElementById("profileEmail");
+    const phone = document.getElementById("profilePhone");
+    const errEmail = document.getElementById("errEmail");
+    const errPhone = document.getElementById("errPhone");
+
+    function validate() {
+      let ok = true;
+      const emailValue = (email.value || "").trim();
+      const phoneValue = (phone.value || "").trim();
+      errEmail.textContent = "";
+      errPhone.textContent = "";
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+        errEmail.textContent = "Email không hợp lệ.";
+        ok = false;
+      }
+
+      if (!/^(0|\+84)\d{8,10}$/.test(phoneValue)) {
+        errPhone.textContent = "Số điện thoại phải bắt đầu bằng 0 hoặc +84 và có 9-11 số.";
+        ok = false;
+      }
+
+      return ok;
+    }
+
+    [email, phone].forEach((field) => field && field.addEventListener("input", validate));
+    form && form.addEventListener("submit", function (event) {
+      if (!validate()) event.preventDefault();
+    });
+  })();
+</script>
+<%- include("../partials/footer") %>

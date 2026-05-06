@@ -1,0 +1,418 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const transaction = payload?.transaction || null;
+  const rooms = payload?.rooms || [];
+  const cancel = payload?.cancel || null;
+  const cancelableRooms = rooms.filter((room) => room.trangThai === "Booked");
+%>
+<style>
+  .cancel-shell{
+    --ux-card:rgba(15,23,42,.94);
+    --ux-border:rgba(148,163,184,.24);
+    --ux-border-strong:rgba(103,200,255,.42);
+    --ux-text:#e5e7eb;
+    --ux-heading:#f8fafc;
+    --ux-muted:#9fb0c8;
+    --ux-cyan:#67c8ff;
+    --ux-red:#fb7185;
+    --ux-green:#51d0b1;
+    --ux-amber:#f4c46c;
+    --ux-shadow:0 22px 60px rgba(0,0,0,.32);
+    max-width:1180px;margin:0 auto;padding:24px 18px 48px;color:var(--ux-text)
+  }
+  .cancel-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+  .cancel-title h1{margin:4px 0 6px;font-size:28px;color:var(--ux-heading)}
+  .cancel-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.28);color:#fecdd3;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .cancel-muted{color:var(--ux-muted);font-size:13px;line-height:1.55}
+  .cancel-shell .button{background:rgba(15,23,42,.88);border-color:var(--ux-border);color:var(--ux-text)}
+  .cancel-shell .button:hover{border-color:var(--ux-border-strong);transform:translateY(-1px)}
+  .cancel-shell .button--primary{background:linear-gradient(135deg,rgba(14,165,233,.92),rgba(37,99,235,.78));border-color:rgba(103,200,255,.55);color:#f8fafc;box-shadow:0 14px 34px rgba(14,165,233,.22)}
+  .cancel-shell .button--danger{background:linear-gradient(135deg,rgba(244,63,94,.94),rgba(190,18,60,.84));border-color:rgba(251,113,133,.55);color:#fff;box-shadow:0 14px 34px rgba(244,63,94,.22)}
+  .cancel-shell .button[disabled]{opacity:.55;cursor:not-allowed;transform:none}
+  .cancel-card{background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(8,21,37,.94));border:1px solid var(--ux-border);border-radius:24px;padding:20px;margin-bottom:18px;box-shadow:var(--ux-shadow)}
+  .cancel-card h2{margin:0 0 8px;font-size:20px;color:var(--ux-heading)}
+  .cancel-tag{display:inline-flex;margin-left:8px;padding:3px 9px;border-radius:999px;background:rgba(103,200,255,.12);border:1px solid rgba(103,200,255,.24);color:#bae6fd;font-size:12px;font-weight:800}
+  .cancel-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .cancel-field{display:flex;flex-direction:column;gap:6px}
+  .cancel-field label{font-size:13px;font-weight:800;color:#cbd5e1}
+  .cancel-field input,.cancel-field textarea{width:100%;border:1px solid rgba(148,163,184,.28);border-radius:16px;padding:12px 14px;background:rgba(2,6,23,.72);color:var(--ux-heading);font:inherit;outline:none;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+  .cancel-field textarea{min-height:96px;resize:vertical}
+  .cancel-field input:focus,.cancel-field textarea:focus{border-color:rgba(103,200,255,.62);box-shadow:0 0 0 3px rgba(103,200,255,.12);background:rgba(2,6,23,.9)}
+  .cancel-field input[disabled]{background:rgba(15,23,42,.72);color:#cbd5e1}
+  .cancel-error-msg{font-size:12px;color:#fda4af;min-height:16px}
+  .input-error{border-color:rgba(251,113,133,.78)!important;background:rgba(127,29,29,.22)!important}
+  .cancel-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px}
+  .cancel-alert--error{background:rgba(251,113,133,.14);color:#fecdd3;border:1px solid rgba(251,113,133,.36)}
+  .cancel-alert--success{background:rgba(81,208,177,.14);color:#bbf7d0;border:1px solid rgba(81,208,177,.36)}
+  .cancel-alert--warning{background:rgba(244,196,108,.13);color:#fde68a;border:1px solid rgba(244,196,108,.34)}
+  .cancel-actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .cancel-actions__right{display:flex;gap:10px;flex-wrap:wrap}
+  .cancel-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+  .cancel-stat{border:1px solid var(--ux-border);border-radius:18px;background:rgba(2,6,23,.46);padding:12px}
+  .cancel-stat strong{display:block;font-size:22px;color:var(--ux-heading);line-height:1}
+  .cancel-stat span{display:block;margin-top:6px;font-size:12px;color:var(--ux-muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+  .cancel-table-wrap{overflow:auto;border:1px solid var(--ux-border);border-radius:18px;margin-top:12px;background:rgba(2,6,23,.42)}
+  .cancel-table{width:100%;border-collapse:collapse;font-size:14px;min-width:900px;background:transparent;color:var(--ux-text)}
+  .cancel-table th,.cancel-table td{padding:12px;border-bottom:1px solid rgba(148,163,184,.16);text-align:left;white-space:nowrap}
+  .cancel-table th{background:rgba(15,23,42,.92);color:#cbd5e1;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .cancel-table tr:last-child td{border-bottom:0}
+  .cancel-table tbody tr:hover{background:rgba(103,200,255,.06)}
+  .cancel-badge{display:inline-flex;border-radius:999px;padding:4px 9px;background:rgba(103,200,255,.14);color:#bae6fd;border:1px solid rgba(103,200,255,.26);font-size:12px;font-weight:800}
+  .cancel-badge--green{background:rgba(81,208,177,.16);color:#bbf7d0;border-color:rgba(81,208,177,.34)}
+  .cancel-badge--red{background:rgba(251,113,133,.16);color:#fecdd3;border-color:rgba(251,113,133,.34)}
+  .cancel-badge--amber{background:rgba(244,196,108,.14);color:#fde68a;border-color:rgba(244,196,108,.34)}
+  .cancel-badge--slate{background:rgba(148,163,184,.16);color:#e2e8f0;border-color:rgba(148,163,184,.26)}
+  .cancel-scope{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
+  .cancel-scope label{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--ux-border);border-radius:16px;padding:12px;background:rgba(2,6,23,.46);color:var(--ux-text);cursor:pointer}
+  .cancel-scope label:has(input:checked){border-color:rgba(251,113,133,.45);background:rgba(244,63,94,.12)}
+  .cancel-empty{border:1px dashed rgba(148,163,184,.32);border-radius:18px;padding:18px;background:rgba(2,6,23,.34);color:var(--ux-muted)}
+  @media (max-width:900px){.cancel-title,.cancel-actions{flex-direction:column}.cancel-row,.cancel-summary,.cancel-scope{grid-template-columns:1fr}.cancel-card{padding:16px}}
+</style>
+<style>
+  body{
+    background:
+      radial-gradient(circle at 10% 12%, rgba(45,212,191,.24), transparent 24%),
+      radial-gradient(circle at 88% 10%, rgba(251,113,133,.16), transparent 26%),
+      radial-gradient(circle at 52% 100%, rgba(250,204,21,.16), transparent 28%),
+      linear-gradient(160deg,#fffef5 0%,#effffd 32%,#eef8ff 66%,#fff4f8 100%);
+    color:#14314b;
+  }
+  .cancel-shell{
+    --ux-card:rgba(255,255,255,.84);
+    --ux-border:rgba(19,48,74,.12);
+    --ux-border-strong:rgba(14,165,233,.34);
+    --ux-text:#14314b;
+    --ux-heading:#102033;
+    --ux-muted:#5f778f;
+    --ux-cyan:#0ea5e9;
+    --ux-red:#ef476f;
+    --ux-green:#10b981;
+    --ux-amber:#f59e0b;
+    --ux-shadow:0 26px 72px rgba(12,39,64,.14);
+    position:relative;
+    overflow:hidden;
+    max-width:1220px;
+    padding:30px 18px 56px;
+    color:var(--ux-text);
+    background:
+      radial-gradient(circle at 8% 10%, rgba(20,184,166,.26), transparent 26%),
+      radial-gradient(circle at 88% 12%, rgba(251,113,133,.18), transparent 28%),
+      radial-gradient(circle at 54% 100%, rgba(250,204,21,.14), transparent 30%),
+      linear-gradient(135deg,#fbfffb 0%,#ecfff8 36%,#eef8ff 68%,#fff6eb 100%);
+    border-radius:34px;
+  }
+  .cancel-shell::before,.cancel-shell::after{content:"";position:absolute;width:420px;height:420px;border-radius:999px;pointer-events:none;opacity:.44;z-index:0;animation:cancel-float 12s ease-in-out infinite alternate}
+  .cancel-shell::before{top:-210px;right:-120px;background:conic-gradient(from 130deg,rgba(14,165,233,.42),rgba(20,184,166,.32),rgba(250,204,21,.26),rgba(251,113,133,.26),rgba(14,165,233,.42))}
+  .cancel-shell::after{left:-180px;bottom:-220px;background:conic-gradient(from 20deg,rgba(251,113,133,.28),rgba(245,158,11,.22),rgba(45,212,191,.24),rgba(59,130,246,.22),rgba(251,113,133,.28));animation-delay:-4s}
+  .cancel-title,.cancel-card,.cancel-alert{position:relative;z-index:1}
+  .cancel-title h1{color:var(--ux-heading);font-size:34px;letter-spacing:-.05em}
+  .cancel-chip{background:rgba(239,71,111,.1);border-color:rgba(239,71,111,.16);color:#be123c}
+  .cancel-shell .button{background:rgba(255,255,255,.76);border-color:var(--ux-border);color:var(--ux-text);box-shadow:0 14px 32px rgba(12,39,64,.08)}
+  .cancel-shell .button--primary{background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);border-color:transparent;color:#fff;box-shadow:0 18px 38px rgba(20,184,166,.18)}
+  .cancel-shell .button--danger{background:linear-gradient(135deg,#fb7185,#e11d48);border-color:transparent;color:#fff;box-shadow:0 18px 38px rgba(239,71,111,.18)}
+  .cancel-shell .button:not(.button--primary):not(.button--danger){background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(242,251,255,.86))}
+  .cancel-card{background:
+      linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.76)),
+      radial-gradient(circle at 100% 0%, rgba(251,113,133,.08), transparent 34%);
+    border-color:var(--ux-border);
+    box-shadow:var(--ux-shadow)}
+  .cancel-card h2{color:var(--ux-heading);font-size:24px;letter-spacing:-.04em}
+  .cancel-tag{background:rgba(14,165,233,.1);border-color:rgba(14,165,233,.16);color:#0c6e90}
+  .cancel-field label{color:#173651}
+  .cancel-field input,.cancel-field textarea{background:rgba(255,255,255,.92);border-color:rgba(19,48,74,.12);color:var(--ux-heading)}
+  .cancel-field input[disabled]{background:rgba(255,255,255,.74);color:var(--ux-muted)}
+  .cancel-summary .cancel-stat,.cancel-scope label,.cancel-table-wrap{background:rgba(255,255,255,.7);border-color:var(--ux-border)}
+  .cancel-stat strong{color:var(--ux-heading)}
+  .cancel-table{color:var(--ux-text)}
+  .cancel-table th{background:rgba(255,255,255,.84);color:#36506a}
+  .cancel-table tbody tr:hover{background:rgba(14,165,233,.06)}
+  .cancel-badge{background:rgba(14,165,233,.1);border-color:rgba(14,165,233,.16);color:#0c6e90}
+  .cancel-badge--green{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.18);color:#047857}
+  .cancel-badge--red{background:rgba(239,71,111,.1);border-color:rgba(239,71,111,.18);color:#be123c}
+  .cancel-badge--amber{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.18);color:#b45309}
+  .cancel-badge--slate{background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.18);color:#475569}
+  .cancel-scope label:has(input:checked){border-color:rgba(239,71,111,.24);background:rgba(239,71,111,.06)}
+  .cancel-empty{background:rgba(255,255,255,.72);border-color:rgba(19,48,74,.14);color:var(--ux-muted)}
+  @keyframes cancel-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
+</style>
+
+<main class="cancel-shell">
+  <section class="cancel-title">
+    <div>
+      <div class="cancel-chip">UC Hủy đặt phòng · Lễ tân</div>
+      <h1>Hủy đặt phòng</h1>
+      <div class="cancel-muted">Tìm giao dịch, chọn hủy toàn bộ hoặc từng phòng Booked, nhập lý do và cập nhật trạng thái phòng về trống.</div>
+    </div>
+    <a class="button" href="/frontdesk">Quay lại trang lễ tân</a>
+  </section>
+
+  <% if (notice?.error) { %>
+    <div class="cancel-alert cancel-alert--error"><%= notice.error %></div>
+  <% } %>
+  <% if (notice?.success) { %>
+    <div class="cancel-alert cancel-alert--success"><%= notice.success %></div>
+  <% } %>
+  <div id="clientErrors" class="cancel-alert cancel-alert--error" style="display:none">
+    <strong>Có lỗi xảy ra:</strong>
+    <ul id="clientErrorsList" style="margin:8px 0 0 18px;padding:0"></ul>
+  </div>
+
+  <form method="post" action="/frontdesk/cancel-booking" id="formSearch" class="cancel-card">
+    <h2>Tìm kiếm giao dịch <span class="cancel-tag">Bước 1</span></h2>
+    <p class="cancel-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn. Hệ thống chỉ nhận số để nhất quán với UC PHP cũ.</p>
+    <div class="cancel-row" style="grid-template-columns:2fr 1fr">
+      <div class="cancel-field">
+        <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
+        <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 12 hoặc 22653661123" />
+        <div class="cancel-error-msg" id="err_search"></div>
+      </div>
+      <div class="cancel-field" style="justify-content:flex-end">
+        <div class="cancel-actions" style="margin-top:0;justify-content:flex-start">
+          <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
+          <button class="button" type="submit" name="btn_action" value="back">Quay lại</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <form method="post" action="/frontdesk/cancel-booking" id="formCancel" class="cancel-card">
+    <h2>Thông tin hủy đặt phòng <span class="cancel-tag">Bước 2</span></h2>
+
+    <% if (transaction && cancel) { %>
+      <input type="hidden" name="ma_giao_dich" value="<%= transaction.maGiaoDich %>" />
+      <input type="hidden" name="search_keyword" value="<%= keyword || transaction.maGiaoDich %>" />
+
+      <div class="cancel-row">
+        <div class="cancel-field">
+          <label>Mã giao dịch</label>
+          <input type="text" value="<%= transaction.maGiaoDich %>" disabled />
+        </div>
+        <div class="cancel-field">
+          <label>Trạng thái giao dịch</label>
+          <input type="text" value="<%= transaction.trangThai %>" disabled />
+        </div>
+        <div class="cancel-field">
+          <label>Khách sạn / cơ sở</label>
+          <input type="text" value="<%= cancel.hotelLabel %>" disabled />
+        </div>
+      </div>
+
+      <div class="cancel-row">
+        <div class="cancel-field">
+          <label>Tên trưởng đoàn</label>
+          <input type="text" value="<%= cancel.leaderName || transaction.customerName || "Khách vãng lai" %>" disabled />
+        </div>
+        <div class="cancel-field">
+          <label>CMND/CCCD trưởng đoàn</label>
+          <input type="text" value="<%= cancel.leaderCccd || transaction.cccd || "" %>" disabled />
+        </div>
+        <div class="cancel-field">
+          <label>Tổng tiền hiện tại</label>
+          <input type="text" value="<%= transaction.tongTienFormatted || "" %>" disabled />
+        </div>
+      </div>
+
+      <div class="cancel-summary">
+        <div class="cancel-stat"><strong><%= rooms.length %></strong><span>Tổng phòng</span></div>
+        <div class="cancel-stat"><strong><%= cancel.counts.booked %></strong><span>Có thể hủy</span></div>
+        <div class="cancel-stat"><strong><%= cancel.counts.checkedIn %></strong><span>Đã check-in</span></div>
+        <div class="cancel-stat"><strong><%= cancel.counts.cancelled %></strong><span>Đã hủy</span></div>
+      </div>
+
+      <% if (!cancel.allowCancel) { %>
+        <div class="cancel-alert cancel-alert--warning">
+          Không thể hủy giao dịch này. Chỉ giao dịch còn phòng <strong>Booked</strong>, chưa check-in và chưa thanh toán mới được hủy.
+        </div>
+      <% } %>
+
+      <div class="cancel-table-wrap">
+        <table class="cancel-table">
+          <thead>
+            <tr>
+              <th>Mã phòng</th>
+              <th>Số phòng</th>
+              <th>Loại phòng</th>
+              <th>Ngày bắt đầu</th>
+              <th>Ngày kết thúc</th>
+              <th>Số người</th>
+              <th>Trạng thái</th>
+              <th style="text-align:center">Hủy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rooms.forEach((room) => {
+              const statusClass = ["Cancelled", "DaHuy"].includes(room.trangThai)
+                ? "cancel-badge--red"
+                : (room.trangThai === "CheckedIn" ? "cancel-badge--green" : (room.trangThai === "Booked" ? "cancel-badge--amber" : "cancel-badge--slate"));
+            %>
+              <tr>
+                <td><%= room.maPhong %></td>
+                <td><%= room.soPhong %></td>
+                <td><%= room.loaiPhong %></td>
+                <td><%= room.ngayNhanLabel %></td>
+                <td><%= room.ngayTraLabel %></td>
+                <td><%= room.soNguoi || 0 %></td>
+                <td><span class="cancel-badge <%= statusClass %>"><%= room.trangThai %></span></td>
+                <td style="text-align:center">
+                  <% if (room.trangThai === "Booked") { %>
+                    <input class="chk-room" type="checkbox" name="phong_cancel" value="<%= room.maPhong %>" checked />
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cancel-scope">
+        <label>
+          <input type="radio" name="cancel_scope" value="all" checked />
+          <span><strong>Hủy toàn bộ</strong><br><span class="cancel-muted">Tự chọn tất cả phòng còn Booked trong giao dịch.</span></span>
+        </label>
+        <label>
+          <input type="radio" name="cancel_scope" value="partial" />
+          <span><strong>Hủy từng phòng</strong><br><span class="cancel-muted">Chỉ hủy các phòng được tick trong bảng.</span></span>
+        </label>
+      </div>
+
+      <div class="cancel-row" style="grid-template-columns:1fr;margin-top:14px">
+        <div class="cancel-field">
+          <label for="ly_do_huy">Lý do hủy <span style="color:#fda4af">*</span></label>
+          <textarea id="ly_do_huy" name="ly_do_huy" placeholder="VD: Khách đổi lịch, đặt nhầm ngày, yêu cầu hủy..."></textarea>
+          <div class="cancel-error-msg" id="err_reason"></div>
+        </div>
+      </div>
+
+      <div class="cancel-actions">
+        <button class="button" type="reset">Làm lại</button>
+        <div class="cancel-actions__right">
+          <button class="button" type="submit" name="btn_action" value="back">Quay lại</button>
+          <button
+            class="button button--danger"
+            type="submit"
+            name="btn_action"
+            value="cancel"
+            <%= cancel.allowCancel ? "" : "disabled" %>
+            onclick="return confirm('Bạn chắc chắn muốn hủy đặt phòng này?');"
+          >
+            Xác nhận hủy đặt phòng
+          </button>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="cancel-empty">Chưa có giao dịch nào được chọn. Vui lòng tìm kiếm ở phần trên.</div>
+    <% } %>
+  </form>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const formSearch = document.getElementById("formSearch");
+  const formCancel = document.getElementById("formCancel");
+  const search = document.getElementById("search_keyword");
+  const searchErr = document.getElementById("err_search");
+  const reason = document.getElementById("ly_do_huy");
+  const reasonErr = document.getElementById("err_reason");
+  const clientErrors = document.getElementById("clientErrors");
+  const clientErrorsList = document.getElementById("clientErrorsList");
+
+  function showFieldError(field, box, message) {
+    if (field) field.classList.add("input-error");
+    if (box) box.textContent = message;
+  }
+
+  function clearFieldError(field, box) {
+    if (field) field.classList.remove("input-error");
+    if (box) box.textContent = "";
+  }
+
+  function validateSearch(fromSubmit) {
+    const value = (search?.value || "").trim();
+    clearFieldError(search, searchErr);
+    if (!value) {
+      if (fromSubmit) showFieldError(search, searchErr, "Vui lòng nhập mã giao dịch hoặc CMND/CCCD.");
+      return fromSubmit ? ["Vui lòng nhập mã giao dịch hoặc CMND/CCCD."] : [];
+    }
+    if (!/^\d+$/.test(value)) {
+      showFieldError(search, searchErr, "Chỉ được nhập số.");
+      return ["Chỉ được nhập số."];
+    }
+    if (value.length > 12) {
+      showFieldError(search, searchErr, "Tối đa 12 số.");
+      return ["Tối đa 12 số."];
+    }
+    return [];
+  }
+
+  function selectedRoomCount() {
+    return document.querySelectorAll(".chk-room:checked").length;
+  }
+
+  function setScopeMode() {
+    const scope = document.querySelector("input[name='cancel_scope']:checked")?.value || "all";
+    document.querySelectorAll(".chk-room").forEach((checkbox) => {
+      if (scope === "all") checkbox.checked = true;
+    });
+  }
+
+  function validateCancel() {
+    const errors = [];
+    const scope = document.querySelector("input[name='cancel_scope']:checked")?.value || "all";
+    clearFieldError(reason, reasonErr);
+
+    if (scope === "partial" && selectedRoomCount() === 0) {
+      errors.push("Vui lòng chọn ít nhất một phòng cần hủy.");
+    }
+
+    if (!(reason?.value || "").trim()) {
+      showFieldError(reason, reasonErr, "Vui lòng nhập lý do hủy.");
+      errors.push("Vui lòng nhập lý do hủy.");
+    }
+
+    return errors;
+  }
+
+  function showClientErrors(errors) {
+    if (!clientErrors || !clientErrorsList) return;
+    clientErrorsList.innerHTML = "";
+    errors.forEach((message) => {
+      const li = document.createElement("li");
+      li.textContent = message;
+      clientErrorsList.appendChild(li);
+    });
+    clientErrors.style.display = errors.length ? "block" : "none";
+    if (errors.length) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  search?.addEventListener("input", () => validateSearch(false));
+  search?.addEventListener("blur", () => validateSearch(false));
+  reason?.addEventListener("input", () => clearFieldError(reason, reasonErr));
+  document.querySelectorAll("input[name='cancel_scope']").forEach((radio) => {
+    radio.addEventListener("change", setScopeMode);
+  });
+
+  formSearch?.addEventListener("submit", (event) => {
+    if ((event.submitter?.value || "") !== "search") return;
+    const errors = validateSearch(true);
+    if (errors.length) {
+      event.preventDefault();
+      showClientErrors(errors);
+    }
+  });
+
+  formCancel?.addEventListener("submit", (event) => {
+    if ((event.submitter?.value || "") !== "cancel") return;
+    const errors = validateCancel();
+    if (errors.length) {
+      event.preventDefault();
+      showClientErrors(errors);
+    }
+  });
+
+  setScopeMode();
+});
+</script>
+<%- include("../partials/footer") %>
