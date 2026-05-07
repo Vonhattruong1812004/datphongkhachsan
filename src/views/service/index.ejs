@@ -127,9 +127,9 @@
         <h1><%= isFrontdesk ? "Đăng ký dịch vụ" : "Room operations" %> <span><%= isFrontdesk ? "cho khách đang ở." : "live board." %></span></h1>
         <p class="svc-lead">
           <% if (isFrontdesk) { %>
-            Tìm giao dịch đã check-in, chọn phòng đang CheckedIn và gán nhiều dịch vụ trong một lần, đúng flow PHP cũ.
+            Tìm giao dịch đã check-in, chọn phòng đang ở và thêm nhiều dịch vụ trong một lần.
           <% } else { %>
-            Trang này là hub điều hướng. Ba UC của Nhân viên dịch vụ đã được tách riêng, mỗi UC có trang xử lý độc lập.
+            Chọn nhanh màn cần xử lý: dịch vụ, kiểm tra phòng hoặc room board live.
           <% } %>
         </p>
         <div class="svc-actions">
@@ -288,21 +288,21 @@
       </section>
     <% } else { %>
       <section class="svc-card">
-        <h2>Chọn nghiệp vụ dịch vụ</h2>
-        <p class="svc-muted">Workspace này chỉ đóng vai trò điều hướng nhanh. Mỗi UC bên dưới có route và màn xử lý riêng để tránh lẫn nghiệp vụ.</p>
+        <h2>Chọn việc cần xử lý</h2>
+        <p class="svc-muted">Mở nhanh màn quản lý dịch vụ, kiểm tra phòng hoặc room board live.</p>
         <div class="svc-grid">
           <a class="svc-action" href="/service/catalog/manage" style="--card-accent:#14b8a6;--card-glow:rgba(20,184,166,.22)">
-            <span class="svc-badge">UC01</span>
+            <span class="svc-badge">01</span>
             <h3>Quản lý dịch vụ</h3>
             <p>Thêm, sửa, ngưng bán/xóa dịch vụ, quản lý giá, mô tả, hình ảnh và trạng thái.</p>
           </a>
           <a class="svc-action" href="/service/room-inspection" style="--card-accent:#0ea5e9;--card-glow:rgba(14,165,233,.20)">
-            <span class="svc-badge svc-badge--blue">UC02</span>
+            <span class="svc-badge svc-badge--blue">02</span>
             <h3>Kiểm tra tình trạng phòng</h3>
             <p>Chọn phòng, cập nhật tình trạng thực tế, ghi log và phát realtime cho các bộ phận.</p>
           </a>
           <a class="svc-action" href="/service/room-board-live" style="--card-accent:#a3e635;--card-glow:rgba(163,230,53,.20)">
-            <span class="svc-badge">UC03</span>
+            <span class="svc-badge">03</span>
             <h3>Room board live</h3>
             <p>Theo dõi snapshot phòng realtime: Stayed, Booked, Cleaning, Maintenance và phòng cần ưu tiên.</p>
           </a>

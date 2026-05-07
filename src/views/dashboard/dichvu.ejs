@@ -737,8 +737,8 @@
     <section class="svc-section" aria-label="Nghiệp vụ nhân viên dịch vụ">
       <div class="svc-section-head">
         <div>
-          <h2>Use case chính</h2>
-          <p>Chỉ giữ 3 UC của actor Nhân viên dịch vụ theo code2, không gộp thêm luồng của lễ tân hoặc khách hàng.</p>
+          <h2>Tác vụ chính</h2>
+          <p>Ba màn dùng nhiều nhất của nhân viên dịch vụ.</p>
         </div>
       </div>
 
@@ -746,12 +746,12 @@
         <% primaryActions.forEach((item, index) => { %>
           <a class="svc-uc-card" href="<%= item.href %>">
             <div class="svc-uc-top">
-              <span class="svc-uc-code">UC<%= String(index + 1).padStart(2, "0") %></span>
+              <span class="svc-uc-code"><%= String(index + 1).padStart(2, "0") %></span>
               <span class="svc-uc-orb"></span>
             </div>
             <h3><%= item.label %></h3>
             <p><%= item.note %></p>
-            <span class="svc-open">Mở nghiệp vụ</span>
+            <span class="svc-open">Mở</span>
           </a>
         <% }) %>
       </div>
@@ -763,7 +763,7 @@
           <h2>Ca dịch vụ hôm nay</h2>
           <p>Các điểm vận hành quan trọng xoay quanh catalog dịch vụ, kiểm tra phòng và room board live.</p>
         </div>
-        <a class="svc-button" href="/service">Vào workspace dịch vụ</a>
+        <a class="svc-button" href="/service">Vào màn dịch vụ</a>
       </div>
 
       <div class="svc-shift-grid">
@@ -782,10 +782,10 @@
       </div>
     </section>
 
-    <section class="svc-section" aria-label="Nền nghiệp vụ">
+    <section class="svc-section" aria-label="Nền vận hành">
       <div class="svc-section-head">
         <div>
-          <h2>Nền nghiệp vụ đang có</h2>
+          <h2>Nền vận hành đang có</h2>
           <p>Ba nhóm khả năng đúng phạm vi actor Dịch vụ, dùng làm nền để phát triển tiếp mà không lệch nghiệp vụ.</p>
         </div>
       </div>

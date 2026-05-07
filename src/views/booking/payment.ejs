@@ -1,0 +1,121 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const room = preview.room;
+  const booking = preview.booking;
+  const summary = preview.summary;
+  const transfer = hold.paymentTransfer || {};
+  const expiresAt = new Date(hold.expiresAt).getTime();
+%>
+<style>
+  body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
+  .pay-shell{max-width:1080px;margin:0 auto;padding:34px 18px 64px}
+  .pay-card{border:1px solid rgba(19,48,74,.12);border-radius:32px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74));box-shadow:0 26px 72px rgba(12,39,64,.14);backdrop-filter:blur(22px);padding:26px;margin-bottom:18px}
+  .pay-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+  .pay-chip{display:inline-flex;border-radius:999px;padding:6px 11px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase}
+  .pay-card h1,.pay-card h2{margin:14px 0 10px;color:#102033;letter-spacing:0}.pay-card h1{font-size:clamp(36px,5vw,58px);line-height:1}
+  .pay-muted{color:#5f778f;line-height:1.65}.pay-box{border-radius:22px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.72);padding:16px}
+  .pay-lines{display:grid;gap:10px;margin-top:14px}.pay-line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed rgba(19,48,74,.14);padding-bottom:10px;color:#5f778f}.pay-line strong{color:#102033}.pay-line--total{border-bottom:0;border-radius:20px;background:linear-gradient(135deg,rgba(14,165,233,.10),rgba(20,184,166,.12));padding:14px;color:#102033;font-size:18px;font-weight:1000}
+  .pay-qr{width:100%;border-radius:24px;border:1px solid rgba(19,48,74,.10);background:white;padding:10px}
+  .pay-content{font-size:20px;font-weight:1000;color:#0f766e;overflow-wrap:anywhere}.pay-count{font-size:36px;color:#e11d48;font-weight:1000}
+  .pay-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.pay-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer}.pay-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e)}
+  .pay-success{display:none;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.10)}.pay-success.is-show{display:block}.pay-pending.is-hide{display:none}
+  @media(max-width:860px){.pay-grid{grid-template-columns:1fr}}
+</style>
+
+<main class="pay-shell" data-hold-id="<%= hold.holdId %>" data-expires-at="<%= expiresAt %>">
+  <section class="pay-card">
+    <span class="pay-chip">Giữ phòng 10 phút · Cọc 50%</span>
+    <h1>Thanh toán cọc để tạo booking.</h1>
+    <p class="pay-muted">Hệ thống chỉ tạo booking thật sau khi SePay xác nhận tiền cọc. Trong thời gian giữ chỗ, phòng này không hiển thị cho lượt đặt trùng lịch.</p>
+  </section>
+
+  <section class="pay-card pay-success" id="paySuccess">
+    <span class="pay-chip">Thanh toán thành công</span>
+    <h2>Booking đã được tạo</h2>
+    <p class="pay-muted" id="successText">SePay đã xác nhận cọc. Bạn có thể xem hóa đơn và lịch sử booking.</p>
+    <div class="pay-actions">
+      <a class="pay-button pay-button--primary" id="invoiceLink" href="#">Xem hóa đơn</a>
+      <a class="pay-button" href="/customer/bookings">Lịch sử booking</a>
+    </div>
+  </section>
+
+  <section class="pay-grid pay-pending" id="payPending">
+    <div class="pay-card">
+      <span class="pay-chip"><%= room.tinhThanh %> · <%= room.khachSan %></span>
+      <h2><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h2>
+      <div class="pay-lines">
+        <div class="pay-line"><span>Khách</span><strong><%= booking.ten_khach %></strong></div>
+        <div class="pay-line"><span>Thời gian</span><strong><%= summary.checkinLabel %> → <%= summary.checkoutLabel %></strong></div>
+        <div class="pay-line"><span>Tiền phòng</span><strong><%= summary.subtotalFormatted %></strong></div>
+        <div class="pay-line"><span>Khuyến mãi</span><strong>-<%= summary.discountFormatted %></strong></div>
+        <div class="pay-line pay-line--total"><span>Tổng hóa đơn</span><strong><%= summary.totalFormatted %></strong></div>
+        <div class="pay-line pay-line--total"><span>Cọc 50%</span><strong><%= summary.depositAmountFormatted %></strong></div>
+      </div>
+    </div>
+
+    <aside class="pay-card">
+      <img class="pay-qr" src="<%= transfer.qrImageUrl %>" alt="QR thanh toán SePay" />
+      <div class="pay-box" style="margin-top:14px">
+        <div class="pay-muted">Nội dung chuyển khoản</div>
+        <div class="pay-content"><%= transfer.content %></div>
+      </div>
+      <div class="pay-box" style="margin-top:12px">
+        <div class="pay-muted">Số tiền</div>
+        <div class="pay-content"><%= transfer.amountFormatted %></div>
+      </div>
+      <div class="pay-box" style="margin-top:12px">
+        <div class="pay-muted">Hạn giữ phòng</div>
+        <div class="pay-count" id="countdown">10:00</div>
+      </div>
+      <p class="pay-muted"><%= transfer.bankName %> · <%= transfer.accountNo %> · <%= transfer.accountName %></p>
+    </aside>
+  </section>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const shell = document.querySelector(".pay-shell");
+  const holdId = Number(shell?.dataset.holdId || 0);
+  const expiresAt = Number(shell?.dataset.expiresAt || 0);
+  const countdown = document.getElementById("countdown");
+  const pending = document.getElementById("payPending");
+  const success = document.getElementById("paySuccess");
+  const invoiceLink = document.getElementById("invoiceLink");
+  let done = false;
+
+  function renderCountdown() {
+    const remain = Math.max(0, expiresAt - Date.now());
+    const seconds = Math.ceil(remain / 1000);
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    if (countdown) countdown.textContent = `${mm}:${ss}`;
+  }
+
+  async function poll() {
+    if (done || !holdId) return;
+    try {
+      const response = await fetch(`/api/booking/holds/${holdId}`, { credentials: "same-origin" });
+      const json = await response.json();
+      const data = json?.data || {};
+      if (data.status === "PAID" && data.transactionId) {
+        done = true;
+        pending?.classList.add("is-hide");
+        success?.classList.add("is-show");
+        if (invoiceLink) invoiceLink.href = `/booking/invoice/${data.transactionId}`;
+        return;
+      }
+      if (data.status === "EXPIRED" || Date.now() >= expiresAt) {
+        done = true;
+        if (countdown) countdown.textContent = "Hết hạn";
+      }
+    } catch {}
+  }
+
+  renderCountdown();
+  poll();
+  setInterval(renderCountdown, 1000);
+  setInterval(poll, 2500);
+});
+</script>
+<%- include("../partials/footer") %>

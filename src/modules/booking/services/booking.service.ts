@@ -3,6 +3,8 @@ import { z } from "zod";
 import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 import { directBookingHoldStore } from "../../payment/direct-booking-hold-store";
+import { customerBookingHoldStore, type CustomerBookingHold } from "../../payment/customer-booking-hold-store";
+import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, replaceSepayMetadata } from "../../payment/sepay";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
 import { calculatePromotionDiscount, isCustomerCancelableBooking, isCustomerEditableBooking } from "./booking-rules";
@@ -216,9 +218,11 @@ export interface BookingPreviewPayload {
     subtotal: number;
     discount: number;
     total: number;
+    depositAmount: number;
     subtotalFormatted: string;
     discountFormatted: string;
     totalFormatted: string;
+    depositAmountFormatted: string;
     checkinLabel: string;
     checkoutLabel: string;
   };
@@ -427,7 +431,10 @@ export class BookingService {
     );
 
     const heldRoomIds = filters.ngay_nhan && filters.ngay_tra
-      ? directBookingHoldStore.getActiveRoomIds(filters.ngay_nhan, filters.ngay_tra)
+      ? new Set([
+          ...directBookingHoldStore.getActiveRoomIds(filters.ngay_nhan, filters.ngay_tra),
+          ...customerBookingHoldStore.getActiveRoomIds(filters.ngay_nhan, filters.ngay_tra)
+        ])
       : new Set<number>();
     const items = result.rows.filter((room) => !heldRoomIds.has(Number(room.id)));
 
@@ -501,6 +508,7 @@ export class BookingService {
     const promotion = booking.ma_km ? await this.getPromotionById(booking.ma_km) : null;
     const discount = calculatePromotionDiscount(subtotal, promotion);
     const total = Math.max(0, subtotal - discount);
+    const depositAmount = Math.ceil(total * 0.5);
 
     return {
       room,
@@ -512,17 +520,139 @@ export class BookingService {
         subtotal,
         discount,
         total,
+        depositAmount,
         subtotalFormatted: formatMoney(subtotal),
         discountFormatted: formatMoney(discount),
         totalFormatted: formatMoney(total),
+        depositAmountFormatted: formatMoney(depositAmount),
         checkinLabel: formatDate(booking.ngay_nhan),
         checkoutLabel: formatDate(booking.ngay_tra)
       }
     };
   }
 
-  async createBooking(rawInput: unknown, preferredCustomerId = 0) {
+  async createCustomerBookingPaymentHold(rawInput: unknown, preferredCustomerId = 0) {
     const preview = await this.previewBooking(rawInput);
+    const hold = customerBookingHoldStore.create(preview.booking, preferredCustomerId, {
+      roomAmount: preview.summary.subtotal,
+      discountAmount: preview.summary.discount,
+      total: preview.summary.total,
+      depositAmount: preview.summary.depositAmount
+    });
+
+    return {
+      holdId: hold.id,
+      status: hold.status,
+      content: hold.content,
+      roomId: hold.roomId,
+      expiresAt: hold.expiresAt,
+      paymentPending: true,
+      paymentTransfer: buildSepayTransferPayload(hold.id, preview.summary.depositAmount),
+      preview,
+      total: preview.summary.total,
+      depositAmount: preview.summary.depositAmount,
+      totalFormatted: preview.summary.totalFormatted,
+      depositAmountFormatted: preview.summary.depositAmountFormatted,
+      message: "Da tao QR giu phong 10 phut. Thanh toan coc 50% de tao booking."
+    };
+  }
+
+  getCustomerBookingHoldStatus(holdId: number) {
+    const hold = customerBookingHoldStore.get(Number(holdId || 0));
+    if (!hold) {
+      return {
+        holdId,
+        status: "UNKNOWN",
+        message: "Khong tim thay ma giu cho hoac da qua thoi gian luu trang thai."
+      };
+    }
+
+    return {
+      holdId: hold.id,
+      status: hold.status,
+      transactionId: hold.transactionId || 0,
+      bookingCode: hold.bookingCode || "",
+      expiresAt: hold.expiresAt,
+      total: hold.summary.total,
+      depositAmount: hold.summary.depositAmount,
+      totalFormatted: formatMoney(hold.summary.total),
+      depositAmountFormatted: formatMoney(hold.summary.depositAmount),
+      message: hold.status === "PAID"
+        ? "Thanh toan coc thanh cong. Booking da duoc tao."
+        : hold.status === "EXPIRED"
+          ? "Ma giu phong da het han thanh toan."
+          : "Dang cho SePay xac nhan tien coc."
+    };
+  }
+
+  async finalizeCustomerBookingHold(hold: CustomerBookingHold, paidAmount: number) {
+    if (hold.status !== "PENDING") {
+      return {
+        transactionId: hold.transactionId || 0,
+        bookingCode: hold.bookingCode || "",
+        message: "Hold already handled."
+      };
+    }
+
+    if (new Date(hold.expiresAt).getTime() < Date.now()) {
+      customerBookingHoldStore.expire(hold.id);
+      throw new HttpError(409, "Hold thanh toan da het han.");
+    }
+
+    if (Math.round(paidAmount) < Math.round(hold.summary.depositAmount)) {
+      throw new HttpError(422, "So tien coc chua du.");
+    }
+
+    customerBookingHoldStore.remove(hold.id);
+    const paidMeta = {
+      content: hold.content,
+      expiresAt: hold.expiresAt,
+      depositAmount: hold.summary.depositAmount,
+      paidAmount: Math.round(paidAmount),
+      status: "PAID" as const
+    };
+    const note = appendNote(
+      replaceSepayMetadata("Booking online tao sau khi khach thanh toan coc SePay.", paidMeta),
+      buildSepayPaidNote(paidAmount)
+    );
+    const detail = await this.createBooking(hold.input, hold.preferredCustomerId, {
+      paymentMethod: "ChuyenKhoan",
+      note
+    });
+
+    customerBookingHoldStore.completeSnapshot(hold, detail.id, detail.bookingCode || "");
+
+    realtimeHub.publish({
+      type: "customer_booking_created_after_deposit",
+      scopes: ["admin", "letan", "quanly", "ketoan"],
+      data: {
+        holdId: hold.id,
+        bookingId: detail.id,
+        bookingCode: detail.bookingCode,
+        customerName: detail.customer.name,
+        total: detail.total,
+        depositAmount: hold.summary.depositAmount,
+        totalFormatted: detail.totalFormatted,
+        depositAmountFormatted: formatMoney(hold.summary.depositAmount),
+        amount: Math.round(paidAmount)
+      }
+    });
+
+    return {
+      transactionId: detail.id,
+      bookingCode: detail.bookingCode,
+      total: detail.total,
+      depositAmount: hold.summary.depositAmount,
+      totalFormatted: detail.totalFormatted,
+      depositAmountFormatted: formatMoney(hold.summary.depositAmount),
+      message: "Deposit paid and customer booking created."
+    };
+  }
+
+  async createBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string } = {}) {
+    const preview = await this.previewBooking(rawInput);
+    const paymentMethod = options.paymentMethod || "ChuaThanhToan";
+    const bookingNote = options.note || "Booking online tao tu Node.js";
 
     const bookingId = await withTransaction(async (client) => {
       const lockedRoom = await client.query(
@@ -570,14 +700,15 @@ export class BookingService {
             ghichu,
             makhuyenmai
           )
-          VALUES ($1, $2, NOW(), 'DatPhong', 'Web', $3, 'Booked', 'ChuaThanhToan', $4, $5)
+          VALUES ($1, $2, NOW(), 'DatPhong', 'Web', $3, 'Booked', $4, $5, $6)
           RETURNING magiaodich
         `,
         [
           maKhachHang,
           bookingCode,
           preview.summary.total,
-          "Booking online tao tu Node.js",
+          paymentMethod,
+          bookingNote,
           preview.promotion?.id ?? null
         ]
       ) as { rows: Array<{ magiaodich: number }> };
@@ -1468,6 +1599,9 @@ export class BookingService {
   private async ensureRoomAvailability(roomId: number, checkin: string, checkout: string) {
     if (directBookingHoldStore.getActiveRoomIds(checkin, checkout).has(roomId)) {
       throw new HttpError(409, "Phong nay dang duoc le tan giu cho thanh toan coc.");
+    }
+    if (customerBookingHoldStore.getActiveRoomIds(checkin, checkout).has(roomId)) {
+      throw new HttpError(409, "Phong nay dang duoc khach khac giu cho thanh toan coc.");
     }
 
     const result = await query<{ count: number }>(

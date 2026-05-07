@@ -9,6 +9,7 @@ import {
   SEPAY_HOLD_MINUTES,
   appendNote,
   buildSepayDepositAppliedNote,
+  buildSepayCheckoutContent,
   buildSepayMetadata,
   buildSepayPaidNote,
   buildSepayTransferPayload,
@@ -143,6 +144,10 @@ interface CancelBookingInput {
   scope: CancelScope;
   roomIds: number[];
   reason: string;
+  refundBankName?: string;
+  refundAccountNo?: string;
+  refundAccountName?: string;
+  refundNote?: string;
 }
 
 export class FrontdeskService {
@@ -286,6 +291,7 @@ export class FrontdeskService {
     const firstRoom = snapshot.rooms[0];
     const lockedStatus = ["DaHuy", "Stayed", "Paid"].includes(snapshot.transaction.trangThai);
     const allowCancel = !lockedStatus && bookedRooms.length > 0 && checkedInRooms.length === 0;
+    const refund = await this.buildCancelRefundPreview(snapshot);
 
     return {
       ...snapshot,
@@ -296,6 +302,7 @@ export class FrontdeskService {
         allowCancel,
         lockedStatus,
         cancelableCount: bookedRooms.length,
+        refund,
         counts: {
           booked: bookedRooms.length,
           checkedIn: checkedInRooms.length,
@@ -746,7 +753,7 @@ export class FrontdeskService {
       checkedInRoomsAfterThis: roomsStayed.filter((item) => item.maPhong !== roomId).length
     });
     const dueTotal = Math.max(0, total - deposit.credit);
-    const paymentTransfer = this.buildTransferPaymentPayload(transactionId, room.soPhong, dueTotal);
+    const paymentTransfer = this.buildTransferPaymentPayload(transactionId, roomId, room.soPhong, dueTotal);
 
     return {
       transactionId,
@@ -789,6 +796,9 @@ export class FrontdeskService {
         surchargeFee,
         damageFee,
         discountFee,
+        paidDeposit: deposit.paidDeposit,
+        appliedDeposit: deposit.appliedDeposit,
+        remainingDepositBeforeCheckout: deposit.remainingCredit,
         depositCredit: deposit.credit,
         beforeDiscount,
         totalBeforeDeposit: total,
@@ -798,6 +808,9 @@ export class FrontdeskService {
         surchargeFeeFormatted: formatMoney(surchargeFee),
         damageFeeFormatted: formatMoney(damageFee),
         discountFeeFormatted: formatMoney(discountFee),
+        paidDepositFormatted: formatMoney(deposit.paidDeposit),
+        appliedDepositFormatted: formatMoney(deposit.appliedDeposit),
+        remainingDepositBeforeCheckoutFormatted: formatMoney(deposit.remainingCredit),
         depositCreditFormatted: formatMoney(deposit.credit),
         beforeDiscountFormatted: formatMoney(beforeDiscount),
         totalBeforeDepositFormatted: formatMoney(total),
@@ -957,12 +970,117 @@ export class FrontdeskService {
     return snapshot;
   }
 
-  async cancelBooking(transactionId: number, scope: CancelScope, roomIds: number[], reason: string) {
+  async getCheckoutPaymentStatus(transactionId: number, roomId: number) {
+    if (!transactionId || transactionId <= 0 || !roomId || roomId <= 0) {
+      throw new HttpError(422, "Thieu thong tin checkout.");
+    }
+
+    const room = await this.getRoomDetail(transactionId, roomId);
+    if (!room) {
+      throw new HttpError(404, "Khong tim thay phong trong giao dich.");
+    }
+
+    if (room.trangThai === "CheckedOut") {
+      return {
+        status: "PAID",
+        transactionId,
+        roomId,
+        roomNumber: room.soPhong,
+        message: "Checkout da thanh toan va hoan tat."
+      };
+    }
+
+    return {
+      status: "PENDING",
+      transactionId,
+      roomId,
+      roomNumber: room.soPhong,
+      message: "Dang cho SePay xac nhan thanh toan checkout."
+    };
+  }
+
+  async confirmCheckoutPaymentFromSepay(transactionId: number, roomId: number, paidAmount: number, content = "") {
+    if (!transactionId || transactionId <= 0 || !roomId || roomId <= 0) {
+      return { status: "OK", message: "Invalid checkout content." };
+    }
+
+    const room = await this.getRoomDetail(transactionId, roomId);
+    if (!room) {
+      return { status: "OK", message: "Checkout room not found." };
+    }
+
+    if (room.trangThai === "CheckedOut") {
+      return {
+        status: "OK",
+        message: "Checkout already paid.",
+        transactionId,
+        roomId,
+        roomNumber: room.soPhong
+      };
+    }
+
+    if (room.trangThai !== "CheckedIn") {
+      return { status: "OK", message: "Room is not checked-in." };
+    }
+
+    const preview = await this.getCheckoutPreview(transactionId, roomId);
+    const requiredAmount = Math.max(0, Math.round(preview.summary.total));
+    if (Math.round(paidAmount) < requiredAmount) {
+      return {
+        status: "OK",
+        message: "Insufficient checkout amount.",
+        requiredAmount,
+        paidAmount: Math.round(paidAmount)
+      };
+    }
+
+    const snapshot = await this.checkoutRoom(
+      transactionId,
+      roomId,
+      "ChuyenKhoan",
+      preview.room.checkoutCondition,
+      `SePay checkout content="${content || preview.paymentTransfer.content}" paid=${Math.round(paidAmount)}`
+    );
+
+    realtimeHub.publish({
+      type: "checkout_payment_paid",
+      scopes: ["admin", "letan", "quanly", "ketoan"],
+      data: {
+        transactionId,
+        roomId,
+        roomNumber: preview.room.soPhong,
+        amount: Math.round(paidAmount),
+        requiredAmount,
+        content: content || preview.paymentTransfer.content
+      }
+    });
+
+    return {
+      status: "OK",
+      message: "Checkout paid.",
+      transactionId,
+      roomId,
+      roomNumber: preview.room.soPhong,
+      snapshot
+    };
+  }
+
+  async cancelBooking(
+    transactionId: number,
+    scope: CancelScope,
+    roomIds: number[],
+    reason: string,
+    refund?: Pick<CancelBookingInput, "refundBankName" | "refundAccountNo" | "refundAccountName" | "refundNote">
+  ) {
     return this.cancelBookingFromForm({
       transactionId,
       scope,
       roomIds,
-      reason
+      reason,
+      refundBankName: refund?.refundBankName,
+      refundAccountNo: refund?.refundAccountNo,
+      refundAccountName: refund?.refundAccountName,
+      refundNote: refund?.refundNote
     });
   }
 
@@ -1015,8 +1133,26 @@ export class FrontdeskService {
     }
 
     const note = `Huy dat phong luc ${formatDate(new Date(), "YYYY-MM-DD HH:mm:ss")}; Ly do: ${reason}`;
+    const sepayMeta = parseSepayMetadata(payload.transaction.ghiChu);
+    const paidDeposit = sepayMeta?.status === "PAID"
+      ? Math.max(0, Math.round(sepayMeta.paidAmount || sepayMeta.depositAmount || 0))
+      : 0;
+    const refundBankName = String(input.refundBankName || "").trim();
+    const refundAccountNo = String(input.refundAccountNo || "").replace(/\s+/g, "").trim();
+    const refundAccountName = String(input.refundAccountName || "").trim();
+    const refundNote = String(input.refundNote || "").trim();
+
+    if (paidDeposit > 0) {
+      if (!refundBankName || !refundAccountNo || !refundAccountName) {
+        throw new HttpError(422, "Booking da co tien coc. Vui long nhap ngan hang, so tai khoan va chu tai khoan de tao yeu cau hoan tien.");
+      }
+      if (!/^[0-9]{4,32}$/.test(refundAccountNo)) {
+        throw new HttpError(422, "So tai khoan refund chi gom 4-32 chu so.");
+      }
+    }
 
     await withTransaction(async (client) => {
+      await this.ensureRefundRequestTable(client);
       const updateResult = await client.query(
         `
           UPDATE chitietgiaodich
@@ -1089,6 +1225,17 @@ export class FrontdeskService {
       const totals = hasRemainingDetails
         ? await this.recalculateTransactionWithPromotion(client, input.transactionId, payload.transaction.maKhuyenMai)
         : { total: 0 };
+      const alreadyRequested = paidDeposit > 0
+        ? await this.getExistingRefundRequestAmount(client, input.transactionId)
+        : 0;
+      const retainedDeposit = hasRemainingDetails
+        ? Math.min(paidDeposit, Math.ceil(Number(totals.total || 0) * 0.5))
+        : 0;
+      const refundAmount = Math.max(0, paidDeposit - retainedDeposit - alreadyRequested);
+      const refundCode = refundAmount > 0 ? `RF-${input.transactionId}-${Date.now().toString(36).toUpperCase()}` : "";
+      const refundRequestNote = refundAmount > 0
+        ? `Yeu cau hoan tien ${refundCode}: ${formatMoney(refundAmount)}; STK ${refundBankName} ${refundAccountNo} ${refundAccountName}`
+        : "";
 
       await client.query(
         `
@@ -1103,6 +1250,64 @@ export class FrontdeskService {
         `,
         [input.transactionId, nextStatus, note, totals.total]
       );
+
+      if (refundAmount > 0) {
+        await client.query(
+          `
+            INSERT INTO refund_requests (
+              magiaodich,
+              refund_code,
+              scope,
+              room_ids,
+              customer_name,
+              customer_phone,
+              customer_email,
+              bank_name,
+              bank_account_no,
+              bank_account_name,
+              reason,
+              note,
+              deposit_paid,
+              retained_deposit,
+              already_requested,
+              amount_requested,
+              status,
+              created_by_role
+            )
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'ChoXuLy','LeTan')
+          `,
+          [
+            input.transactionId,
+            refundCode,
+            input.scope,
+            targetRoomIds.join(","),
+            payload.transaction.customerName || payload.cancel.leaderName || "",
+            payload.transaction.customerPhone || "",
+            payload.transaction.customerEmail || "",
+            refundBankName,
+            refundAccountNo,
+            refundAccountName,
+            reason,
+            refundNote || `Yeu cau tao tu UC huy dat phong. ${refundRequestNote}`,
+            paidDeposit,
+            retainedDeposit,
+            alreadyRequested,
+            refundAmount
+          ]
+        );
+
+        await client.query(
+          `
+            UPDATE giaodich
+            SET ghichu = CASE
+              WHEN COALESCE(ghichu, '') = '' THEN $2
+              ELSE ghichu || ' | ' || $2
+            END
+            WHERE magiaodich = $1
+          `,
+          [input.transactionId, `[REFUND_REQUEST code=${refundCode} amount=${refundAmount} status=ChoXuLy]`]
+        );
+      }
     });
 
     realtimeHub.publish({
@@ -1387,6 +1592,7 @@ export class FrontdeskService {
       status: hold.status,
       transactionId: hold.transactionId || 0,
       bookingCode: hold.bookingCode || "",
+      createdAccounts: hold.createdAccounts || [],
       expiresAt: hold.expiresAt,
       total: hold.summary.total,
       depositAmount: hold.summary.depositAmount,
@@ -1419,7 +1625,7 @@ export class FrontdeskService {
 
     directBookingHoldStore.remove(hold.id);
     const created = await this.createDirectBookingV2(hold.input);
-    directBookingHoldStore.completeSnapshot(hold, created.transactionId, created.bookingCode);
+    directBookingHoldStore.completeSnapshot(hold, created.transactionId, created.bookingCode, created.createdAccounts);
     const transaction = await this.findTransactionById(created.transactionId);
     const currentMeta = parseSepayMetadata(transaction?.ghiChu);
     const paidMeta = {
@@ -1450,6 +1656,12 @@ export class FrontdeskService {
       data: {
         holdId: hold.id,
         transactionId: created.transactionId,
+        bookingCode: created.bookingCode,
+        createdAccounts: created.createdAccounts,
+        total: created.total,
+        depositAmount: hold.summary.depositAmount,
+        totalFormatted: formatMoney(created.total),
+        depositAmountFormatted: formatMoney(hold.summary.depositAmount),
         amount: Math.round(paidAmount)
       }
     });
@@ -1457,6 +1669,11 @@ export class FrontdeskService {
     return {
       transactionId: created.transactionId,
       bookingCode: created.bookingCode,
+      createdAccounts: created.createdAccounts,
+      total: created.total,
+      depositAmount: hold.summary.depositAmount,
+      totalFormatted: formatMoney(created.total),
+      depositAmountFormatted: formatMoney(hold.summary.depositAmount),
       message: "Deposit paid and booking created."
     };
   }
@@ -2914,8 +3131,10 @@ export class FrontdeskService {
       `DV: ${formatMoney(preview.summary.serviceFee)}`,
       `Boi thuong: ${formatMoney(preview.summary.damageFee)}`,
       `KM: -${formatMoney(preview.summary.discountFee)}`,
-      `Coc SePay: -${formatMoney(preview.summary.depositCredit || 0)}`,
-      `Tong con thu: ${formatMoney(preview.summary.total)}`
+      `Tong hoa don checkout: ${formatMoney(preview.summary.totalBeforeDeposit)}`,
+      `Coc SePay da thu: ${formatMoney(preview.summary.paidDeposit || 0)}`,
+      `Coc ap dung lan nay: -${formatMoney(preview.summary.depositCredit || 0)}`,
+      `Con lai phai thu: ${formatMoney(preview.summary.total)}`
     ];
 
     const note = damageNote.trim();
@@ -2926,9 +3145,9 @@ export class FrontdeskService {
     return parts.join(" | ");
   }
 
-  private buildTransferPaymentPayload(transactionId: number, roomNumber: string, amount: number) {
+  private buildTransferPaymentPayload(transactionId: number, roomId: number, roomNumber: string, amount: number) {
     const roundedAmount = Math.max(0, Math.round(Number(amount || 0)));
-    const content = this.buildTransferContent(transactionId, roomNumber);
+    const content = buildSepayCheckoutContent(transactionId, roomId);
     const queryString = new URLSearchParams({
       amount: String(roundedAmount),
       addInfo: content,
@@ -2936,7 +3155,7 @@ export class FrontdeskService {
     }).toString();
 
     return {
-      provider: "VietQR",
+      provider: "SePay",
       bankCode: TRANSFER_BANK_CODE,
       bankName: TRANSFER_BANK_NAME,
       accountNo: TRANSFER_ACCOUNT_NO,
@@ -2945,14 +3164,83 @@ export class FrontdeskService {
       amountFormatted: formatMoney(roundedAmount),
       content,
       qrImageUrl: `https://img.vietqr.io/image/${TRANSFER_BANK_CODE}-${TRANSFER_ACCOUNT_NO}-compact2.png?${queryString}`,
-      instructions: "Quet QR bang app ngan hang hoac sao chep STK, so tien, noi dung chuyen khoan de thanh toan dung giao dich."
+      instructions: "Chuyen khoan dung noi dung nay. SePay xac nhan xong he thong se tu hoan tat check-out."
     };
   }
 
-  private buildTransferContent(transactionId: number, roomNumber: string) {
-    const cleanRoom = String(roomNumber || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const content = `TTGD${Math.max(0, transactionId)}${cleanRoom ? `P${cleanRoom}` : ""}`;
-    return content.slice(0, 19);
+  private async buildCancelRefundPreview(snapshot: Awaited<ReturnType<FrontdeskService["getTransactionSnapshot"]>>) {
+    await this.ensureRefundRequestTable();
+    const sepayMeta = parseSepayMetadata(snapshot.transaction.ghiChu);
+    const paidDeposit = sepayMeta?.status === "PAID"
+      ? Math.max(0, Math.round(sepayMeta.paidAmount || sepayMeta.depositAmount || 0))
+      : 0;
+    const alreadyRequested = paidDeposit > 0
+      ? await this.getExistingRefundRequestAmount(null, snapshot.transaction.maGiaoDich)
+      : 0;
+    const maxRefundable = Math.max(0, paidDeposit - alreadyRequested);
+
+    return {
+      hasPaidDeposit: paidDeposit > 0,
+      needsBankInfo: maxRefundable > 0,
+      paidDeposit,
+      alreadyRequested,
+      maxRefundable,
+      paidDepositFormatted: formatMoney(paidDeposit),
+      alreadyRequestedFormatted: formatMoney(alreadyRequested),
+      maxRefundableFormatted: formatMoney(maxRefundable),
+      statusText: paidDeposit > 0
+        ? "Co coc SePay, can tao yeu cau hoan tien khi huy."
+        : "Chua ghi nhan coc SePay."
+    };
+  }
+
+  private async ensureRefundRequestTable(client?: any) {
+    const db = client || { query };
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS refund_requests (
+        id SERIAL PRIMARY KEY,
+        magiaodich INT NOT NULL REFERENCES giaodich(magiaodich) ON DELETE CASCADE,
+        refund_code TEXT NOT NULL UNIQUE,
+        scope TEXT NOT NULL DEFAULT 'all',
+        room_ids TEXT NOT NULL DEFAULT '',
+        customer_name TEXT,
+        customer_phone TEXT,
+        customer_email TEXT,
+        bank_name TEXT NOT NULL,
+        bank_account_no TEXT NOT NULL,
+        bank_account_name TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        note TEXT,
+        deposit_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        retained_deposit NUMERIC(14,2) NOT NULL DEFAULT 0,
+        already_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        amount_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ChoXuLy',
+        created_by_role TEXT NOT NULL DEFAULT 'LeTan',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        processed_at TIMESTAMPTZ NULL,
+        accounting_note TEXT
+      )
+    `);
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_magiaodich ON refund_requests(magiaodich)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_status ON refund_requests(status)");
+  }
+
+  private async getExistingRefundRequestAmount(client: any | null, transactionId: number) {
+    await this.ensureRefundRequestTable(client || undefined);
+    const db = client || { query };
+    const result = await db.query(
+      `
+        SELECT COALESCE(SUM(amount_requested), 0)::numeric AS total
+        FROM refund_requests
+        WHERE magiaodich = $1
+          AND status <> 'TuChoi'
+      `,
+      [transactionId]
+    ) as { rows: Array<{ total: number | string }> };
+
+    return Math.max(0, Math.round(Number(result.rows[0]?.total || 0)));
   }
 
   private calculateDepositCreditForCheckout(
@@ -2962,14 +3250,14 @@ export class FrontdeskService {
   ) {
     const meta = parseSepayMetadata(note);
     if (!meta || meta.status !== "PAID") {
-      return { credit: 0, remainingCredit: 0 };
+      return { credit: 0, remainingCredit: 0, paidDeposit: 0, appliedDeposit: 0 };
     }
 
     const paidDeposit = Math.max(0, meta.paidAmount || meta.depositAmount);
     const appliedDeposit = getSepayAppliedAmount(note);
     const remainingCredit = Math.max(0, paidDeposit - appliedDeposit);
     if (remainingCredit <= 0) {
-      return { credit: 0, remainingCredit: 0 };
+      return { credit: 0, remainingCredit: 0, paidDeposit, appliedDeposit };
     }
 
     const isFinalRoomCheckout = roomState.bookedRooms === 0 && roomState.checkedInRoomsAfterThis === 0;
@@ -2979,7 +3267,9 @@ export class FrontdeskService {
 
     return {
       credit: Math.max(0, Math.round(credit)),
-      remainingCredit
+      remainingCredit,
+      paidDeposit,
+      appliedDeposit
     };
   }
 

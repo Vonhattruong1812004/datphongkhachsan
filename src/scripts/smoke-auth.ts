@@ -291,8 +291,35 @@ async function main() {
       })
     });
     const bookingJson = await createBookingResponse.json();
-    if (createBookingResponse.status !== 201 || !bookingJson?.ok) {
-      throw new Error(`Create booking failed: ${createBookingResponse.status}`);
+    if (createBookingResponse.status !== 202 || !bookingJson?.ok || !bookingJson?.data?.holdId) {
+      throw new Error(`Create booking hold failed: ${createBookingResponse.status}`);
+    }
+
+    const payDepositResponse = await fetch(`${baseUrl}/api/webhook/sepay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Apikey my-secret-key-123"
+      },
+      body: JSON.stringify({
+        content: bookingJson.data.paymentTransfer.content,
+        amount: Number(bookingJson.data.depositAmount || 0)
+      })
+    });
+    const payDepositJson = await payDepositResponse.json();
+    if (!payDepositResponse.ok || !payDepositJson?.ok) {
+      throw new Error(`Customer booking SePay deposit failed: ${payDepositResponse.status}`);
+    }
+
+    const bookingHoldStatus = await fetch(`${baseUrl}/api/booking/holds/${bookingJson.data.holdId}`, {
+      headers: {
+        Cookie: cookieJar
+      }
+    });
+    const bookingHoldJson = await bookingHoldStatus.json();
+    const bookingId = Number(bookingHoldJson?.data?.transactionId || 0);
+    if (!bookingHoldStatus.ok || bookingHoldJson?.data?.status !== "PAID" || bookingId <= 0) {
+      throw new Error(`Customer booking hold did not become PAID: ${bookingHoldStatus.status}`);
     }
 
     const servicesPage = await fetch(`${baseUrl}/customer/services`, {
@@ -378,7 +405,7 @@ async function main() {
     console.log(`profile=${profilePage.status}`);
     console.log(`mobile_hub=${mobileHub.status}`);
     console.log(`mobile_api_bookings=${Array.isArray(mobileJson?.data?.bookings) ? mobileJson.data.bookings.length : 0}`);
-    console.log(`booking_created=${bookingJson?.data?.id || 0}`);
+    console.log(`booking_created=${bookingId}`);
     console.log(`services_page=${servicesPage.status}`);
     console.log(`service_order_cancelled=${serviceOrderId > 0 ? 1 : 0}`);
     console.log(`logout=${logoutResponse.status}`);

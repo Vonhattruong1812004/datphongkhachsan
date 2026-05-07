@@ -5,12 +5,15 @@ import {
   appendNote,
   buildSepayExpiredNote,
   buildSepayPaidNote,
+  parseSepayCheckoutContent,
   parseSepayMetadata,
   parseSepayOrderId,
   replaceSepayMetadata
 } from "../../payment/sepay";
 import { directBookingHoldStore } from "../../payment/direct-booking-hold-store";
+import { customerBookingHoldStore } from "../../payment/customer-booking-hold-store";
 import { FrontdeskService } from "../../frontdesk/services/frontdesk.service";
+import { BookingService } from "../../booking/services/booking.service";
 
 interface SepayWebhookBody {
   [key: string]: unknown;
@@ -23,6 +26,8 @@ interface SepayTransactionRow {
   amount: number;
   note: string | null;
 }
+
+const POSTGRES_INTEGER_MAX = 2147483647;
 
 export class SepayWebhookService {
   isAuthorized(headerValue: string | undefined) {
@@ -67,12 +72,32 @@ export class SepayWebhookService {
 
   async handleWebhook(body: SepayWebhookBody | string | null | undefined) {
     const payload = this.extractWebhookPayload(body);
+    const checkoutContent = parseSepayCheckoutContent(payload.content);
+    if (checkoutContent?.transactionId && checkoutContent?.roomId) {
+      return this.confirmCheckoutPayment(
+        checkoutContent.transactionId,
+        checkoutContent.roomId,
+        payload.amount,
+        payload.content
+      );
+    }
+
     const orderId = parseSepayOrderId(payload.content);
     if (!orderId) {
       return { status: "OK", message: "No ROOM order content." };
     }
 
     return this.confirmDeposit(orderId, payload.amount);
+  }
+
+  private async confirmCheckoutPayment(transactionId: number, roomId: number, paidAmount: number, content: string) {
+    const result = await new FrontdeskService().confirmCheckoutPaymentFromSepay(transactionId, roomId, paidAmount, content);
+    return {
+      status: result.status,
+      message: result.message,
+      transactionId: (result as any).transactionId || transactionId,
+      roomId: (result as any).roomId || roomId
+    };
   }
 
   async expirePendingHolds() {
@@ -102,6 +127,36 @@ export class SepayWebhookService {
   }
 
   private async confirmDeposit(orderId: number, paidAmount: number) {
+    const customerHold = customerBookingHoldStore.get(orderId);
+    if (customerHold) {
+      if (customerHold.status === "PAID") {
+        return {
+          status: "OK",
+          message: "Customer hold already paid.",
+          transactionId: customerHold.transactionId || 0,
+          bookingCode: customerHold.bookingCode || ""
+        };
+      }
+      if (customerHold.status === "EXPIRED") {
+        return { status: "Expired", message: "Expired" };
+      }
+      if (new Date(customerHold.expiresAt).getTime() < Date.now()) {
+        customerBookingHoldStore.expire(orderId);
+        return { status: "Expired", message: "Expired" };
+      }
+      if (Math.round(paidAmount) < Math.round(customerHold.summary.depositAmount)) {
+        return { status: "OK", message: "Insufficient amount." };
+      }
+
+      const finalized = await new BookingService().finalizeCustomerBookingHold(customerHold, paidAmount);
+      return {
+        status: "OK",
+        message: finalized.message,
+        transactionId: finalized.transactionId,
+        bookingCode: finalized.bookingCode
+      };
+    }
+
     const hold = directBookingHoldStore.get(orderId);
     if (hold) {
       if (hold.status === "PAID") {
@@ -129,6 +184,15 @@ export class SepayWebhookService {
         message: finalized.message,
         transactionId: finalized.transactionId,
         bookingCode: finalized.bookingCode
+      };
+    }
+
+    // New direct/customer QR holds use large timestamp-like IDs. They are not
+    // PostgreSQL magiaodich values, so never pass them into integer columns.
+    if (orderId > POSTGRES_INTEGER_MAX) {
+      return {
+        status: "OK",
+        message: "SePay hold not found in current app memory."
       };
     }
 

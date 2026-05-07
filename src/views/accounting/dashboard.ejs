@@ -11,6 +11,9 @@
     Paid: "Đã thanh toán",
     ChoDuyet: "Chờ duyệt",
     DaDuyet: "Đã duyệt",
+    ChoXuLy: "Chờ xử lý",
+    DaHoan: "Đã hoàn",
+    TuChoi: "Từ chối",
     ChuaThu: "Chưa thu",
     ThuMotPhan: "Thu một phần",
     QuaHan: "Quá hạn"
@@ -433,6 +436,7 @@
   .guest-uc-card:nth-child(3) { animation-delay: .14s; }
   .guest-uc-card:nth-child(4) { animation-delay: .20s; }
   .guest-uc-card:nth-child(5) { animation-delay: .26s; }
+  .guest-uc-card:nth-child(6) { animation-delay: .32s; }
 
   .guest-uc-card.is-wide {
     grid-column: span 5;
@@ -713,18 +717,19 @@
           <span class="guest-tag">Giao dịch thu: <%= payload.revenueTransactionCount %></span>
           <span class="guest-tag">Phiếu chi: <%= payload.expenseVoucherCount %></span>
           <span class="guest-tag">Công nợ mở: <%= payload.pendingDebtCount %></span>
+          <span class="guest-tag">Hoàn cọc chờ: <%= payload.pendingRefundCount || 0 %></span>
         </div>
 
         <div class="guest-hero-actions">
           <a class="guest-button guest-button--primary" href="/accounting/reports">Báo cáo tổng hợp</a>
           <a class="guest-button" href="/accounting/cashflow">Thu chi hợp nhất</a>
-          <a class="guest-button" href="/accounting/debts">Công nợ</a>
+          <a class="guest-button" href="/accounting/refunds">Hoàn tiền</a>
         </div>
 
         <div class="guest-mini-stats" aria-label="Tóm tắt tài chính">
           <div class="guest-mini-stat"><strong><%= payload.monthlyRevenueFormatted %></strong><span>Doanh thu</span></div>
           <div class="guest-mini-stat"><strong><%= payload.monthlyExpenseFormatted %></strong><span>Chi phí</span></div>
-          <div class="guest-mini-stat"><strong><%= payload.outstandingDebtFormatted %></strong><span>Công nợ</span></div>
+          <div class="guest-mini-stat"><strong><%= payload.pendingRefundAmountFormatted || "0 đ" %></strong><span>Chờ hoàn</span></div>
         </div>
       </div>
 
@@ -747,6 +752,7 @@
         <a href="/accounting/reports">Báo cáo</a>
         <a href="/accounting/revenue">Doanh thu</a>
         <a href="/accounting/expenses">Chi phí</a>
+        <a href="/accounting/refunds">Hoàn tiền</a>
         <a href="/accounting/debts">Công nợ</a>
       </div>
     </section>
@@ -754,8 +760,8 @@
     <section class="guest-section" aria-label="Nghiệp vụ kế toán">
       <div class="guest-section-head">
         <div>
-          <h2>Use case chính</h2>
-          <p>Các thao tác kế toán dùng nhiều nhất, bố cục bento giống dashboard khách hàng.</p>
+          <h2>Tác vụ chính</h2>
+          <p>Các thao tác kế toán dùng nhiều nhất.</p>
         </div>
       </div>
 
@@ -767,7 +773,7 @@
           </div>
           <h3>Báo cáo tổng hợp</h3>
           <p>Tổng hợp doanh thu, chi phí, lợi nhuận và dữ liệu xuất báo cáo cho kỳ kế toán.</p>
-          <span class="guest-open">Mở nghiệp vụ</span>
+          <span class="guest-open">Mở</span>
         </a>
 
         <a class="guest-uc-card guest-history is-compact" href="/accounting/revenue">
@@ -777,7 +783,7 @@
           </div>
           <h3>Doanh thu</h3>
           <p>Tra cứu giao dịch thu, mã đặt chỗ, khách hàng, trạng thái và tổng tiền.</p>
-          <span class="guest-open">Mở nghiệp vụ</span>
+          <span class="guest-open">Mở</span>
         </a>
 
         <a class="guest-uc-card guest-profile" href="/accounting/expenses">
@@ -787,7 +793,7 @@
           </div>
           <h3>Chi phí vận hành</h3>
           <p>Ghi nhận, lọc và kiểm soát các khoản chi theo ngày, nội dung và trạng thái.</p>
-          <span class="guest-open">Mở nghiệp vụ</span>
+          <span class="guest-open">Mở</span>
         </a>
 
         <a class="guest-uc-card guest-service" href="/accounting/cashflow">
@@ -796,8 +802,8 @@
             <span class="guest-uc-orb"></span>
           </div>
           <h3>Thu chi hợp nhất</h3>
-          <p>Xem timeline thu vào và chi ra để đối soát nhanh theo ngày và nhóm nghiệp vụ.</p>
-          <span class="guest-open">Mở nghiệp vụ</span>
+          <p>Xem timeline thu vào và chi ra để đối soát nhanh theo ngày và nhóm.</p>
+          <span class="guest-open">Mở</span>
         </a>
 
         <a class="guest-uc-card guest-feedback is-wide" href="/accounting/debts">
@@ -807,7 +813,17 @@
           </div>
           <h3>Công nợ và đối soát</h3>
           <p>Theo dõi khoản phải thu, hạn thanh toán, trạng thái thu nợ và các khoản quá hạn.</p>
-          <span class="guest-open">Mở nghiệp vụ</span>
+          <span class="guest-open">Mở</span>
+        </a>
+
+        <a class="guest-uc-card guest-edit" href="/accounting/refunds">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">FIN06</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Quản lý hoàn tiền</h3>
+          <p>Duyệt yêu cầu hoàn cọc từ lễ tân, ghi phiếu chi và đồng bộ thu chi sau khi đã chuyển khoản.</p>
+          <span class="guest-open">Mở</span>
         </a>
       </div>
     </section>

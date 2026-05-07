@@ -34,7 +34,7 @@
       badge: "Outbound",
       title: "Tin nhắn hàng loạt",
       line1: "Gửi nhắc check-in, check-out, xác nhận booking và lời cảm ơn sau lưu trú.",
-      line2: "Tách thành UC riêng để CSKH làm outbound giữ chân khách mà không lẫn với inbox phản hồi hoặc tư vấn.",
+      line2: "Gửi đúng nhóm khách, đúng thời điểm và theo dõi kết quả sau khi gửi.",
       strong: "Broadcast có chiến lược",
       href: "/feedback/broadcast/manage",
       action: "Chi tiết"
@@ -753,8 +753,8 @@
     <section class="guest-section" aria-label="Nghiệp vụ CSKH">
       <div class="guest-section-head">
         <div>
-          <h2>Use case chính</h2>
-          <p>Giữ đúng mẫu bento của dashboard khách hàng, nhưng gom đủ 4 nghiệp vụ thật sự của CSKH.</p>
+          <h2>Tác vụ chính</h2>
+          <p>Các thao tác CSKH dùng nhiều nhất.</p>
         </div>
       </div>
 
@@ -762,12 +762,12 @@
         <% primaryActions.forEach((item, index) => { %>
           <a class="guest-uc-card <%= ucAccentClasses[index] || 'guest-feedback' %>" href="<%= item.href %>">
             <div class="guest-uc-top">
-              <span class="guest-uc-code">UC<%= String(index + 1).padStart(2, "0") %></span>
+              <span class="guest-uc-code"><%= String(index + 1).padStart(2, "0") %></span>
               <span class="guest-uc-orb"></span>
             </div>
             <h3><%= item.label %></h3>
             <p><%= item.note %></p>
-            <span class="guest-open">Mở nghiệp vụ</span>
+            <span class="guest-open">Mở</span>
           </a>
         <% }) %>
       </div>

@@ -491,9 +491,7 @@
         </div>
         <h1>Đăng ký tài khoản đoàn <span>và giữ nhịp booking nhóm thật gọn.</span></h1>
         <p class="fg-lead">
-          Luồng này bám theo UC lễ tân ở bản PHP: tạo trưởng đoàn, thêm thành viên, sinh tài khoản khách hàng
-          và chuẩn bị dữ liệu để gắn tiếp vào booking nhóm. Giao diện đã được làm lại để đồng bộ với dashboard,
-          sáng hơn, sạch hơn và dễ thao tác hơn.
+          Tạo trưởng đoàn, thêm thành viên và chuẩn bị booking nhóm nhanh ngay tại quầy.
         </p>
         <div class="fg-hero-actions">
           <a class="fg-pill" href="/dashboard/letan">Về dashboard lễ tân</a>
@@ -559,16 +557,15 @@
 
       <aside class="fg-side">
         <section class="fg-note">
-          <div class="fg-label">Đối chiếu PHP</div>
-          <h3>Logic nghiệp vụ đang bám theo bản cũ</h3>
+          <div class="fg-label">Lưu ý</div>
+          <h3>Nhập đúng đầu mối đoàn</h3>
           <p class="fg-copy">
-            PHP có UC đăng ký đoàn riêng cho lễ tân. Bản Node hiện giữ được phần tạo trưởng đoàn, thành viên và tài khoản,
-            sau đó cho phép nối thẳng vào booking nhóm để đỡ thao tác vòng.
+            Trưởng đoàn là người đại diện liên hệ, nhận tài khoản và đứng tên booking nhóm.
           </p>
           <ul>
             <li>Ưu tiên đúng thông tin trưởng đoàn để sinh tài khoản và gắn đầu mối liên hệ.</li>
-            <li>Thành viên và dịch vụ đang nhận qua JSON để giữ logic backend linh hoạt trước khi tách thành wizard UI đầy đủ.</li>
-            <li>Nếu cần, mình có thể làm tiếp bản nhập thành viên trực quan thay cho JSON thô.</li>
+            <li>Chọn đúng phòng khả dụng trước khi tạo booking.</li>
+            <li>Kiểm tra lại dịch vụ phát sinh trước khi xác nhận.</li>
           </ul>
         </section>
       </aside>
@@ -603,10 +600,7 @@
         <article class="fg-form">
           <div class="fg-label">Bước 3</div>
           <h2>Tạo đoàn và booking nhóm</h2>
-          <p class="fg-copy">
-            Form này vẫn dùng đúng backend hiện có. Các trường JSON giữ nguyên để không làm lệch logic xử lý,
-            nhưng đã được trình bày rõ hơn để dễ nhập liệu và đối chiếu.
-          </p>
+          <p class="fg-copy">Nhập phòng, trưởng đoàn, thành viên và dịch vụ để tạo booking nhóm.</p>
 
           <form method="post" action="/frontdesk/group-registration">
             <input type="hidden" name="ngay_den" value="<%= search.ngay_den %>" />
@@ -683,15 +677,14 @@
         <aside class="fg-side">
           <section class="fg-note">
             <div class="fg-label">Gợi ý nhập liệu</div>
-            <h3>Giữ đúng logic hiện tại</h3>
+            <h3>Kiểm tra trước khi tạo</h3>
             <p class="fg-copy">
-              Backend Node đang hỗ trợ tạo tài khoản khách trong luồng này, nên trước mắt mình giữ nguyên schema
-              nhận <code>members_json</code> và <code>services_json</code> để không làm gãy nghiệp vụ.
+              Hãy chắc chắn danh sách phòng, thành viên và dịch vụ khớp với yêu cầu của đoàn.
             </p>
             <ul>
               <li>Nhập <code>room_ids</code> đúng các mã phòng trong danh sách khả dụng vừa hiển thị.</li>
               <li>Trưởng đoàn là đầu mối chính để tạo tài khoản và liên kết booking.</li>
-              <li>Nếu bạn muốn, bước tiếp theo mình có thể thay hoàn toàn JSON bằng giao diện nhập thành viên từng dòng giống PHP.</li>
+              <li>Dịch vụ nhập theo từng phòng nếu đoàn dùng nhiều phòng.</li>
             </ul>
           </section>
         </aside>

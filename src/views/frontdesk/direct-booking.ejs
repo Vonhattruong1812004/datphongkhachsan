@@ -539,7 +539,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         <div class="page-chip">Đặt phòng trực tiếp V2 · Lễ tân</div>
         <h1>Đặt phòng tại quầy</h1>
         <div class="page-subtitle">
-          Bám đúng UC PHP cũ: tìm phòng theo ngày và số khách, chọn nhiều phòng, nhập trưởng đoàn, gán khách theo phòng, chọn dịch vụ theo phòng và tự tạo tài khoản cho đoàn.
+          Tìm phòng trống, nhập thông tin đoàn, chọn dịch vụ và tạo QR cọc giữ phòng trong một luồng gọn.
         </div>
       </div>
       <a class="back-link" href="/frontdesk">Quay lại trang lễ tân</a>
@@ -560,7 +560,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         <% if (result) { %>
           <div><%= paymentPending ? `Mã giữ chỗ #${result.holdId}` : `Mã giao dịch #${result.transactionId}` %> · Tổng tiền <%= result.totalFormatted %></div>
           <% if (result.paymentTransfer) { %>
-            <div style="margin-top:12px;display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center;">
+            <div id="paymentQrBlock" style="margin-top:12px;display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center;">
               <img src="<%= result.paymentTransfer.qrImageUrl %>" alt="QR cọc SePay" style="width:112px;height:112px;border-radius:16px;background:#fff;border:1px solid rgba(15,23,42,.12);padding:6px;" />
               <div>
                 <div><strong>Tiền phòng:</strong> <%= result.roomAmountFormatted %> · <strong>Dịch vụ:</strong> <%= result.serviceAmountFormatted %></div>
@@ -569,9 +569,10 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
                 <div><strong>Nội dung:</strong> <code><%= result.paymentTransfer.content %></code></div>
                 <div><strong>Hạn giữ phòng:</strong> <span id="paymentCountdown"><%= result.paymentTransfer.expiresInMinutes %>:00</span></div>
                 <div><%= result.paymentTransfer.bankName %> · <%= result.paymentTransfer.accountNo %> · <%= result.paymentTransfer.accountName %></div>
-                <div><strong>Trạng thái:</strong> <span id="paymentStatusLine">Chưa tạo giao dịch thật. Sau khi SePay xác nhận cọc, hệ thống mới tạo đoàn, khách hàng và giao dịch.</span></div>
+                <div><strong>Trạng thái:</strong> <span id="paymentStatusLine">Đang chờ SePay xác nhận cọc.</span></div>
               </div>
             </div>
+            <div id="paymentSuccessDetails" style="display:none;margin-top:12px;"></div>
           <% } %>
         <% } %>
       </section>
@@ -622,7 +623,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
             <h2 class="card-title">Trưởng đoàn & thông tin booking</h2>
             <div class="card-tag">Bước 1</div>
           </div>
-          <p class="caption">Mỗi giao dịch tạo một đoàn riêng, đúng flow trực tiếp tại quầy của hệ thống PHP cũ.</p>
+          <p class="caption">Thông tin trưởng đoàn dùng để liên hệ, tạo tài khoản và gắn vào booking.</p>
           <div class="divider"></div>
 
           <div class="field">
@@ -965,6 +966,11 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       const paymentHoldId = countdownSource?.getAttribute("data-payment-hold-id") || "";
       const paymentStatusLine = document.getElementById("paymentStatusLine");
       const paymentHoldAlert = document.getElementById("paymentHoldAlert");
+      const paymentQrBlock = document.getElementById("paymentQrBlock");
+      const paymentSuccessDetails = document.getElementById("paymentSuccessDetails");
+      let countdownTimer = null;
+      let paymentPollTimer = null;
+      let paymentHandled = false;
       if (countdownEl && expiresAt) {
         const deadline = new Date(expiresAt).getTime();
         const renderCountdown = () => {
@@ -975,33 +981,88 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
           countdownEl.textContent = `${minutesText}:${secondsText}`;
           if (seconds <= 0) {
             countdownEl.textContent = "Đã hết hạn";
-            clearInterval(timer);
+            clearInterval(countdownTimer);
           }
         };
-        const timer = setInterval(renderCountdown, 1000);
+        countdownTimer = setInterval(renderCountdown, 1000);
         renderCountdown();
       }
 
       if (paymentHoldId && paymentStatusLine) {
+        const escapeHtml = (value) => String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+
+        const renderSuccessDetails = (data) => {
+          if (!paymentSuccessDetails) return;
+          const accounts = Array.isArray(data.createdAccounts) ? data.createdAccounts : [];
+          const accountRows = accounts.length
+            ? `<div class="room-list" style="margin-top:10px;"><table><thead><tr><th>Họ tên</th><th>Username</th><th>Password</th><th>Vai trò</th></tr></thead><tbody>${accounts.map((account) => `
+                <tr>
+                  <td>${escapeHtml(account.hoTen)}</td>
+                  <td><strong>${escapeHtml(account.username)}</strong></td>
+                  <td>${escapeHtml(account.password)}</td>
+                  <td>${escapeHtml(account.vaiTro)}</td>
+                </tr>
+              `).join("")}</tbody></table></div>`
+            : "";
+
+          paymentSuccessDetails.innerHTML = `
+            <div style="display:grid;gap:8px;">
+              <div><strong>Mã giao dịch:</strong> #${escapeHtml(data.transactionId)}</div>
+              <div><strong>Mã đặt chỗ:</strong> ${escapeHtml(data.bookingCode || "Đã tạo")}</div>
+              <div><strong>Tổng hóa đơn:</strong> ${escapeHtml(data.totalFormatted || "")}</div>
+              <div><strong>Cọc đã thanh toán:</strong> ${escapeHtml(data.depositAmountFormatted || "")}</div>
+              <div><strong>Trạng thái:</strong> Đã tạo đoàn, tài khoản khách hàng và giao dịch thật.</div>
+            </div>
+            ${accountRows}
+          `;
+          paymentSuccessDetails.style.display = "block";
+        };
+
         const renderPaidState = (data) => {
+          if (paymentHandled) return;
+          paymentHandled = true;
           paymentStatusLine.innerHTML = `Thanh toán cọc thành công. Đã tạo giao dịch #${data.transactionId}${data.bookingCode ? ` · Mã đặt chỗ ${data.bookingCode}` : ""}.`;
           if (paymentHoldAlert) {
             paymentHoldAlert.classList.remove("alert-warning");
             paymentHoldAlert.classList.add("alert-success");
           }
+          if (paymentQrBlock) {
+            paymentQrBlock.style.display = "none";
+          }
+          renderSuccessDetails(data);
           if (countdownEl) {
             countdownEl.textContent = "Đã thanh toán";
+          }
+          if (countdownTimer) {
+            clearInterval(countdownTimer);
+          }
+          if (paymentPollTimer) {
+            clearInterval(paymentPollTimer);
           }
         };
 
         const renderExpiredState = () => {
+          if (paymentHandled) return;
+          paymentHandled = true;
           paymentStatusLine.textContent = "Mã giữ phòng đã hết hạn thanh toán. Vui lòng tạo QR giữ phòng mới.";
           if (countdownEl) {
             countdownEl.textContent = "Đã hết hạn";
           }
+          if (countdownTimer) {
+            clearInterval(countdownTimer);
+          }
+          if (paymentPollTimer) {
+            clearInterval(paymentPollTimer);
+          }
         };
 
         const pollPaymentStatus = async () => {
+          if (paymentHandled) return;
           try {
             const response = await fetch(`/api/frontdesk/direct-booking/holds/${paymentHoldId}`, {
               headers: { Accept: "application/json" }
@@ -1010,17 +1071,30 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
             const data = payload?.data || {};
             if (data.status === "PAID") {
               renderPaidState(data);
-              clearInterval(paymentPollTimer);
             } else if (data.status === "EXPIRED") {
               renderExpiredState();
-              clearInterval(paymentPollTimer);
             }
           } catch (_error) {
             // Giữ polling im lặng để lễ tân không bị nhiễu nếu mạng chập chờn.
           }
         };
 
-        const paymentPollTimer = setInterval(pollPaymentStatus, 3000);
+        if (window.EventSource) {
+          const stream = new EventSource("/api/realtime/stream?scope=letan");
+          stream.addEventListener("booking_created_after_deposit", (event) => {
+            try {
+              const data = JSON.parse(event.data || "{}");
+              if (String(data.holdId || "") === String(paymentHoldId)) {
+                renderPaidState(data);
+                stream.close();
+              }
+            } catch (_error) {
+              // Realtime event lỗi định dạng thì polling bên dưới vẫn xử lý.
+            }
+          });
+        }
+
+        paymentPollTimer = setInterval(pollPaymentStatus, 1000);
         pollPaymentStatus();
       }
 

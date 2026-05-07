@@ -50,6 +50,7 @@ const allowedRoutes: Record<number, string[]> = {
     "/accounting/expenses",
     "/accounting/cashflow",
     "/accounting/debts",
+    "/accounting/refunds",
     "/api/accounting/dashboard"
   ],
   [ROLE.DICH_VU]: [

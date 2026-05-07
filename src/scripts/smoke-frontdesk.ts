@@ -125,6 +125,26 @@ async function paySepayDeposit(baseUrl: string, transactionId: number, depositAm
   return Number(sepayResult.json.transactionId);
 }
 
+async function paySepayCheckout(baseUrl: string, content: string, amount: number) {
+  const sepayResult = await requestJson(`${baseUrl}/api/webhook/sepay`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Apikey my-secret-key-123"
+    },
+    body: JSON.stringify({
+      content,
+      amount
+    })
+  });
+
+  if (sepayResult.response.status !== 200 || !sepayResult.json?.ok) {
+    throw new Error(`Frontdesk SePay checkout smoke failed: ${sepayResult.response.status} ${sepayResult.text}`);
+  }
+
+  return sepayResult.json;
+}
+
 async function findActiveAccounts() {
   const result = await query<AccountRow>(
     `
@@ -425,6 +445,19 @@ async function main() {
     const holdId = Number(createResult.json.data.holdId);
     const depositAmount = Number(createResult.json.data.depositAmount || 0);
     transactionId = await paySepayDeposit(baseUrl, holdId, depositAmount);
+    const holdStatusResult = await requestJson(`${baseUrl}/api/frontdesk/direct-booking/holds/${holdId}`, {
+      headers: {
+        Accept: "application/json",
+        Cookie: frontdesk.cookieJar
+      }
+    });
+    if (
+      holdStatusResult.response.status !== 200
+      || holdStatusResult.json?.data?.status !== "PAID"
+      || Number(holdStatusResult.json?.data?.transactionId || 0) !== transactionId
+    ) {
+      throw new Error(`Direct booking hold did not switch to PAID after webhook: ${holdStatusResult.response.status} ${holdStatusResult.text}`);
+    }
 
     const bookedCheck = await query<{ transactionStatus: string; detailStatus: string; roomStatus: string }>(
       `
@@ -594,6 +627,7 @@ async function main() {
         transaction_id: transactionId,
         room_id: roomId,
         payment_method: "TienMat",
+        payment_status: "paid",
         room_condition: "Tot"
       })
     });
@@ -613,6 +647,7 @@ async function main() {
         transaction_id: transactionId,
         room_id: roomId,
         payment_method: "TienMat",
+        payment_status: "paid",
         room_condition: "CanVeSinh",
         note: "Smoke checkout frontdesk"
       })
@@ -753,25 +788,24 @@ async function main() {
       }
     }
 
-    const partialMultiCheckout = await requestJson(`${baseUrl}/api/frontdesk/checkout`, {
-      method: "POST",
+    const partialMultiPreview = await requestJson(`${baseUrl}/api/frontdesk/checkout-preview?transaction_id=${multiCheckoutTransactionId}&room_id=${multiCheckoutRoomIds[0]}&room_condition=Tot`, {
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
-        Cookie: frontdesk.cookieJar,
-        "x-csrf-token": csrfToken
-      },
-      body: JSON.stringify({
-        transaction_id: multiCheckoutTransactionId,
-        room_id: multiCheckoutRoomIds[0],
-        payment_method: "ChuyenKhoan",
-        room_condition: "Tot",
-        note: "Smoke partial checkout"
-      })
+        Cookie: frontdesk.cookieJar
+      }
     });
-    if (partialMultiCheckout.response.status !== 200) {
-      throw new Error(`Partial multi-room checkout failed: ${partialMultiCheckout.response.status} ${partialMultiCheckout.text}`);
+    if (
+      partialMultiPreview.response.status !== 200 ||
+      !partialMultiPreview.json?.data?.paymentTransfer?.content ||
+      Number(partialMultiPreview.json?.data?.summary?.total || 0) <= 0
+    ) {
+      throw new Error(`Partial multi-room checkout preview failed: ${partialMultiPreview.response.status} ${partialMultiPreview.text}`);
     }
+    await paySepayCheckout(
+      baseUrl,
+      partialMultiPreview.json.data.paymentTransfer.content,
+      Number(partialMultiPreview.json.data.summary.total)
+    );
 
     const partialMultiCheckoutCheck = await query<{
       transactionStatus: string;
@@ -822,6 +856,7 @@ async function main() {
         transaction_id: multiCheckoutTransactionId,
         room_id: multiCheckoutRoomIds[1],
         payment_method: "ChuyenKhoan",
+        payment_status: "paid",
         room_condition: "Tot",
         note: "Smoke final checkout"
       })
@@ -904,7 +939,11 @@ async function main() {
       ma_giao_dich: String(cancelTransactionId),
       cancel_scope: "partial",
       phong_cancel: String(cancelRoomIds[0]),
-      ly_do_huy: "Smoke huy tung phong"
+      ly_do_huy: "Smoke huy tung phong",
+      refund_bank_name: "VietinBank",
+      refund_account_no: "108875396650",
+      refund_account_name: "VO NHAT TRUONG",
+      refund_note: "Smoke refund partial"
     });
     const partialCancelResult = await fetch(`${baseUrl}/frontdesk/cancel-booking`, {
       method: "POST",
@@ -972,7 +1011,11 @@ async function main() {
       search_keyword: String(cancelTransactionId),
       ma_giao_dich: String(cancelTransactionId),
       cancel_scope: "all",
-      ly_do_huy: "Smoke huy phan con lai"
+      ly_do_huy: "Smoke huy phan con lai",
+      refund_bank_name: "VietinBank",
+      refund_account_no: "108875396650",
+      refund_account_name: "VO NHAT TRUONG",
+      refund_note: "Smoke refund final"
     });
     const finalCancelResult = await fetch(`${baseUrl}/frontdesk/cancel-booking`, {
       method: "POST",
@@ -1025,6 +1068,21 @@ async function main() {
       Number(finalRow?.cancelledRoomsReleased || 0) !== cancelRoomIds.length
     ) {
       throw new Error(`Final cancel did not close transaction cleanly: ${JSON.stringify(finalRow || null)}`);
+    }
+
+    const refundCheck = await query<{ count: number; total: number }>(
+      `
+        SELECT
+          COUNT(*)::int AS count,
+          COALESCE(SUM(amount_requested), 0)::numeric AS total
+        FROM refund_requests
+        WHERE magiaodich = $1
+          AND status = 'ChoXuLy'
+      `,
+      [cancelTransactionId]
+    );
+    if (Number(refundCheck.rows[0]?.count || 0) < 1 || Number(refundCheck.rows[0]?.total || 0) <= 0) {
+      throw new Error(`Cancel refund request was not created: ${JSON.stringify(refundCheck.rows[0] || null)}`);
     }
 
     console.log("Frontdesk smoke success");

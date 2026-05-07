@@ -450,12 +450,10 @@
       <span class="ekyc-kicker">eKYC Operations Console</span>
       <h1>Review định danh nhanh, rõ và an toàn.</h1>
       <p>
-        Màn này đồng bộ lại theo hệ thống PHP cũ: chỉ ưu tiên hồ sơ mới nhất theo từng khách,
-        có bộ lọc trạng thái, lịch sử gửi hồ sơ, ảnh giấy tờ/selfie và thao tác duyệt thủ công
-        để UC check-in dùng trạng thái eKYC nhất quán.
+        Duyệt hồ sơ mới nhất theo từng khách, xem ảnh giấy tờ/selfie và cập nhật trạng thái để check-in xử lý nhanh tại quầy.
       </p>
       <div class="ekyc-actions" style="margin-top:18px">
-        <a class="ekyc-btn ekyc-btn--primary" href="/frontdesk/checkin">Mở UC check-in</a>
+        <a class="ekyc-btn ekyc-btn--primary" href="/frontdesk/checkin">Mở check-in</a>
         <a class="ekyc-btn" href="/dashboard/letan">Dashboard lễ tân</a>
         <a class="ekyc-btn" href="/api/ekyc/review-queue">JSON queue</a>
       </div>
@@ -610,7 +608,7 @@
           <div class="ekyc-row">
             <div>
               <strong>Manual review</strong>
-              <div class="ekyc-muted" style="margin-top:5px">Duyệt hồ sơ này để UC check-in đọc đúng trạng thái eKYC, hạn chế phải override tại quầy.</div>
+              <div class="ekyc-muted" style="margin-top:5px">Duyệt hồ sơ này để check-in đọc đúng trạng thái eKYC, hạn chế phải override tại quầy.</div>
             </div>
             <a class="ekyc-btn" href="/frontdesk/checkin">Mở check-in</a>
           </div>
@@ -634,7 +632,7 @@
           <div>
             <div class="ekyc-core" style="margin:0 auto 18px">ID</div>
             <h2>Chọn một hồ sơ eKYC để review</h2>
-            <p class="ekyc-muted">Queue bên trái đang hiển thị hồ sơ mới nhất theo từng khách giống hệ thống PHP cũ.</p>
+            <p class="ekyc-muted">Danh sách bên trái đang hiển thị hồ sơ mới nhất theo từng khách.</p>
           </div>
         </div>
       <% } %>

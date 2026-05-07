@@ -68,7 +68,7 @@
 <main class="adv-shell">
   <section class="adv-hero">
     <div>
-      <span class="adv-kicker"><span class="adv-dot"></span> UC07 · Tư vấn & hỗ trợ</span>
+      <span class="adv-kicker"><span class="adv-dot"></span> Tư vấn & hỗ trợ</span>
       <h1>Hỏi nhanh mọi điều <span>trước, trong và sau chuyến đi.</span></h1>
       <p class="adv-muted">Một nơi riêng để bạn hỏi về chọn phòng, booking, check-in, eKYC, dịch vụ và các thắc mắc cần CSKH hỗ trợ. AI Concierge trả lời trước, còn khi cần người thật hệ thống sẽ đưa bạn sang đúng kênh CSKH.</p>
       <div class="adv-actions">
@@ -79,7 +79,7 @@
     </div>
     <aside class="adv-focus">
       <strong><%= displayName %></strong>
-      <span><%= payload.activeStay ? "Bạn đang có lưu trú mở, có thể hỏi thêm về dịch vụ, checkout hoặc hỗ trợ tại chỗ." : (payload.nextStay ? "Bạn đang có booking sắp tới, nên dùng UC này để hỏi về check-in, eKYC và chuẩn bị chuyến đi." : "Chưa có booking mở, nhưng bạn vẫn có thể hỏi AI để được tư vấn phòng và hành trình phù hợp.") %></span>
+      <span><%= payload.activeStay ? "Bạn đang có lưu trú mở, có thể hỏi thêm về dịch vụ, checkout hoặc hỗ trợ tại chỗ." : (payload.nextStay ? "Bạn đang có booking sắp tới, có thể hỏi về check-in, eKYC và chuẩn bị chuyến đi." : "Chưa có booking mở, nhưng bạn vẫn có thể hỏi AI để được tư vấn phòng và hành trình phù hợp.") %></span>
       <div class="adv-chip-grid">
         <% if (profile.email) { %><span class="adv-chip"><%= profile.email %></span><% } %>
         <% if (profile.sdt) { %><span class="adv-chip"><%= profile.sdt %></span><% } %>
@@ -131,7 +131,7 @@
         </div>
 
         <% if (!recentBookings.length) { %>
-          <div class="adv-empty">Chưa có booking nào để gắn ngữ cảnh. Bạn vẫn có thể dùng UC này để hỏi về chọn phòng, báo giá và chuẩn bị chuyến đi.</div>
+          <div class="adv-empty">Chưa có booking nào để gắn ngữ cảnh. Bạn vẫn có thể hỏi về chọn phòng, báo giá và chuẩn bị chuyến đi.</div>
         <% } else { %>
           <div class="adv-booking-list">
             <% recentBookings.forEach((booking) => { %>

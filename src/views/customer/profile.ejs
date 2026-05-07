@@ -72,7 +72,7 @@
 <main class="profile-shell">
   <section class="profile-hero">
     <div>
-      <span class="profile-kicker"><span class="profile-dot"></span> UC03 · Hồ sơ cá nhân</span>
+      <span class="profile-kicker"><span class="profile-dot"></span> Hồ sơ cá nhân</span>
       <h1>Thông tin của bạn <span>luôn sẵn sàng.</span></h1>
       <p class="profile-muted">Cập nhật email, số điện thoại và địa chỉ để hệ thống gửi thông báo booking, hóa đơn, dịch vụ và hỗ trợ check-in chính xác hơn.</p>
       <div class="profile-actions">
@@ -101,12 +101,12 @@
   <section class="profile-layout">
     <form class="profile-panel" method="post" action="/customer/profile" id="customerProfileForm" novalidate>
       <h2>Cập nhật liên hệ</h2>
-      <p class="profile-muted">Theo nghiệp vụ cũ, họ tên và CCCD là thông tin định danh nên không chỉnh trực tiếp tại màn này. Nếu cần đổi CCCD, hãy gửi lại eKYC.</p>
+      <p class="profile-muted">Họ tên và CCCD là thông tin định danh nên không chỉnh trực tiếp tại màn này. Nếu cần đổi CCCD, hãy gửi lại eKYC.</p>
       <div class="profile-form">
         <div class="profile-field">
           <label>Họ tên</label>
           <input value="<%= profile.tenKh || "" %>" disabled />
-          <div class="profile-note">Không chỉnh sửa tại UC này.</div>
+          <div class="profile-note">Không chỉnh sửa trực tiếp.</div>
         </div>
         <div class="profile-field">
           <label>CCCD/CMND</label>

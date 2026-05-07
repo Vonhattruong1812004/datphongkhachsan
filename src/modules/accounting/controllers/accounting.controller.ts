@@ -157,6 +157,38 @@ function debtToCsv(payload: any) {
   return `\uFEFF${lines.join("\n")}`;
 }
 
+function refundToCsv(payload: any) {
+  const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
+  const line = (values: unknown[]) => values.map(escape).join(",");
+  const lines: string[] = [
+    line(["QUAN LY HOAN TIEN"]),
+    line(["Tu ngay", payload.filters?.tu_ngay, "Den ngay", payload.filters?.den_ngay]),
+    line(["Trang thai", payload.filters?.trang_thai]),
+    line(["Cho xu ly", payload.summary?.pendingAmount || 0, "Da hoan", payload.summary?.paidAmount || 0, "Tu choi", payload.summary?.rejectedAmount || 0]),
+    "",
+    line(["Ma refund", "Giao dich", "Khach", "Ngan hang", "So tai khoan", "Chu tai khoan", "So tien yeu cau", "Da hoan", "Trang thai", "Ngay tao", "Ngay xu ly", "Phieu chi"])
+  ];
+
+  for (const row of payload.rows || []) {
+    lines.push(line([
+      row.refundCode,
+      row.maGiaoDich,
+      row.customerName,
+      row.bankName,
+      row.bankAccountNo,
+      row.bankAccountName,
+      row.amountRequested,
+      row.amountPaid,
+      row.statusMeta?.label || row.status,
+      row.createdAtLabel,
+      row.processedAtLabel,
+      row.expenseId ? `CP-${row.expenseId}` : ""
+    ]));
+  }
+
+  return `\uFEFF${lines.join("\n")}`;
+}
+
 function accountingReportToCsv(payload: any) {
   const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
   const line = (values: unknown[]) => values.map(escape).join(",");
@@ -276,9 +308,31 @@ export async function renderDebtPage(req: Request, res: Response) {
   });
 }
 
+export async function renderRefundPage(req: Request, res: Response) {
+  const payload = await accountingService.getRefundList(req.query);
+  return res.render("accounting/refunds", {
+    title: "Quan ly hoan tien",
+    payload,
+    notice: {
+      success: req.query.success ? String(req.query.success) : "",
+      error: req.query.error ? String(req.query.error) : ""
+    }
+  });
+}
+
 export async function createExpenseAction(req: Request, res: Response) {
   await accountingService.createExpense(req.body);
   return res.redirect("/accounting/expenses");
+}
+
+export async function processRefundAction(req: Request, res: Response) {
+  try {
+    const payload = await accountingService.processRefund(req.body);
+    const actionLabel = payload.action === "approve" ? "Đã duyệt hoàn tiền" : "Đã từ chối hoàn tiền";
+    return res.redirect(`/accounting/refunds?success=${encodeURIComponent(`${actionLabel} ${payload.refundCode}.`)}`);
+  } catch (error: any) {
+    return res.redirect(`/accounting/refunds?error=${encodeURIComponent(String(error?.message || "Không thể xử lý hoàn tiền."))}`);
+  }
 }
 
 export async function accountingDashboardApi(_req: Request, res: Response) {
@@ -330,6 +384,17 @@ export async function debtApi(req: Request, res: Response) {
   return res.json({ ok: true, message: "Tai cong no thanh cong.", data: payload });
 }
 
+export async function refundApi(req: Request, res: Response) {
+  const payload = await accountingService.getRefundList(req.query);
+  if (String(req.query.format || "") === "csv") {
+    const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+    res.setHeader("Content-Disposition", `attachment; filename="hoantien_${timestamp}.csv"`);
+    res.type("text/csv").send(refundToCsv(payload));
+    return;
+  }
+  return res.json({ ok: true, message: "Tai danh sach hoan tien thanh cong.", data: payload });
+}
+
 export async function reportApi(req: Request, res: Response) {
   const payload = await accountingService.buildReport(req.query);
   if (String(req.query.format || req.query.dinh_dang || "") === "csv") {
@@ -345,4 +410,9 @@ export async function reportApi(req: Request, res: Response) {
 export async function createExpenseApi(req: Request, res: Response) {
   const payload = await accountingService.createExpense(req.body);
   return res.json({ ok: true, message: "Them chi phi thanh cong.", data: payload });
+}
+
+export async function processRefundApi(req: Request, res: Response) {
+  const payload = await accountingService.processRefund(req.body);
+  return res.json({ ok: true, message: "Xu ly hoan tien thanh cong.", data: payload });
 }

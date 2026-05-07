@@ -66,13 +66,27 @@ export async function recommendationBookingApi(req: Request, res: Response) {
 }
 
 export async function createBookingApi(req: Request, res: Response) {
-  const booking = await bookingService.createBooking(req.body, req.session.user?.maKhachHang ?? 0);
-  req.session.recentBookingId = booking.id;
+  const hold = await bookingService.createCustomerBookingPaymentHold(req.body, req.session.user?.maKhachHang ?? 0);
+  req.session.recentBookingHoldId = hold.holdId;
 
-  return res.status(201).json({
+  return res.status(202).json({
     ok: true,
-    message: "Tao booking thanh cong.",
-    data: booking
+    message: "Da tao QR coc 50%. Booking se duoc tao sau khi SePay xac nhan.",
+    data: hold
+  });
+}
+
+export async function customerBookingHoldStatusApi(req: Request, res: Response) {
+  const holdId = Number(req.params.holdId || req.query.hold_id || 0);
+  const payload = bookingService.getCustomerBookingHoldStatus(holdId);
+  if (payload.status === "PAID" && payload.transactionId) {
+    req.session.recentBookingId = payload.transactionId;
+  }
+
+  return res.json({
+    ok: true,
+    message: "Tai trang thai giu phong thanh cong.",
+    data: payload
   });
 }
 
@@ -172,9 +186,15 @@ export async function submitBookingForm(req: Request, res: Response) {
       });
     }
 
-    const booking = await bookingService.createBooking(bookingInput, req.session.user?.maKhachHang ?? 0);
-    req.session.recentBookingId = booking.id;
-    return res.redirect(`/booking/invoice/${booking.id}`);
+    const hold = await bookingService.createCustomerBookingPaymentHold(bookingInput, req.session.user?.maKhachHang ?? 0);
+    req.session.recentBookingHoldId = hold.holdId;
+    return res.render("booking/payment", {
+      title: `Thanh toan coc P${payload.room.soPhong}`,
+      hold,
+      preview: hold.preview,
+      filters,
+      formValues
+    });
   } catch (error) {
     const errorMessage = formatBookingError(error);
     const statusCode = error instanceof HttpError ? error.statusCode : (error instanceof ZodError ? 422 : 500);

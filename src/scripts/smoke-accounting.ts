@@ -101,19 +101,26 @@ async function insertTransaction(input: {
   });
 }
 
-async function cleanup(transactionIds: number[]) {
+async function cleanup(transactionIds: number[], expenseIds: number[] = []) {
   const cleanIds = transactionIds.filter((id, index, list) => id > 0 && list.indexOf(id) === index);
-  if (!cleanIds.length) {
+  const cleanExpenseIds = expenseIds.filter((id, index, list) => id > 0 && list.indexOf(id) === index);
+  if (!cleanIds.length && !cleanExpenseIds.length) {
     return;
   }
 
   await withTransaction(async (client) => {
-    await client.query("DELETE FROM chitietdichvu WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
-    await client.query("DELETE FROM booking_history WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
-    await client.query("DELETE FROM room_status_log WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
-    await client.query("DELETE FROM congnophaithu WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
-    await client.query("DELETE FROM chitietgiaodich WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
-    await client.query("DELETE FROM giaodich WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+    if (cleanIds.length) {
+      await client.query("DELETE FROM refund_requests WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+      await client.query("DELETE FROM chitietdichvu WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+      await client.query("DELETE FROM booking_history WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+      await client.query("DELETE FROM room_status_log WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+      await client.query("DELETE FROM congnophaithu WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+      await client.query("DELETE FROM chitietgiaodich WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+      await client.query("DELETE FROM giaodich WHERE magiaodich = ANY($1::int[])", [cleanIds]).catch(() => undefined);
+    }
+    if (cleanExpenseIds.length) {
+      await client.query("DELETE FROM chiphi WHERE macp = ANY($1::int[])", [cleanExpenseIds]).catch(() => undefined);
+    }
   });
 }
 
@@ -164,8 +171,42 @@ async function reportFor(batchCode: string) {
   });
 }
 
+async function insertRefundRequest(transactionId: number, amount: number, code: string) {
+  await new AccountingService().getRefundList({ page: 1, limit: 1 });
+  const result = await query<{ id: number }>(
+    `
+      INSERT INTO refund_requests (
+        magiaodich,
+        refund_code,
+        scope,
+        room_ids,
+        customer_name,
+        customer_phone,
+        customer_email,
+        bank_name,
+        bank_account_no,
+        bank_account_name,
+        reason,
+        note,
+        deposit_paid,
+        retained_deposit,
+        already_requested,
+        amount_requested,
+        status,
+        created_by_role
+      )
+      VALUES ($1,$2,'all','', 'Accounting Smoke', '0900000999', 'accounting.smoke@example.com', 'VietinBank', '108875396650', 'VO NHAT TRUONG', 'Smoke cancel refund', $3, $4, 0, 0, $4, 'ChoXuLy', 'LeTan')
+      RETURNING id
+    `,
+    [transactionId, code, `Smoke refund ${code}`, amount]
+  );
+
+  return Number(result.rows[0]?.id || 0);
+}
+
 async function main() {
   const transactionIds: number[] = [];
+  const expenseIds: number[] = [];
 
   try {
     const rooms = await pickRooms();
@@ -283,6 +324,45 @@ async function main() {
       throw new Error(`Accounting daily summary did not expose cash realization correctly: ${JSON.stringify(report.dailySummary)}`);
     }
 
+    const refundCode = `RF-SMK-${Date.now()}`;
+    const refundAmount = Math.max(1000, Math.round(paidTotal * 0.5));
+    const refundId = await insertRefundRequest(paidId, refundAmount, refundCode);
+    if (!refundId) {
+      throw new Error("Could not create accounting refund request.");
+    }
+    const refundBefore = await new AccountingService().getRefundList({ search: refundCode, page: 1, limit: 5 });
+    const refundBeforeRow = refundBefore.rows.find((row: any) => row.refundCode === refundCode);
+    if (!refundBeforeRow || refundBeforeRow.status !== "ChoXuLy" || Number(refundBeforeRow.amountRequested || 0) !== refundAmount) {
+      throw new Error(`Refund request did not appear before processing: ${JSON.stringify(refundBefore.rows)}`);
+    }
+    const processedRefund = await new AccountingService().processRefund({
+      refund_id: refundId,
+      action: "approve",
+      accounting_note: "Smoke da chuyen khoan hoan coc"
+    });
+    expenseIds.push(Number((processedRefund as any).expenseId || 0));
+    if ((processedRefund as any).action !== "approve" || Number((processedRefund as any).amount || 0) !== refundAmount || !Number((processedRefund as any).expenseId || 0)) {
+      throw new Error(`Refund process response is wrong: ${JSON.stringify(processedRefund)}`);
+    }
+    const refundAfter = await new AccountingService().getRefundList({ search: refundCode, page: 1, limit: 5 });
+    const refundAfterRow = refundAfter.rows.find((row: any) => row.refundCode === refundCode);
+    if (!refundAfterRow || refundAfterRow.status !== "DaHoan" || Number(refundAfterRow.amountPaid || 0) !== refundAmount || Number(refundAfterRow.expenseId || 0) !== Number((processedRefund as any).expenseId || 0)) {
+      throw new Error(`Refund request did not close after processing: ${JSON.stringify(refundAfter.rows)}`);
+    }
+    const refundCashflow = await new AccountingService().getCashflowList({
+      tu_ngay: dateInput(0),
+      den_ngay: dateInput(0),
+      loai_dong_tien: "chi",
+      nhom: "hoantien",
+      search: `CP-${(processedRefund as any).expenseId}`,
+      page: 1,
+      limit: 10
+    });
+    const refundCashflowRow = refundCashflow.rows.find((row: any) => String(row.maThamChieu) === `CP-${(processedRefund as any).expenseId}`);
+    if (!refundCashflowRow || Number(refundCashflowRow.soTien || 0) !== refundAmount || refundCashflowRow.nhom !== "hoantien") {
+      throw new Error(`Refund cashflow expense was not synchronized: ${JSON.stringify(refundCashflow.rows)}`);
+    }
+
     console.log("Accounting smoke success");
     console.log(`partial_transaction=${partialId}`);
     console.log("partial_checkout_debt=ok");
@@ -294,8 +374,10 @@ async function main() {
     console.log("revenue_row_amounts=ok");
     console.log("report_revenue_split=ok");
     console.log("report_daily_realization=ok");
+    console.log("refund_request=ok");
+    console.log("refund_cashflow_sync=ok");
   } finally {
-    await cleanup(transactionIds).catch((error) => {
+    await cleanup(transactionIds, expenseIds).catch((error) => {
       console.error("Accounting smoke cleanup failed", error);
     });
     await pool.end();

@@ -188,12 +188,12 @@
 <main class="fb-ops">
   <section class="fb-hero" aria-label="Quản lý phản hồi khách hàng">
     <div class="fb-hero-main">
-      <span class="fb-kicker"><span class="fb-dot"></span> <%= advisoryMode ? "UC · Trả lời tư vấn" : "UC · Quản lý phản hồi" %></span>
+      <span class="fb-kicker"><span class="fb-dot"></span> <%= advisoryMode ? "Trả lời tư vấn" : "Quản lý phản hồi" %></span>
       <h1><%= advisoryMode ? "Inbox tư vấn CSKH <span>trả lời nhanh, bám đúng ngữ cảnh.</span>" : "Trung tâm CSKH <span>đọc đúng, xử lý gọn.</span>" %></h1>
       <p class="fb-lead">
         <%= advisoryMode
           ? "Màn này gom riêng các câu hỏi tư vấn và hỏi đáp từ khách hàng: xem nội dung, booking context, phản hồi lại từng case và theo dõi follow-up trong một luồng riêng."
-          : "Màn này gom đúng nghiệp vụ từ hệ thống cũ: lọc phản hồi, xem đánh giá/sentiment, cập nhật trạng thái, trả lời khách và lưu lịch sử xử lý trong một luồng." %>
+          : "Lọc phản hồi, xem đánh giá, cập nhật trạng thái, trả lời khách và lưu lịch sử xử lý trong một luồng." %>
       </p>
       <div class="fb-actions">
         <a class="fb-button fb-button--primary" href="#feedbackQueue"><%= advisoryMode ? "Xử lý tư vấn" : "Xử lý phản hồi" %></a>
@@ -402,7 +402,7 @@
 
         <div class="fb-detail-block">
           <strong><%= advisoryMode ? "Trả lời tư vấn" : "Trả lời khách hàng" %></strong>
-          <p class="fb-muted" style="margin:6px 0 0;"><%= advisoryMode ? "Mỗi lần gửi trả lời sẽ lưu thành một mốc hội thoại của case tư vấn. Bạn có thể để trạng thái Đang xử lý nếu còn cần follow-up." : "Theo nghiệp vụ cũ, gửi trả lời sẽ lưu lịch sử vào chi tiết phản hồi. Mặc định đóng trạng thái là đã xử lý." %></p>
+          <p class="fb-muted" style="margin:6px 0 0;"><%= advisoryMode ? "Mỗi lần gửi trả lời sẽ lưu thành một mốc hội thoại. Bạn có thể để trạng thái Đang xử lý nếu còn cần follow-up." : "Gửi trả lời sẽ lưu vào lịch sử xử lý. Mặc định đóng trạng thái là đã xử lý." %></p>
           <form method="post" action="/feedback/<%= selected.id %>/reply">
             <input type="hidden" name="return_to" value="<%= returnTo %>" />
             <div class="fb-field" style="margin-top:10px;">

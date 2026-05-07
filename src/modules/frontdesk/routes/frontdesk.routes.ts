@@ -5,6 +5,7 @@ import { ROLE } from "../../../shared/constants/roles";
 import {
   cancelBookingApi,
   checkInRoomApi,
+  checkoutPaymentStatusApi,
   checkoutPreviewApi,
   checkoutRoomApi,
   createDirectBookingApi,
@@ -46,6 +47,7 @@ frontdeskApiRouter.get("/direct-booking/holds/:holdId", requireRole([ROLE.LE_TAN
 frontdeskApiRouter.post("/direct-booking", requireRole([ROLE.LE_TAN]), asyncHandler(createDirectBookingApi));
 frontdeskApiRouter.post("/checkin", requireRole([ROLE.LE_TAN]), asyncHandler(checkInRoomApi));
 frontdeskApiRouter.get("/checkout-preview", requireRole([ROLE.LE_TAN]), asyncHandler(checkoutPreviewApi));
+frontdeskApiRouter.get("/checkout-payment/status", requireRole([ROLE.LE_TAN]), asyncHandler(checkoutPaymentStatusApi));
 frontdeskApiRouter.post("/checkout", requireRole([ROLE.LE_TAN]), asyncHandler(checkoutRoomApi));
 frontdeskApiRouter.post("/cancel", requireRole([ROLE.LE_TAN]), asyncHandler(cancelBookingApi));
 frontdeskApiRouter.post("/update-room", requireRole([ROLE.LE_TAN]), asyncHandler(updateBookedRoomApi));

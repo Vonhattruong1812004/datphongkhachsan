@@ -38,7 +38,7 @@
     <div>
       <span class="review-chip">Bước 3 · Kiểm tra trước khi đặt</span>
       <h1>Xác nhận thông tin booking.</h1>
-      <p class="review-muted">Bạn kiểm tra lại phòng, ngày ở, thông tin liên hệ và tổng tiền. Khi bấm xác nhận, hệ thống mới tạo `giaodich`, `chitietgiaodich`, cập nhật phòng sang `Booked` và ghi lịch sử.</p>
+      <p class="review-muted">Kiểm tra lại phòng, ngày ở, thông tin liên hệ và tổng tiền trước khi xác nhận.</p>
     </div>
     <img class="review-img" src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
   </section>
@@ -60,6 +60,7 @@
       <div class="review-line"><span>Tạm tính</span><strong><%= summary.subtotalFormatted %></strong></div>
       <div class="review-line"><span>Khuyến mãi</span><strong><%= preview.promotion ? preview.promotion.tenChuongTrinh : "Không áp dụng" %> · -<%= summary.discountFormatted %></strong></div>
       <div class="review-line review-line--total"><span>Tổng cần xác nhận</span><strong><%= summary.totalFormatted %></strong></div>
+      <div class="review-line review-line--total"><span>Cọc cần thanh toán</span><strong><%= summary.depositAmountFormatted %></strong></div>
     </div>
 
     <form method="post" action="/booking/rooms/<%= room.id %>">
@@ -77,7 +78,7 @@
       <input type="hidden" name="ngay_tra" value="<%= booking.ngay_tra %>" />
       <input type="hidden" name="ma_km" value="<%= booking.ma_km || "" %>" />
       <div class="review-actions">
-        <button class="review-button review-button--primary" type="submit" name="btn_action" value="confirm">Xác nhận đặt phòng</button>
+        <button class="review-button review-button--primary" type="submit" name="btn_action" value="confirm">Tạo QR cọc 50%</button>
         <button class="review-button" type="submit" name="btn_action" value="review">Tính lại</button>
         <a class="review-button" href="/booking/rooms/<%= room.id %>?<%= searchQuery %>">Quay lại chỉnh sửa</a>
         <a class="review-button" href="<%= backSearchUrl %>">Đổi phòng</a>

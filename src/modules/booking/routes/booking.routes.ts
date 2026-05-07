@@ -5,6 +5,7 @@ import { ROLE } from "../../../shared/constants/roles";
 import {
   bookingFeedbackApi,
   createBookingApi,
+  customerBookingHoldStatusApi,
   lookupBookingApi,
   previewBookingApi,
   recommendationBookingApi,
@@ -26,5 +27,6 @@ bookingApiRouter.get("/search", asyncHandler(searchRoomsApi));
 bookingApiRouter.get("/recommendations", asyncHandler(recommendationBookingApi));
 bookingApiRouter.post("/preview", asyncHandler(previewBookingApi));
 bookingApiRouter.post("/create", asyncHandler(createBookingApi));
+bookingApiRouter.get("/holds/:holdId", asyncHandler(customerBookingHoldStatusApi));
 bookingApiRouter.get("/lookup", asyncHandler(lookupBookingApi));
 bookingApiRouter.post("/feedback", requireRole([ROLE.KHACH_HANG]), asyncHandler(bookingFeedbackApi));

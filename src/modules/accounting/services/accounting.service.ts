@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { query } from "../../../config/database";
+import { query, withTransaction } from "../../../config/database";
+import { realtimeHub } from "../../realtime/services/realtime.service";
+import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney } from "../../../shared/utils/format";
 
 const reportSchema = z.object({
@@ -64,11 +66,27 @@ const expenseSchema = z.object({
   trang_thai: z.enum(["ChoDuyet", "DaDuyet", "Huy"]).default("ChoDuyet")
 });
 
+const refundListSchema = z.object({
+  tu_ngay: z.string().optional().default(""),
+  den_ngay: z.string().optional().default(""),
+  trang_thai: z.string().optional().default("all"),
+  search: z.string().optional().default(""),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(15)
+});
+
+const refundActionSchema = z.object({
+  refund_id: z.coerce.number().int().positive(),
+  action: z.enum(["approve", "reject"]),
+  accounting_note: z.string().optional().default("")
+});
+
 export class AccountingService {
   private readonly columnSupport = new Map<string, boolean>();
 
   async buildDashboard() {
-    const [revenue, expense, debt, invoices, recentCashflow, topRooms, debtFocus] = await Promise.all([
+    await this.ensureRefundRequestTable();
+    const [revenue, expense, debt, invoices, refundSummary, recentCashflow, topRooms, debtFocus] = await Promise.all([
       query<{ total: number | string; count: number | string }>(
         `
           SELECT
@@ -104,6 +122,24 @@ export class AccountingService {
         `
       ),
       query<{ total: number }>("SELECT COUNT(*)::int AS total FROM hoadon"),
+      query<{
+        pendingCount: number | string;
+        pendingAmount: number | string;
+        paidCount: number | string;
+        paidAmount: number | string;
+      }>(
+        `
+          SELECT
+            COUNT(*) FILTER (WHERE status = 'ChoXuLy')::int AS "pendingCount",
+            COALESCE(SUM(amount_requested) FILTER (WHERE status = 'ChoXuLy'), 0)::numeric AS "pendingAmount",
+            COUNT(*) FILTER (WHERE status = 'DaHoan')::int AS "paidCount",
+            COALESCE(SUM(amount_paid) FILTER (
+              WHERE status = 'DaHoan'
+                AND date_trunc('month', COALESCE(processed_at, created_at)) = date_trunc('month', NOW())
+            ), 0)::numeric AS "paidAmount"
+          FROM refund_requests
+        `
+      ),
       query<{
         loaiDongTien: "thu" | "chi";
         maThamChieu: string;
@@ -223,6 +259,8 @@ export class AccountingService {
     const monthlyRevenue = Number(revenue.rows[0]?.total ?? 0);
     const monthlyExpense = Number(expense.rows[0]?.total ?? 0);
     const outstandingDebt = Number(debt.rows[0]?.total ?? 0);
+    const pendingRefundAmount = Number(refundSummary.rows[0]?.pendingAmount ?? 0);
+    const paidRefundAmount = Number(refundSummary.rows[0]?.paidAmount ?? 0);
     const netCashflow = monthlyRevenue - monthlyExpense;
 
     return {
@@ -235,11 +273,17 @@ export class AccountingService {
       expenseVoucherCount: Number(expense.rows[0]?.count ?? 0),
       pendingDebtCount: Number(debt.rows[0]?.pending ?? 0),
       overdueDebtCount: Number(debt.rows[0]?.overdue ?? 0),
+      pendingRefundCount: Number(refundSummary.rows[0]?.pendingCount ?? 0),
+      paidRefundCount: Number(refundSummary.rows[0]?.paidCount ?? 0),
+      pendingRefundAmount,
+      paidRefundAmount,
       totalInvoices: Number(invoices.rows[0]?.total ?? 0),
       monthlyRevenueFormatted: formatMoney(monthlyRevenue),
       monthlyExpenseFormatted: formatMoney(monthlyExpense),
       netCashflowFormatted: formatMoney(netCashflow),
       outstandingDebtFormatted: formatMoney(outstandingDebt),
+      pendingRefundAmountFormatted: formatMoney(pendingRefundAmount),
+      paidRefundAmountFormatted: formatMoney(paidRefundAmount),
       recentCashflow: recentCashflow.rows.map((row) => ({
         ...row,
         soTien: Number(row.soTien),
@@ -593,6 +637,7 @@ export class AccountingService {
     const hotelJoin = expenseHotelSupported ? `LEFT JOIN khachsan ks ON ks.makhachsan = cp.makhachsan` : "";
     const categoryCase = `
       CASE
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%hoàn%', '%hoan%', '%refund%', '%cọc%', '%coc%']) THEN 'refund'
         WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%điện%', '%nước%', '%dien%', '%nuoc%', '%utility%']) THEN 'utilities'
         WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%lương%', '%luong%', '%nhân viên%', '%nhan vien%', '%salary%']) THEN 'payroll'
         WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%sửa%', '%sua%', '%bảo trì%', '%bao tri%', '%repair%', '%maintenance%']) THEN 'maintenance'
@@ -1119,6 +1164,7 @@ export class AccountingService {
     const where: string[] = [];
     const expenseCategoryCase = `
       CASE
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%hoàn%', '%hoan%', '%refund%', '%cọc%', '%coc%']) THEN 'hoantien'
         WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%lương%', '%luong%', '%nhân sự%', '%nhan su%', '%nhân viên%', '%nhan vien%', '%bảo hiểm%', '%bao hiem%']) THEN 'nhansu'
         WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%bảo trì%', '%bao tri%', '%sửa chữa%', '%sua chua%', '%thiết bị%', '%thiet bi%']) THEN 'baotri'
         WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%marketing%', '%quảng cáo%', '%quang cao%', '%ads%']) THEN 'marketing'
@@ -1579,6 +1625,461 @@ export class AccountingService {
     return result.rows[0];
   }
 
+  async getRefundList(rawFilters: unknown) {
+    await this.ensureRefundRequestTable();
+    const normalized = this.normalizeRefundFilters(rawFilters);
+    const { filters, warnings } = normalized;
+    const params: unknown[] = [filters.tu_ngay, filters.den_ngay];
+    const where = [
+      `DATE(rr.created_at) >= $1`,
+      `DATE(rr.created_at) <= $2`
+    ];
+
+    if (filters.trang_thai !== "all") {
+      params.push(filters.trang_thai);
+      where.push(`rr.status = $${params.length}`);
+    }
+
+    if (filters.search) {
+      params.push(`%${filters.search}%`);
+      const idx = params.length;
+      where.push(`
+        (
+          rr.refund_code ILIKE $${idx}
+          OR rr.magiaodich::text ILIKE $${idx}
+          OR COALESCE(rr.customer_name, '') ILIKE $${idx}
+          OR COALESCE(rr.customer_phone, '') ILIKE $${idx}
+          OR COALESCE(rr.bank_name, '') ILIKE $${idx}
+          OR COALESCE(rr.bank_account_no, '') ILIKE $${idx}
+          OR COALESCE(gd.madatcho, '') ILIKE $${idx}
+        )
+      `);
+    }
+
+    const whereSql = `WHERE ${where.join(" AND ")}`;
+    const total = await query<{
+      recordCount: number | string;
+      pendingCount: number | string;
+      pendingAmount: number | string;
+      paidCount: number | string;
+      paidAmount: number | string;
+      rejectedCount: number | string;
+      rejectedAmount: number | string;
+    }>(
+      `
+        SELECT
+          COUNT(*)::int AS "recordCount",
+          COUNT(*) FILTER (WHERE rr.status = 'ChoXuLy')::int AS "pendingCount",
+          COALESCE(SUM(rr.amount_requested) FILTER (WHERE rr.status = 'ChoXuLy'), 0)::numeric AS "pendingAmount",
+          COUNT(*) FILTER (WHERE rr.status = 'DaHoan')::int AS "paidCount",
+          COALESCE(SUM(rr.amount_paid) FILTER (WHERE rr.status = 'DaHoan'), 0)::numeric AS "paidAmount",
+          COUNT(*) FILTER (WHERE rr.status = 'TuChoi')::int AS "rejectedCount",
+          COALESCE(SUM(rr.amount_requested) FILTER (WHERE rr.status = 'TuChoi'), 0)::numeric AS "rejectedAmount"
+        FROM refund_requests rr
+        LEFT JOIN giaodich gd ON gd.magiaodich = rr.magiaodich
+        ${whereSql}
+      `,
+      params
+    );
+
+    const totalRecords = Number(total.rows[0]?.recordCount ?? 0);
+    const totalPages = Math.max(1, Math.ceil(totalRecords / filters.limit));
+    const currentPage = Math.min(filters.page, totalPages);
+    const offset = (currentPage - 1) * filters.limit;
+    filters.page = currentPage;
+
+    const [rows, statusBreakdown] = await Promise.all([
+      query<{
+        id: number;
+        maGiaoDich: number;
+        refundCode: string;
+        scope: string;
+        roomIds: string;
+        customerName: string | null;
+        customerPhone: string | null;
+        customerEmail: string | null;
+        bankName: string;
+        bankAccountNo: string;
+        bankAccountName: string;
+        reason: string;
+        note: string | null;
+        depositPaid: number | string;
+        retainedDeposit: number | string;
+        alreadyRequested: number | string;
+        amountRequested: number | string;
+        amountPaid: number | string;
+        status: string;
+        createdByRole: string;
+        createdAt: string;
+        processedAt: string | null;
+        accountingNote: string | null;
+        expenseId: number | null;
+        bookingCode: string | null;
+        transactionStatus: string | null;
+        paymentMethod: string | null;
+        transactionTotal: number | string | null;
+        hotelNames: string | null;
+      }>(
+        `
+          SELECT
+            rr.id,
+            rr.magiaodich AS "maGiaoDich",
+            rr.refund_code AS "refundCode",
+            rr.scope,
+            rr.room_ids AS "roomIds",
+            rr.customer_name AS "customerName",
+            rr.customer_phone AS "customerPhone",
+            rr.customer_email AS "customerEmail",
+            rr.bank_name AS "bankName",
+            rr.bank_account_no AS "bankAccountNo",
+            rr.bank_account_name AS "bankAccountName",
+            rr.reason,
+            rr.note,
+            rr.deposit_paid AS "depositPaid",
+            rr.retained_deposit AS "retainedDeposit",
+            rr.already_requested AS "alreadyRequested",
+            rr.amount_requested AS "amountRequested",
+            rr.amount_paid AS "amountPaid",
+            rr.status,
+            rr.created_by_role AS "createdByRole",
+            rr.created_at AS "createdAt",
+            rr.processed_at AS "processedAt",
+            rr.accounting_note AS "accountingNote",
+            rr.expense_id AS "expenseId",
+            gd.madatcho AS "bookingCode",
+            gd.trangthai AS "transactionStatus",
+            gd.phuongthucthanhtoan AS "paymentMethod",
+            gd.tongtien AS "transactionTotal",
+            hotel_info."hotelNames"
+          FROM refund_requests rr
+          LEFT JOIN giaodich gd ON gd.magiaodich = rr.magiaodich
+          LEFT JOIN LATERAL (
+            SELECT string_agg(DISTINCT ks.tenkhachsan, ' | ' ORDER BY ks.tenkhachsan) AS "hotelNames"
+            FROM chitietgiaodich ct
+            INNER JOIN phong p ON p.maphong = ct.maphong
+            INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+            WHERE ct.magiaodich = rr.magiaodich
+          ) hotel_info ON TRUE
+          ${whereSql}
+          ORDER BY
+            CASE rr.status WHEN 'ChoXuLy' THEN 0 WHEN 'DaHoan' THEN 1 ELSE 2 END,
+            rr.created_at DESC,
+            rr.id DESC
+          LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+        `,
+        [...params, filters.limit, offset]
+      ),
+      query<{ status: string; count: number | string; total: number | string }>(
+        `
+          SELECT
+            rr.status,
+            COUNT(*)::int AS count,
+            COALESCE(SUM(CASE WHEN rr.status = 'DaHoan' THEN rr.amount_paid ELSE rr.amount_requested END), 0)::numeric AS total
+          FROM refund_requests rr
+          LEFT JOIN giaodich gd ON gd.magiaodich = rr.magiaodich
+          ${whereSql}
+          GROUP BY rr.status
+          ORDER BY total DESC, count DESC
+        `,
+        params
+      )
+    ]);
+
+    const summary = {
+      totalRecords,
+      pendingCount: Number(total.rows[0]?.pendingCount ?? 0),
+      pendingAmount: Number(total.rows[0]?.pendingAmount ?? 0),
+      paidCount: Number(total.rows[0]?.paidCount ?? 0),
+      paidAmount: Number(total.rows[0]?.paidAmount ?? 0),
+      rejectedCount: Number(total.rows[0]?.rejectedCount ?? 0),
+      rejectedAmount: Number(total.rows[0]?.rejectedAmount ?? 0)
+    };
+
+    return {
+      filters,
+      warnings,
+      rows: rows.rows.map((row) => ({
+        ...row,
+        depositPaid: Number(row.depositPaid || 0),
+        retainedDeposit: Number(row.retainedDeposit || 0),
+        alreadyRequested: Number(row.alreadyRequested || 0),
+        amountRequested: Number(row.amountRequested || 0),
+        amountPaid: Number(row.amountPaid || 0),
+        transactionTotal: Number(row.transactionTotal || 0),
+        roomCount: String(row.roomIds || "").split(",").filter(Boolean).length,
+        createdAtLabel: formatDate(row.createdAt, "DD/MM/YYYY HH:mm"),
+        processedAtLabel: row.processedAt ? formatDate(row.processedAt, "DD/MM/YYYY HH:mm") : "",
+        statusMeta: this.getRefundStatusMeta(row.status),
+        depositPaidFormatted: formatMoney(row.depositPaid),
+        retainedDepositFormatted: formatMoney(row.retainedDeposit),
+        alreadyRequestedFormatted: formatMoney(row.alreadyRequested),
+        amountRequestedFormatted: formatMoney(row.amountRequested),
+        amountPaidFormatted: formatMoney(row.amountPaid),
+        transactionTotalFormatted: formatMoney(row.transactionTotal || 0),
+        hotelLabel: row.hotelNames || "Không gắn cơ sở"
+      })),
+      statusOptions: this.getRefundStatusOptions(),
+      statusBreakdown: statusBreakdown.rows.map((row) => ({
+        status: row.status,
+        count: Number(row.count || 0),
+        total: Number(row.total || 0),
+        totalFormatted: formatMoney(row.total),
+        meta: this.getRefundStatusMeta(row.status)
+      })),
+      summary: {
+        ...summary,
+        pendingAmountFormatted: formatMoney(summary.pendingAmount),
+        paidAmountFormatted: formatMoney(summary.paidAmount),
+        rejectedAmountFormatted: formatMoney(summary.rejectedAmount)
+      },
+      totalRecords,
+      currentPage,
+      totalPages,
+      limit: filters.limit,
+      offset,
+      hasData: rows.rows.length > 0,
+      rangeLabel: `${formatDate(filters.tu_ngay, "DD/MM/YYYY")} - ${formatDate(filters.den_ngay, "DD/MM/YYYY")}`,
+      generatedAtLabel: formatDate(new Date(), "DD/MM/YYYY HH:mm")
+    };
+  }
+
+  async processRefund(rawInput: unknown) {
+    await this.ensureRefundRequestTable();
+    const input = refundActionSchema.parse(rawInput);
+    const accountingNote = input.accounting_note.trim();
+
+    const processed = await withTransaction(async (client) => {
+      const locked = await client.query(
+        `
+          SELECT *
+          FROM refund_requests
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [input.refund_id]
+      ) as { rows: Array<any> };
+      const refund = locked.rows[0];
+
+      if (!refund) {
+        throw new HttpError(404, "Khong tim thay yeu cau hoan tien.");
+      }
+
+      if (refund.status !== "ChoXuLy") {
+        throw new HttpError(409, "Yeu cau hoan tien da duoc xu ly truoc do.");
+      }
+
+      const amount = Math.max(0, Math.round(Number(refund.amount_requested || 0)));
+      if (amount <= 0) {
+        throw new HttpError(422, "So tien hoan khong hop le.");
+      }
+
+      if (input.action === "reject") {
+        await client.query(
+          `
+            UPDATE refund_requests
+            SET status = 'TuChoi',
+                amount_paid = 0,
+                processed_at = NOW(),
+                accounting_note = $2
+            WHERE id = $1
+          `,
+          [input.refund_id, accountingNote || "Ke toan tu choi yeu cau hoan tien."]
+        );
+
+        await client.query(
+          `
+            UPDATE giaodich
+            SET ghichu = CASE
+              WHEN COALESCE(ghichu, '') = '' THEN $2
+              ELSE ghichu || ' | ' || $2
+            END
+            WHERE magiaodich = $1
+          `,
+          [refund.magiaodich, `[REFUND_REJECTED code=${refund.refund_code} amount=${amount}]`]
+        );
+
+        return {
+          id: input.refund_id,
+          transactionId: Number(refund.magiaodich),
+          refundCode: String(refund.refund_code),
+          action: input.action,
+          amount,
+          expenseId: null
+        };
+      }
+
+      const expense = await client.query(
+        `
+          INSERT INTO chiphi (tenchiphi, ngaychi, sotien, noidung, trangthai)
+          VALUES ($1, CURRENT_DATE, $2, $3, 'DaDuyet')
+          RETURNING macp
+        `,
+        [
+          `Hoan coc dat phong ${refund.refund_code}`,
+          amount,
+          [
+            `Hoan tien cho GD-${refund.magiaodich}`,
+            `Khach: ${refund.customer_name || "Khach"}`,
+            `NH: ${refund.bank_name} ${refund.bank_account_no} ${refund.bank_account_name}`,
+            `Ly do huy: ${refund.reason || ""}`,
+            accountingNote ? `Ke toan: ${accountingNote}` : ""
+          ].filter(Boolean).join(" | ")
+        ]
+      ) as { rows: Array<{ macp: number }> };
+      const expenseId = Number(expense.rows[0]?.macp || 0);
+
+      await client.query(
+        `
+          UPDATE refund_requests
+          SET status = 'DaHoan',
+              amount_paid = amount_requested,
+              processed_at = NOW(),
+              accounting_note = $2,
+              expense_id = $3
+          WHERE id = $1
+        `,
+        [input.refund_id, accountingNote || "Da chuyen khoan hoan coc cho khach.", expenseId]
+      );
+
+      await client.query(
+        `
+          UPDATE giaodich
+          SET ghichu = CASE
+            WHEN COALESCE(ghichu, '') = '' THEN $2
+            ELSE ghichu || ' | ' || $2
+          END
+          WHERE magiaodich = $1
+        `,
+        [refund.magiaodich, `[REFUND_PAID code=${refund.refund_code} amount=${amount} expense=CP-${expenseId}]`]
+      );
+
+      return {
+        id: input.refund_id,
+        transactionId: Number(refund.magiaodich),
+        refundCode: String(refund.refund_code),
+        action: input.action,
+        amount,
+        expenseId
+      };
+    });
+
+    realtimeHub.publish({
+      type: "refund_processed",
+      scopes: ["admin", "ketoan", "quanly", "letan"],
+      data: {
+        ...processed,
+        amountFormatted: formatMoney(processed.amount)
+      }
+    });
+
+    return {
+      ...processed,
+      amountFormatted: formatMoney(processed.amount)
+    };
+  }
+
+  private normalizeRefundFilters(rawFilters: unknown) {
+    const parsed = refundListSchema.parse(rawFilters ?? {});
+    const today = new Date();
+    const fromDefault = new Date(today);
+    fromDefault.setDate(today.getDate() - 90);
+    const dateOnly = (value: Date) => formatDate(value, "YYYY-MM-DD");
+    const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const warnings: string[] = [];
+    const allowedStatuses = new Set(this.getRefundStatusOptions().map((item) => item.value));
+
+    let tuNgay = isDate(parsed.tu_ngay) ? parsed.tu_ngay : dateOnly(fromDefault);
+    let denNgay = isDate(parsed.den_ngay) ? parsed.den_ngay : dateOnly(today);
+    let trangThai = parsed.trang_thai || "all";
+
+    if (!isDate(parsed.tu_ngay) && parsed.tu_ngay) {
+      warnings.push("Ngày bắt đầu không hợp lệ nên hệ thống đã dùng mốc 90 ngày gần nhất.");
+    }
+
+    if (!isDate(parsed.den_ngay) && parsed.den_ngay) {
+      warnings.push("Ngày kết thúc không hợp lệ nên hệ thống đã dùng ngày hiện tại.");
+    }
+
+    if (tuNgay > denNgay) {
+      [tuNgay, denNgay] = [denNgay, tuNgay];
+      warnings.push("Khoảng ngày đã được tự đảo lại vì ngày bắt đầu lớn hơn ngày kết thúc.");
+    }
+
+    if (!allowedStatuses.has(trangThai)) {
+      trangThai = "all";
+      warnings.push("Trạng thái hoàn tiền không hợp lệ nên hệ thống đã đưa về tất cả.");
+    }
+
+    return {
+      filters: {
+        ...parsed,
+        tu_ngay: tuNgay,
+        den_ngay: denNgay,
+        trang_thai: trangThai,
+        search: parsed.search.trim()
+      },
+      warnings
+    };
+  }
+
+  private getRefundStatusOptions() {
+    return [
+      { value: "all", label: "Tất cả" },
+      { value: "ChoXuLy", label: "Chờ xử lý" },
+      { value: "DaHoan", label: "Đã hoàn" },
+      { value: "TuChoi", label: "Từ chối" }
+    ];
+  }
+
+  private getRefundStatusMeta(status: string) {
+    const map: Record<string, { label: string; tone: string; hint: string }> = {
+      ChoXuLy: { label: "Chờ xử lý", tone: "sun", hint: "Kế toán cần kiểm tra và chi hoàn" },
+      DaHoan: { label: "Đã hoàn", tone: "green", hint: "Đã ghi phiếu chi hoàn tiền" },
+      TuChoi: { label: "Từ chối", tone: "rose", hint: "Không chi hoàn yêu cầu này" }
+    };
+
+    return map[status] ?? { label: status || "Không rõ", tone: "slate", hint: "Trạng thái khác" };
+  }
+
+  private async ensureRefundRequestTable(client?: any) {
+    const db = client || { query };
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS refund_requests (
+        id SERIAL PRIMARY KEY,
+        magiaodich INT NOT NULL REFERENCES giaodich(magiaodich) ON DELETE CASCADE,
+        refund_code TEXT NOT NULL UNIQUE,
+        scope TEXT NOT NULL DEFAULT 'all',
+        room_ids TEXT NOT NULL DEFAULT '',
+        customer_name TEXT,
+        customer_phone TEXT,
+        customer_email TEXT,
+        bank_name TEXT NOT NULL,
+        bank_account_no TEXT NOT NULL,
+        bank_account_name TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        note TEXT,
+        deposit_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        retained_deposit NUMERIC(14,2) NOT NULL DEFAULT 0,
+        already_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        amount_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ChoXuLy',
+        created_by_role TEXT NOT NULL DEFAULT 'LeTan',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        processed_at TIMESTAMPTZ NULL,
+        accounting_note TEXT,
+        expense_id INT NULL REFERENCES chiphi(macp)
+      )
+    `);
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS expense_id INT NULL REFERENCES chiphi(macp)");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS accounting_note TEXT");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_magiaodich ON refund_requests(magiaodich)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_status ON refund_requests(status)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_created_at ON refund_requests(created_at)");
+  }
+
   private normalizeRevenueFilters(rawFilters: unknown) {
     const parsed = revenueSchema.parse(rawFilters ?? {});
     const today = new Date();
@@ -1716,6 +2217,7 @@ export class AccountingService {
       maintenance: { label: "Bảo trì", tone: "orange" },
       supplies: { label: "Vật tư", tone: "lime" },
       marketing: { label: "Marketing", tone: "pink" },
+      refund: { label: "Hoàn tiền", tone: "cyan" },
       other: { label: "Khác", tone: "slate" }
     };
 
@@ -1813,6 +2315,7 @@ export class AccountingService {
       { value: "nhansu", label: "Nhân sự" },
       { value: "baotri", label: "Bảo trì" },
       { value: "vanhanh", label: "Vận hành" },
+      { value: "hoantien", label: "Hoàn tiền" },
       { value: "marketing", label: "Marketing" },
       { value: "vattu", label: "Vật tư" }
     ];
@@ -1824,6 +2327,7 @@ export class AccountingService {
       nhansu: { label: "Nhân sự", tone: "violet" },
       baotri: { label: "Bảo trì", tone: "orange" },
       vanhanh: { label: "Vận hành", tone: "cyan" },
+      hoantien: { label: "Hoàn tiền", tone: "cyan" },
       marketing: { label: "Marketing", tone: "pink" },
       vattu: { label: "Vật tư", tone: "lime" }
     };

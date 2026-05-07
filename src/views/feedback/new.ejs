@@ -100,12 +100,12 @@
 <main class="fb-shell">
   <section class="fb-hero" aria-label="Gửi phản hồi và đánh giá">
     <div class="fb-hero-main">
-      <span class="fb-kicker"><span class="fb-dot"></span> <%= advisoryMode ? "UC07 · Yêu cầu tư vấn" : "UC04 · Phản hồi khách hàng" %></span>
+      <span class="fb-kicker"><span class="fb-dot"></span> <%= advisoryMode ? "Yêu cầu tư vấn" : "Phản hồi khách hàng" %></span>
       <h1><%= advisoryMode ? "Gửi câu hỏi và nhận <span>CSKH phản hồi rõ ràng.</span>" : "Gửi trải nghiệm <span>để resort phục vụ tốt hơn.</span>" %></h1>
-      <p class="fb-lead"><%= advisoryMode ? "Dùng form này khi bạn cần hỏi thêm về chọn phòng, booking, check-in, eKYC, dịch vụ hoặc cần CSKH giải thích một tình huống cụ thể. Yêu cầu sẽ vào thẳng inbox tư vấn của bộ phận CSKH." : "Theo nghiệp vụ hệ thống cũ, phản hồi sẽ lưu kèm loại dịch vụ, mức hài lòng, nội dung, ảnh minh chứng và tự phân tích cảm xúc để CSKH ưu tiên xử lý." %></p>
+      <p class="fb-lead"><%= advisoryMode ? "Gửi câu hỏi về phòng, booking, check-in, eKYC hoặc dịch vụ. CSKH sẽ tiếp nhận trong inbox tư vấn." : "Gửi loại dịch vụ, mức hài lòng, nội dung và ảnh minh chứng để CSKH ưu tiên xử lý." %></p>
       <div class="fb-actions">
         <a class="fb-button fb-button--primary" href="#feedbackForm"><%= advisoryMode ? "Tạo yêu cầu tư vấn" : "Viết phản hồi" %></a>
-        <a class="fb-button" href="<%= advisoryMode ? "/customer/advisory" : "/customer/dashboard" %>"><%= advisoryMode ? "Về UC tư vấn" : "Về dashboard" %></a>
+        <a class="fb-button" href="<%= advisoryMode ? "/customer/advisory" : "/customer/dashboard" %>"><%= advisoryMode ? "Về tư vấn" : "Về dashboard" %></a>
         <a class="fb-button" href="/customer/bookings">Lịch sử booking</a>
       </div>
     </div>

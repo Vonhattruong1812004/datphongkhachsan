@@ -14,7 +14,11 @@ import {
   renderCashflowPage,
   renderDebtPage,
   renderExpensePage,
+  renderRefundPage,
   renderRevenuePage,
+  processRefundAction,
+  processRefundApi,
+  refundApi,
   reportApi,
   revenueApi
 } from "../controllers/accounting.controller";
@@ -28,7 +32,9 @@ accountingRouter.get("/revenue", requireRole([ROLE.KE_TOAN]), asyncHandler(rende
 accountingRouter.get("/expenses", requireRole([ROLE.KE_TOAN]), asyncHandler(renderExpensePage));
 accountingRouter.get("/cashflow", requireRole([ROLE.KE_TOAN]), asyncHandler(renderCashflowPage));
 accountingRouter.get("/debts", requireRole([ROLE.KE_TOAN]), asyncHandler(renderDebtPage));
+accountingRouter.get("/refunds", requireRole([ROLE.KE_TOAN]), asyncHandler(renderRefundPage));
 accountingRouter.post("/expenses", requireRole([ROLE.KE_TOAN]), asyncHandler(createExpenseAction));
+accountingRouter.post("/refunds/process", requireRole([ROLE.KE_TOAN]), asyncHandler(processRefundAction));
 
 accountingApiRouter.get("/dashboard", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(accountingDashboardApi));
 accountingApiRouter.get("/reports", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(reportApi));
@@ -36,4 +42,6 @@ accountingApiRouter.get("/revenue", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asy
 accountingApiRouter.get("/expenses", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(expenseApi));
 accountingApiRouter.get("/cashflow", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(cashflowApi));
 accountingApiRouter.get("/debts", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(debtApi));
+accountingApiRouter.get("/refunds", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(refundApi));
 accountingApiRouter.post("/expenses", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(createExpenseApi));
+accountingApiRouter.post("/refunds/process", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(processRefundApi));

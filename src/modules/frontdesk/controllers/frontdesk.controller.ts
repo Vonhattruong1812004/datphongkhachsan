@@ -392,12 +392,32 @@ export async function checkoutPreviewApi(req: Request, res: Response) {
   });
 }
 
+export async function checkoutPaymentStatusApi(req: Request, res: Response) {
+  const transactionId = Number(req.query.transaction_id || req.query.ma_gd || req.params.transactionId || 0);
+  const roomId = Number(req.query.room_id || req.query.selected_room || req.params.roomId || 0);
+  const payload = await frontdeskService.getCheckoutPaymentStatus(transactionId, roomId);
+
+  return res.json({
+    ok: true,
+    message: "Tra cuu trang thai thanh toan checkout thanh cong.",
+    data: payload
+  });
+}
+
 export async function checkoutRoomApi(req: Request, res: Response) {
   const transactionId = Number(req.body.transaction_id || req.body.ma_gd || 0);
   const roomId = Number(req.body.room_id || req.body.selected_room || 0);
+  const paymentStatus = readText(req.body.payment_status || "unpaid");
   const paymentMethod = String(req.body.payment_method || "TienMat") as any;
   const roomCondition = req.body.room_condition ? String(req.body.room_condition) as any : undefined;
   const note = String(req.body.note || "");
+
+  if (paymentStatus !== "paid") {
+    return res.status(422).json({
+      ok: false,
+      message: "Vui long xac nhan da thu 50% con lai truoc khi checkout."
+    });
+  }
 
   const payload = await frontdeskService.checkoutRoom(transactionId, roomId, paymentMethod, roomCondition, note);
 
@@ -414,7 +434,12 @@ export async function cancelBookingApi(req: Request, res: Response) {
   const reason = readText(req.body.reason || req.body.ly_do_huy);
   const roomIds = readNumberList(req.body.room_ids || req.body.phong_cancel);
 
-  const payload = await frontdeskService.cancelBooking(transactionId, scope, roomIds, reason);
+  const payload = await frontdeskService.cancelBooking(transactionId, scope, roomIds, reason, {
+    refundBankName: readText(req.body.refund_bank_name || req.body.refundBankName),
+    refundAccountNo: readText(req.body.refund_account_no || req.body.refundAccountNo),
+    refundAccountName: readText(req.body.refund_account_name || req.body.refundAccountName),
+    refundNote: readText(req.body.refund_note || req.body.refundNote)
+  });
   return res.json({
     ok: true,
     message: "Huy dat phong thanh cong.",
@@ -775,7 +800,11 @@ export async function submitCancelBookingPage(req: Request, res: Response) {
       transactionId: Number(req.body.ma_giao_dich || req.body.transaction_id || 0),
       scope: readText(req.body.cancel_scope) === "partial" ? "partial" : "all",
       roomIds: readNumberList(req.body.phong_cancel || req.body.room_ids),
-      reason: readText(req.body.ly_do_huy || req.body.reason)
+      reason: readText(req.body.ly_do_huy || req.body.reason),
+      refundBankName: readText(req.body.refund_bank_name || req.body.refundBankName),
+      refundAccountNo: readText(req.body.refund_account_no || req.body.refundAccountNo),
+      refundAccountName: readText(req.body.refund_account_name || req.body.refundAccountName),
+      refundNote: readText(req.body.refund_note || req.body.refundNote)
     });
 
     return renderCancelBookingState(req, res, {

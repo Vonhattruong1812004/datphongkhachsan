@@ -1,65 +1,48 @@
 import { SEPAY_HOLD_MINUTES, buildSepayContent } from "./sepay";
+import type { BookingPreviewInput } from "../booking/services/booking.service";
 
-export interface DirectBookingHoldInput {
-  ngay_den?: string;
-  ngay_di?: string;
-  so_nguoi?: number;
-  leader_ten_kh?: string;
-  leader_cccd?: string;
-  leader_sdt?: string;
-  leader_email?: string;
-  leader_diachi?: string;
-  group_name?: string;
-  ghi_chu?: string;
-  ma_khuyen_mai?: number | null;
-  room_ids?: number[];
-  room_guests?: Array<{ room_id?: number; ten_khach?: string; cccd?: string; sdt?: string; email?: string; dia_chi?: string }>;
-  members?: Array<{ ten_khach?: string; cccd?: string; sdt?: string; email?: string; dia_chi?: string }>;
-  services?: Array<{ service_id?: number; room_id?: number; quantity?: number; note?: string }>;
-}
-
-export interface DirectBookingHoldSummary {
+export interface CustomerBookingHoldSummary {
   roomAmount: number;
-  serviceAmount: number;
   discountAmount: number;
   total: number;
   depositAmount: number;
 }
 
-export interface DirectBookingHold {
+export interface CustomerBookingHold {
   id: number;
   content: string;
-  roomIds: number[];
-  ngayDen: string;
-  ngayDi: string;
+  roomId: number;
+  ngayNhan: string;
+  ngayTra: string;
+  preferredCustomerId: number;
   expiresAt: string;
-  input: DirectBookingHoldInput;
-  summary: DirectBookingHoldSummary;
+  input: BookingPreviewInput;
+  summary: CustomerBookingHoldSummary;
   status: "PENDING" | "PAID" | "EXPIRED";
   transactionId?: number;
   bookingCode?: string;
-  createdAccounts?: Array<{ hoTen?: string; vaiTro?: string; username?: string; password?: string }>;
   settledAt?: string;
 }
 
-class DirectBookingHoldStore {
-  private holds = new Map<number, DirectBookingHold>();
+class CustomerBookingHoldStore {
+  private holds = new Map<number, CustomerBookingHold>();
   private readonly settledTtlMs = 30 * 60 * 1000;
 
-  create(input: DirectBookingHoldInput, summary: DirectBookingHoldSummary) {
+  create(input: BookingPreviewInput, preferredCustomerId: number, summary: CustomerBookingHoldSummary) {
     this.purgeExpired();
     const now = Date.now();
-    let id = Number(`${now}${Math.floor(Math.random() * 900 + 100)}`);
+    let id = (now * 100) + Math.floor(Math.random() * 90 + 10);
     while (this.holds.has(id)) {
       id += 1;
     }
 
-    const hold: DirectBookingHold = {
+    const hold: CustomerBookingHold = {
       id,
       content: buildSepayContent(id),
-      roomIds: Array.from(new Set((input.room_ids || []).map(Number).filter(Boolean))),
-      ngayDen: String(input.ngay_den || ""),
-      ngayDi: String(input.ngay_di || ""),
+      roomId: Number(input.room_id),
+      ngayNhan: String(input.ngay_nhan || ""),
+      ngayTra: String(input.ngay_tra || ""),
+      preferredCustomerId,
       expiresAt: new Date(now + SEPAY_HOLD_MINUTES * 60 * 1000).toISOString(),
       input: structuredClone(input),
       summary,
@@ -75,19 +58,12 @@ class DirectBookingHoldStore {
     return this.holds.get(id) ?? null;
   }
 
-  complete(id: number, transactionId: number, bookingCode = "", createdAccounts: DirectBookingHold["createdAccounts"] = []) {
-    const hold = this.holds.get(id);
-    if (!hold) return null;
-    return this.completeSnapshot(hold, transactionId, bookingCode, createdAccounts);
-  }
-
-  completeSnapshot(hold: DirectBookingHold, transactionId: number, bookingCode = "", createdAccounts: DirectBookingHold["createdAccounts"] = []) {
-    const completed: DirectBookingHold = {
+  completeSnapshot(hold: CustomerBookingHold, transactionId: number, bookingCode = "") {
+    const completed: CustomerBookingHold = {
       ...hold,
       status: "PAID",
       transactionId,
       bookingCode,
-      createdAccounts,
       settledAt: new Date().toISOString()
     };
     this.holds.set(hold.id, completed);
@@ -106,13 +82,13 @@ class DirectBookingHoldStore {
     this.holds.delete(id);
   }
 
-  getActiveRoomIds(ngayDen: string, ngayDi: string) {
+  getActiveRoomIds(ngayNhan: string, ngayTra: string) {
     this.purgeExpired();
     const result = new Set<number>();
     for (const hold of this.holds.values()) {
       if (hold.status !== "PENDING") continue;
-      if (!rangesOverlap(hold.ngayDen, hold.ngayDi, ngayDen, ngayDi)) continue;
-      hold.roomIds.forEach((roomId) => result.add(roomId));
+      if (!rangesOverlap(hold.ngayNhan, hold.ngayTra, ngayNhan, ngayTra)) continue;
+      result.add(hold.roomId);
     }
     return result;
   }
@@ -138,4 +114,4 @@ function rangesOverlap(startA: string, endA: string, startB: string, endB: strin
   return Number.isFinite(a1) && Number.isFinite(a2) && Number.isFinite(b1) && Number.isFinite(b2) && a1 < b2 && b1 < a2;
 }
 
-export const directBookingHoldStore = new DirectBookingHoldStore();
+export const customerBookingHoldStore = new CustomerBookingHoldStore();

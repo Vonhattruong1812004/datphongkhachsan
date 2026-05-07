@@ -21,6 +21,10 @@ export function buildSepayContent(orderId: number) {
   return `${SEPAY_VIETINBANK_PREFIX} ROOM${Math.max(0, Number(orderId || 0))}`;
 }
 
+export function buildSepayCheckoutContent(transactionId: number, roomId: number) {
+  return `${SEPAY_VIETINBANK_PREFIX} OUT${Math.max(0, Number(transactionId || 0))}P${Math.max(0, Number(roomId || 0))}`;
+}
+
 export function buildSepayMetadata(orderId: number, depositAmount: number, expiresAt: Date) {
   return `[SEPAY content="${buildSepayContent(orderId)}" expires=${expiresAt.toISOString()} deposit=${Math.max(0, Math.round(depositAmount))} paid=0 status=PENDING]`;
 }
@@ -118,4 +122,14 @@ export function buildSepayTransferPayload(orderId: number, amount: number) {
 export function parseSepayOrderId(content: string) {
   const match = String(content || "").match(/\bROOM_?(\d+)\b/i);
   return match ? Number(match[1]) : 0;
+}
+
+export function parseSepayCheckoutContent(content: string) {
+  const match = String(content || "").match(/\bOUT_?(\d+)P_?(\d+)\b/i);
+  return match
+    ? {
+        transactionId: Number(match[1] || 0),
+        roomId: Number(match[2] || 0)
+      }
+    : null;
 }

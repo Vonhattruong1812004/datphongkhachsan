@@ -69,7 +69,7 @@
       <div class="co-hero-main">
         <div class="co-eyebrow"><span class="co-dot"></span> Check-out V2 · Lễ tân</div>
         <h1>Trả phòng <span>theo từng phòng.</span></h1>
-        <p class="co-lead">Bám UC PHP cũ: tìm giao dịch, chọn một phòng CheckedIn, tải preview tiền phòng, dịch vụ, bồi thường, khuyến mãi, VietQR rồi xác nhận đã thanh toán.</p>
+        <p class="co-lead">Tìm giao dịch, chọn phòng đang ở, kiểm tra chi phí còn lại và hoàn tất trả phòng sau khi đã thu đủ tiền.</p>
         <div class="co-actions">
           <a class="co-button co-button--primary" href="/frontdesk">Quay lại dashboard</a>
           <a class="co-button" href="/service?from=frontdesk">Đặt dịch vụ</a>
@@ -88,7 +88,7 @@
 
     <form method="post" id="formSearch" class="co-card">
       <h2>Tìm kiếm giao dịch</h2>
-      <p class="co-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn. Chỉ nhập số, giống rule của hệ thống PHP cũ.</p>
+      <p class="co-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn.</p>
       <div class="co-row" style="grid-template-columns:2fr 1fr">
         <div class="co-field">
           <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
@@ -129,7 +129,7 @@
         <input type="hidden" name="search_keyword" value="<%= keyword || tx.maGiaoDich %>" />
         <input type="hidden" name="ma_gd" value="<%= tx.maGiaoDich %>" />
         <h2>Danh sách phòng đang ở</h2>
-        <p class="co-muted">Chọn một phòng để tải preview chi phí. Chỉ phòng `CheckedIn` được phép check-out.</p>
+        <p class="co-muted">Chọn phòng cần trả. Chỉ phòng đang ở mới được check-out.</p>
         <div class="co-grid">
           <% rooms.forEach((room) => { %>
             <label class="co-room <%= selectedId === room.maPhong ? "is-selected" : "" %>">
@@ -151,7 +151,7 @@
       <section class="co-card">
         <h2>Chi tiết phòng & chi phí</h2>
         <% if (!preview) { %>
-          <div class="co-empty">Chưa có phòng nào được chọn. Hãy chọn một phòng ở danh sách trên để tải preview check-out.</div>
+          <div class="co-empty">Chọn một phòng ở danh sách trên để xem chi phí check-out.</div>
         <% } else { %>
           <div class="co-preview">
             <div class="co-preview-head">
@@ -197,9 +197,10 @@
               <div class="co-stat"><strong><%= money.damageFeeFormatted %></strong><span>Bồi thường</span></div>
               <div class="co-stat"><strong>-<%= money.discountFeeFormatted %></strong><span><%= promotion?.id ? promotion.label : "Khuyến mãi" %></span></div>
               <% if (money.depositCredit > 0) { %>
-                <div class="co-stat"><strong>-<%= money.depositCreditFormatted %></strong><span>Cọc SePay đã thu</span></div>
+                <div class="co-stat"><strong><%= money.totalBeforeDepositFormatted %></strong><span>Tổng hóa đơn checkout</span></div>
+                <div class="co-stat"><strong>-<%= money.depositCreditFormatted %></strong><span>Cọc SePay áp dụng</span></div>
               <% } %>
-              <div class="co-stat"><strong class="co-total"><%= money.totalFormatted %></strong><span>Tổng thanh toán</span></div>
+              <div class="co-stat"><strong class="co-total"><%= money.totalFormatted %></strong><span>Còn lại phải thu</span></div>
             </div>
 
             <div class="co-pay">
@@ -237,17 +238,25 @@
                 </div>
               </form>
 
-              <aside class="co-qr" id="bankTransferPanel">
+              <aside
+                class="co-qr"
+                id="bankTransferPanel"
+                data-checkout-transaction-id="<%= tx.maGiaoDich %>"
+                data-checkout-room-id="<%= preview.room.maPhong %>"
+                data-checkout-content="<%= transfer?.content || "" %>"
+              >
                 <% if (transfer?.qrImageUrl) { %>
                   <img id="paymentQrImage" src="<%= transfer.qrImageUrl %>" alt="QR thanh toán VietQR" />
                 <% } %>
                 <div>
                   <span class="co-badge co-badge--money">VietQR checkout</span>
                   <div class="co-bank-grid" style="margin-top:10px">
+                    <div class="co-bank-item"><span>Số tiền còn lại</span><strong><%= transfer?.amountFormatted || money.totalFormatted %></strong></div>
                     <div class="co-bank-item"><span>Ngân hàng</span><strong><%= transfer?.bankName || "MB Bank" %></strong></div>
                     <div class="co-bank-item"><span>Số tài khoản</span><strong><%= transfer?.accountNo || "" %></strong></div>
                     <div class="co-bank-item"><span>Chủ tài khoản</span><strong><%= transfer?.accountName || "" %></strong></div>
                     <div class="co-bank-item"><span>Nội dung CK</span><strong><%= transfer?.content || "" %></strong></div>
+                    <div class="co-bank-item"><span>Trạng thái</span><strong id="checkoutPaymentStatusLine">Đang chờ SePay xác nhận</strong></div>
                   </div>
                   <p class="co-muted"><%= transfer?.instructions || "Chọn Chuyển khoản để dùng QR động theo số tiền checkout." %></p>
                 </div>
@@ -274,6 +283,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const formCheckout = document.getElementById("formCheckout");
   const paymentMethod = document.getElementById("payment_method");
   const qrPanel = document.getElementById("bankTransferPanel");
+  const checkoutPaymentStatusLine = document.getElementById("checkoutPaymentStatusLine");
+  let checkoutPaymentHandled = false;
+  let checkoutPaymentPollTimer = null;
 
   function setSearchError(message) {
     if (searchInput) searchInput.classList.add("input-error");
@@ -304,10 +316,65 @@ document.addEventListener("DOMContentLoaded", function () {
     qrPanel.style.opacity = paymentMethod.value === "transfer" ? "1" : ".38";
   }
 
+  function renderCheckoutPaid(data) {
+    if (checkoutPaymentHandled) return;
+    checkoutPaymentHandled = true;
+    if (checkoutPaymentStatusLine) {
+      checkoutPaymentStatusLine.textContent = `Đã thanh toán. Check-out phòng ${data.roomNumber || ""} thành công.`;
+    }
+    if (qrPanel) {
+      qrPanel.style.opacity = "1";
+      qrPanel.style.borderColor = "rgba(20,184,166,.42)";
+      qrPanel.style.background = "linear-gradient(135deg,rgba(236,253,245,.92),rgba(255,255,255,.82))";
+    }
+    const statusSelect = document.getElementById("payment_status");
+    const methodSelect = document.getElementById("payment_method");
+    if (statusSelect) statusSelect.value = "paid";
+    if (methodSelect) methodSelect.value = "transfer";
+    if (checkoutPaymentPollTimer) clearInterval(checkoutPaymentPollTimer);
+  }
+
+  async function pollCheckoutPayment() {
+    if (!qrPanel || checkoutPaymentHandled) return;
+    const transactionId = qrPanel.getAttribute("data-checkout-transaction-id") || "";
+    const roomId = qrPanel.getAttribute("data-checkout-room-id") || "";
+    if (!transactionId || !roomId) return;
+    try {
+      const response = await fetch(`/api/frontdesk/checkout-payment/status?transaction_id=${encodeURIComponent(transactionId)}&room_id=${encodeURIComponent(roomId)}`, {
+        headers: { Accept: "application/json" }
+      });
+      const payload = await response.json();
+      const data = payload?.data || {};
+      if (data.status === "PAID") renderCheckoutPaid(data);
+    } catch (_error) {
+      // Poll im lặng để lễ tân không bị nhiễu nếu mạng chập chờn.
+    }
+  }
+
   searchInput?.addEventListener("input", () => validateSearch(false));
   searchInput?.addEventListener("blur", () => validateSearch(false));
   paymentMethod?.addEventListener("change", updateQrState);
   updateQrState();
+
+  if (qrPanel && checkoutPaymentStatusLine) {
+    const targetContent = qrPanel.getAttribute("data-checkout-content") || "";
+    if (window.EventSource) {
+      const stream = new EventSource("/api/realtime/stream?scope=letan");
+      stream.addEventListener("checkout_payment_paid", (event) => {
+        try {
+          const data = JSON.parse(event.data || "{}");
+          if (!targetContent || data.content === targetContent) {
+            renderCheckoutPaid(data);
+            stream.close();
+          }
+        } catch (_error) {
+          // Polling ben duoi van xu ly neu realtime loi format.
+        }
+      });
+    }
+    checkoutPaymentPollTimer = setInterval(pollCheckoutPayment, 1000);
+    pollCheckoutPayment();
+  }
 
   formSearch?.addEventListener("submit", function (event) {
     if ((event.submitter?.value || "") !== "search") return;

@@ -629,14 +629,14 @@
     <section class="manager-section">
       <div class="manager-section-head">
         <div>
-          <h2>Lối vào nghiệp vụ</h2>
-          <p>Các UC quản lý được đặt thành bento card lớn để mở đúng chức năng ngay.</p>
+          <h2>Lối vào nhanh</h2>
+          <p>Mở thẳng chức năng cần xử lý.</p>
         </div>
       </div>
       <div class="manager-action-grid">
         <% primaryActions.forEach((item, index) => { %>
           <a class="manager-action" href="<%= item.href %>">
-            <span class="manager-code">UC<%= String(index + 1).padStart(2, "0") %></span>
+            <span class="manager-code"><%= String(index + 1).padStart(2, "0") %></span>
             <h3><%= item.label %></h3>
             <p><%= item.note %></p>
             <span class="manager-open">Mở chức năng</span>
@@ -711,7 +711,7 @@
     <section class="dash-hero <%= isLetan ? 'is-compact' : '' %>">
       <div class="dash-hero-main <%= isLetan ? 'is-compact' : '' %>">
         <div class="dash-eyebrow"><span class="dash-dot"></span> <%= meta.label %> command center</div>
-        <h1><%= hero.title %> <span><%= isLetan ? "Ít nhiễu hơn." : "Fresh workspace." %></span></h1>
+        <h1><%= hero.title %> <span><%= isLetan ? "Gọn hơn." : "Sạch hơn." %></span></h1>
         <p class="dash-lead <%= isLetan ? 'is-compact' : '' %>">
           <%= isLetan
             ? "Dashboard lễ tân đã được gom lại để tập trung vào các tác vụ cần dùng liên tục trong ca trực: đặt phòng trực tiếp, check-in, check-out, sửa hoặc hủy booking và xử lý dịch vụ theo phòng."
@@ -723,7 +723,7 @@
           <% if (actions[2]) { %><a class="dash-button" href="<%= actions[2].href %>"><%= actions[2].label %></a><% } %>
         </div>
         <div class="dash-pulse-grid <%= isLetan ? 'is-compact' : '' %>">
-          <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào UC</span></div>
+          <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào nhanh</span></div>
           <div class="dash-pulse"><strong><%= isLetan ? "Core" : cards.length %></strong><span><%= isLetan ? "Màn hình gọn" : "Trọng tâm" %></span></div>
           <% if (!isLetan) { %>
           <div class="dash-pulse"><strong><%= enableRoomBoard ? "Live" : "Focus" %></strong><span>Chế độ</span></div>
@@ -741,7 +741,7 @@
     <section class="dash-strip">
       <div>
         <strong>Không gian làm việc của <%= meta.label %></strong>
-        <span>Các nghiệp vụ được gom lại thành action card rõ ràng, KPI cập nhật live từ database.</span>
+        <span>Các tác vụ chính được gom lại rõ ràng, KPI cập nhật live từ database.</span>
       </div>
       <div class="dash-flow">
         <% actions.slice(0, 4).forEach((item) => { %>
@@ -756,7 +756,7 @@
       <div class="dash-section-head">
         <div>
           <h2>Trọng tâm vận hành</h2>
-          <p>Các nhịp việc chính của actor này trong hệ thống.</p>
+          <p>Các việc chính cần theo dõi trong ca.</p>
         </div>
       </div>
       <div class="dash-grid">
@@ -776,17 +776,17 @@
     <section class="dash-section <%= isLetan ? 'is-compact' : '' %>">
       <div class="dash-section-head">
         <div>
-          <h2><%= (isLetan || isCskh) ? "Use case chính" : "Lối vào nghiệp vụ" %></h2>
-          <p><%= isLetan ? "Các thao tác lễ tân dùng nhiều nhất, bố cục bento giống dashboard khách hàng." : (isCskh ? "CSKH gom đúng hai cụm nghiệp vụ: quản lý phản hồi và quản lý eKYC." : "Nhấn thẳng vào tác vụ cần xử lý, không vòng vèo qua menu phụ.") %></p>
+          <h2><%= (isLetan || isCskh) ? "Tác vụ chính" : "Lối vào nhanh" %></h2>
+          <p><%= isLetan ? "Các thao tác lễ tân dùng nhiều nhất." : (isCskh ? "Mở nhanh phản hồi, tư vấn và eKYC." : "Nhấn thẳng vào tác vụ cần xử lý.") %></p>
         </div>
       </div>
       <div class="dash-grid <%= isLetan ? 'is-compact' : '' %>">
         <% primaryActions.forEach((item, index) => { %>
           <a class="dash-action" href="<%= item.href %>">
-            <span class="dash-code">UC<%= String(index + 1).padStart(2, "0") %></span>
+            <span class="dash-code"><%= String(index + 1).padStart(2, "0") %></span>
             <h3><%= item.label %></h3>
             <p><%= item.note %></p>
-            <span class="dash-open"><%= (isLetan || isCskh) ? "Mở nghiệp vụ" : "Mở chức năng" %></span>
+            <span class="dash-open">Mở</span>
           </a>
         <% }) %>
       </div>

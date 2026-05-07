@@ -91,11 +91,11 @@ const heroByScope: Record<string, { title: string; description: string }> = {
   },
   ketoan: {
     title: "Xin chào, Kế toán!",
-    description: "Theo dõi doanh thu, chi phí, công nợ và dòng tiền hợp nhất theo đúng logic của hệ thống cũ."
+    description: "Theo dõi doanh thu, chi phí, công nợ và dòng tiền hợp nhất."
   },
   dichvu: {
     title: "Xin chào, Bộ phận dịch vụ!",
-    description: "Tập trung đúng ba UC của nhân viên dịch vụ: quản lý dịch vụ, kiểm tra tình trạng phòng và theo dõi room board live."
+    description: "Tập trung ba màn chính: quản lý dịch vụ, kiểm tra tình trạng phòng và room board live."
   },
   quanly: {
     title: "Xin chào, Quản lý!",
@@ -129,7 +129,8 @@ const actionsByScope: Record<string, DashboardActionLink[]> = {
     { label: "Doanh thu", href: "/accounting/revenue", note: "Danh sách giao dịch thu" },
     { label: "Chi phí", href: "/accounting/expenses", note: "Quản lý phiếu chi" },
     { label: "Thu chi hợp nhất", href: "/accounting/cashflow", note: "Timeline dòng tiền" },
-    { label: "Công nợ", href: "/accounting/debts", note: "Đối soát công nợ phải thu" }
+    { label: "Công nợ", href: "/accounting/debts", note: "Đối soát công nợ phải thu" },
+    { label: "Hoàn tiền", href: "/accounting/refunds", note: "Duyệt yêu cầu hoàn cọc và ghi nhận phiếu chi" }
   ],
   dichvu: [
     { label: "Quản lý dịch vụ", href: "/service/catalog/manage", note: "Quản lý danh mục dịch vụ: thêm mới, chỉnh tên, giá, mô tả, hình ảnh và trạng thái hoạt động." },
