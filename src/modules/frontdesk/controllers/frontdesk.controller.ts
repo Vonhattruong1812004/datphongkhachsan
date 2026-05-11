@@ -7,6 +7,8 @@ type DirectBookingFieldMap = Record<string, string>;
 type DirectBookingRoomGuestMap = Record<string, DirectBookingFieldMap>;
 
 interface DirectBookingFormState {
+  customer_mode: string;
+  existing_customer_id: string;
   leader_ten_kh: string;
   leader_cccd: string;
   leader_sdt: string;
@@ -33,15 +35,42 @@ function readPositiveNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
 }
 
+function normalizeMapKey(key: string): string {
+  return key.replace(/^svc_/, "").trim();
+}
+
 function readStringMap(value: unknown): DirectBookingFieldMap {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (Array.isArray(value)) {
+    return Object.entries(value).reduce<DirectBookingFieldMap>((result, [key, item]) => {
+      if (item !== undefined && item !== null && readText(item) !== "") {
+        result[normalizeMapKey(String(key))] = readText(item);
+      }
+      return result;
+    }, {});
+  }
+
+  if (!value || typeof value !== "object") {
     return {};
   }
 
   return Object.entries(value as Record<string, unknown>).reduce<DirectBookingFieldMap>((result, [key, item]) => {
-    result[String(key)] = readText(item);
+    result[normalizeMapKey(String(key))] = readText(item);
     return result;
   }, {});
+}
+
+function readBracketStringMap(source: Record<string, unknown>, fieldName: string): DirectBookingFieldMap {
+  const result = readStringMap(source[fieldName]);
+  const pattern = new RegExp(`^${fieldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\[([^\\]]+)\\]$`);
+
+  for (const [key, value] of Object.entries(source)) {
+    const match = key.match(pattern);
+    if (match?.[1]) {
+      result[normalizeMapKey(match[1])] = readText(value);
+    }
+  }
+
+  return result;
 }
 
 function readNestedStringMap(value: unknown): DirectBookingRoomGuestMap {
@@ -90,6 +119,8 @@ function buildDirectBookingFormState(source: Record<string, unknown>): DirectBoo
   const soNguoi = readPositiveNumber(source.so_nguoi, 1);
 
   return {
+    customer_mode: readText(source.customer_mode) === "existing" ? "existing" : "new",
+    existing_customer_id: readText(source.existing_customer_id),
     leader_ten_kh: readText(source.leader_ten_kh),
     leader_cccd: readText(source.leader_cccd),
     leader_sdt: readText(source.leader_sdt),
@@ -297,6 +328,18 @@ export async function renderFrontdeskPage(req: Request, res: Response) {
   });
 }
 
+export async function renderActivityLookupPage(req: Request, res: Response) {
+  const keyword = readText(req.query.keyword);
+  const days = readPositiveNumber(req.query.days, 7);
+  const payload = await frontdeskService.getActivityLookupPayload({ keyword, days });
+
+  return res.render("frontdesk/activity-lookup", {
+    title: "Tra cứu hoạt động",
+    payload,
+    notice: readNotice(req)
+  });
+}
+
 export async function renderDirectBookingPage(req: Request, res: Response) {
   const form = buildDirectBookingFormState(req.query as Record<string, unknown>);
   const payload = await frontdeskService.getDirectBookingFormData({
@@ -359,6 +402,17 @@ export async function lookupTransactionApi(req: Request, res: Response) {
   return res.json({
     ok: true,
     message: "Tra cuu giao dich thanh cong.",
+    data: payload
+  });
+}
+
+export async function lookupDirectBookingCustomersApi(req: Request, res: Response) {
+  const keyword = String(req.query.keyword || req.body.keyword || "");
+  const payload = await frontdeskService.searchDirectBookingCustomers(keyword);
+
+  return res.json({
+    ok: true,
+    message: "Tra cuu khach hang cu thanh cong.",
     data: payload
   });
 }
@@ -483,6 +537,8 @@ export async function submitDirectBookingPage(req: Request, res: Response) {
   if (action === "book") {
     try {
       result = await frontdeskService.createDirectBookingPaymentHold({
+        customer_mode: form.customer_mode,
+        existing_customer_id: Number(form.existing_customer_id || 0),
         ngay_den: form.ngay_den,
         ngay_di: form.ngay_di,
         so_nguoi: form.so_nguoi,
@@ -596,7 +652,7 @@ export async function submitCheckinPage(req: Request, res: Response) {
     if (!keyword) {
       return renderCheckinState(req, res, {
         keyword,
-        error: "Vui lòng nhập mã giao dịch hoặc CMND/CCCD."
+        error: "Vui lòng nhập mã giao dịch, CMND/CCCD hoặc số điện thoại."
       });
     }
 
@@ -615,8 +671,7 @@ export async function submitCheckinPage(req: Request, res: Response) {
       transactionId: Number(req.body.ma_giao_dich || req.body.transaction_id || 0),
       scope: readText(req.body.check_scope) === "partial" ? "partial" : "all",
       roomIds: readNumberList(req.body.phong_checkin),
-      confirmedIdentity: Boolean(req.body.xac_nhan_giay_to),
-      confirmedManualEkyc: Boolean(req.body.xac_nhan_ekyc_thu_cong)
+      confirmedIdentity: Boolean(req.body.xac_nhan_giay_to)
     });
 
     return renderCheckinState(req, res, {
@@ -716,7 +771,7 @@ export async function submitEditBookingPage(req: Request, res: Response) {
     if (!keyword) {
       return renderEditBookingState(req, res, {
         keyword,
-        error: "Vui lòng nhập mã giao dịch hoặc CMND/CCCD."
+        error: "Vui lòng nhập mã giao dịch, CMND/CCCD hoặc số điện thoại."
       });
     }
 
@@ -733,6 +788,35 @@ export async function submitEditBookingPage(req: Request, res: Response) {
   }
 
   if (action !== "save") {
+    if (action === "add_room") {
+      try {
+        const payload = await frontdeskService.addRoomToEditBooking({
+          transactionId: Number(req.body.ma_giao_dich || 0),
+          roomId: Number(req.body.add_ma_phong || 0),
+          tenKhach: readText(req.body.add_ten_kh),
+          cccd: readText(req.body.add_cccd),
+          sdt: readText(req.body.add_sdt),
+          email: readText(req.body.add_email),
+          ngayDen: readText(req.body.add_ngay_den),
+          ngayDi: readText(req.body.add_ngay_di),
+          soNguoi: readPositiveNumber(req.body.add_so_nguoi, 1)
+        });
+
+        return renderEditBookingState(req, res, {
+          keyword: keyword || readText(req.body.ma_giao_dich),
+          selectedRoomId: Number(req.body.add_ma_phong || 0),
+          success: "Đã thêm phòng vào giao dịch và tính lại tổng tiền.",
+          payload
+        });
+      } catch (error: any) {
+        return renderEditBookingState(req, res, {
+          keyword: keyword || readText(req.body.ma_giao_dich),
+          selectedRoomId: Number(req.body.ma_phong_cu || 0),
+          error: String(error?.message || "Không thể thêm phòng vào giao dịch.")
+        });
+      }
+    }
+
     return renderEditBookingState(req, res, {
       keyword,
       error: "Thao tác không hợp lệ."
@@ -740,6 +824,9 @@ export async function submitEditBookingPage(req: Request, res: Response) {
   }
 
   try {
+    const editServices = readBracketStringMap(req.body, "services");
+    const editServiceRooms = readBracketStringMap(req.body, "service_rooms");
+
     const payload = await frontdeskService.updateEditBookingFromForm({
       transactionId: Number(req.body.ma_giao_dich || 0),
       oldRoomId: Number(req.body.ma_phong_cu || 0),
@@ -751,7 +838,8 @@ export async function submitEditBookingPage(req: Request, res: Response) {
       ngayDen: readText(req.body.ngay_den),
       ngayDi: readText(req.body.ngay_di),
       soNguoi: readPositiveNumber(req.body.so_nguoi, 1),
-      services: readStringMap(req.body.services),
+      services: editServices,
+      serviceRooms: editServiceRooms,
       removeServices: readNumberList(req.body.remove_services)
     });
 
@@ -842,6 +930,8 @@ export async function createDirectBookingApi(req: Request, res: Response) {
     : (req.body.room_ids ? String(req.body.room_ids).split(",").map((item) => Number(item.trim())) : []);
 
   const payload = await frontdeskService.createDirectBookingPaymentHold({
+    customer_mode: String(req.body.customer_mode || "") === "existing" ? "existing" : "new",
+    existing_customer_id: Number(req.body.existing_customer_id || 0),
     ngay_den: String(req.body.ngay_den || ""),
     ngay_di: String(req.body.ngay_di || ""),
     so_nguoi: Number(req.body.so_nguoi || 1),

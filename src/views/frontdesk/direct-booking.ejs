@@ -48,17 +48,21 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
   </script>
   <style>
     :root {
-      --bg-body: #f7fff9;
-      --bg-chip: rgba(255, 255, 255, 0.82);
-      --border-soft: rgba(19, 48, 74, 0.16);
-      --text-main: #14314b;
-      --text-soft: #5f778f;
-      --text-strong: #102033;
-      --accent: #0ea5e9;
-      --accent-2: #14b8a6;
-      --danger: #ef4444;
-      --success: #22c55e;
-      --shadow-strong: 0 24px 70px rgba(12, 39, 64, 0.14);
+      --bg-body: #f4fbff;
+      --surface: rgba(255, 255, 255, 0.94);
+      --surface-soft: rgba(248, 252, 255, 0.88);
+      --bg-chip: #eef8ff;
+      --border-soft: rgba(22, 78, 99, 0.16);
+      --table-line: rgba(22, 78, 99, 0.12);
+      --text-main: #184057;
+      --text-soft: #64798a;
+      --text-strong: #102a3d;
+      --accent: #0284c7;
+      --accent-2: #10b981;
+      --accent-3: #f59e0b;
+      --danger: #dc2626;
+      --success: #059669;
+      --shadow-strong: 0 22px 54px rgba(15, 82, 112, 0.12);
     }
 
     * { box-sizing: border-box; }
@@ -66,9 +70,10 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
-        radial-gradient(circle at 8% 8%, rgba(20,184,166,.26), transparent 26%),
-        radial-gradient(circle at 88% 12%, rgba(251,113,133,.18), transparent 28%),
-        radial-gradient(circle at 56% 100%, rgba(250,204,21,.14), transparent 30%),
+        radial-gradient(circle at 8% 8%, rgba(14, 165, 233, .18), transparent 25%),
+        radial-gradient(circle at 88% 12%, rgba(16, 185, 129, .14), transparent 27%),
+        radial-gradient(circle at 56% 100%, rgba(245, 158, 11, .10), transparent 30%),
+        linear-gradient(180deg, #f7fdff 0%, #f4fbff 44%, #f7fff9 100%),
         var(--bg-body);
       color: var(--text-main);
     }
@@ -78,9 +83,9 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       top: 0;
       z-index: 20;
       backdrop-filter: blur(18px);
-      background: rgba(255, 255, 255, 0.78);
-      border-bottom: 1px solid rgba(19, 48, 74, 0.1);
-      box-shadow: 0 18px 40px rgba(12, 39, 64, 0.08);
+      background: rgba(255, 255, 255, 0.9);
+      border-bottom: 1px solid var(--table-line);
+      box-shadow: 0 14px 32px rgba(15, 82, 112, 0.08);
     }
 
     .topbar-inner, .container {
@@ -114,7 +119,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       background: conic-gradient(from 210deg, #0ea5e9, #4f46e5, #22c55e, #0ea5e9);
       color: #fff;
       font-weight: 800;
-      box-shadow: 0 16px 38px rgba(37, 99, 235, 0.55);
+      box-shadow: 0 14px 32px rgba(14, 165, 233, 0.26);
     }
 
     .brand-title {
@@ -145,8 +150,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       min-height: 38px;
       padding: 0 14px;
       border-radius: 999px;
-      border: 1px solid rgba(19, 48, 74, 0.12);
-      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--border-soft);
+      background: #ffffff;
       color: var(--text-main);
       text-decoration: none;
       font-size: 12px;
@@ -204,11 +209,11 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       min-height: 42px;
       padding: 0 16px;
       border-radius: 999px;
-      color: var(--text-main);
+      color: #ffffff;
       text-decoration: none;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: rgba(15, 23, 42, 0.92);
-      box-shadow: var(--shadow-strong);
+      border: 1px solid rgba(2, 132, 199, 0.22);
+      background: linear-gradient(135deg, #0284c7, #0f766e);
+      box-shadow: 0 16px 34px rgba(2, 132, 199, 0.20);
       white-space: nowrap;
     }
 
@@ -217,26 +222,26 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       padding: 12px 14px;
       margin-bottom: 14px;
       border: 1px solid transparent;
-      box-shadow: var(--shadow-strong);
+      box-shadow: 0 16px 38px rgba(15, 82, 112, 0.10);
       font-size: 13px;
       line-height: 1.6;
     }
 
     .alert ul { margin: 8px 0 0 18px; padding: 0; }
     .alert-error {
-      background: rgba(127, 29, 29, 0.9);
-      border-color: rgba(248, 113, 113, 0.45);
-      color: #fee2e2;
+      background: #fff1f2;
+      border-color: rgba(220, 38, 38, 0.22);
+      color: #991b1b;
     }
     .alert-success {
-      background: rgba(20, 83, 45, 0.92);
-      border-color: rgba(74, 222, 128, 0.35);
-      color: #dcfce7;
+      background: #ecfdf5;
+      border-color: rgba(5, 150, 105, 0.22);
+      color: #065f46;
     }
     .alert-warning {
-      background: rgba(113, 63, 18, 0.94);
-      border-color: rgba(251, 191, 36, 0.45);
-      color: #fff7ed;
+      background: #fffbeb;
+      border-color: rgba(245, 158, 11, 0.26);
+      color: #92400e;
     }
 
     .grid {
@@ -247,10 +252,10 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
 
     .card {
       border-radius: 22px;
-      border: 1px solid rgba(19, 48, 74, 0.12);
+      border: 1px solid var(--border-soft);
       background:
-        radial-gradient(circle at 0 0, rgba(14, 165, 233, 0.1), transparent 55%),
-        rgba(255, 255, 255, 0.88);
+        radial-gradient(circle at 0 0, rgba(14, 165, 233, 0.08), transparent 54%),
+        var(--surface);
       box-shadow: var(--shadow-strong);
       padding: 18px;
     }
@@ -273,8 +278,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       font-size: 11px;
       padding: 4px 9px;
       border-radius: 999px;
-      border: 1px solid rgba(19, 48, 74, 0.12);
-      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid var(--border-soft);
+      background: var(--bg-chip);
       color: var(--text-soft);
       white-space: nowrap;
     }
@@ -289,7 +294,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
     .divider {
       height: 1px;
       margin: 10px 0 14px;
-      background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.28), transparent);
+      background: linear-gradient(to right, transparent, rgba(22, 78, 99, 0.18), transparent);
     }
 
     .section-title {
@@ -339,22 +344,120 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       min-height: 44px;
       padding: 10px 12px;
       border-radius: 12px;
-      border: 1px solid rgba(19, 48, 74, 0.14);
-      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(22, 78, 99, 0.18);
+      background: #ffffff;
       color: var(--text-strong);
       font-size: 13px;
       outline: none;
     }
 
-    input::placeholder { color: rgba(148, 163, 184, 0.8); }
+    input::placeholder { color: #94a3b8; }
     input:focus, select:focus {
-      border-color: rgba(59, 130, 246, 0.75);
-      box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+      border-color: rgba(2, 132, 199, 0.72);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
     }
 
     input[readonly] { color: var(--text-soft); }
-    .input-error { border-color: rgba(248, 113, 113, 0.75) !important; }
-    .error-msg { min-height: 16px; margin-top: 4px; color: #fecaca; font-size: 11px; }
+    .input-error { border-color: rgba(220, 38, 38, 0.65) !important; background: #fff7f7; }
+    .error-msg { min-height: 16px; margin-top: 4px; color: #b91c1c; font-size: 11px; font-weight: 700; }
+
+    .customer-mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 5px;
+      border-radius: 18px;
+      border: 1px solid var(--border-soft);
+      background: #eff8ff;
+      margin-bottom: 12px;
+    }
+
+    .customer-mode-tab {
+      min-height: 44px;
+      border: 0;
+      border-radius: 14px;
+      color: var(--text-soft);
+      background: transparent;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .customer-mode-tab.is-active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 12px 26px rgba(14, 165, 233, 0.22);
+    }
+
+    .customer-mode-panel {
+      display: none;
+      padding: 14px;
+      border-radius: 18px;
+      border: 1px solid var(--border-soft);
+      background: var(--surface-soft);
+      margin-bottom: 14px;
+    }
+
+    .customer-mode-panel.is-active { display: block; }
+
+    .customer-lookup-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .customer-results {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .customer-result-card,
+    .customer-selected-card {
+      border: 1px solid var(--border-soft);
+      border-radius: 16px;
+      background: #ffffff;
+      padding: 12px;
+      color: var(--text-main);
+    }
+
+    .customer-result-card {
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+
+    .customer-result-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(14, 165, 233, 0.38);
+      box-shadow: 0 14px 30px rgba(12, 39, 64, 0.10);
+    }
+
+    .customer-result-card strong,
+    .customer-selected-card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text-strong);
+      font-size: 14px;
+    }
+
+    .customer-result-card span,
+    .customer-selected-card span {
+      display: block;
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .customer-selected-card {
+      display: none;
+      border-color: rgba(5, 150, 105, 0.28);
+      background: #ecfdf5;
+      margin-top: 10px;
+    }
+
+    .customer-selected-card.is-visible { display: block; }
 
     .button-row {
       display: flex;
@@ -389,13 +492,13 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       border: none;
       color: #fff;
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 16px 35px rgba(37, 99, 235, 0.42);
+      box-shadow: 0 14px 30px rgba(2, 132, 199, 0.22);
     }
 
     .button-secondary, .button-link {
-      border: 1px solid rgba(19, 48, 74, 0.14);
+      border: 1px solid var(--border-soft);
       color: var(--text-main);
-      background: rgba(255, 255, 255, 0.82);
+      background: #ffffff;
     }
 
     .danger-banner {
@@ -405,17 +508,17 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       min-height: 38px;
       padding: 0 12px;
       border-radius: 999px;
-      border: 1px solid rgba(248, 113, 113, 0.35);
-      background: rgba(127, 29, 29, 0.82);
-      color: #fee2e2;
+      border: 1px solid rgba(220, 38, 38, 0.26);
+      background: #fff1f2;
+      color: #991b1b;
       font-size: 12px;
     }
 
     .room-list {
       border-radius: 16px;
       overflow: hidden;
-      border: 1px solid rgba(19, 48, 74, 0.12);
-      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid var(--border-soft);
+      background: #ffffff;
     }
 
     table {
@@ -427,18 +530,18 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
     th, td {
       padding: 10px 12px;
       text-align: left;
-      border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+      border-bottom: 1px solid var(--table-line);
     }
 
     th {
-      color: #36506a;
-      background: rgba(255, 255, 255, 0.92);
+      color: #385568;
+      background: #f1f9ff;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: .08em;
     }
 
-    tbody tr:hover { background: rgba(14, 165, 233, 0.08); }
+    tbody tr:hover { background: #f4fbff; }
 
     .table-empty {
       text-align: center;
@@ -451,8 +554,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       margin-top: 14px;
       padding: 12px;
       border-radius: 16px;
-      border: 1px dashed rgba(19, 48, 74, 0.22);
-      background: rgba(255, 255, 255, 0.8);
+      border: 1px dashed rgba(22, 78, 99, 0.24);
+      background: #f8fcff;
     }
 
     .room-guests-header {
@@ -469,8 +572,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       margin-top: 10px;
       padding: 12px;
       border-radius: 14px;
-      border: 1px solid rgba(19, 48, 74, 0.12);
-      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--border-soft);
+      background: #ffffff;
     }
 
     .room-guest-title {
@@ -492,13 +595,13 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
     .totals {
       margin-top: 14px;
       padding-top: 12px;
-      border-top: 1px solid rgba(148, 163, 184, 0.18);
+      border-top: 1px solid var(--table-line);
       font-size: 13px;
       line-height: 1.9;
     }
 
     .totals strong { color: var(--text-strong); }
-    .totals .grand-total { font-size: 16px; color: #86efac; }
+    .totals .grand-total { font-size: 16px; color: #047857; font-weight: 900; }
 
     @media (max-width: 980px) {
       .grid { grid-template-columns: 1fr; }
@@ -617,6 +720,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
 
     <form method="post" action="/frontdesk/direct-booking" id="formDatPhongV2">
       <input type="hidden" id="services_json" name="services_json" value="" />
+      <input type="hidden" id="customer_mode" name="customer_mode" value="<%= form.customer_mode || 'new' %>" />
+      <input type="hidden" id="existing_customer_id" name="existing_customer_id" value="<%= form.existing_customer_id || '' %>" />
       <div class="grid">
         <section class="card">
           <div class="card-header">
@@ -625,6 +730,32 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
           </div>
           <p class="caption">Thông tin trưởng đoàn dùng để liên hệ, tạo tài khoản và gắn vào booking.</p>
           <div class="divider"></div>
+
+          <div class="customer-mode-tabs" role="tablist" aria-label="Chọn loại khách hàng">
+            <button class="customer-mode-tab <%= form.customer_mode === 'existing' ? 'is-active' : '' %>" type="button" data-customer-mode-tab="existing">Khách hàng cũ</button>
+            <button class="customer-mode-tab <%= form.customer_mode !== 'existing' ? 'is-active' : '' %>" type="button" data-customer-mode-tab="new">Khách hàng mới</button>
+          </div>
+
+          <div class="customer-mode-panel <%= form.customer_mode === 'existing' ? 'is-active' : '' %>" id="existingCustomerPanel">
+            <div class="section-title">Tra cứu khách cũ <span>Chọn hồ sơ để không tạo trùng khách hàng/tài khoản</span></div>
+            <div class="customer-lookup-row">
+              <div class="field" style="margin-bottom:0;">
+                <label for="existingCustomerKeyword">SĐT / CCCD / email / tên</label>
+                <input id="existingCustomerKeyword" type="search" placeholder="Nhập ít nhất 2 ký tự..." autocomplete="off" />
+              </div>
+              <button class="button-secondary" type="button" id="btnLookupExistingCustomer">Tìm khách</button>
+            </div>
+            <div class="customer-results" id="existingCustomerResults"></div>
+            <div class="customer-selected-card <%= form.customer_mode === 'existing' && form.existing_customer_id ? 'is-visible' : '' %>" id="selectedCustomerCard">
+              <strong>Đã chọn khách hàng cũ</strong>
+              <span id="selectedCustomerText">Hồ sơ #<%= form.existing_customer_id || '' %> sẽ được dùng làm trưởng đoàn.</span>
+            </div>
+          </div>
+
+          <div class="customer-mode-panel <%= form.customer_mode !== 'existing' ? 'is-active' : '' %>" id="newCustomerPanel">
+            <div class="section-title">Khách hàng mới <span>Nhập hồ sơ mới, hệ thống sẽ tạo khách/tài khoản sau khi thanh toán cọc</span></div>
+            <p class="caption">Nếu khách đã từng lưu trú, hãy chuyển sang tab khách hàng cũ để tránh trùng CCCD, email hoặc tài khoản.</p>
+          </div>
 
           <div class="field">
             <label>Họ tên trưởng đoàn <span class="note">Bắt buộc</span></label>
@@ -893,6 +1024,16 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       const clientErrorsList = document.getElementById("clientErrorsList");
       const btnDanger = document.getElementById("btnDanger");
       const roomGuestsContainer = document.getElementById("roomGuestsContainer");
+      const customerModeInput = document.getElementById("customer_mode");
+      const existingCustomerIdInput = document.getElementById("existing_customer_id");
+      const modeTabs = document.querySelectorAll("[data-customer-mode-tab]");
+      const existingPanel = document.getElementById("existingCustomerPanel");
+      const newPanel = document.getElementById("newCustomerPanel");
+      const existingKeyword = document.getElementById("existingCustomerKeyword");
+      const lookupExistingButton = document.getElementById("btnLookupExistingCustomer");
+      const existingResults = document.getElementById("existingCustomerResults");
+      const selectedCustomerCard = document.getElementById("selectedCustomerCard");
+      const selectedCustomerText = document.getElementById("selectedCustomerText");
 
       const fields = {
         leader_ten_kh: document.getElementById("leader_ten_kh"),
@@ -939,6 +1080,103 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       function formatVnd(value) {
         return new Intl.NumberFormat("vi-VN").format(Number(value || 0)) + " đ";
       }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function setCustomerMode(mode) {
+        const nextMode = mode === "existing" ? "existing" : "new";
+        if (customerModeInput) customerModeInput.value = nextMode;
+        modeTabs.forEach((button) => {
+          button.classList.toggle("is-active", button.getAttribute("data-customer-mode-tab") === nextMode);
+        });
+        existingPanel?.classList.toggle("is-active", nextMode === "existing");
+        newPanel?.classList.toggle("is-active", nextMode === "new");
+        if (nextMode === "new") {
+          if (existingCustomerIdInput) existingCustomerIdInput.value = "";
+          selectedCustomerCard?.classList.remove("is-visible");
+        }
+      }
+
+      function applyExistingCustomer(customer) {
+        if (!customer) return;
+        setCustomerMode("existing");
+        if (existingCustomerIdInput) existingCustomerIdInput.value = customer.id || "";
+        if (fields.leader_ten_kh) fields.leader_ten_kh.value = customer.tenKhach || "";
+        if (fields.leader_cccd) fields.leader_cccd.value = customer.cccd || "";
+        if (fields.leader_sdt) fields.leader_sdt.value = customer.sdt || "";
+        if (fields.leader_email) fields.leader_email.value = customer.email || "";
+        const addressInput = form?.querySelector('[name="leader_diachi"]');
+        if (addressInput) addressInput.value = customer.diaChi || "";
+        selectedCustomerCard?.classList.add("is-visible");
+        if (selectedCustomerText) {
+          selectedCustomerText.textContent = `${customer.tenKhach || "Khách hàng"} · CCCD ${customer.cccd || "chưa có"} · ${customer.bookingCount || 0} booking trước đó${customer.hasAccount ? " · đã có tài khoản" : " · chưa có tài khoản"}`;
+        }
+        ["leader_ten_kh", "leader_cccd", "leader_sdt", "leader_email"].forEach((name) => {
+          touched[name] = true;
+          validateField(name, true);
+        });
+      }
+
+      async function lookupExistingCustomers() {
+        if (!existingResults || !existingKeyword) return;
+        const keyword = existingKeyword.value.trim();
+        existingResults.innerHTML = "";
+        if (keyword.length < 2) {
+          existingResults.innerHTML = '<div class="caption">Nhập ít nhất 2 ký tự để tìm khách hàng cũ.</div>';
+          return;
+        }
+
+        lookupExistingButton.disabled = true;
+        lookupExistingButton.textContent = "Đang tìm...";
+        try {
+          const response = await fetch(`/api/frontdesk/direct-booking/customers?keyword=${encodeURIComponent(keyword)}`, {
+            headers: { Accept: "application/json" }
+          });
+          const payload = await response.json();
+          const customers = Array.isArray(payload?.data) ? payload.data : [];
+          if (!customers.length) {
+            existingResults.innerHTML = '<div class="caption">Không tìm thấy khách phù hợp. Có thể chuyển sang tab khách hàng mới.</div>';
+            return;
+          }
+
+          existingResults.innerHTML = customers.map((customer, index) => `
+            <button class="customer-result-card" type="button" data-customer-index="${index}">
+              <strong>${escapeHtml(customer.tenKhach)} · #${escapeHtml(customer.id)}</strong>
+              <span>CCCD ${escapeHtml(customer.cccd || "chưa có")} · ${escapeHtml(customer.sdt || "chưa có SĐT")} · ${escapeHtml(customer.email || "chưa có email")}</span>
+              <span>${escapeHtml(customer.trangThaiEkyc || "ChuaXacThuc")} · ${Number(customer.bookingCount || 0)} booking · ${customer.hasAccount ? "Đã có tài khoản" : "Chưa có tài khoản"}</span>
+            </button>
+          `).join("");
+
+          existingResults.querySelectorAll("[data-customer-index]").forEach((button) => {
+            button.addEventListener("click", () => {
+              applyExistingCustomer(customers[Number(button.getAttribute("data-customer-index") || 0)]);
+            });
+          });
+        } catch (_error) {
+          existingResults.innerHTML = '<div class="caption">Không thể tra cứu khách hàng lúc này.</div>';
+        } finally {
+          lookupExistingButton.disabled = false;
+          lookupExistingButton.textContent = "Tìm khách";
+        }
+      }
+
+      modeTabs.forEach((button) => {
+        button.addEventListener("click", () => setCustomerMode(button.getAttribute("data-customer-mode-tab")));
+      });
+      lookupExistingButton?.addEventListener("click", lookupExistingCustomers);
+      existingKeyword?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          lookupExistingCustomers();
+        }
+      });
 
       function calcSoDem() {
         const ngayDen = fields.ngay_den.value;
@@ -1368,6 +1606,10 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
           .filter(Boolean);
 
         if (action === "book") {
+          if (customerModeInput?.value === "existing" && !existingCustomerIdInput?.value) {
+            errors.push("Vui lòng chọn một hồ sơ khách hàng cũ trước khi giữ phòng.");
+          }
+
           if (!document.querySelector(".room-checkbox:checked")) {
             errors.push("Vui lòng chọn ít nhất một phòng trước khi đặt.");
           }

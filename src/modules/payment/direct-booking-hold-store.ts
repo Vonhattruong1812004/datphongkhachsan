@@ -1,6 +1,8 @@
 import { SEPAY_HOLD_MINUTES, buildSepayContent } from "./sepay";
 
 export interface DirectBookingHoldInput {
+  customer_mode?: string;
+  existing_customer_id?: number;
   ngay_den?: string;
   ngay_di?: string;
   so_nguoi?: number;

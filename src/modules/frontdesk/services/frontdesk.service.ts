@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
-import { EkycService } from "../../ekyc/services/ekyc.service";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
 import {
@@ -51,8 +50,10 @@ interface RoomStayRow {
   maCtgd: number;
   maPhong: number;
   soNguoi: number;
+  maKhachSan: number;
   soPhong: string;
   loaiPhong: string;
+  soKhachToiDa: number;
   donGia: number;
   trangThai: string;
   tinhTrangPhong: string;
@@ -116,6 +117,61 @@ interface DirectPromotionRow {
   trangThai: string;
 }
 
+interface DirectBookingCustomerRow {
+  id: number;
+  tenKhach: string;
+  sdt: string | null;
+  email: string | null;
+  cccd: string | null;
+  diaChi: string | null;
+  loaiKhach: string | null;
+  trangThaiEkyc: string | null;
+  hasAccount: boolean;
+  bookingCount: number;
+  lastBookingAt: string | null;
+}
+
+interface FrontdeskActivityRecentRow {
+  maGiaoDich: number;
+  maDatCho: string | null;
+  trangThai: string;
+  phuongThucThanhToan: string | null;
+  ngayGiaoDich: string;
+  tongTien: number;
+  customerName: string | null;
+  customerPhone: string | null;
+  cccd: string | null;
+  roomCount: number;
+  roomSummary: string | null;
+  checkinAt: string | null;
+  checkoutAt: string | null;
+}
+
+interface FrontdeskActivityRoomRow {
+  maGiaoDich: number;
+  maCtgd: number;
+  maPhong: number;
+  soPhong: string;
+  loaiPhong: string;
+  tenKhach: string | null;
+  sdt: string | null;
+  cccd: string | null;
+  ngayNhanDuKien: string | null;
+  ngayTraDuKien: string | null;
+  ngayCheckIn: string | null;
+  tongTien: number;
+  trangThaiGiaoDich: string;
+}
+
+interface FrontdeskActivityEventRow {
+  id: string;
+  category: string;
+  title: string;
+  detail: string;
+  source: string;
+  happenedAt: string;
+}
+
 interface EditBookingFormInput {
   transactionId: number;
   oldRoomId: number;
@@ -128,7 +184,20 @@ interface EditBookingFormInput {
   ngayDi: string;
   soNguoi: number;
   services?: Record<string, string | number>;
+  serviceRooms?: Record<string, string | number>;
   removeServices?: number[];
+}
+
+interface AddRoomToBookingInput {
+  transactionId: number;
+  roomId: number;
+  tenKhach: string;
+  cccd: string;
+  sdt: string;
+  email: string;
+  ngayDen: string;
+  ngayDi: string;
+  soNguoi: number;
 }
 
 interface CheckInConfirmInput {
@@ -136,7 +205,6 @@ interface CheckInConfirmInput {
   scope: "all" | "partial";
   roomIds: number[];
   confirmedIdentity: boolean;
-  confirmedManualEkyc: boolean;
 }
 
 interface CancelBookingInput {
@@ -151,6 +219,198 @@ interface CancelBookingInput {
 }
 
 export class FrontdeskService {
+  async getActivityLookupPayload(input: { keyword?: string; days?: number } = {}) {
+    const keyword = String(input.keyword || "").trim();
+    const search = `%${keyword}%`;
+    const days = Math.min(30, Math.max(1, Number(input.days || 7)));
+    const now = new Date();
+
+    const [recentResult, overdueCheckinResult, dueCheckoutResult, inHouseResult, eventResult] = await Promise.all([
+      query<FrontdeskActivityRecentRow>(
+        `
+          SELECT
+            gd.magiaodich AS "maGiaoDich",
+            gd.madatcho AS "maDatCho",
+            gd.trangthai AS "trangThai",
+            gd.phuongthucthanhtoan AS "phuongThucThanhToan",
+            gd.ngaygiaodich AS "ngayGiaoDich",
+            COALESCE(gd.tongtien, 0) AS "tongTien",
+            kh.tenkh AS "customerName",
+            kh.sdt AS "customerPhone",
+            kh.cccd AS "cccd",
+            COUNT(ct.mactgd)::int AS "roomCount",
+            STRING_AGG(CONCAT('P', p.sophong), ', ' ORDER BY p.sophong) AS "roomSummary",
+            MIN(ct.ngaynhandukien) AS "checkinAt",
+            MAX(ct.ngaytradukien) AS "checkoutAt"
+          FROM giaodich gd
+          LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+          INNER JOIN chitietgiaodich ct ON ct.magiaodich = gd.magiaodich
+          INNER JOIN phong p ON p.maphong = ct.maphong
+          WHERE gd.ngaygiaodich >= NOW() - ($1::int * INTERVAL '1 day')
+            AND ($2 = ''
+              OR gd.magiaodich::text ILIKE $3
+              OR COALESCE(gd.madatcho, '') ILIKE $3
+              OR COALESCE(kh.tenkh, '') ILIKE $3
+              OR COALESCE(kh.sdt, '') ILIKE $3
+              OR COALESCE(kh.cccd, '') ILIKE $3
+              OR p.sophong::text ILIKE $3)
+          GROUP BY gd.magiaodich, kh.makhachhang
+          ORDER BY gd.ngaygiaodich DESC
+          LIMIT 16
+        `,
+        [days, keyword, search]
+      ),
+      query<FrontdeskActivityRoomRow>(
+        `
+          SELECT
+            gd.magiaodich AS "maGiaoDich",
+            ct.mactgd AS "maCtgd",
+            ct.maphong AS "maPhong",
+            p.sophong AS "soPhong",
+            p.loaiphong AS "loaiPhong",
+            COALESCE(NULLIF(ct.tenkhach, ''), kh.tenkh) AS "tenKhach",
+            COALESCE(NULLIF(ct.sdt, ''), kh.sdt) AS "sdt",
+            COALESCE(NULLIF(ct.cccd, ''), kh.cccd) AS "cccd",
+            ct.ngaynhandukien AS "ngayNhanDuKien",
+            ct.ngaytradukien AS "ngayTraDuKien",
+            ct.ngaycheckin AS "ngayCheckIn",
+            COALESCE(gd.tongtien, 0) AS "tongTien",
+            gd.trangthai AS "trangThaiGiaoDich"
+          FROM chitietgiaodich ct
+          INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+          INNER JOIN phong p ON p.maphong = ct.maphong
+          LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+          WHERE ct.trangthai = 'Booked'
+            AND gd.trangthai = 'Booked'
+            AND ct.ngaycheckin IS NULL
+            AND ct.ngaynhandukien < NOW()
+            AND ($1 = ''
+              OR gd.magiaodich::text ILIKE $2
+              OR COALESCE(gd.madatcho, '') ILIKE $2
+              OR COALESCE(ct.tenkhach, kh.tenkh, '') ILIKE $2
+              OR COALESCE(ct.sdt, kh.sdt, '') ILIKE $2
+              OR COALESCE(ct.cccd, kh.cccd, '') ILIKE $2
+              OR p.sophong::text ILIKE $2)
+          ORDER BY ct.ngaynhandukien ASC
+          LIMIT 20
+        `,
+        [keyword, search]
+      ),
+      query<FrontdeskActivityRoomRow>(
+        `
+          SELECT
+            gd.magiaodich AS "maGiaoDich",
+            ct.mactgd AS "maCtgd",
+            ct.maphong AS "maPhong",
+            p.sophong AS "soPhong",
+            p.loaiphong AS "loaiPhong",
+            COALESCE(NULLIF(ct.tenkhach, ''), kh.tenkh) AS "tenKhach",
+            COALESCE(NULLIF(ct.sdt, ''), kh.sdt) AS "sdt",
+            COALESCE(NULLIF(ct.cccd, ''), kh.cccd) AS "cccd",
+            ct.ngaynhandukien AS "ngayNhanDuKien",
+            ct.ngaytradukien AS "ngayTraDuKien",
+            ct.ngaycheckin AS "ngayCheckIn",
+            COALESCE(gd.tongtien, 0) AS "tongTien",
+            gd.trangthai AS "trangThaiGiaoDich"
+          FROM chitietgiaodich ct
+          INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+          INNER JOIN phong p ON p.maphong = ct.maphong
+          LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+          WHERE ct.trangthai = 'CheckedIn'
+            AND gd.trangthai IN ('Booked', 'Stayed')
+            AND ct.ngaycheckout IS NULL
+            AND ct.ngaytradukien <= NOW() + INTERVAL '12 hours'
+            AND ($1 = ''
+              OR gd.magiaodich::text ILIKE $2
+              OR COALESCE(gd.madatcho, '') ILIKE $2
+              OR COALESCE(ct.tenkhach, kh.tenkh, '') ILIKE $2
+              OR COALESCE(ct.sdt, kh.sdt, '') ILIKE $2
+              OR COALESCE(ct.cccd, kh.cccd, '') ILIKE $2
+              OR p.sophong::text ILIKE $2)
+          ORDER BY ct.ngaytradukien ASC
+          LIMIT 20
+        `,
+        [keyword, search]
+      ),
+      query<{ total: number }>(
+        `
+          SELECT COUNT(*)::int AS total
+          FROM chitietgiaodich ct
+          INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+          WHERE ct.trangthai = 'CheckedIn'
+            AND gd.trangthai IN ('Booked', 'Stayed')
+            AND ct.ngaycheckout IS NULL
+        `
+      ),
+      query<FrontdeskActivityEventRow>(
+        `
+          SELECT *
+          FROM (
+            SELECT
+              ('room-' || rsl.malog)::text AS id,
+              'room'::text AS category,
+              CONCAT('P', p.sophong, ' đổi trạng thái') AS title,
+              CONCAT(COALESCE(NULLIF(rsl.trangthaicu, ''), '?'), ' -> ', COALESCE(NULLIF(rsl.trangthaimoi, ''), '?')) AS detail,
+              COALESCE(NULLIF(rsl.nguonthaydoi::text, ''), 'HeThong') AS source,
+              rsl.thoidiem AS "happenedAt"
+            FROM room_status_log rsl
+            INNER JOIN phong p ON p.maphong = rsl.maphong
+
+            UNION ALL
+
+            SELECT
+              ('booking-' || gd.magiaodich)::text AS id,
+              'booking'::text AS category,
+              CONCAT('Booking #', gd.magiaodich) AS title,
+              CONCAT(gd.trangthai::text, ' · ', COALESCE(kh.tenkh, 'Khách hàng')) AS detail,
+              COALESCE(NULLIF(gd.nguondat::text, ''), 'Booking') AS source,
+              gd.ngaygiaodich AS "happenedAt"
+            FROM giaodich gd
+            LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+            WHERE gd.ngaygiaodich IS NOT NULL
+          ) events
+          ORDER BY "happenedAt" DESC
+          LIMIT 12
+        `
+      )
+    ]);
+
+    const overdueCheckins = overdueCheckinResult.rows.map((row) => this.mapActivityRoom(row, now, "checkin"));
+    const dueCheckouts = dueCheckoutResult.rows.map((row) => this.mapActivityRoom(row, now, "checkout"));
+
+    return {
+      filters: { keyword, days },
+      generatedAtLabel: formatDate(now, "DD/MM/YYYY HH:mm"),
+      summary: {
+        recentBookings: recentResult.rows.length,
+        overdueCheckins: overdueCheckins.length,
+        dueCheckouts: dueCheckouts.length,
+        inHouse: Number(inHouseResult.rows[0]?.total || 0)
+      },
+      recentBookings: recentResult.rows.map((row) => ({
+        id: row.maGiaoDich,
+        bookingCode: row.maDatCho || `#${row.maGiaoDich}`,
+        customerName: row.customerName || "Khách hàng",
+        customerPhone: row.customerPhone || "",
+        cccd: row.cccd || "",
+        roomSummary: row.roomSummary || "Chưa gắn phòng",
+        roomCount: Number(row.roomCount || 0),
+        status: row.trangThai,
+        paymentMethod: row.phuongThucThanhToan || "ChuaThanhToan",
+        totalFormatted: formatMoney(row.tongTien),
+        createdAtLabel: formatDate(row.ngayGiaoDich, "DD/MM/YYYY HH:mm"),
+        stayLabel: `${formatDate(row.checkinAt)} - ${formatDate(row.checkoutAt)}`,
+        detailHref: `/frontdesk/edit-booking?keyword=${encodeURIComponent(String(row.maGiaoDich))}`
+      })),
+      overdueCheckins,
+      dueCheckouts,
+      recentEvents: eventResult.rows.map((row) => ({
+        ...row,
+        happenedAtLabel: formatDate(row.happenedAt, "DD/MM/YYYY HH:mm")
+      }))
+    };
+  }
+
   async lookupTransaction(keyword: string) {
     const normalized = keyword.trim();
     if (!normalized) {
@@ -232,31 +492,91 @@ export class FrontdeskService {
       ?? snapshot.rooms[0];
 
     const customer = await this.getCustomerForEdit(snapshot.transaction.maKhachHang);
+    const leader = {
+      tenKhach: customer?.tenKhach || snapshot.transaction.customerName || snapshot.rooms[0]?.tenKhach || "",
+      cccd: customer?.cccd || snapshot.transaction.cccd || snapshot.rooms[0]?.cccd || "",
+      sdt: customer?.sdt || snapshot.transaction.customerPhone || snapshot.rooms[0]?.sdt || "",
+      email: customer?.email || snapshot.transaction.customerEmail || snapshot.rooms[0]?.email || ""
+    };
     const form = {
       maGiaoDich: snapshot.transaction.maGiaoDich,
       maPhongCu: chosenRoom.maPhong,
-      tenKhach: customer?.tenKhach || chosenRoom.tenKhach || snapshot.transaction.customerName || "",
-      cccd: customer?.cccd || chosenRoom.cccd || snapshot.transaction.cccd || "",
-      sdt: customer?.sdt || chosenRoom.sdt || snapshot.transaction.customerPhone || "",
-      email: customer?.email || chosenRoom.email || snapshot.transaction.customerEmail || "",
+      tenKhach: chosenRoom.tenKhach || leader.tenKhach,
+      cccd: chosenRoom.cccd || leader.cccd,
+      sdt: chosenRoom.sdt || leader.sdt,
+      email: chosenRoom.email || leader.email,
       ngayDen: this.toInputDate(chosenRoom.ngayNhanDuKien),
       ngayDi: this.toInputDate(chosenRoom.ngayTraDuKien),
       soNguoi: Number(chosenRoom.soNguoi || 1),
-      maPhong: chosenRoom.maPhong
+      maPhong: chosenRoom.maPhong,
+      maKhachSan: chosenRoom.maKhachSan
+    };
+    const facility = {
+      id: Number(chosenRoom.maKhachSan || 0),
+      label: [chosenRoom.hotelName, chosenRoom.hotelCity].filter(Boolean).join(" · ") || "Chua phan co so"
     };
 
-    const [availableRooms, services, promotion, money] = await Promise.all([
-      this.getRoomsForEdit(form.ngayDen, form.ngayDi, form.soNguoi, chosenRoom.maPhong, transactionId),
+    const [availableRooms, addRoomOptions, services, serviceCatalog, promotion, money] = await Promise.all([
+      this.getRoomsForEdit(form.ngayDen, form.ngayDi, form.soNguoi, chosenRoom.maPhong, transactionId, facility.id),
+      this.getRoomsForAdd(form.ngayDen, form.ngayDi, 1, facility.id),
       this.getTransactionServices(transactionId),
+      this.getActiveServiceCatalog(),
       this.getPromotionForTransaction(snapshot.transaction.maKhuyenMai),
       this.calculateEditMoney(transactionId, chosenRoom.maPhong)
     ]);
+    const serviceQuantityById = services.reduce<Map<number, number>>((map, service) => {
+      const serviceId = Number(service.maDichVu || 0);
+      map.set(serviceId, (map.get(serviceId) || 0) + Number(service.soLuong || 0));
+      return map;
+    }, new Map());
+    const serviceRoomById = services.reduce<Map<number, number>>((map, service) => {
+      const serviceId = Number(service.maDichVu || 0);
+      if (serviceId > 0 && Number(service.maPhong || 0) > 0 && !map.has(serviceId)) {
+        map.set(serviceId, Number(service.maPhong));
+      }
+      return map;
+    }, new Map());
+    const catalogIds = new Set(serviceCatalog.map((service) => Number(service.id)));
+    const mergedServiceCatalog = [
+      ...serviceCatalog.map((service) => ({
+        ...service,
+        giaDichVu: Number(service.giaDichVu || 0),
+        giaFormatted: formatMoney(Number(service.giaDichVu || 0)),
+        soLuongHienTai: serviceQuantityById.get(Number(service.id)) || 0,
+        maPhongHienTai: serviceRoomById.get(Number(service.id)) || form.maPhong
+      })),
+      ...services
+        .filter((service) => !catalogIds.has(Number(service.maDichVu)))
+        .map((service) => ({
+          id: Number(service.maDichVu),
+          tenDichVu: service.tenDichVu,
+          giaDichVu: Number(service.giaBan || 0),
+          giaFormatted: formatMoney(Number(service.giaBan || 0)),
+          soLuongHienTai: serviceQuantityById.get(Number(service.maDichVu)) || Number(service.soLuong || 0),
+          maPhongHienTai: serviceRoomById.get(Number(service.maDichVu)) || form.maPhong
+        }))
+    ];
+    const totalCapacity = snapshot.rooms
+      .filter((room) => ["Booked", "CheckedIn"].includes(room.trangThai))
+      .reduce((sum, room) => sum + Number(room.soKhachToiDa || 0), 0);
+    const totalGuests = snapshot.rooms
+      .filter((room) => ["Booked", "CheckedIn"].includes(room.trangThai))
+      .reduce((sum, room) => sum + Number(room.soNguoi || 0), 0);
 
     return {
       ...snapshot,
       edit: {
         form,
+        leader,
+        facility,
         availableRooms,
+        addRoomOptions,
+        serviceCatalog: mergedServiceCatalog,
+        capacity: {
+          selectedRoomCapacity: Number(chosenRoom.soKhachToiDa || 0),
+          totalCapacity,
+          totalGuests
+        },
         services: services.map((service) => ({
           ...service,
           giaBanFormatted: formatMoney(service.giaBan),
@@ -336,6 +656,10 @@ export class FrontdeskService {
     const roomMeta = await this.getRoomMeta(input.newRoomId);
     if (!roomMeta) {
       throw new HttpError(404, "Phong moi khong ton tai.");
+    }
+
+    if (Number(roomMeta.maKhachSan || 0) !== Number(currentRoom.maKhachSan || 0)) {
+      throw new HttpError(409, "Chi duoc doi sang phong trong cung co so voi booking hien tai.");
     }
 
     if (input.soNguoi > roomMeta.soKhachToiDa) {
@@ -422,6 +746,7 @@ export class FrontdeskService {
             SET trangthai = 'Booked',
                 trangthairealtime = 'Booked'
             WHERE maphong = $1
+              AND makhachsan = $5::int
               AND trangthai IN ('Trong', 'Booked')
               AND COALESCE(NULLIF(tinhtrangphong::text, ''), 'Tot') = 'Tot'
               AND COALESCE(NULLIF(trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
@@ -438,7 +763,7 @@ export class FrontdeskService {
               )
             RETURNING maphong
           `,
-          [input.newRoomId, input.transactionId, input.ngayDen, input.ngayDi]
+          [input.newRoomId, input.transactionId, input.ngayDen, input.ngayDi, roomMeta.maKhachSan]
         ) as { rowCount: number | null };
 
         if (!lockNewRoom.rowCount) {
@@ -465,7 +790,14 @@ export class FrontdeskService {
         await this.insertRoomStatusLog(client, input.newRoomId, "Trong", "Booked", input.transactionId, "LeTan", "Doi phong khi sua thong tin dat phong");
       }
 
-      await this.syncEditServices(client, input.transactionId, input.newRoomId, input.services || {}, input.removeServices || []);
+      await this.syncEditServices(
+        client,
+        input.transactionId,
+        input.newRoomId,
+        input.services || {},
+        input.serviceRooms || {},
+        input.removeServices || []
+      );
 
       const totals = await this.recalculateTransactionWithPromotion(
         client,
@@ -492,6 +824,145 @@ export class FrontdeskService {
     });
 
     return this.getEditBookingPayload(String(input.transactionId), input.newRoomId);
+  }
+
+  async addRoomToEditBooking(input: AddRoomToBookingInput) {
+    this.validateAddRoomToBookingInput(input);
+
+    const snapshot = await this.getTransactionSnapshot(input.transactionId);
+    if (["DaHuy", "Cancelled", "Paid"].includes(snapshot.transaction.trangThai)) {
+      throw new HttpError(409, "Giao dich da ket thuc/huy nen khong the them phong.");
+    }
+
+    const roomMeta = await this.getRoomMeta(input.roomId);
+    if (!roomMeta) {
+      throw new HttpError(404, "Phong can them khong ton tai.");
+    }
+
+    const firstActiveRoom = snapshot.rooms.find((room) => ["Booked", "CheckedIn"].includes(room.trangThai)) ?? snapshot.rooms[0];
+    if (Number(roomMeta.maKhachSan || 0) !== Number(firstActiveRoom?.maKhachSan || 0)) {
+      throw new HttpError(409, "Chi duoc them phong trong cung co so voi booking hien tai.");
+    }
+
+    if (input.soNguoi > roomMeta.soKhachToiDa) {
+      throw new HttpError(422, "So nguoi vuot qua suc chua toi da cua phong can them.");
+    }
+
+    const nights = Math.max(1, nightsBetween(input.ngayDen, input.ngayDi));
+    const roomTotal = roomMeta.gia * nights;
+
+    await withTransaction(async (client) => {
+      const lockResult = await client.query(
+        `
+          UPDATE phong
+          SET trangthai = 'Booked',
+              trangthairealtime = 'Booked'
+          WHERE maphong = $1
+            AND makhachsan = $4::int
+            AND trangthai IN ('Trong', 'Booked')
+            AND COALESCE(NULLIF(tinhtrangphong::text, ''), 'Tot') = 'Tot'
+            AND COALESCE(NULLIF(trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
+            AND NOT EXISTS (
+              SELECT 1
+              FROM chitietgiaodich ct
+              INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+              WHERE ct.maphong = phong.maphong
+                AND ct.trangthai IN ('Booked', 'CheckedIn')
+                AND gd.trangthai IN ('Booked', 'Stayed')
+                AND tstzrange(ct.ngaynhandukien, ct.ngaytradukien, '[)')
+                  && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+            )
+          RETURNING maphong
+        `,
+        [input.roomId, input.ngayDen, input.ngayDi, roomMeta.maKhachSan]
+      ) as { rowCount: number | null };
+
+      if (!lockResult.rowCount) {
+        throw new HttpError(409, "Phong can them vua khong con san sang. Vui long chon phong khac.");
+      }
+
+      await client.query(
+        `
+          INSERT INTO chitietgiaodich (
+            magiaodich, maphong, songuoi, ngaynhandukien, ngaytradukien,
+            dongia, thanhtien, trangthai, tenkhach, cccd, sdt, email, makhuyenmai
+          )
+          VALUES ($1, $2, $3, $4::timestamptz, $5::timestamptz, $6, $7, 'Booked', $8, $9, $10, $11, $12)
+        `,
+        [
+          input.transactionId,
+          input.roomId,
+          input.soNguoi,
+          input.ngayDen,
+          input.ngayDi,
+          roomMeta.gia,
+          roomTotal,
+          input.tenKhach,
+          input.cccd,
+          input.sdt || null,
+          input.email || null,
+          snapshot.transaction.maKhuyenMai
+        ]
+      );
+
+      if (snapshot.transaction.maKhachHang) {
+        await client.query(
+          `
+            INSERT INTO booking_history (makhachhang, maphong, magiaodich, ngaydat, songuoi, dongia, ketqua)
+            VALUES ($1, $2, $3, NOW(), $4, $5, 'Booked')
+          `,
+          [snapshot.transaction.maKhachHang, input.roomId, input.transactionId, input.soNguoi, roomMeta.gia]
+        );
+      }
+
+      await this.insertRoomStatusLog(client, input.roomId, "Trong", "Booked", input.transactionId, "LeTan", "Them phong vao giao dich hien co.");
+
+      const totals = await this.recalculateTransactionWithPromotion(
+        client,
+        input.transactionId,
+        snapshot.transaction.maKhuyenMai
+      );
+      await client.query(
+        `
+          UPDATE giaodich
+          SET tongtien = $2,
+              ghichu = COALESCE(ghichu, '') || ' | Them phong ' || to_char(NOW(), 'YYYY-MM-DD HH24:MI:SS')
+          WHERE magiaodich = $1
+        `,
+        [input.transactionId, totals.total]
+      );
+
+      await client.query(
+        `
+          UPDATE doan d
+          SET songuoi = COALESCE(guest_summary.total_guests, d.songuoi)
+          FROM giaodich gd
+          LEFT JOIN LATERAL (
+            SELECT SUM(ct.songuoi)::int AS total_guests
+            FROM chitietgiaodich ct
+            WHERE ct.magiaodich = gd.magiaodich
+              AND ct.trangthai IN ('Booked', 'CheckedIn')
+          ) guest_summary ON TRUE
+          WHERE gd.magiaodich = $1
+            AND d.madoan = gd.madoan
+        `,
+        [input.transactionId]
+      );
+    });
+
+    realtimeHub.publish({
+      type: "booking_room_added",
+      scopes: ["admin", "letan", "quanly", "dichvu"],
+      data: {
+        transactionId: input.transactionId,
+        roomId: input.roomId,
+        ngayDen: input.ngayDen,
+        ngayDi: input.ngayDi,
+        soNguoi: input.soNguoi
+      }
+    });
+
+    return this.getEditBookingPayload(String(input.transactionId), input.roomId);
   }
 
   async getCheckInPayload(keyword: string) {
@@ -528,14 +999,6 @@ export class FrontdeskService {
           booked: bookedRooms.length,
           checkedIn: checkedInRooms.length,
           cancelled: cancelledRooms.length
-        },
-        ekyc: await this.buildCheckInEkycSnapshot(snapshot.transaction.maKhachHang),
-        aiAddon: {
-          available: false,
-          count: 0,
-          headline: "AI add-on intent",
-          summary: "Booking nay chua co goi y AI nao duoc khach danh dau truoc do.",
-          items: []
         }
       }
     };
@@ -599,10 +1062,6 @@ export class FrontdeskService {
     const sepayMeta = parseSepayMetadata(payload.transaction.ghiChu);
     if (sepayMeta && sepayMeta.status !== "PAID") {
       throw new HttpError(409, "Booking dang giu phong cho thanh toan coc SePay. Vui long thanh toan coc truoc khi check-in.");
-    }
-
-    if (payload.checkin.ekyc.requiresManualOverride && !input.confirmedManualEkyc) {
-      throw new HttpError(422, payload.checkin.ekyc.manualOverrideMessage);
     }
 
     const bookedRoomIds = payload.rooms
@@ -702,8 +1161,7 @@ export class FrontdeskService {
       transactionId,
       scope: "partial",
       roomIds: [roomId],
-      confirmedIdentity: true,
-      confirmedManualEkyc: true
+      confirmedIdentity: true
     });
   }
 
@@ -1547,6 +2005,57 @@ export class FrontdeskService {
     };
   }
 
+  async searchDirectBookingCustomers(keyword: string) {
+    const normalized = String(keyword || "").trim();
+    if (normalized.length < 2) {
+      throw new HttpError(422, "Nhap it nhat 2 ky tu de tim khach hang cu.");
+    }
+
+    const exactCccd = /^\d{9,12}$/.test(normalized) ? normalized : "";
+    const like = `%${normalized.replace(/[%_]/g, "\\$&")}%`;
+    const result = await query<DirectBookingCustomerRow>(
+      `
+        SELECT
+          kh.makhachhang AS id,
+          kh.tenkh AS "tenKhach",
+          kh.sdt,
+          kh.email,
+          kh.cccd,
+          kh.diachi AS "diaChi",
+          kh.loaikhach AS "loaiKhach",
+          kh.trangthaiekyc AS "trangThaiEkyc",
+          EXISTS (
+            SELECT 1
+            FROM taikhoan tk
+            WHERE tk.makhachhang = kh.makhachhang
+            LIMIT 1
+          ) AS "hasAccount",
+          COUNT(gd.magiaodich)::int AS "bookingCount",
+          MAX(gd.ngaygiaodich)::text AS "lastBookingAt"
+        FROM khachhang kh
+        LEFT JOIN giaodich gd ON gd.makhachhang = kh.makhachhang
+        WHERE ($1 <> '' AND kh.cccd = $1)
+           OR kh.tenkh ILIKE $2 ESCAPE '\\'
+           OR kh.email ILIKE $2 ESCAPE '\\'
+           OR kh.sdt ILIKE $2 ESCAPE '\\'
+           OR kh.cccd ILIKE $2 ESCAPE '\\'
+        GROUP BY kh.makhachhang
+        ORDER BY
+          CASE WHEN $1 <> '' AND kh.cccd = $1 THEN 0 ELSE 1 END,
+          MAX(gd.ngaygiaodich) DESC NULLS LAST,
+          kh.makhachhang DESC
+        LIMIT 8
+      `,
+      [exactCccd, like]
+    );
+
+    return result.rows.map((item) => ({
+      ...item,
+      label: `${item.tenKhach} · ${item.cccd || "Chua co CCCD"}`,
+      bookingCount: Number(item.bookingCount || 0)
+    }));
+  }
+
   async createDirectBookingPaymentHold(rawInput: DirectBookingHoldInput) {
     const quote = await this.buildDirectBookingQuote(rawInput);
     const hold = directBookingHoldStore.create(quote.input, {
@@ -1760,6 +2269,8 @@ export class FrontdeskService {
   }
 
   private async validateDirectBookingIdentity(input: DirectBookingHoldInput) {
+    const existingCustomerId = Math.max(0, Number(input.existing_customer_id || 0));
+    const useExistingCustomer = String(input.customer_mode || "") === "existing" && existingCustomerId > 0;
     const leader = {
       tenKhach: String(input.leader_ten_kh || "").trim(),
       cccd: String(input.leader_cccd || "").trim(),
@@ -1789,13 +2300,32 @@ export class FrontdeskService {
       }
     }
 
+    if (useExistingCustomer) {
+      const selectedCustomer = await query<{ id: number; cccd: string | null }>(
+        `
+          SELECT makhachhang AS id, cccd
+          FROM khachhang
+          WHERE makhachhang = $1
+          LIMIT 1
+        `,
+        [existingCustomerId]
+      );
+      if (!selectedCustomer.rows[0]) {
+        throw new HttpError(404, "Khach hang cu da chon khong ton tai.");
+      }
+      if (String(selectedCustomer.rows[0].cccd || "") && String(selectedCustomer.rows[0].cccd || "") !== leader.cccd) {
+        throw new HttpError(409, "CCCD tren form khong khop voi ho so khach hang cu da chon.");
+      }
+    }
+
     const existingCustomer = await query<{ total: number }>(
       `
         SELECT COUNT(*)::int AS total
         FROM khachhang
         WHERE cccd = ANY($1::varchar[])
+          AND ($2::int = 0 OR makhachhang <> $2::int)
       `,
-      [[...usedCccds]]
+      [[...usedCccds], useExistingCustomer ? existingCustomerId : 0]
     );
     if (Number(existingCustomer.rows[0]?.total ?? 0) > 0) {
       throw new HttpError(409, "Mot trong cac CCCD da ton tai trong he thong.");
@@ -1803,6 +2333,8 @@ export class FrontdeskService {
   }
 
   async createDirectBookingV2(rawInput: {
+    customer_mode?: string;
+    existing_customer_id?: number;
     ngay_den?: string;
     ngay_di?: string;
     so_nguoi?: number;
@@ -1819,6 +2351,8 @@ export class FrontdeskService {
     members?: Array<{ ten_khach?: string; cccd?: string; sdt?: string; email?: string; dia_chi?: string }>;
     services?: Array<{ service_id?: number; room_id?: number; quantity?: number; note?: string }>;
   }) {
+    const existingCustomerId = Math.max(0, Number(rawInput.existing_customer_id || 0));
+    const useExistingCustomer = String(rawInput.customer_mode || "") === "existing" && existingCustomerId > 0;
     const ngayDen = String(rawInput.ngay_den || "");
     const ngayDi = String(rawInput.ngay_di || "");
     const soNguoi = Math.max(1, Number(rawInput.so_nguoi || 1));
@@ -1907,13 +2441,32 @@ export class FrontdeskService {
       usedCccds.add(String(member.cccd));
     }
 
+    if (useExistingCustomer) {
+      const selectedCustomer = await query<{ id: number; cccd: string | null }>(
+        `
+          SELECT makhachhang AS id, cccd
+          FROM khachhang
+          WHERE makhachhang = $1
+          LIMIT 1
+        `,
+        [existingCustomerId]
+      );
+      if (!selectedCustomer.rows[0]) {
+        throw new HttpError(404, "Khach hang cu da chon khong ton tai.");
+      }
+      if (String(selectedCustomer.rows[0].cccd || "") && String(selectedCustomer.rows[0].cccd || "") !== leader.cccd) {
+        throw new HttpError(409, "CCCD tren form khong khop voi ho so khach hang cu da chon.");
+      }
+    }
+
     const existingCustomer = await query<{ total: number }>(
       `
         SELECT COUNT(*)::int AS total
         FROM khachhang
         WHERE cccd = ANY($1::varchar[])
+          AND ($2::int = 0 OR makhachhang <> $2::int)
       `,
-      [[...usedCccds]]
+      [[...usedCccds], useExistingCustomer ? existingCustomerId : 0]
     );
     if (Number(existingCustomer.rows[0]?.total ?? 0) > 0) {
       throw new HttpError(409, "Mot trong cac CCCD da ton tai trong he thong.");
@@ -1928,16 +2481,36 @@ export class FrontdeskService {
     }
 
     const created = await withTransaction(async (client) => {
-      const leaderResult = await client.query(
-        `
-          INSERT INTO khachhang (tenkh, sdt, email, cccd, diachi, loaikhach, trangthaiekyc)
-          VALUES ($1, $2, $3, $4, $5, 'TruongDoan', 'ChuaXacThuc')
-          RETURNING makhachhang
-        `,
-        [leader.tenKhach, leader.sdt || null, leader.email, leader.cccd, leader.diaChi || null]
-      ) as { rows: Array<{ makhachhang: number }> };
-
-      const maKhachHang = leaderResult.rows[0].makhachhang;
+      let maKhachHang = 0;
+      if (useExistingCustomer) {
+        const existingLeader = await client.query(
+          `
+            UPDATE khachhang
+            SET tenkh = $2,
+                sdt = COALESCE(NULLIF($3, ''), sdt),
+                email = COALESCE(NULLIF($4, ''), email),
+                diachi = COALESCE(NULLIF($5, ''), diachi),
+                loaikhach = 'TruongDoan'
+            WHERE makhachhang = $1
+            RETURNING makhachhang
+          `,
+          [existingCustomerId, leader.tenKhach, leader.sdt || "", leader.email || "", leader.diaChi || ""]
+        ) as { rows: Array<{ makhachhang: number }> };
+        if (!existingLeader.rows[0]) {
+          throw new HttpError(404, "Khach hang cu da chon khong ton tai.");
+        }
+        maKhachHang = existingLeader.rows[0].makhachhang;
+      } else {
+        const leaderResult = await client.query(
+          `
+            INSERT INTO khachhang (tenkh, sdt, email, cccd, diachi, loaikhach, trangthaiekyc)
+            VALUES ($1, $2, $3, $4, $5, 'TruongDoan', 'ChuaXacThuc')
+            RETURNING makhachhang
+          `,
+          [leader.tenKhach, leader.sdt || null, leader.email, leader.cccd, leader.diaChi || null]
+        ) as { rows: Array<{ makhachhang: number }> };
+        maKhachHang = leaderResult.rows[0].makhachhang;
+      }
       const groupResult = await client.query(
         `
           INSERT INTO doan (tendoan, matruongdoan, songuoi, ngayden, ngaydi, ghichu)
@@ -2107,8 +2680,10 @@ export class FrontdeskService {
 
       const accountPrefix = maDoan ? `D${String(maDoan).padStart(3, "0")}` : `GD${maGiaoDich}`;
       const createdAccounts = [];
-      const leaderAccount = await this.createCustomerAccount(client, maKhachHang, `${accountPrefix}_Leader`);
-      createdAccounts.push({ hoTen: leader.tenKhach, vaiTro: "Truong doan", ...leaderAccount });
+      const leaderAccount = await this.ensureCustomerAccount(client, maKhachHang, `${accountPrefix}_Leader`);
+      if (leaderAccount) {
+        createdAccounts.push({ hoTen: leader.tenKhach, vaiTro: useExistingCustomer ? "Truong doan (khach cu, cap tai khoan moi)" : "Truong doan", ...leaderAccount });
+      }
 
       for (let index = 0; index < roomGuests.length; index += 1) {
         const member = roomGuests[index];
@@ -2212,15 +2787,52 @@ export class FrontdeskService {
     }
   }
 
+  private validateAddRoomToBookingInput(input: AddRoomToBookingInput) {
+    if (!input.transactionId || input.transactionId <= 0) {
+      throw new HttpError(422, "Thieu ma giao dich.");
+    }
+
+    if (!input.roomId || input.roomId <= 0) {
+      throw new HttpError(422, "Vui long chon phong can them.");
+    }
+
+    if (!input.tenKhach.trim() || input.tenKhach.trim().length < 2 || /\d/.test(input.tenKhach)) {
+      throw new HttpError(422, "Ho ten khach o phong them khong hop le.");
+    }
+
+    if (!/^\d{9,12}$/.test(input.cccd.trim())) {
+      throw new HttpError(422, "CMND/CCCD phong them phai gom 9 den 12 so.");
+    }
+
+    if (!/^0\d{8,10}$/.test(input.sdt.trim())) {
+      throw new HttpError(422, "So dien thoai phong them khong hop le.");
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) {
+      throw new HttpError(422, "Email phong them khong hop le.");
+    }
+
+    if (!input.ngayDen || !input.ngayDi || new Date(input.ngayDi).getTime() <= new Date(input.ngayDen).getTime()) {
+      throw new HttpError(422, "Ngay den va ngay di cua phong them khong hop le.");
+    }
+
+    if (!input.soNguoi || input.soNguoi <= 0) {
+      throw new HttpError(422, "So nguoi phong them phai lon hon 0.");
+    }
+  }
+
   private async findTransactionIdForEdit(keyword: string) {
     const normalized = keyword.trim();
     if (!/^\d+$/.test(normalized)) {
       throw new HttpError(422, "Chi duoc nhap so khi tim giao dich.");
     }
 
-    if (normalized.length <= 8) {
-      const transaction = await this.findTransactionById(Number(normalized));
-      return transaction?.maGiaoDich ?? null;
+    const maybeTransactionId = Number(normalized);
+    if (Number.isSafeInteger(maybeTransactionId) && maybeTransactionId > 0 && maybeTransactionId <= 2147483647) {
+      const transaction = await this.findTransactionById(maybeTransactionId);
+      if (transaction?.maGiaoDich) {
+        return transaction.maGiaoDich;
+      }
     }
 
     const result = await query<{ maGiaoDich: number }>(
@@ -2231,12 +2843,14 @@ export class FrontdeskService {
         LEFT JOIN doan d ON d.madoan = gd.madoan
         LEFT JOIN khachhang kh_td ON kh_td.makhachhang = d.matruongdoan
         WHERE kh.cccd = $1
+           OR kh.sdt = $1
            OR kh_td.cccd = $1
+           OR kh_td.sdt = $1
            OR EXISTS (
                 SELECT 1
                 FROM chitietgiaodich ct
                 WHERE ct.magiaodich = gd.magiaodich
-                  AND ct.cccd = $1
+                  AND (ct.cccd = $1 OR ct.sdt = $1)
               )
         ORDER BY gd.magiaodich DESC
         LIMIT 1
@@ -2276,6 +2890,7 @@ export class FrontdeskService {
 
   private async getRoomMeta(roomId: number) {
     const result = await query<{
+      maKhachSan: number;
       soKhachToiDa: number;
       gia: number;
       trangThai: string;
@@ -2284,6 +2899,7 @@ export class FrontdeskService {
     }>(
       `
         SELECT
+          makhachsan AS "maKhachSan",
           sokhachtoida AS "soKhachToiDa",
           gia,
           trangthai AS "trangThai",
@@ -2299,6 +2915,7 @@ export class FrontdeskService {
     const row = result.rows[0];
     return row
       ? {
+          maKhachSan: Number(row.maKhachSan || 0),
           soKhachToiDa: Number(row.soKhachToiDa || 1),
           gia: Number(row.gia || 0),
           trangThai: row.trangThai,
@@ -2313,7 +2930,8 @@ export class FrontdeskService {
     ngayDi: string,
     soNguoi: number,
     currentRoomId: number,
-    transactionId: number
+    transactionId: number,
+    hotelId: number
   ) {
     const result = await query<{
       maPhong: number;
@@ -2335,6 +2953,7 @@ export class FrontdeskService {
             AND COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') = 'Tot'
             AND COALESCE(NULLIF(p.trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
           ))
+          AND ($6::int = 0 OR p.makhachsan = $6::int)
           AND p.sokhachtoida >= $3
           AND (
                 p.maphong = $4
@@ -2352,7 +2971,7 @@ export class FrontdeskService {
           )
         ORDER BY p.sophong ASC
       `,
-      [ngayDen, ngayDi, soNguoi, currentRoomId, transactionId]
+      [ngayDen, ngayDi, soNguoi, currentRoomId, transactionId, hotelId]
     );
 
     return result.rows.map((room) => ({
@@ -2360,6 +2979,55 @@ export class FrontdeskService {
       gia: Number(room.gia || 0),
       giaFormatted: formatMoney(Number(room.gia || 0)),
       selected: room.maPhong === currentRoomId
+    }));
+  }
+
+  private async getRoomsForAdd(
+    ngayDen: string,
+    ngayDi: string,
+    soNguoi: number,
+    hotelId: number
+  ) {
+    const result = await query<{
+      maPhong: number;
+      soPhong: string;
+      loaiPhong: string;
+      gia: number;
+      soKhachToiDa: number;
+    }>(
+      `
+        SELECT
+          p.maphong AS "maPhong",
+          p.sophong AS "soPhong",
+          p.loaiphong AS "loaiPhong",
+          p.gia,
+          p.sokhachtoida AS "soKhachToiDa"
+        FROM phong p
+        WHERE p.trangthai IN ('Trong', 'Booked')
+          AND ($4::int = 0 OR p.makhachsan = $4::int)
+          AND COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') = 'Tot'
+          AND COALESCE(NULLIF(p.trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
+          AND p.sokhachtoida >= $3
+          AND NOT EXISTS (
+            SELECT 1
+            FROM chitietgiaodich ct
+            JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+            WHERE ct.maphong = p.maphong
+              AND gd.trangthai IN ('Booked', 'Stayed')
+              AND ct.trangthai IN ('Booked', 'CheckedIn')
+              AND tstzrange(ct.ngaynhandukien, ct.ngaytradukien, '[)')
+                && tstzrange($1::timestamptz, $2::timestamptz, '[)')
+          )
+        ORDER BY p.sokhachtoida ASC, p.sophong ASC
+      `,
+      [ngayDen, ngayDi, soNguoi, hotelId]
+    );
+
+    return result.rows.map((room) => ({
+      ...room,
+      gia: Number(room.gia || 0),
+      soKhachToiDa: Number(room.soKhachToiDa || 1),
+      giaFormatted: formatMoney(Number(room.gia || 0))
     }));
   }
 
@@ -2439,6 +3107,25 @@ export class FrontdeskService {
     }));
   }
 
+  private async getActiveServiceCatalog() {
+    const result = await query<DirectServiceCatalogRow>(
+      `
+        SELECT
+          madichvu AS id,
+          tendichvu AS "tenDichVu",
+          giadichvu AS "giaDichVu"
+        FROM dichvu
+        WHERE trangthai = 'HoatDong'
+        ORDER BY tendichvu ASC, madichvu ASC
+      `
+    );
+
+    return result.rows.map((row) => ({
+      ...row,
+      giaDichVu: Number(row.giaDichVu || 0)
+    }));
+  }
+
   private async getPromotionForTransaction(promotionId: number | null) {
     if (!promotionId) {
       return {
@@ -2487,6 +3174,38 @@ export class FrontdeskService {
       value,
       type,
       label: `${promotion.tenChuongTrinh} (${value}${suffix})`
+    };
+  }
+
+  private mapActivityRoom(row: FrontdeskActivityRoomRow, now: Date, action: "checkin" | "checkout") {
+    const targetDate = new Date(action === "checkin" ? row.ngayNhanDuKien || "" : row.ngayTraDuKien || "");
+    const diffMs = Number.isNaN(targetDate.getTime()) ? 0 : targetDate.getTime() - now.getTime();
+    const absHours = Math.max(0, Math.ceil(Math.abs(diffMs) / (1000 * 60 * 60)));
+    const timeDelta = Number.isNaN(targetDate.getTime())
+      ? "Chưa có mốc giờ"
+      : diffMs < 0
+        ? `Quá hạn ${absHours >= 24 ? `${Math.ceil(absHours / 24)} ngày` : `${Math.max(1, absHours)} giờ`}`
+        : `Còn ${absHours >= 24 ? `${Math.ceil(absHours / 24)} ngày` : `${Math.max(1, absHours)} giờ`}`;
+
+    return {
+      transactionId: row.maGiaoDich,
+      roomId: row.maPhong,
+      detailId: row.maCtgd,
+      roomLabel: `P${row.soPhong}`,
+      roomType: row.loaiPhong,
+      customerName: row.tenKhach || "Khách hàng",
+      phone: row.sdt || "",
+      cccd: row.cccd || "",
+      checkinLabel: formatDate(row.ngayNhanDuKien, "DD/MM/YYYY HH:mm"),
+      checkoutLabel: formatDate(row.ngayTraDuKien, "DD/MM/YYYY HH:mm"),
+      checkedInAtLabel: formatDate(row.ngayCheckIn, "DD/MM/YYYY HH:mm"),
+      totalFormatted: formatMoney(row.tongTien),
+      status: row.trangThaiGiaoDich,
+      timeDelta,
+      actionHref: action === "checkin"
+        ? `/frontdesk/checkin?keyword=${encodeURIComponent(String(row.maGiaoDich))}`
+        : `/frontdesk/checkout-v2?keyword=${encodeURIComponent(String(row.maGiaoDich))}&selected_room=${encodeURIComponent(String(row.maPhong))}`,
+      editHref: `/frontdesk/edit-booking?keyword=${encodeURIComponent(String(row.maGiaoDich))}`
     };
   }
 
@@ -2552,9 +3271,20 @@ export class FrontdeskService {
     transactionId: number,
     roomId: number,
     services: Record<string, string | number>,
+    serviceRooms: Record<string, string | number>,
     removeServices: number[]
   ) {
     const removeIds = new Set(removeServices.map((id) => Number(id)).filter((id) => id > 0));
+    const roomResult = await client.query(
+      `
+        SELECT maphong
+        FROM chitietgiaodich
+        WHERE magiaodich = $1
+          AND trangthai IN ('Booked', 'CheckedIn')
+      `,
+      [transactionId]
+    ) as { rows: Array<{ maphong: number }> };
+    const validRoomIds = new Set(roomResult.rows.map((row) => Number(row.maphong)).filter((id) => id > 0));
 
     for (const [rawServiceId, rawQty] of Object.entries(services)) {
       const serviceId = Number(rawServiceId);
@@ -2568,6 +3298,9 @@ export class FrontdeskService {
         continue;
       }
 
+      // Quantity > 0 always wins over a stale remove flag from older rendered forms/browser cache.
+      removeIds.delete(serviceId);
+
       const service = await client.query(
         "SELECT giadichvu FROM dichvu WHERE madichvu = $1 LIMIT 1",
         [serviceId]
@@ -2575,6 +3308,11 @@ export class FrontdeskService {
       const unitPrice = Number(service.rows[0]?.giadichvu || 0);
       if (!unitPrice) {
         continue;
+      }
+
+      const targetRoomId = Number(serviceRooms[String(serviceId)] || roomId);
+      if (!validRoomIds.has(targetRoomId)) {
+        throw new HttpError(422, "Phong nhan dich vu khong nam trong giao dich.");
       }
 
       const existing = await client.query(
@@ -2595,11 +3333,11 @@ export class FrontdeskService {
             SET soluong = $3,
                 giaban = $4,
                 thanhtien = $5,
-                maphong = COALESCE(maphong, $6)
+                maphong = $6
             WHERE magiaodich = $1
               AND madichvu = $2
           `,
-          [transactionId, serviceId, qty, unitPrice, unitPrice * qty, roomId]
+          [transactionId, serviceId, qty, unitPrice, unitPrice * qty, targetRoomId]
         );
       } else {
         await client.query(
@@ -2608,7 +3346,7 @@ export class FrontdeskService {
               (magiaodich, maphong, madichvu, soluong, giaban, thanhtien, ghichu)
             VALUES ($1, $2, $3, $4, $5, $6, '')
           `,
-          [transactionId, roomId, serviceId, qty, unitPrice, unitPrice * qty]
+          [transactionId, targetRoomId, serviceId, qty, unitPrice, unitPrice * qty]
         );
       }
     }
@@ -2732,127 +3470,6 @@ export class FrontdeskService {
     return `${byType.get("year")}-${byType.get("month")}-${byType.get("day")}`;
   }
 
-  private async buildCheckInEkycSnapshot(customerId: number | null) {
-    const fallback = {
-      customerStatus: "ChuaXacThuc",
-      verificationResult: "ChuaXacThuc",
-      statusLabel: "Chua xac thuc",
-      badgeClass: "badge-slate",
-      toneClass: "ekyc-panel ekyc-pending",
-      summary: "Khach chua co ho so eKYC tren he thong.",
-      note: "Le tan can kiem tra giay to truc tiep neu van muon tiep tuc check-in.",
-      confidenceLabel: "0%",
-      historyCount: 0,
-      lastEventLabel: "Chua co ho so",
-      lastEventTime: "-",
-      requiresManualOverride: true,
-      manualOverrideMessage: "Khach chua xac thuc eKYC. Vui long xac nhan da doi chieu thu cong de tiep tuc check-in.",
-      available: false
-    };
-
-    if (!customerId || customerId <= 0) {
-      return fallback;
-    }
-
-    try {
-      const status = await new EkycService().getStatusForCustomer(customerId);
-      const customerStatus = String(status.customer?.trangThaiEkyc || "ChuaXacThuc");
-      const verification = status.verification;
-      const verificationResult = String(verification?.ketQuaXacThuc || "ChuaXacThuc");
-      const confidence = Number(verification?.doTinCay || 0);
-      const confidenceLabel = confidence > 0 ? `${Math.round(confidence * 100)}%` : "0%";
-      const lastEventTime = verification?.thoiGianXacThuc || verification?.thoiGianGui || "-";
-      const lastEventTimeLabel = lastEventTime === "-" ? "-" : formatDate(lastEventTime, "DD/MM/YYYY HH:mm");
-      const note = String(verification?.ghiChu || "");
-
-      if (customerStatus === "DaXacThuc" || verificationResult === "ThanhCong") {
-        return {
-          ...fallback,
-          customerStatus,
-          verificationResult,
-          statusLabel: "Da xac thuc",
-          badgeClass: "badge-green",
-          toneClass: "ekyc-panel ekyc-success",
-          summary: "Khach da hoan tat eKYC va co the uu tien check-in nhanh.",
-          note: note || "Ho so dinh danh da dat nguong tin cay cua he thong.",
-          confidenceLabel,
-          historyCount: verification ? 1 : 0,
-          lastEventLabel: "Da xac thuc",
-          lastEventTime: lastEventTimeLabel,
-          requiresManualOverride: false,
-          manualOverrideMessage: "",
-          available: true
-        };
-      }
-
-      if (verificationResult === "DangXuLy") {
-        return {
-          ...fallback,
-          customerStatus,
-          verificationResult,
-          statusLabel: "Dang xu ly",
-          badgeClass: "badge-blue",
-          toneClass: "ekyc-panel ekyc-warning",
-          summary: "Ho so eKYC da gui nhung van dang cho xac minh.",
-          note: note || "Neu khach da xuat trinh giay to goc, le tan co the xac nhan thu cong de tiep tuc.",
-          confidenceLabel,
-          historyCount: verification ? 1 : 0,
-          lastEventLabel: "Dang xu ly",
-          lastEventTime: lastEventTimeLabel,
-          requiresManualOverride: true,
-          manualOverrideMessage: "Ho so eKYC dang xu ly. Vui long xac nhan da doi chieu thu cong de tiep tuc check-in.",
-          available: true
-        };
-      }
-
-      if (verificationResult === "ThatBai" || customerStatus === "ThatBai") {
-        return {
-          ...fallback,
-          customerStatus,
-          verificationResult,
-          statusLabel: "Xac thuc that bai",
-          badgeClass: "badge-red",
-          toneClass: "ekyc-panel ekyc-danger",
-          summary: "Ho so eKYC khong dat nguong tin cay.",
-          note: note || "Chi nen tiep tuc khi le tan da doi chieu giay to goc va chap nhan check-in thu cong.",
-          confidenceLabel,
-          historyCount: verification ? 1 : 0,
-          lastEventLabel: "That bai",
-          lastEventTime: lastEventTimeLabel,
-          requiresManualOverride: true,
-          manualOverrideMessage: "Ho so eKYC that bai. Vui long xac nhan da doi chieu giay to truc tiep de tiep tuc check-in.",
-          available: true
-        };
-      }
-
-      return {
-        ...fallback,
-        customerStatus,
-        verificationResult,
-        confidenceLabel,
-        historyCount: verification ? 1 : 0,
-        lastEventLabel: verification ? verificationResult : "Chua co ho so",
-        lastEventTime: verification ? lastEventTimeLabel : "-",
-        note: note || fallback.note,
-        available: Boolean(verification)
-      };
-    } catch {
-      return {
-        ...fallback,
-        customerStatus: "KhongKhaDung",
-        verificationResult: "KhongKhaDung",
-        statusLabel: "Khong kha dung",
-        badgeClass: "badge-red",
-        toneClass: "ekyc-panel ekyc-danger",
-        summary: "Khong the tai trang thai eKYC cua khach o thoi diem hien tai.",
-        note: "Ban van co the doi chieu giay to thu cong de hoan tat check-in.",
-        confidenceLabel: "N/A",
-        lastEventLabel: "Khong kha dung",
-        manualOverrideMessage: "Khong the tai du lieu eKYC. Vui long xac nhan da doi chieu thu cong de tiep tuc check-in."
-      };
-    }
-  }
-
   private evaluateCheckInEligibility(rooms: Array<RoomStayRow & { ngayNhanLabel?: string; soPhong?: string }>, selectedRoomIds: number[]) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -2954,8 +3571,10 @@ export class FrontdeskService {
           ct.mactgd AS "maCtgd",
           ct.maphong AS "maPhong",
           ct.songuoi AS "soNguoi",
+          p.makhachsan AS "maKhachSan",
           p.sophong AS "soPhong",
           p.loaiphong AS "loaiPhong",
+          p.sokhachtoida AS "soKhachToiDa",
           COALESCE(NULLIF(ct.dongia, 0), p.gia, 0) AS "donGia",
           ct.trangthai AS "trangThai",
           p.tinhtrangphong AS "tinhTrangPhong",
@@ -3331,6 +3950,19 @@ export class FrontdeskService {
   private generateDirectBookingCode() {
     const chunk = crypto.randomBytes(3).toString("hex").toUpperCase();
     return `DIR-${Date.now().toString().slice(-6)}-${chunk}`;
+  }
+
+  private async ensureCustomerAccount(client: any, maKhachHang: number, usernameSeed: string) {
+    const existing = await client.query(
+      "SELECT username FROM taikhoan WHERE makhachhang = $1 ORDER BY matk ASC LIMIT 1",
+      [maKhachHang]
+    ) as { rows: Array<{ username: string }> };
+
+    if (existing.rows[0]) {
+      return null;
+    }
+
+    return this.createCustomerAccount(client, maKhachHang, usernameSeed);
   }
 
   private async createCustomerAccount(client: any, maKhachHang: number, usernameSeed: string) {

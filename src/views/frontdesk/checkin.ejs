@@ -4,7 +4,6 @@
   const transaction = payload?.transaction || null;
   const rooms = payload?.rooms || [];
   const checkin = payload?.checkin || null;
-  const ekyc = checkin?.ekyc || null;
 %>
 <style>
   .checkin-shell{
@@ -141,7 +140,54 @@
   .ekyc-warning{background:rgba(245,158,11,.08)}
   .ekyc-danger{background:rgba(239,71,111,.08)}
   .ekyc-pending{background:rgba(148,163,184,.08)}
+  .checkin-shell{
+    background:transparent;
+    overflow:visible;
+    border-radius:0;
+  }
+  .checkin-shell::before,.checkin-shell::after{display:none}
+  .checkin-card{
+    background:rgba(255,255,255,.92);
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow:0 20px 54px rgba(15,23,42,.10);
+  }
+  .checkin-muted{color:#607086}
+  .checkin-search-grid{
+    display:grid;
+    grid-template-columns:minmax(260px,1fr) auto;
+    gap:14px;
+    align-items:end;
+  }
+  .checkin-search-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:flex-end;
+    padding-bottom:22px;
+    white-space:nowrap;
+  }
+  .checkin-field input{
+    min-height:48px;
+    background:#fff;
+    border-color:rgba(15,23,42,.14);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+  }
+  .checkin-field input:focus{
+    background:#fff;
+    border-color:rgba(14,165,233,.55);
+    box-shadow:0 0 0 4px rgba(14,165,233,.13);
+  }
+  .checkin-shell .button{
+    min-height:44px;
+    border-radius:999px;
+  }
+  .checkin-alert--error{background:#fff1f2;color:#9f1239;border-color:#fecdd3}
+  .checkin-alert--success{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+  .checkin-table-wrap,.ekyc-panel{background:rgba(255,255,255,.82)}
+  .checkin-table th{background:#f1f8ff;color:#31465f}
+  .checkin-table td{border-bottom-color:rgba(15,23,42,.08)}
   @keyframes checkin-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
+  @media (max-width:900px){.checkin-search-grid{grid-template-columns:1fr}.checkin-search-actions{justify-content:flex-start;padding-bottom:0;white-space:normal}}
 </style>
 
 <main class="checkin-shell">
@@ -149,7 +195,7 @@
     <div>
       <div class="checkin-chip">Quy trình Check-in · Lễ tân</div>
       <h1>Check-in khách hàng</h1>
-      <div class="checkin-muted">Tìm giao dịch, kiểm tra phòng Booked, xác nhận giấy tờ/eKYC và hoàn tất nhận phòng.</div>
+      <div class="checkin-muted">Tìm giao dịch, đối chiếu CCCD/hộ chiếu gốc, kiểm tra phòng Booked và hoàn tất nhận phòng.</div>
     </div>
     <a class="button" href="/frontdesk">Quay lại trang lễ tân</a>
   </section>
@@ -167,18 +213,16 @@
 
   <form method="post" action="/frontdesk/checkin" id="formSearch" class="checkin-card">
     <h2>Tìm kiếm giao dịch để check-in <span class="checkin-tag">Bước 1</span></h2>
-    <p class="checkin-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn.</p>
-    <div class="checkin-row" style="grid-template-columns:2fr 1fr">
+    <p class="checkin-muted">Nhập mã giao dịch, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng.</p>
+    <div class="checkin-search-grid">
       <div class="checkin-field">
-        <label for="search_ma_gd">Mã giao dịch / CMND/CCCD</label>
-        <input id="search_ma_gd" name="search_ma_gd" value="<%= keyword || "" %>" placeholder="VD: 7 hoặc 22653661123" />
+        <label for="search_ma_gd">Mã giao dịch / CMND/CCCD / SĐT</label>
+        <input id="search_ma_gd" name="search_ma_gd" value="<%= keyword || "" %>" placeholder="VD: 338, 080909080701 hoặc 0901234567" />
         <div class="checkin-error-msg" id="err_search"></div>
       </div>
-      <div class="checkin-field" style="justify-content:flex-end">
-        <div class="checkin-actions" style="margin-top:0;justify-content:flex-start">
-          <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
-          <button class="button" type="submit" name="btn_action" value="back">Quay lại</button>
-        </div>
+      <div class="checkin-search-actions">
+        <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
+        <button class="button" type="submit" name="btn_action" value="back">Quay lại</button>
       </div>
     </div>
   </form>
@@ -222,32 +266,6 @@
         </div>
       </div>
 
-      <section class="<%= ekyc?.toneClass || "ekyc-panel ekyc-pending" %>">
-        <div class="ekyc-head">
-          <div class="ekyc-title">eKYC check-in gate</div>
-          <span class="checkin-badge <%= ekyc?.badgeClass || "badge-slate" %>"><%= ekyc?.statusLabel || "Chưa xác thực" %></span>
-        </div>
-        <div style="font-size:14px;color:var(--ux-text)"><%= ekyc?.summary || "Khách chưa có hồ sơ eKYC trên hệ thống." %></div>
-        <div class="ekyc-meta">
-          <div><strong>Độ tin cậy:</strong> <%= ekyc?.confidenceLabel || "0%" %></div>
-          <div><strong>Fallback:</strong> <%= ekyc?.requiresManualOverride ? "Cần xác nhận thủ công" : "Không cần" %></div>
-          <div><strong>Lịch sử hồ sơ:</strong> <%= ekyc?.historyCount || 0 %> lần</div>
-          <div><strong>Hồ sơ gần nhất:</strong> <%= ekyc?.lastEventLabel || "Chưa có hồ sơ" %> / <%= ekyc?.lastEventTime || "-" %></div>
-        </div>
-        <div class="ekyc-note"><%= ekyc?.note || "Lễ tân cần kiểm tra giấy tờ trực tiếp trước khi tiếp tục check-in." %></div>
-        <div style="margin-top:12px">
-          <a class="button" href="/ekyc/review">Mở console review eKYC</a>
-        </div>
-      </section>
-
-      <section class="ekyc-panel <%= checkin.aiAddon?.available ? "ekyc-warning" : "ekyc-pending" %>">
-        <div class="ekyc-head">
-          <div class="ekyc-title"><%= checkin.aiAddon?.headline || "AI add-on intent" %></div>
-          <span class="checkin-badge <%= checkin.aiAddon?.available ? "badge-blue" : "badge-slate" %>"><%= checkin.aiAddon?.available ? `${checkin.aiAddon.count} mục` : "Chưa có" %></span>
-        </div>
-        <div class="checkin-muted"><%= checkin.aiAddon?.summary || "Booking này chưa có gợi ý AI nào được khách đánh dấu trước đó." %></div>
-      </section>
-
       <div class="checkin-table-wrap">
         <table class="checkin-table">
           <thead>
@@ -278,7 +296,7 @@
                 <td><span class="checkin-badge <%= statusClass %>"><%= room.trangThai %></span></td>
                 <td style="text-align:center">
                   <% if (room.trangThai === "Booked") { %>
-                    <input type="checkbox" name="phong_checkin" value="<%= room.maPhong %>" />
+                    <input type="checkbox" name="phong_checkin" value="<%= room.maPhong %>" data-booked-room="1" />
                   <% } else { %>
                     -
                   <% } %>
@@ -303,15 +321,8 @@
       <div class="checkin-confirm">
         <label>
           <input type="checkbox" id="xac_nhan_giay_to" name="xac_nhan_giay_to" value="1" />
-          <span>Tôi xác nhận đã kiểm tra giấy tờ tùy thân hợp lệ của khách / trưởng đoàn.</span>
+          <span>Tôi xác nhận đã kiểm tra CCCD/hộ chiếu gốc, thông tin khớp booking và khách đủ điều kiện nhận phòng.</span>
         </label>
-
-        <% if (ekyc?.requiresManualOverride) { %>
-          <label class="ekyc-danger">
-            <input type="checkbox" id="xac_nhan_ekyc_thu_cong" name="xac_nhan_ekyc_thu_cong" value="1" />
-            <span><strong>Override eKYC:</strong> Tôi xác nhận khách chưa đạt eKYC tự động nhưng đã được đối chiếu giấy tờ gốc trực tiếp tại quầy và đủ điều kiện check-in thủ công.</span>
-          </label>
-        <% } %>
       </div>
 
       <div class="checkin-actions">
@@ -335,6 +346,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const formCheckin = document.getElementById("formCheckin");
   const clientErrors = document.getElementById("clientErrors");
   const clientErrorsList = document.getElementById("clientErrorsList");
+  const scopeAll = document.getElementById("check_scope_all");
+  const scopePartial = document.getElementById("check_scope_partial");
+  const roomChecks = Array.from(document.querySelectorAll('input[name="phong_checkin"][data-booked-room="1"]'));
 
   function setSearchError(message) {
     if (!searchField || !searchError) return;
@@ -349,9 +363,9 @@ document.addEventListener("DOMContentLoaded", function () {
   function validateSearch(fromSubmit) {
     const value = (searchField?.value || "").trim();
     clearSearchError();
-    if (!value && fromSubmit) return setSearchError("Vui lòng nhập mã giao dịch hoặc CMND/CCCD."), false;
+    if (!value && fromSubmit) return setSearchError("Vui lòng nhập mã giao dịch, CMND/CCCD hoặc SĐT."), false;
     if (value && !/^\d+$/.test(value)) return setSearchError("Chỉ được nhập số."), false;
-    if (value.length > 12) return setSearchError("Tối đa 12 số."), false;
+    if (value.length > 18) return setSearchError("Tối đa 18 số."), false;
     return true;
   }
 
@@ -360,6 +374,19 @@ document.addEventListener("DOMContentLoaded", function () {
     if ((event.submitter?.value || "") !== "search") return;
     if (!validateSearch(true)) event.preventDefault();
   });
+
+  function syncRoomSelectionMode() {
+    const checkAll = Boolean(scopeAll?.checked);
+    roomChecks.forEach((checkbox) => {
+      checkbox.checked = checkAll;
+      checkbox.disabled = checkAll;
+    });
+  }
+
+  scopeAll?.addEventListener("change", syncRoomSelectionMode);
+  scopePartial?.addEventListener("change", syncRoomSelectionMode);
+  formCheckin?.addEventListener("reset", () => window.setTimeout(syncRoomSelectionMode, 0));
+  syncRoomSelectionMode();
 
   function showClientErrors(messages) {
     if (!clientErrors || !clientErrorsList) return;
@@ -379,16 +406,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const messages = [];
     const identity = document.getElementById("xac_nhan_giay_to");
-    const manualEkyc = document.getElementById("xac_nhan_ekyc_thu_cong");
-    const scopePartial = document.getElementById("check_scope_partial");
-    const checkedRooms = Array.from(document.querySelectorAll('input[name="phong_checkin"]:checked'));
+    const checkedRooms = roomChecks.filter((checkbox) => checkbox.checked);
 
     if (identity && !identity.checked) {
       messages.push("Vui lòng xác nhận đã kiểm tra giấy tờ.");
-    }
-
-    if (manualEkyc && !manualEkyc.checked) {
-      messages.push("Vui lòng xác nhận override eKYC thủ công.");
     }
 
     if (scopePartial?.checked && checkedRooms.length === 0) {

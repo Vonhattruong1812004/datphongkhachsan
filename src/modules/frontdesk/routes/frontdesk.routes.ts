@@ -11,7 +11,9 @@ import {
   createDirectBookingApi,
   directBookingHoldStatusApi,
   directBookingSearchApi,
+  lookupDirectBookingCustomersApi,
   lookupTransactionApi,
+  renderActivityLookupPage,
   renderCancelBookingPage,
   renderCheckinPage,
   renderCheckoutPage,
@@ -30,6 +32,7 @@ export const frontdeskRouter = Router();
 export const frontdeskApiRouter = Router();
 
 frontdeskRouter.get("/", requireRole([ROLE.LE_TAN]), asyncHandler(renderFrontdeskPage));
+frontdeskRouter.get("/activity-lookup", requireRole([ROLE.LE_TAN]), asyncHandler(renderActivityLookupPage));
 frontdeskRouter.get("/direct-booking", requireRole([ROLE.LE_TAN]), asyncHandler(renderDirectBookingPage));
 frontdeskRouter.post("/direct-booking", requireRole([ROLE.LE_TAN]), asyncHandler(submitDirectBookingPage));
 frontdeskRouter.get("/checkin", requireRole([ROLE.LE_TAN]), asyncHandler(renderCheckinPage));
@@ -42,6 +45,7 @@ frontdeskRouter.get("/cancel-booking", requireRole([ROLE.LE_TAN]), asyncHandler(
 frontdeskRouter.post("/cancel-booking", requireRole([ROLE.LE_TAN]), asyncHandler(submitCancelBookingPage));
 
 frontdeskApiRouter.get("/lookup", requireRole([ROLE.LE_TAN]), asyncHandler(lookupTransactionApi));
+frontdeskApiRouter.get("/direct-booking/customers", requireRole([ROLE.LE_TAN]), asyncHandler(lookupDirectBookingCustomersApi));
 frontdeskApiRouter.get("/direct-search", requireRole([ROLE.LE_TAN]), asyncHandler(directBookingSearchApi));
 frontdeskApiRouter.get("/direct-booking/holds/:holdId", requireRole([ROLE.LE_TAN]), asyncHandler(directBookingHoldStatusApi));
 frontdeskApiRouter.post("/direct-booking", requireRole([ROLE.LE_TAN]), asyncHandler(createDirectBookingApi));

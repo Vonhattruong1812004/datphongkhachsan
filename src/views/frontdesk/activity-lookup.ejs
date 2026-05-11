@@ -1,0 +1,601 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const data = payload || {};
+  const summary = data.summary || {};
+  const recentBookings = data.recentBookings || [];
+  const overdueCheckins = data.overdueCheckins || [];
+  const dueCheckouts = data.dueCheckouts || [];
+  const recentEvents = data.recentEvents || [];
+  const filters = data.filters || { keyword: "", days: 7 };
+%>
+<style>
+  body {
+    background:
+      radial-gradient(circle at 9% 8%, rgba(45, 212, 191, .20), transparent 28%),
+      radial-gradient(circle at 92% 8%, rgba(251, 113, 133, .18), transparent 30%),
+      linear-gradient(135deg, #f7fffb 0%, #eef8ff 44%, #fff7fb 100%);
+  }
+
+  .activity-shell {
+    --ink: #102033;
+    --muted: #64748b;
+    --line: rgba(15, 23, 42, .10);
+    --card: rgba(255, 255, 255, .82);
+    --cyan: #06b6d4;
+    --mint: #10b981;
+    --rose: #fb7185;
+    --amber: #f59e0b;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 26px 18px 54px;
+    color: var(--ink);
+  }
+
+  .activity-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(300px, .75fr);
+    gap: 18px;
+    align-items: stretch;
+    margin-bottom: 18px;
+  }
+
+  .activity-panel {
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    background: var(--card);
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .12);
+    backdrop-filter: blur(18px);
+  }
+
+  .activity-title {
+    position: relative;
+    overflow: hidden;
+    padding: 28px;
+  }
+
+  .activity-title::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(110deg, rgba(16, 185, 129, .18), transparent 38%),
+      radial-gradient(circle at 86% 12%, rgba(14, 165, 233, .20), transparent 34%);
+    pointer-events: none;
+  }
+
+  .activity-title > * {
+    position: relative;
+  }
+
+  .activity-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(6, 182, 212, .12);
+    color: #0e7490;
+    border: 1px solid rgba(6, 182, 212, .24);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .activity-kicker::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--mint);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, .14);
+  }
+
+  .activity-title h1 {
+    max-width: 760px;
+    margin: 0;
+    font-size: clamp(34px, 6vw, 72px);
+    line-height: .95;
+    letter-spacing: -.06em;
+  }
+
+  .activity-title p {
+    max-width: 760px;
+    margin: 16px 0 0;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  .activity-filter {
+    padding: 22px;
+  }
+
+  .activity-filter h2,
+  .activity-section h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+    letter-spacing: -.04em;
+  }
+
+  .activity-form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .activity-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .activity-field label {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .activity-field input,
+  .activity-field select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 13px 14px;
+    background: rgba(255, 255, 255, .86);
+    color: var(--ink);
+    font: inherit;
+    outline: none;
+  }
+
+  .activity-field input:focus,
+  .activity-field select:focus {
+    border-color: rgba(6, 182, 212, .48);
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, .12);
+  }
+
+  .activity-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .activity-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, .80);
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+
+  .activity-btn:hover {
+    transform: translateY(-1px);
+    border-color: rgba(6, 182, 212, .38);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, .12);
+  }
+
+  .activity-btn--primary {
+    border-color: transparent;
+    color: #fff;
+    background: linear-gradient(135deg, #06b6d4, #10b981);
+  }
+
+  .activity-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .activity-stat {
+    border-top: 5px solid var(--accent, var(--cyan));
+    padding: 18px;
+  }
+
+  .activity-stat strong {
+    display: block;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -.05em;
+  }
+
+  .activity-stat span {
+    display: block;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+  }
+
+  .activity-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .activity-section {
+    padding: 22px;
+  }
+
+  .activity-section--wide {
+    grid-column: 1 / -1;
+  }
+
+  .activity-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .activity-note {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .activity-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .activity-card {
+    display: grid;
+    gap: 10px;
+    border: 1px solid rgba(15, 23, 42, .09);
+    border-radius: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, .72);
+  }
+
+  .activity-card-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .activity-card h3 {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: -.03em;
+  }
+
+  .activity-card p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .activity-badge {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-weight: 900;
+    color: #075985;
+    background: rgba(14, 165, 233, .12);
+    border: 1px solid rgba(14, 165, 233, .20);
+  }
+
+  .activity-badge--hot {
+    color: #9f1239;
+    background: rgba(251, 113, 133, .14);
+    border-color: rgba(251, 113, 133, .28);
+  }
+
+  .activity-badge--warm {
+    color: #92400e;
+    background: rgba(245, 158, 11, .16);
+    border-color: rgba(245, 158, 11, .30);
+  }
+
+  .activity-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .activity-meta div {
+    border-radius: 14px;
+    padding: 10px;
+    background: rgba(241, 245, 249, .78);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .activity-meta strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .activity-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .activity-table-wrap {
+    overflow: auto;
+    border: 1px solid rgba(15, 23, 42, .09);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .70);
+  }
+
+  .activity-table {
+    width: 100%;
+    min-width: 920px;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  .activity-table th,
+  .activity-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid rgba(15, 23, 42, .08);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .activity-table th {
+    color: #475569;
+    background: rgba(241, 245, 249, .84);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .activity-empty {
+    border: 1px dashed rgba(15, 23, 42, .18);
+    border-radius: 18px;
+    padding: 18px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, .54);
+  }
+
+  .activity-events {
+    display: grid;
+    gap: 10px;
+  }
+
+  .activity-event {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid rgba(15, 23, 42, .08);
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, .68);
+  }
+
+  .activity-event-time,
+  .activity-event-source {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  @media (max-width: 980px) {
+    .activity-hero,
+    .activity-grid,
+    .activity-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .activity-event {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .activity-title,
+    .activity-filter,
+    .activity-section {
+      padding: 18px;
+    }
+
+    .activity-card-top,
+    .activity-section-head {
+      flex-direction: column;
+    }
+
+    .activity-meta {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<main class="activity-shell">
+  <section class="activity-hero">
+    <div class="activity-panel activity-title">
+      <span class="activity-kicker">Tra cứu hoạt động</span>
+      <h1>Nhìn một lần là biết ca trực cần xử lý gì.</h1>
+      <p>Gom lịch sử đặt phòng gần đây, phòng quá hạn check-in và phòng đang ở tới hạn check-out vào một màn riêng cho lễ tân.</p>
+    </div>
+
+    <form class="activity-panel activity-filter" method="get" action="/frontdesk/activity-lookup">
+      <h2>Bộ lọc nhanh</h2>
+      <div class="activity-form">
+        <div class="activity-field">
+          <label for="keyword">Từ khóa</label>
+          <input id="keyword" name="keyword" value="<%= filters.keyword || '' %>" placeholder="Mã GD, mã đặt chỗ, tên, SĐT, CCCD, phòng">
+        </div>
+        <div class="activity-field">
+          <label for="days">Lịch sử trong</label>
+          <select id="days" name="days">
+            <% [1, 3, 7, 14, 30].forEach((day) => { %>
+              <option value="<%= day %>" <%= Number(filters.days || 7) === day ? "selected" : "" %>><%= day %> ngày</option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="activity-actions">
+          <button class="activity-btn activity-btn--primary" type="submit">Tra cứu</button>
+          <a class="activity-btn" href="/frontdesk/activity-lookup">Đặt lại</a>
+          <a class="activity-btn" href="/frontdesk">Dashboard</a>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="activity-stats" aria-label="Tóm tắt hoạt động">
+    <article class="activity-panel activity-stat" style="--accent:#06b6d4"><strong><%= summary.recentBookings || 0 %></strong><span>Booking gần đây</span></article>
+    <article class="activity-panel activity-stat" style="--accent:#fb7185"><strong><%= summary.overdueCheckins || 0 %></strong><span>Quá hạn check-in</span></article>
+    <article class="activity-panel activity-stat" style="--accent:#f59e0b"><strong><%= summary.dueCheckouts || 0 %></strong><span>Tới hạn check-out</span></article>
+    <article class="activity-panel activity-stat" style="--accent:#10b981"><strong><%= summary.inHouse || 0 %></strong><span>Đang lưu trú</span></article>
+  </section>
+
+  <section class="activity-grid">
+    <section class="activity-panel activity-section">
+      <div class="activity-section-head">
+        <div>
+          <h2>Quá hạn check-in</h2>
+          <div class="activity-note">Phòng đã Booked, đã qua giờ nhận nhưng chưa check-in.</div>
+        </div>
+      </div>
+      <div class="activity-list">
+        <% if (!overdueCheckins.length) { %>
+          <div class="activity-empty">Không có phòng quá hạn check-in.</div>
+        <% } %>
+        <% overdueCheckins.forEach((item) => { %>
+          <article class="activity-card">
+            <div class="activity-card-top">
+              <div>
+                <h3><%= item.roomLabel %> · <%= item.customerName %></h3>
+                <p>#<%= item.transactionId %> · <%= item.phone || "Chưa có SĐT" %> · <%= item.cccd || "Chưa có CCCD" %></p>
+              </div>
+              <span class="activity-badge activity-badge--hot"><%= item.timeDelta %></span>
+            </div>
+            <div class="activity-meta">
+              <div>Nhận phòng<strong><%= item.checkinLabel || "Chưa có" %></strong></div>
+              <div>Trả phòng<strong><%= item.checkoutLabel || "Chưa có" %></strong></div>
+            </div>
+            <div class="activity-card-actions">
+              <a class="activity-btn activity-btn--primary" href="<%= item.actionHref %>">Check-in</a>
+              <a class="activity-btn" href="<%= item.editHref %>">Sửa booking</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="activity-panel activity-section">
+      <div class="activity-section-head">
+        <div>
+          <h2>Tới hạn check-out</h2>
+          <div class="activity-note">Phòng đã CheckedIn và cần chuẩn bị trả phòng.</div>
+        </div>
+      </div>
+      <div class="activity-list">
+        <% if (!dueCheckouts.length) { %>
+          <div class="activity-empty">Chưa có phòng tới hạn check-out trong 12 giờ tới.</div>
+        <% } %>
+        <% dueCheckouts.forEach((item) => { %>
+          <article class="activity-card">
+            <div class="activity-card-top">
+              <div>
+                <h3><%= item.roomLabel %> · <%= item.customerName %></h3>
+                <p>#<%= item.transactionId %> · <%= item.phone || "Chưa có SĐT" %> · <%= item.totalFormatted %></p>
+              </div>
+              <span class="activity-badge activity-badge--warm"><%= item.timeDelta %></span>
+            </div>
+            <div class="activity-meta">
+              <div>Đã check-in<strong><%= item.checkedInAtLabel || "Chưa có" %></strong></div>
+              <div>Hạn check-out<strong><%= item.checkoutLabel || "Chưa có" %></strong></div>
+            </div>
+            <div class="activity-card-actions">
+              <a class="activity-btn activity-btn--primary" href="<%= item.actionHref %>">Check-out</a>
+              <a class="activity-btn" href="<%= item.editHref %>">Xem booking</a>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="activity-panel activity-section activity-section--wide">
+      <div class="activity-section-head">
+        <div>
+          <h2>Lịch sử đặt phòng gần đây</h2>
+          <div class="activity-note">Cập nhật lúc <%= data.generatedAtLabel || "" %>.</div>
+        </div>
+      </div>
+      <% if (!recentBookings.length) { %>
+        <div class="activity-empty">Không tìm thấy booking phù hợp.</div>
+      <% } else { %>
+        <div class="activity-table-wrap">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Giao dịch</th>
+                <th>Khách</th>
+                <th>Phòng</th>
+                <th>Lưu trú</th>
+                <th>Tiền</th>
+                <th>Trạng thái</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentBookings.forEach((item) => { %>
+                <tr>
+                  <td><strong><%= item.bookingCode %></strong><br><span class="activity-note"><%= item.createdAtLabel %></span></td>
+                  <td><strong><%= item.customerName %></strong><br><span class="activity-note"><%= item.customerPhone || item.cccd || "Chưa có liên hệ" %></span></td>
+                  <td><%= item.roomSummary %><br><span class="activity-note"><%= item.roomCount %> phòng</span></td>
+                  <td><%= item.stayLabel %></td>
+                  <td><strong><%= item.totalFormatted %></strong><br><span class="activity-note"><%= item.paymentMethod %></span></td>
+                  <td><span class="activity-badge"><%= item.status %></span></td>
+                  <td><a class="activity-btn" href="<%= item.detailHref %>">Xem</a></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="activity-panel activity-section activity-section--wide">
+      <div class="activity-section-head">
+        <div>
+          <h2>Dòng sự kiện gần đây</h2>
+          <div class="activity-note">Theo dõi đổi trạng thái phòng và booking mới nhất.</div>
+        </div>
+      </div>
+      <div class="activity-events">
+        <% if (!recentEvents.length) { %>
+          <div class="activity-empty">Chưa có sự kiện gần đây.</div>
+        <% } %>
+        <% recentEvents.forEach((item) => { %>
+          <article class="activity-event">
+            <div class="activity-event-time"><%= item.happenedAtLabel %></div>
+            <div>
+              <strong><%= item.title %></strong>
+              <div class="activity-note"><%= item.detail %></div>
+            </div>
+            <div class="activity-event-source"><%= item.source %></div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

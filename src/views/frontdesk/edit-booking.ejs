@@ -6,7 +6,11 @@
   const edit = payload?.edit || null;
   const form = edit?.form || {};
   const services = edit?.services || [];
+  const serviceCatalog = edit?.serviceCatalog || [];
   const availableRooms = edit?.availableRooms || [];
+  const addRoomOptions = edit?.addRoomOptions || [];
+  const leader = edit?.leader || {};
+  const capacity = edit?.capacity || {};
   const promotion = edit?.promotion || { label: "Khong ap dung", value: 0, type: "PERCENT" };
   const money = edit?.money || {};
 %>
@@ -61,8 +65,14 @@
   .edit-badge--red{background:rgba(251,113,133,.16);color:#fecdd3;border-color:rgba(251,113,133,.34)}
   .edit-badge--green{background:rgba(81,208,177,.16);color:#bbf7d0;border-color:rgba(81,208,177,.34)}
   .service-qty{max-width:110px}
+  .edit-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0 18px}
+  .edit-info-tile{border:1px solid var(--ux-border);border-radius:18px;padding:12px;background:rgba(255,255,255,.64)}
+  .edit-info-tile small{display:block;color:var(--ux-muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+  .edit-info-tile strong{display:block;margin-top:4px;color:var(--ux-heading)}
+  .edit-section-title{margin:18px 0 10px;padding-top:4px;color:var(--ux-heading);font-size:18px;font-weight:900;letter-spacing:-.02em}
+  .capacity-hint{display:none;margin-top:10px;border-radius:16px;padding:12px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.45}
   .payment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-  @media (max-width:800px){.edit-booking-title,.edit-actions{flex-direction:column}.edit-row,.edit-row--4,.payment-grid{grid-template-columns:1fr}.edit-card{padding:16px}}
+  @media (max-width:800px){.edit-booking-title,.edit-actions{flex-direction:column}.edit-row,.edit-row--4,.payment-grid,.edit-info-grid{grid-template-columns:1fr}.edit-card{padding:16px}}
 </style>
 <style>
   body{
@@ -127,7 +137,54 @@
   .edit-card--payment{margin:18px 0 0;padding:18px;background:
       linear-gradient(180deg,rgba(255,255,255,.88),rgba(255,255,255,.72)),
       radial-gradient(circle at 100% 0, rgba(250,204,21,.12), transparent 36%)}
+  .edit-booking-shell{
+    background:transparent;
+    overflow:visible;
+    border-radius:0;
+  }
+  .edit-booking-shell::before,.edit-booking-shell::after{display:none}
+  .edit-card{
+    background:rgba(255,255,255,.92);
+    border:1px solid rgba(15,23,42,.10);
+    box-shadow:0 20px 54px rgba(15,23,42,.10);
+  }
+  .edit-card h2{font-size:23px}
+  .edit-muted{color:#607086}
+  .edit-search-grid{
+    display:grid;
+    grid-template-columns:minmax(260px,1fr) auto;
+    gap:14px;
+    align-items:end;
+  }
+  .edit-search-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:flex-end;
+    padding-bottom:22px;
+    white-space:nowrap;
+  }
+  .edit-field input,.edit-field select{
+    min-height:48px;
+    background:#fff;
+    border-color:rgba(15,23,42,.14);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+  }
+  .edit-field input:focus,.edit-field select:focus{
+    background:#fff;
+    border-color:rgba(14,165,233,.55);
+    box-shadow:0 0 0 4px rgba(14,165,233,.13);
+  }
+  .edit-booking-shell .button{
+    min-height:44px;
+    border-radius:999px;
+  }
+  .edit-alert--error{background:#fff1f2;color:#9f1239;border-color:#fecdd3}
+  .edit-alert--success{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+  .edit-table th{background:#f1f8ff;color:#31465f}
+  .edit-table td{border-bottom-color:rgba(15,23,42,.08)}
   @keyframes edit-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
+  @media (max-width:800px){.edit-search-grid{grid-template-columns:1fr}.edit-search-actions{justify-content:flex-start;padding-bottom:0;white-space:normal}}
 </style>
 
 <main class="edit-booking-shell">
@@ -153,18 +210,16 @@
 
   <form method="post" action="/frontdesk/edit-booking" id="formSearch" class="edit-card">
     <h2>Tìm kiếm giao dịch <span class="tag">Bước 1</span></h2>
-    <p class="edit-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn.</p>
-    <div class="edit-row">
+    <p class="edit-muted">Nhập mã giao dịch, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng.</p>
+    <div class="edit-search-grid">
       <div class="edit-field">
-        <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
-        <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 1 hoặc 012345678901" />
+        <label for="search_keyword">Mã giao dịch / CMND/CCCD / SĐT</label>
+        <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 335, 012345678901 hoặc 0901234567" />
         <div class="edit-error-msg" id="err_search_keyword"></div>
       </div>
-      <div class="edit-field" style="justify-content:flex-end">
-        <div class="edit-actions" style="margin-top:0;justify-content:flex-start">
-          <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm kiếm</button>
-          <button class="button" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
-        </div>
+      <div class="edit-search-actions">
+        <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm kiếm</button>
+        <button class="button" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
       </div>
     </div>
   </form>
@@ -202,9 +257,33 @@
         </div>
       </div>
 
+      <div class="edit-info-grid">
+        <div class="edit-info-tile">
+          <small>Cơ sở</small>
+          <strong><%= edit.facility?.label || "Chưa phân cơ sở" %></strong>
+        </div>
+        <div class="edit-info-tile">
+          <small>Trưởng đoàn</small>
+          <strong><%= leader.tenKhach || "Chưa có" %></strong>
+        </div>
+        <div class="edit-info-tile">
+          <small>CCCD trưởng đoàn</small>
+          <strong><%= leader.cccd || "Chưa có" %></strong>
+        </div>
+        <div class="edit-info-tile">
+          <small>Tổng khách hiện tại</small>
+          <strong><%= capacity.totalGuests || 0 %> khách</strong>
+        </div>
+        <div class="edit-info-tile">
+          <small>Tổng sức chứa</small>
+          <strong><%= capacity.totalCapacity || 0 %> khách</strong>
+        </div>
+      </div>
+
+      <div class="edit-section-title">Trưởng đoàn & khách đại diện phòng đang sửa</div>
       <div class="edit-row">
         <div class="edit-field">
-          <label for="ten_kh">Họ tên trưởng đoàn *</label>
+          <label for="ten_kh">Khách đại diện phòng *</label>
           <input id="ten_kh" name="ten_kh" value="<%= form.tenKhach || "" %>" />
           <div class="edit-error-msg" id="err_ten_kh"></div>
         </div>
@@ -228,6 +307,7 @@
         </div>
       </div>
 
+      <div class="edit-section-title">Lịch ở, sức chứa và phòng trong cùng cơ sở</div>
       <div class="edit-row edit-row--4">
         <div class="edit-field">
           <label for="ngay_den">Ngày đến *</label>
@@ -247,17 +327,26 @@
           <label for="so_nguoi">Số người *</label>
           <input type="number" min="1" id="so_nguoi" name="so_nguoi" value="<%= form.soNguoi || 1 %>" />
           <div class="edit-error-msg" id="err_so_nguoi"></div>
+          <div
+            class="capacity-hint"
+            id="capacityHint"
+            data-total-capacity="<%= capacity.totalCapacity || 0 %>"
+            data-total-guests="<%= capacity.totalGuests || 0 %>"
+            data-current-guests="<%= form.soNguoi || 1 %>"
+            data-current-capacity="<%= capacity.selectedRoomCapacity || 0 %>"
+          ></div>
         </div>
       </div>
 
       <div class="edit-row">
         <div class="edit-field">
           <label for="ma_phong">Phòng *</label>
+          <span class="edit-muted">Chỉ hiển thị phòng thuộc <strong><%= edit.facility?.label || "cơ sở hiện tại" %></strong>.</span>
           <select id="ma_phong" name="ma_phong">
             <option value="">-- Chọn phòng --</option>
             <% availableRooms.forEach((room) => { %>
-              <option value="<%= room.maPhong %>" data-dongia="<%= room.gia %>" <%= room.maPhong === form.maPhong ? "selected" : "" %>>
-                <%= room.soPhong %> - <%= room.loaiPhong %> - <%= room.giaFormatted %>
+              <option value="<%= room.maPhong %>" data-dongia="<%= room.gia %>" data-capacity="<%= room.soKhachToiDa %>" <%= room.maPhong === form.maPhong ? "selected" : "" %>>
+                <%= room.soPhong %> - <%= room.loaiPhong %> - <%= room.soKhachToiDa %> khách - <%= room.giaFormatted %>
               </option>
             <% }) %>
           </select>
@@ -265,37 +354,103 @@
         </div>
       </div>
 
-      <% if (services.length) { %>
-        <h2 style="margin-top:18px">Dịch vụ đã đặt</h2>
-        <p class="edit-muted">Đổi số lượng sẽ tự tính tiền ngay. Đặt 0 để xóa dịch vụ khỏi giao dịch.</p>
+      <section class="edit-card edit-card--payment">
+        <h2>Thêm phòng cho đoàn <span class="tag">Tách phòng / tăng khách</span></h2>
+        <p class="edit-muted">Dùng khi khách muốn ở riêng hoặc đoàn tăng người. Phòng mới chỉ lấy trong <strong><%= edit.facility?.label || "cơ sở hiện tại" %></strong>, được thêm vào cùng mã giao dịch và lưu đúng người đại diện phòng để check-in/check-out.</p>
+        <div class="edit-row edit-row--4">
+          <div class="edit-field">
+            <label for="add_ngay_den">Ngày đến</label>
+            <input type="date" id="add_ngay_den" name="add_ngay_den" value="<%= form.ngayDen || "" %>" />
+          </div>
+          <div class="edit-field">
+            <label for="add_ngay_di">Ngày đi</label>
+            <input type="date" id="add_ngay_di" name="add_ngay_di" value="<%= form.ngayDi || "" %>" />
+          </div>
+          <div class="edit-field">
+            <label for="add_so_nguoi">Số người phòng mới</label>
+            <input type="number" min="1" id="add_so_nguoi" name="add_so_nguoi" value="1" />
+          </div>
+          <div class="edit-field">
+            <label for="add_ma_phong">Phòng mới</label>
+            <select id="add_ma_phong" name="add_ma_phong">
+              <option value="">-- Chọn phòng trống --</option>
+              <% addRoomOptions.forEach((room) => { %>
+                <option value="<%= room.maPhong %>" data-dongia="<%= room.gia %>" data-capacity="<%= room.soKhachToiDa %>">
+                  <%= room.soPhong %> - <%= room.loaiPhong %> - <%= room.soKhachToiDa %> khách - <%= room.giaFormatted %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="edit-row">
+          <div class="edit-field">
+            <label for="add_ten_kh">Khách đại diện phòng mới</label>
+            <input id="add_ten_kh" name="add_ten_kh" value="" placeholder="Nguyen Van B" />
+          </div>
+          <div class="edit-field">
+            <label for="add_cccd">CMND/CCCD</label>
+            <input id="add_cccd" name="add_cccd" value="" placeholder="012345678901" />
+          </div>
+        </div>
+        <div class="edit-row">
+          <div class="edit-field">
+            <label for="add_sdt">Số điện thoại</label>
+            <input id="add_sdt" name="add_sdt" value="" placeholder="0900000000" />
+          </div>
+          <div class="edit-field">
+            <label for="add_email">Email</label>
+            <input type="email" id="add_email" name="add_email" value="" placeholder="guest@example.com" />
+          </div>
+        </div>
+        <div class="capacity-hint" id="addRoomHint" style="<%= addRoomOptions.length ? "" : "display:block" %>">
+          <%= addRoomOptions.length ? "" : "Chưa có phòng trống phù hợp trong khung ngày hiện tại. Hãy đổi ngày hoặc kiểm tra lại tình trạng phòng." %>
+        </div>
+        <div class="edit-actions" style="margin-top:12px">
+          <span class="edit-muted">Nút này chỉ thêm phòng mới, không lưu các thay đổi ở phần sửa phòng hiện tại.</span>
+          <button type="submit" class="button button--primary" name="btn_action" value="add_room">Thêm phòng vào giao dịch</button>
+        </div>
+      </section>
+
+      <% if (serviceCatalog.length) { %>
+        <h2 style="margin-top:18px">Dịch vụ đi kèm</h2>
+        <p class="edit-muted">Nhập số lượng để thêm/cập nhật dịch vụ và chọn phòng nhận dịch vụ để bộ phận phục vụ giao đúng phòng. Đặt 0 để xóa dịch vụ khỏi giao dịch.</p>
         <div class="edit-table-wrap">
           <table class="edit-table">
             <thead>
               <tr>
                 <th>Dịch vụ</th>
                 <th>Đơn giá</th>
+                <th>Phòng nhận dịch vụ</th>
                 <th>Số lượng</th>
                 <th>Thành tiền</th>
               </tr>
             </thead>
             <tbody>
-              <% services.forEach((service) => { %>
+              <% serviceCatalog.forEach((service) => { %>
                 <tr>
                   <td><%= service.tenDichVu %></td>
-                  <td><%= service.giaBanFormatted %></td>
+                  <td><%= service.giaFormatted %></td>
+                  <td>
+                    <select name="service_rooms[svc_<%= service.id %>]" class="serviceRoom">
+                      <% rooms.filter((room) => ["Booked", "CheckedIn"].includes(room.trangThai)).forEach((room) => { %>
+                        <option value="<%= room.maPhong %>" <%= Number(service.maPhongHienTai || form.maPhong) === Number(room.maPhong) ? "selected" : "" %>>
+                          P<%= room.soPhong %> · <%= room.tenKhach || leader.tenKhach || "Khách" %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </td>
                   <td>
                     <input
                       type="number"
                       min="0"
                       class="service-qty serviceQty"
-                      name="services[<%= service.maDichVu %>]"
-                      value="<%= service.soLuong %>"
-                      data-madv="<%= service.maDichVu %>"
-                      data-dongia="<%= service.giaBan %>"
+                      name="services[svc_<%= service.id %>]"
+                      value="<%= service.soLuongHienTai || 0 %>"
+                      data-madv="<%= service.id %>"
+                      data-dongia="<%= service.giaDichVu %>"
                     />
-                    <input type="checkbox" class="serviceRemove" name="remove_services[]" value="<%= service.maDichVu %>" style="display:none" />
                   </td>
-                  <td class="serviceLineTotal" data-madv="<%= service.maDichVu %>"><%= service.thanhTienFormatted %></td>
+                  <td class="serviceLineTotal" data-madv="<%= service.id %>"><%= ((service.soLuongHienTai || 0) * service.giaDichVu).toLocaleString("vi-VN") %> đ</td>
                 </tr>
               <% }) %>
             </tbody>
@@ -329,8 +484,8 @@
 
   <% if (transaction && rooms.length) { %>
     <section class="edit-card">
-      <h2>Danh sách chi tiết giao dịch</h2>
-      <p class="edit-muted">Chọn đúng phòng cần sửa rồi bấm “Sửa phòng này” để load form theo phòng đó.</p>
+      <h2>Phòng & người ở trong giao dịch</h2>
+      <p class="edit-muted">Đối chiếu trưởng đoàn, khách đại diện từng phòng, số người và sức chứa. Chọn đúng phòng cần sửa rồi bấm “Sửa phòng này”.</p>
       <div class="edit-table-wrap">
         <table class="edit-table">
           <thead>
@@ -338,9 +493,11 @@
               <th>Mã phòng</th>
               <th>Số phòng</th>
               <th>Loại phòng</th>
+              <th>Khách đại diện</th>
+              <th>CCCD</th>
               <th>Ngày bắt đầu</th>
               <th>Ngày kết thúc</th>
-              <th>Số người</th>
+              <th>Số người / sức chứa</th>
               <th>Trạng thái</th>
               <th>Thao tác</th>
             </tr>
@@ -353,9 +510,11 @@
                 <td><%= room.maPhong %></td>
                 <td><%= room.soPhong %></td>
                 <td><%= room.loaiPhong %></td>
+                <td><%= room.tenKhach || leader.tenKhach || "Chưa có" %></td>
+                <td><%= room.cccd || leader.cccd || "Chưa có" %></td>
                 <td><%= room.ngayNhanLabel %></td>
                 <td><%= room.ngayTraLabel %></td>
-                <td><%= room.soNguoi || 0 %></td>
+                <td><%= room.soNguoi || 0 %> / <%= room.soKhachToiDa || 0 %></td>
                 <td><span class="edit-badge <%= badgeClass %>"><%= room.trangThai %></span></td>
                 <td>
                   <form method="post" action="/frontdesk/edit-booking" style="display:inline">
@@ -393,9 +552,9 @@ document.addEventListener("DOMContentLoaded", function () {
   function validateSearch(fromSubmit) {
     const value = (searchField?.value || "").trim();
     clearSearchError();
-    if (!value && fromSubmit) return setSearchError("Vui lòng nhập mã giao dịch hoặc CMND/CCCD."), false;
+    if (!value && fromSubmit) return setSearchError("Vui lòng nhập mã giao dịch, CMND/CCCD hoặc SĐT."), false;
     if (value && !/^\d+$/.test(value)) return setSearchError("Chỉ được nhập số."), false;
-    if (value.length > 12) return setSearchError("Tối đa 12 số."), false;
+    if (value.length > 18) return setSearchError("Tối đa 18 số."), false;
     return true;
   }
 
@@ -418,6 +577,16 @@ document.addEventListener("DOMContentLoaded", function () {
     so_nguoi: document.getElementById("so_nguoi"),
     ma_phong: document.getElementById("ma_phong")
   };
+  const addFields = {
+    add_ngay_den: document.getElementById("add_ngay_den"),
+    add_ngay_di: document.getElementById("add_ngay_di"),
+    add_so_nguoi: document.getElementById("add_so_nguoi"),
+    add_ma_phong: document.getElementById("add_ma_phong"),
+    add_ten_kh: document.getElementById("add_ten_kh"),
+    add_cccd: document.getElementById("add_cccd"),
+    add_sdt: document.getElementById("add_sdt"),
+    add_email: document.getElementById("add_email")
+  };
   const errors = {
     ten_kh: document.getElementById("err_ten_kh"),
     cccd: document.getElementById("err_cccd"),
@@ -428,6 +597,8 @@ document.addEventListener("DOMContentLoaded", function () {
     so_nguoi: document.getElementById("err_so_nguoi"),
     ma_phong: document.getElementById("err_ma_phong")
   };
+  const capacityHint = document.getElementById("capacityHint");
+  const addRoomHint = document.getElementById("addRoomHint");
 
   function setError(name, msg) {
     fields[name]?.classList.add("input-error");
@@ -458,6 +629,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (name === "ngay_den" || name === "ngay_di") validateDates();
     if (name === "so_nguoi" && (!value || Number(value) <= 0)) setError(name, "Số người > 0.");
     if (name === "ma_phong" && !value) setError(name, "Hãy chọn phòng.");
+    updateCapacityHint();
   }
   Object.keys(fields).forEach((name) => {
     fields[name]?.addEventListener("input", () => validateField(name));
@@ -482,13 +654,12 @@ document.addEventListener("DOMContentLoaded", function () {
       total += qty * price;
       const line = document.querySelector('.serviceLineTotal[data-madv="' + id + '"]');
       if (line) line.textContent = money(qty * price);
-      const remove = document.querySelector('.serviceRemove[value="' + id + '"]');
-      if (remove) remove.checked = qty === 0;
     });
     return total;
   }
   function updateMoney() {
     validateDates();
+    updateCapacityHint();
     const nights = calcNights();
     const soDem = document.getElementById("so_dem");
     if (soDem) soDem.value = String(nights);
@@ -518,14 +689,130 @@ document.addEventListener("DOMContentLoaded", function () {
     if (view.tienGiam) view.tienGiam.value = money(discount);
     if (view.thanhTien) view.thanhTien.value = money(finalTotal);
   }
+  function updateCapacityHint() {
+    if (!capacityHint) return;
+    const selected = fields.ma_phong?.selectedOptions?.[0];
+    const selectedCapacity = Number(selected?.dataset?.capacity || 0);
+    const newGuests = Number(fields.so_nguoi?.value || 0);
+    const totalCapacity = Number(capacityHint.dataset.totalCapacity || 0);
+    const totalGuests = Number(capacityHint.dataset.totalGuests || 0);
+    const currentGuests = Number(capacityHint.dataset.currentGuests || 0);
+    const currentCapacity = Number(capacityHint.dataset.currentCapacity || 0);
+    const projectedGuests = Math.max(0, totalGuests - currentGuests + newGuests);
+    const projectedCapacity = Math.max(0, totalCapacity - currentCapacity + selectedCapacity);
+
+    refreshRoomCapacityOptions(newGuests);
+    capacityHint.style.display = "none";
+    capacityHint.textContent = "";
+
+    if (selectedCapacity > 0 && newGuests > selectedCapacity) {
+      const message = `Phòng đang chọn chỉ chứa tối đa ${selectedCapacity} khách. Hãy chọn phòng có sức chứa lớn hơn trong danh sách gợi ý, hoặc tạo thêm phòng cho đoàn trước khi lưu.`;
+      capacityHint.style.display = "block";
+      capacityHint.textContent = message;
+      fields.so_nguoi?.classList.add("input-error");
+      if (errors.so_nguoi) errors.so_nguoi.textContent = message;
+      return;
+    }
+
+    if (projectedCapacity > 0 && projectedGuests > projectedCapacity) {
+      const message = `Sau chỉnh sửa, đoàn có ${projectedGuests} khách nhưng tổng sức chứa dự kiến chỉ ${projectedCapacity}. Cần đổi sang phòng lớn hơn hoặc đặt thêm phòng để tổng sức chứa đủ cho đoàn.`;
+      capacityHint.style.display = "block";
+      capacityHint.textContent = message;
+      fields.so_nguoi?.classList.add("input-error");
+      if (errors.so_nguoi) errors.so_nguoi.textContent = message;
+    }
+  }
+  function refreshRoomCapacityOptions(guestCount) {
+    if (!fields.ma_phong) return;
+    const selectedValue = fields.ma_phong.value;
+    Array.from(fields.ma_phong.options).forEach((option) => {
+      if (!option.value) return;
+      const capacity = Number(option.dataset.capacity || 0);
+      const notEnough = guestCount > 0 && capacity > 0 && capacity < guestCount;
+      option.disabled = notEnough && option.value !== selectedValue;
+      option.textContent = option.textContent.replace(/\s·\sKhông đủ sức chứa$/, "");
+      if (notEnough) option.textContent += " · Không đủ sức chứa";
+    });
+  }
   document.addEventListener("input", (event) => {
     if (event.target?.classList?.contains("serviceQty") || event.target === fields.ngay_den || event.target === fields.ngay_di) updateMoney();
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target?.classList?.contains("serviceQty")) updateMoney();
   });
   fields.ma_phong?.addEventListener("change", updateMoney);
   updateMoney();
 
+  function refreshAddRoomOptions() {
+    if (!addFields.add_ma_phong) return;
+    const guests = Number(addFields.add_so_nguoi?.value || 0);
+    const selectedValue = addFields.add_ma_phong.value;
+    Array.from(addFields.add_ma_phong.options).forEach((option) => {
+      if (!option.value) return;
+      const capacity = Number(option.dataset.capacity || 0);
+      const notEnough = guests > 0 && capacity > 0 && capacity < guests;
+      option.disabled = notEnough && option.value !== selectedValue;
+      option.textContent = option.textContent.replace(/\s·\sKhông đủ sức chứa$/, "");
+      if (notEnough) option.textContent += " · Không đủ sức chứa";
+    });
+    const selected = addFields.add_ma_phong.selectedOptions?.[0];
+    const selectedCapacity = Number(selected?.dataset?.capacity || 0);
+    if (addRoomHint && selectedCapacity > 0 && guests > selectedCapacity) {
+      addRoomHint.style.display = "block";
+      addRoomHint.textContent = `Phòng mới chỉ chứa tối đa ${selectedCapacity} khách. Hãy chọn phòng khác hoặc giảm số người phòng mới.`;
+    } else if (addRoomHint && addRoomHint.textContent.includes("tối đa")) {
+      addRoomHint.style.display = "none";
+      addRoomHint.textContent = "";
+    }
+  }
+  addFields.add_so_nguoi?.addEventListener("input", refreshAddRoomOptions);
+  addFields.add_ma_phong?.addEventListener("change", refreshAddRoomOptions);
+  refreshAddRoomOptions();
+
+  document.querySelectorAll('input[type="number"]').forEach((input) => {
+    input.addEventListener("wheel", (event) => {
+      if (document.activeElement === input) {
+        event.preventDefault();
+        input.blur();
+      }
+    }, { passive: false });
+  });
+
   formEdit?.addEventListener("submit", (event) => {
-    if ((event.submitter?.value || "") !== "save") return;
+    const action = event.submitter?.value || "";
+    if (action === "add_room") {
+      const messages = [];
+      const addValue = (name) => (addFields[name]?.value || "").trim();
+      if (!addValue("add_ngay_den")) messages.push("Chọn ngày đến cho phòng mới.");
+      if (!addValue("add_ngay_di")) messages.push("Chọn ngày đi cho phòng mới.");
+      if (addValue("add_ngay_den") && addValue("add_ngay_di") && new Date(addValue("add_ngay_di")) <= new Date(addValue("add_ngay_den"))) messages.push("Ngày đi phòng mới phải lớn hơn ngày đến.");
+      if (!Number(addValue("add_so_nguoi")) || Number(addValue("add_so_nguoi")) <= 0) messages.push("Số người phòng mới phải lớn hơn 0.");
+      if (!addValue("add_ma_phong")) messages.push("Chọn phòng mới cần thêm.");
+      if (!addValue("add_ten_kh") || addValue("add_ten_kh").length < 2 || /\d/.test(addValue("add_ten_kh"))) messages.push("Họ tên khách đại diện phòng mới không hợp lệ.");
+      if (!/^\d{9,12}$/.test(addValue("add_cccd"))) messages.push("CCCD phòng mới phải gồm 9-12 số.");
+      if (!/^0\d{8,10}$/.test(addValue("add_sdt"))) messages.push("Số điện thoại phòng mới không hợp lệ.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addValue("add_email"))) messages.push("Email phòng mới không hợp lệ.");
+      const selected = addFields.add_ma_phong?.selectedOptions?.[0];
+      const selectedCapacity = Number(selected?.dataset?.capacity || 0);
+      if (selectedCapacity > 0 && Number(addValue("add_so_nguoi")) > selectedCapacity) messages.push(`Phòng mới chỉ chứa tối đa ${selectedCapacity} khách.`);
+
+      if (messages.length) {
+        event.preventDefault();
+        if (clientErrors) clientErrors.style.display = "block";
+        if (clientErrorsList) {
+          clientErrorsList.innerHTML = "";
+          messages.forEach((msg) => {
+            const li = document.createElement("li");
+            li.textContent = msg;
+            clientErrorsList.appendChild(li);
+          });
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    if (action !== "save") return;
     if (clientErrors) clientErrors.style.display = "none";
     if (clientErrorsList) clientErrorsList.innerHTML = "";
     Object.keys(fields).forEach(validateField);

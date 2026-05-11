@@ -480,6 +480,7 @@
   .guest-uc-card:nth-child(4) { animation-delay: .20s; }
   .guest-uc-card:nth-child(5) { animation-delay: .26s; }
   .guest-uc-card:nth-child(6) { animation-delay: .32s; }
+  .guest-uc-card:nth-child(7) { animation-delay: .38s; }
 
   .guest-uc-card.is-wide {
     grid-column: span 5;
@@ -590,6 +591,7 @@
   .guest-service { --accent: var(--guest-yellow); --accent-soft: rgba(255,209,102,.24); }
   .guest-edit { --accent: var(--guest-pink); --accent-soft: rgba(255,111,163,.20); }
   .guest-feedback { --accent: #74c61f; --accent-soft: rgba(116,198,31,.19); }
+  .guest-activity { --accent: #0ea5e9; --accent-soft: rgba(14,165,233,.20); }
 
   .frontdesk-uc-section .guest-bento {
     grid-auto-rows: minmax(194px, auto);
@@ -818,17 +820,18 @@
         <div class="guest-tags" aria-label="Thông tin nhanh">
           <span class="guest-tag guest-tag--ekyc">Ca trực: sẵn sàng</span>
           <span class="guest-tag"><%= todayLabel %></span>
-          <span class="guest-tag">6 nghiệp vụ chính</span>
+          <span class="guest-tag">7 nghiệp vụ chính</span>
         </div>
 
         <div class="guest-hero-actions">
           <a class="guest-button guest-button--primary" href="/frontdesk/direct-booking">Đặt phòng tại quầy</a>
+          <a class="guest-button" href="/frontdesk/activity-lookup">Tra cứu hoạt động</a>
           <a class="guest-button" href="/frontdesk/checkin">Check-in</a>
           <a class="guest-button" href="/frontdesk/checkout-v2">Check-out</a>
         </div>
 
         <div class="guest-mini-stats" aria-label="Tóm tắt ca trực">
-          <div class="guest-mini-stat"><strong>06</strong><span>Nghiệp vụ chính</span></div>
+          <div class="guest-mini-stat"><strong>07</strong><span>Nghiệp vụ chính</span></div>
           <div class="guest-mini-stat"><strong>04</strong><span>Bước ưu tiên</span></div>
           <div class="guest-mini-stat"><strong>Live</strong><span>Vận hành quầy</span></div>
         </div>
@@ -886,9 +889,19 @@
           <span class="guest-open">Mở</span>
         </a>
 
-        <a class="guest-uc-card guest-profile" href="/frontdesk/checkout-v2">
+        <a class="guest-uc-card guest-activity" href="/frontdesk/activity-lookup">
           <div class="guest-uc-top">
             <span class="guest-uc-code">03</span>
+            <span class="guest-uc-orb"></span>
+          </div>
+          <h3>Tra cứu hoạt động</h3>
+          <p>Xem booking gần đây, phòng quá hạn check-in và phòng tới hạn check-out trong một màn.</p>
+          <span class="guest-open">Mở</span>
+        </a>
+
+        <a class="guest-uc-card guest-profile" href="/frontdesk/checkout-v2">
+          <div class="guest-uc-top">
+            <span class="guest-uc-code">04</span>
             <span class="guest-uc-orb"></span>
           </div>
           <h3>Check-out</h3>
@@ -898,7 +911,7 @@
 
         <a class="guest-uc-card guest-service" href="/frontdesk/edit-booking">
           <div class="guest-uc-top">
-            <span class="guest-uc-code">04</span>
+            <span class="guest-uc-code">05</span>
             <span class="guest-uc-orb"></span>
           </div>
           <h3>Sửa thông tin đặt phòng</h3>
@@ -908,7 +921,7 @@
 
         <a class="guest-uc-card guest-edit is-compact" href="/frontdesk/cancel-booking">
           <div class="guest-uc-top">
-            <span class="guest-uc-code">05</span>
+            <span class="guest-uc-code">06</span>
             <span class="guest-uc-orb"></span>
           </div>
           <h3>Hủy đặt phòng</h3>
@@ -918,7 +931,7 @@
 
         <a class="guest-uc-card guest-feedback is-wide" href="/service?from=frontdesk">
           <div class="guest-uc-top">
-            <span class="guest-uc-code">06</span>
+            <span class="guest-uc-code">07</span>
             <span class="guest-uc-orb"></span>
           </div>
           <h3>Đặt dịch vụ</h3>

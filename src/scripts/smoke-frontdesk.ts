@@ -18,6 +18,7 @@ type ActorSession = {
 
 type RoomOriginalState = {
   roomId: number;
+  maKhachSan: number;
   trangThai: string;
   tinhTrangPhong: string | null;
   trangThaiRealtime: string | null;
@@ -238,6 +239,7 @@ async function getRoomState(roomId: number): Promise<RoomOriginalState | null> {
     `
       SELECT
         maphong AS "roomId",
+        makhachsan AS "maKhachSan",
         trangthai AS "trangThai",
         tinhtrangphong AS "tinhTrangPhong",
         trangthairealtime AS "trangThaiRealtime"
@@ -369,12 +371,24 @@ async function main() {
     roomId = Number(search.json.data.items[0].id);
     const roomState = await getRoomState(roomId);
     if (roomState) roomStates.push(roomState);
-    const roomChangeCandidate = (search.json.data.items || [])
-      .find((item: any) => Number(item.id) > 0 && Number(item.id) !== roomId);
-    if (!roomChangeCandidate) {
-      throw new Error("Frontdesk smoke needs at least two available rooms to test edit/change-room flow.");
+    const candidateIds = (search.json.data.items || [])
+      .map((item: any) => Number(item.id || 0))
+      .filter((id: number, index: number, list: number[]) => id > 0 && id !== roomId && list.indexOf(id) === index);
+    const sameHotelCandidate = await query<{ id: number }>(
+      `
+        SELECT maphong AS id
+        FROM phong
+        WHERE maphong = ANY($1::int[])
+          AND makhachsan = $2::int
+        ORDER BY maphong ASC
+        LIMIT 1
+      `,
+      [candidateIds, roomState?.maKhachSan || 0]
+    );
+    if (!sameHotelCandidate.rows[0]) {
+      throw new Error("Frontdesk smoke needs at least two available rooms in the same hotel to test edit/change-room flow.");
     }
-    const changedRoomId = Number(roomChangeCandidate.id);
+    const changedRoomId = Number(sameHotelCandidate.rows[0].id);
     const changedRoomState = await getRoomState(changedRoomId);
     if (changedRoomState) roomStates.push(changedRoomState);
     const cancelRoomIds = (search.json.data.items || [])
@@ -477,6 +491,18 @@ async function main() {
       throw new Error("Direct booking did not synchronize transaction/detail/room Booked state.");
     }
 
+    const editableService = await query<{ id: number }>(
+      `
+        SELECT madichvu AS id
+        FROM dichvu
+        WHERE trangthai = 'HoatDong'
+          AND COALESCE(giadichvu, 0) > 0
+        ORDER BY madichvu ASC
+        LIMIT 1
+      `
+    );
+    const editableServiceId = Number(editableService.rows[0]?.id || 0);
+
     const editCsrfToken = await getCsrf(baseUrl, `/frontdesk/edit-booking?keyword=${transactionId}`, frontdesk.cookieJar, "Frontdesk edit booking");
     const editBody = new URLSearchParams({
       btn_action: "save",
@@ -492,6 +518,10 @@ async function main() {
       ngay_di: ngayDi,
       so_nguoi: "1"
     });
+    if (editableServiceId > 0) {
+      editBody.set(`services[svc_${editableServiceId}]`, "1");
+      editBody.set(`service_rooms[svc_${editableServiceId}]`, String(changedRoomId));
+    }
     const editResult = await fetch(`${baseUrl}/frontdesk/edit-booking`, {
       method: "POST",
       headers: {
@@ -509,6 +539,37 @@ async function main() {
     const editNotice = extractEditNotice(editHtml);
     if (editNotice) {
       throw new Error(`Frontdesk edit booking returned form error: ${editNotice}`);
+    }
+
+    if (editableServiceId > 0) {
+      const servicePersistCheck = await query<{ qty: number; roomId: number; total: number }>(
+        `
+          SELECT
+            soluong AS qty,
+            maphong AS "roomId",
+            thanhtien AS total
+          FROM chitietdichvu
+          WHERE magiaodich = $1
+            AND madichvu = $2
+          LIMIT 1
+        `,
+        [transactionId, editableServiceId]
+      );
+      const savedService = servicePersistCheck.rows[0];
+      if (!savedService || Number(savedService.qty || 0) !== 1 || Number(savedService.roomId || 0) !== changedRoomId || Number(savedService.total || 0) <= 0) {
+        const alertText = editHtml.match(/<div class="edit-alert[\s\S]*?<\/div>/i)?.[0]
+          ?.replace(/<[^>]*>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim() || "no edit alert";
+        console.error("edit service debug", {
+          transactionId,
+          editableServiceId,
+          changedRoomId,
+          savedService: savedService || null,
+          alertText
+        });
+        throw new Error("Edit booking did not persist added service quantity/target room.");
+      }
     }
 
     const editedCheck = await query<{
