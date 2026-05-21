@@ -50,6 +50,10 @@
   .co-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent}.co-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}.co-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
   .co-card{border-radius:30px;padding:22px;margin-bottom:18px}.co-card h2{margin:0 0 8px;color:var(--co-ink);font-size:24px;letter-spacing:-.04em}.co-muted{color:var(--co-muted);font-size:13px;line-height:1.55}
   .co-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.co-field{display:flex;flex-direction:column;gap:6px;margin-top:10px}.co-field label{font-size:13px;font-weight:900;color:#344054}.co-field input,.co-field select{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.78);color:var(--co-ink);font:inherit;outline:none}.co-field input:focus,.co-field select:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}.co-field input[disabled]{background:rgba(255,255,255,.54);color:var(--co-muted)}
+  .co-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
+  .co-search-row .co-field{margin-top:0}
+  .co-search-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-bottom:16px;white-space:nowrap}
+  .co-search-actions .co-button{min-width:126px}
   .co-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.co-stat{border-radius:22px;padding:16px;background:rgba(255,255,255,.58)}.co-stat strong{display:block;font-size:28px;line-height:1;color:var(--co-ink);letter-spacing:-.05em}.co-stat span{display:block;margin-top:8px;color:var(--co-muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
   .co-room{grid-column:span 4;position:relative;overflow:hidden;border-radius:26px;padding:18px;background:rgba(255,255,255,.70)}.co-room.is-selected{outline:3px solid rgba(20,184,166,.22);border-color:rgba(20,184,166,.42)}.co-room h3{margin:12px 0 8px;font-size:22px;letter-spacing:-.04em}.co-room p{margin:0;color:var(--co-muted);font-size:13px;line-height:1.5}.co-radio{display:flex;align-items:center;gap:8px;font-weight:1000;color:#0f766e}.co-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;letter-spacing:.04em}.co-badge--ai{background:rgba(139,92,246,.12);color:#6d28d9}.co-badge--money{background:rgba(245,158,11,.13);color:#b45309}
   .co-preview{border-radius:30px;padding:22px;background:rgba(255,255,255,.76)}.co-preview-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.co-preview h3{margin:0;font-size:26px;letter-spacing:-.05em}.co-table-wrap{overflow:auto;border:1px solid var(--co-line);border-radius:22px;background:rgba(255,255,255,.58);margin-top:14px}.co-table{width:100%;border-collapse:collapse;min-width:760px;font-size:14px}.co-table th,.co-table td{padding:13px;border-bottom:1px solid rgba(16,32,51,.08);text-align:left}.co-table th{background:rgba(255,255,255,.68);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#344054}.co-table tr:last-child td{border-bottom:0}
@@ -57,7 +61,7 @@
   .co-pay{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;margin-top:16px}.co-qr{border-radius:24px;padding:16px;border:1px solid rgba(14,165,233,.16);background:linear-gradient(135deg,rgba(255,255,255,.78),rgba(236,253,245,.62));display:grid;grid-template-columns:112px 1fr;gap:14px}.co-qr img{width:112px;height:112px;border-radius:16px;border:1px solid rgba(16,32,51,.10);background:#fff}.co-bank-grid{display:grid;gap:8px}.co-bank-item{border-radius:14px;padding:9px 11px;background:rgba(255,255,255,.64);border:1px solid rgba(16,32,51,.08)}.co-bank-item span{display:block;font-size:11px;color:var(--co-muted);text-transform:uppercase;letter-spacing:.08em}.co-bank-item strong{display:block;color:var(--co-ink);word-break:break-word}.co-empty{border:1px dashed rgba(16,32,51,.14);border-radius:22px;padding:22px;background:rgba(255,255,255,.58);color:var(--co-muted)}
   .input-error{border-color:rgba(251,113,133,.72)!important;background:rgba(255,241,242,.86)!important}.co-error-msg{font-size:12px;color:#be123c;min-height:16px}
   @keyframes co-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(32px,24px,0) rotate(16deg)}}@keyframes co-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}@keyframes co-spin{to{transform:rotate(360deg)}}@keyframes co-breathe{0%,100%{transform:rotate(14deg) scale(1);border-radius:42px}50%{transform:rotate(22deg) scale(1.06);border-radius:64px}}@keyframes co-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}@keyframes co-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
-  @media(max-width:1080px){.co-hero,.co-pay{grid-template-columns:1fr}.co-room{grid-column:span 6}.co-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.co-summary .co-stat:last-child{grid-column:1/-1}}@media(max-width:760px){.co-shell{padding:20px 12px 42px}.co-hero-main{min-height:auto;padding:24px}.co-hero h1{font-size:42px}.co-row{grid-template-columns:1fr}.co-room{grid-column:1/-1}.co-qr{grid-template-columns:1fr}.co-summary{grid-template-columns:1fr}.co-summary .co-stat:last-child{grid-column:auto}}
+  @media(max-width:1080px){.co-hero,.co-pay{grid-template-columns:1fr}.co-room{grid-column:span 6}.co-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.co-summary .co-stat:last-child{grid-column:1/-1}}@media(max-width:760px){.co-shell{padding:20px 12px 42px}.co-hero-main{min-height:auto;padding:24px}.co-hero h1{font-size:42px}.co-row,.co-search-row{grid-template-columns:1fr}.co-search-actions{justify-content:stretch;padding-bottom:0}.co-search-actions .co-button{flex:1;min-width:0}.co-room{grid-column:1/-1}.co-qr{grid-template-columns:1fr}.co-summary{grid-template-columns:1fr}.co-summary .co-stat:last-child{grid-column:auto}}
 </style>
 
 <main class="co-shell">
@@ -88,18 +92,16 @@
 
     <form method="post" id="formSearch" class="co-card">
       <h2>Tìm kiếm giao dịch</h2>
-      <p class="co-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn.</p>
-      <div class="co-row" style="grid-template-columns:2fr 1fr">
+      <p class="co-muted">Nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng.</p>
+      <div class="co-search-row">
         <div class="co-field">
-          <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
-          <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 168 hoặc 22653661123" />
+          <label for="search_keyword">Mã giao dịch / mã đặt chỗ / CMND/CCCD / SĐT</label>
+          <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 168, 012345678901 hoặc 0901234567" />
           <div class="co-error-msg" id="err_search"></div>
         </div>
-        <div class="co-field" style="justify-content:flex-end">
-          <div class="co-actions" style="margin-top:0">
-            <button class="co-button" type="submit" name="btn_action" value="cancel">Làm mới</button>
-            <button class="co-button co-button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
-          </div>
+        <div class="co-search-actions">
+          <button class="co-button" type="submit" name="btn_action" value="cancel">Làm mới</button>
+          <button class="co-button co-button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
         </div>
       </div>
     </form>
@@ -234,7 +236,7 @@
                 </div>
                 <div class="co-actions">
                   <button class="co-button co-button--danger" type="submit" name="btn_action" value="cancel" onclick="return confirm('Bạn chắc chắn muốn hủy tiến trình check-out?');">Hủy thao tác</button>
-                  <button class="co-button co-button--primary" type="submit" name="btn_action" value="checkout" onclick="return confirm('Xác nhận thanh toán và hoàn tất trả phòng này?');">Hoàn tất Check-out phòng này</button>
+                  <button class="co-button co-button--primary" type="submit" name="btn_action" value="checkout">Hoàn tất Check-out phòng này</button>
                 </div>
               </form>
 
@@ -301,11 +303,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const value = (searchInput?.value || "").trim();
     clearSearchError();
     if (!value) {
-      if (fromSubmit) setSearchError("Vui lòng nhập mã giao dịch hoặc CMND/CCCD.");
+      if (fromSubmit) setSearchError("Vui lòng nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại.");
       return fromSubmit ? false : true;
     }
-    if (!/^\d+$/.test(value)) {
-      setSearchError("Chỉ được nhập số.");
+    if (!/\d/.test(value)) {
+      setSearchError("Thông tin tìm kiếm cần có ít nhất một chữ số.");
       return false;
     }
     return true;
@@ -313,7 +315,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function updateQrState() {
     if (!qrPanel || !paymentMethod) return;
-    qrPanel.style.opacity = paymentMethod.value === "transfer" ? "1" : ".38";
+    const isTransfer = paymentMethod.value === "transfer";
+    qrPanel.style.opacity = isTransfer ? "1" : ".38";
+    if (checkoutPaymentStatusLine && !checkoutPaymentHandled) {
+      checkoutPaymentStatusLine.textContent = isTransfer
+        ? "Đang chờ SePay xác nhận"
+        : "Chọn chuyển khoản để quét QR SePay";
+    }
   }
 
   function renderCheckoutPaid(data) {
@@ -398,9 +406,18 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("Vui lòng chọn phương thức thanh toán.");
       return;
     }
+    if (method.value === "transfer") {
+      event.preventDefault();
+      alert("Chuyển khoản checkout phải chờ SePay xác nhận. Vui lòng quét QR đúng nội dung, hệ thống sẽ tự hoàn tất check-out.");
+      return;
+    }
     if (!status || status.value !== "paid") {
       event.preventDefault();
       alert('Vui lòng chọn trạng thái "Đã thanh toán" trước khi hoàn tất.');
+      return;
+    }
+    if (!confirm("Xác nhận đã thu đủ tiền và hoàn tất trả phòng này?")) {
+      event.preventDefault();
     }
   });
 });

@@ -77,6 +77,10 @@
   .svc-field textarea{min-height:76px;resize:vertical}
   .svc-field input:focus,.svc-field select:focus,.svc-field textarea:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
   .svc-field input[disabled]{background:rgba(255,255,255,.50);color:var(--svc-muted)}
+  .svc-search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
+  .svc-search-row .svc-field{margin-top:0}
+  .svc-search-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding-bottom:16px;white-space:nowrap}
+  .svc-search-actions .svc-button{min-width:126px}
   .input-error{border-color:rgba(251,113,133,.72)!important;background:rgba(255,241,242,.85)!important}
   .svc-error-msg{font-size:12px;color:#be123c;min-height:16px}
   .svc-table-wrap{overflow:auto;border:1px solid var(--svc-line);border-radius:22px;background:rgba(255,255,255,.58);margin-top:16px}
@@ -90,6 +94,30 @@
   .svc-badge--danger{background:rgba(251,113,133,.14);color:#be123c}
   .svc-service-img{width:72px;height:72px;border-radius:20px;object-fit:cover;border:1px solid rgba(16,32,51,.10);background:rgba(255,255,255,.72)}
   .svc-service-img--lg{width:100%;max-width:240px;height:150px}
+  .svc-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+  .svc-section-head h2{margin-bottom:4px}
+  .svc-service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
+  .svc-order-card{position:relative;display:flex;flex-direction:column;gap:14px;min-height:320px;border:1px solid rgba(16,32,51,.10);border-radius:24px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(248,250,252,.88));box-shadow:0 18px 44px rgba(15,23,42,.10);overflow:hidden}
+  .svc-order-card::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#0ea5e9,#14b8a6,#a3e635)}
+  .svc-order-card.is-selected{border-color:rgba(20,184,166,.48);box-shadow:0 22px 52px rgba(20,184,166,.18)}
+  .svc-order-card__top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-top:4px}
+  .svc-order-card__title{margin:0;color:var(--svc-ink);font-size:17px;line-height:1.2;letter-spacing:-.02em}
+  .svc-order-card__meta{margin-top:5px;color:var(--svc-muted);font-size:12px;font-weight:800}
+  .svc-price-pill{flex:0 0 auto;border-radius:999px;padding:8px 10px;background:rgba(14,165,233,.10);color:#0369a1;font-size:13px;font-weight:1000;white-space:nowrap}
+  .svc-control-grid{display:grid;grid-template-columns:128px minmax(0,1fr);gap:12px;align-items:end}
+  .svc-control-label{display:block;margin-bottom:7px;color:#344054;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}
+  .svc-stepper{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;align-items:center;border:1px solid rgba(16,32,51,.14);border-radius:16px;background:#fff;overflow:hidden}
+  .svc-stepper button{height:42px;border:0;background:rgba(14,165,233,.08);color:#0369a1;font-size:20px;font-weight:1000;cursor:pointer}
+  .svc-stepper button:hover{background:rgba(20,184,166,.14);color:#0f766e}
+  .svc-stepper input{height:42px;border:0;border-left:1px solid rgba(16,32,51,.08);border-right:1px solid rgba(16,32,51,.08);background:#fff;color:var(--svc-ink);font:inherit;font-weight:1000;text-align:center;outline:none}
+  .svc-order-card select,.svc-order-card textarea{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;background:#fff;color:var(--svc-ink);font:inherit;outline:none}
+  .svc-order-card select{height:44px;padding:0 12px}
+  .svc-order-card textarea{min-height:74px;padding:11px 12px;resize:vertical}
+  .svc-order-card select:focus,.svc-order-card textarea:focus,.svc-stepper:focus-within{border-color:rgba(14,165,233,.55);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
+  .svc-order-card__bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:12px;border-top:1px solid rgba(16,32,51,.08)}
+  .svcLineTotal{font-size:18px;font-weight:1000;color:#0f766e;white-space:nowrap}
+  .svc-picked{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;background:rgba(102,112,133,.10);color:#475467;font-size:12px;font-weight:1000}
+  .svc-order-card.is-selected .svc-picked{background:rgba(20,184,166,.12);color:#0f766e}
   .svc-inline-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
   .svc-mini-button{min-height:36px;border-radius:999px;padding:8px 12px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.75);color:var(--svc-ink);font-weight:900;text-decoration:none;cursor:pointer}
   .svc-mini-button--danger{color:#be123c;border-color:rgba(251,113,133,.28);background:rgba(255,241,242,.72)}
@@ -111,8 +139,8 @@
   @keyframes svc-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}
   @keyframes svc-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
   @keyframes svc-rise{to{transform:translateY(0);opacity:1}}
-  @media(max-width:1080px){.svc-hero{grid-template-columns:1fr}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:span 6}}
-  @media(max-width:760px){.svc-shell{padding:20px 12px 42px}.svc-hero-main{min-height:auto;padding:24px}.svc-hero h1{font-size:42px}.svc-row,.svc-summary{grid-template-columns:1fr}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:1/-1}}
+  @media(max-width:1080px){.svc-hero{grid-template-columns:1fr}.svc-service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:span 6}}
+  @media(max-width:760px){.svc-shell{padding:20px 12px 42px}.svc-hero-main{min-height:auto;padding:24px}.svc-hero h1{font-size:42px}.svc-row,.svc-summary,.svc-service-grid,.svc-control-grid,.svc-search-row{grid-template-columns:1fr}.svc-search-actions{justify-content:stretch;padding-bottom:0}.svc-search-actions .svc-button{flex:1;min-width:0}.svc-section-head{display:block}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:1/-1}}
 </style>
 
 <main class="svc-shell">
@@ -153,18 +181,16 @@
     <% if (isFrontdesk) { %>
       <form method="post" action="/service/orders" id="formSearch" class="svc-card">
         <h2>Tìm kiếm giao dịch</h2>
-        <p class="svc-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn. Chỉ giao dịch trạng thái <strong>Stayed</strong> mới được đặt dịch vụ.</p>
-        <div class="svc-row" style="grid-template-columns:2fr 1fr">
+        <p class="svc-muted">Nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng. Chỉ giao dịch trạng thái <strong>Stayed</strong> mới được đặt dịch vụ.</p>
+        <div class="svc-search-row">
           <div class="svc-field">
-            <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
-            <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 12 hoặc 22653661123" />
+            <label for="search_keyword">Mã giao dịch / mã đặt chỗ / CMND/CCCD / SĐT</label>
+            <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 12, 012345678901 hoặc 0901234567" />
             <div class="svc-error-msg" id="err_search"></div>
           </div>
-          <div class="svc-field" style="justify-content:flex-end">
-            <div class="svc-actions" style="margin-top:0">
-              <button class="svc-button" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
-              <button class="svc-button svc-button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
-            </div>
+          <div class="svc-search-actions">
+            <button class="svc-button" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
+            <button class="svc-button svc-button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
           </div>
         </div>
       </form>
@@ -205,49 +231,59 @@
         </section>
 
         <section class="svc-card">
-          <h2>Danh sách dịch vụ</h2>
-          <p class="svc-muted">Nhập số lượng lớn hơn 0 và chọn phòng sử dụng. Có thể chọn nhiều dịch vụ rồi lưu một lần.</p>
+          <div class="svc-section-head">
+            <div>
+              <h2>Chọn dịch vụ cho phòng</h2>
+              <p class="svc-muted">Bấm + để chọn dịch vụ, chọn đúng phòng sử dụng rồi lưu một lần.</p>
+            </div>
+            <span class="svc-badge svc-badge--blue">Tối đa 20 / dịch vụ</span>
+          </div>
           <% if (transaction && rooms.length && catalog.length) { %>
-            <div class="svc-table-wrap">
-              <table class="svc-table">
-                <thead>
-                  <tr>
-                    <th>Dịch vụ</th>
-                    <th>Đơn giá</th>
-                    <th>Số lượng</th>
-                    <th>Phòng</th>
-                    <th>Ghi chú</th>
-                    <th>Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% catalog.forEach((service) => {
-                    const draft = drafts[String(service.id)] || {};
-                    const qty = Number(draft.so_luong || 0);
-                  %>
-                    <tr>
-                      <td>
-                        <strong><%= service.tenDichVu %></strong>
-                        <div class="svc-muted">Mã DV: <%= service.id %></div>
-                      </td>
-                      <td><%= service.giaDichVuFormatted %></td>
-                      <td>
-                        <input class="svcQty" type="number" name="services[<%= service.id %>][so_luong]" min="0" max="20" value="<%= qty %>" data-price="<%= service.giaDichVu %>" data-service="<%= service.id %>" style="max-width:110px" />
-                      </td>
-                      <td>
-                        <select class="svcRoom" name="services[<%= service.id %>][ma_phong]" data-service="<%= service.id %>">
-                          <option value="0">-- Chọn phòng --</option>
-                          <% rooms.forEach((room) => { %>
-                            <option value="<%= room.maPhong %>" <%= String(draft.ma_phong || "") === String(room.maPhong) ? "selected" : "" %>>P<%= room.soPhong %> · <%= room.tenKhach || transaction.customerName || "Khách" %></option>
-                          <% }) %>
-                        </select>
-                      </td>
-                      <td><textarea name="services[<%= service.id %>][note]" placeholder="Ghi chú thêm"><%= draft.note || "" %></textarea></td>
-                      <td class="svcLineTotal" data-service="<%= service.id %>">0 đ</td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
+            <div class="svc-service-grid">
+              <% catalog.forEach((service) => {
+                const draft = drafts[String(service.id)] || {};
+                const qty = Number(draft.so_luong || 0);
+              %>
+                <article class="svc-order-card <%= qty > 0 ? "is-selected" : "" %>" data-service-card="<%= service.id %>">
+                  <div class="svc-order-card__top">
+                    <div>
+                      <h3 class="svc-order-card__title"><%= service.tenDichVu %></h3>
+                      <div class="svc-order-card__meta">Mã DV: <%= service.id %></div>
+                    </div>
+                    <span class="svc-price-pill"><%= service.giaDichVuFormatted %></span>
+                  </div>
+
+                  <div class="svc-control-grid">
+                    <div>
+                      <label class="svc-control-label" for="qty_<%= service.id %>">Số lượng</label>
+                      <div class="svc-stepper">
+                        <button type="button" class="svcQtyStep" data-service="<%= service.id %>" data-step="-1" aria-label="Giảm số lượng">-</button>
+                        <input id="qty_<%= service.id %>" class="svcQty" type="number" name="services[svc_<%= service.id %>][so_luong]" min="0" max="20" value="<%= qty %>" data-price="<%= service.giaDichVu %>" data-service="<%= service.id %>" inputmode="numeric" />
+                        <button type="button" class="svcQtyStep" data-service="<%= service.id %>" data-step="1" aria-label="Tăng số lượng">+</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="svc-control-label" for="room_<%= service.id %>">Phòng sử dụng</label>
+                      <select id="room_<%= service.id %>" class="svcRoom" name="services[svc_<%= service.id %>][ma_phong]" data-service="<%= service.id %>">
+                        <option value="0">Chọn phòng</option>
+                        <% rooms.forEach((room) => { %>
+                          <option value="<%= room.maPhong %>" <%= String(draft.ma_phong || "") === String(room.maPhong) ? "selected" : "" %>>P<%= room.soPhong %> · <%= room.tenKhach || transaction.customerName || "Khách" %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="svc-control-label" for="note_<%= service.id %>">Ghi chú</label>
+                    <textarea id="note_<%= service.id %>" name="services[svc_<%= service.id %>][note]" placeholder="VD: giao sau 18:00, ít đá, thêm khăn..."><%= draft.note || "" %></textarea>
+                  </div>
+
+                  <div class="svc-order-card__bottom">
+                    <span class="svc-picked" data-picked="<%= service.id %>"><%= qty > 0 ? "Đã chọn" : "Chưa chọn" %></span>
+                    <strong class="svcLineTotal" data-service="<%= service.id %>">0 đ</strong>
+                  </div>
+                </article>
+              <% }) %>
             </div>
             <div class="svc-summary">
               <div class="svc-stat"><strong id="selectedCount">0</strong><span>Dịch vụ chọn</span></div>
@@ -257,7 +293,7 @@
             <div class="svc-actions">
               <button class="svc-button" type="reset">Làm lại</button>
               <button class="svc-button svc-button--danger" type="submit" name="btn_action" value="cancel">Hủy thao tác</button>
-              <button class="svc-button svc-button--primary" type="submit" name="btn_action" value="save" onclick="return confirm('Xác nhận đặt dịch vụ cho giao dịch này?');">Xác nhận đặt dịch vụ</button>
+              <button class="svc-button svc-button--primary" type="submit" name="btn_action" value="save">Xác nhận đặt dịch vụ</button>
             </div>
           <% } else if (transaction && !catalog.length) { %>
             <div class="svc-empty">Hiện chưa có dịch vụ nào đang hoạt động.</div>
@@ -345,18 +381,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!value) {
       if (!fromSubmit) return [];
       if (searchInput) searchInput.classList.add("input-error");
-      if (errSearch) errSearch.textContent = "Vui lòng nhập mã giao dịch hoặc CMND/CCCD.";
-      return ["Vui lòng nhập mã giao dịch hoặc CMND/CCCD."];
+      if (errSearch) errSearch.textContent = "Vui lòng nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại.";
+      return ["Vui lòng nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại."];
     }
-    if (!/^\d+$/.test(value)) {
+    if (!/\d/.test(value)) {
       if (searchInput) searchInput.classList.add("input-error");
-      if (errSearch) errSearch.textContent = "Chỉ được nhập số.";
-      return ["Chỉ được nhập số."];
-    }
-    if (value.length > 12) {
-      if (searchInput) searchInput.classList.add("input-error");
-      if (errSearch) errSearch.textContent = "Tối đa 12 số.";
-      return ["Tối đa 12 số."];
+      if (errSearch) errSearch.textContent = "Thông tin tìm kiếm cần có ít nhất một chữ số.";
+      return ["Thông tin tìm kiếm cần có ít nhất một chữ số."];
     }
     return [];
   }
@@ -366,12 +397,21 @@ document.addEventListener("DOMContentLoaded", function () {
     let qtyTotal = 0;
     let amount = 0;
     document.querySelectorAll(".svcQty").forEach((input) => {
-      const qty = Math.max(0, Number(input.value || 0));
+      const qty = Math.min(20, Math.max(0, Number(input.value || 0)));
+      input.value = String(qty);
       const price = Number(input.dataset.price || 0);
       const serviceId = input.dataset.service;
       const line = qty * price;
       const lineDom = document.querySelector('.svcLineTotal[data-service="' + serviceId + '"]');
+      const cardDom = document.querySelector('[data-service-card="' + serviceId + '"]');
+      const pickedDom = document.querySelector('[data-picked="' + serviceId + '"]');
+      const roomDom = document.querySelector('.svcRoom[data-service="' + serviceId + '"]');
       if (lineDom) lineDom.textContent = money(line);
+      if (qty > 0 && roomDom && Number(roomDom.value || 0) <= 0 && roomDom.options.length === 2) {
+        roomDom.selectedIndex = 1;
+      }
+      if (cardDom) cardDom.classList.toggle("is-selected", qty > 0);
+      if (pickedDom) pickedDom.textContent = qty > 0 ? "Đã chọn" : "Chưa chọn";
       if (qty > 0) selected += 1;
       qtyTotal += qty;
       amount += line;
@@ -410,9 +450,20 @@ document.addEventListener("DOMContentLoaded", function () {
   document.addEventListener("input", (event) => {
     if (event.target?.classList?.contains("svcQty")) updateTotals();
   });
+  document.addEventListener("click", (event) => {
+    const button = event.target?.closest?.(".svcQtyStep");
+    if (!button) return;
+    const serviceId = button.dataset.service;
+    const step = Number(button.dataset.step || 0);
+    const input = document.querySelector('.svcQty[data-service="' + serviceId + '"]');
+    if (!input) return;
+    input.value = String(Math.min(20, Math.max(0, Number(input.value || 0) + step)));
+    updateTotals();
+  });
   document.addEventListener("change", (event) => {
     if (event.target?.classList?.contains("svcRoom")) event.target.classList.remove("input-error");
   });
+  formService?.addEventListener("reset", () => window.setTimeout(updateTotals, 0));
 
   formSearch?.addEventListener("submit", (event) => {
     if ((event.submitter?.value || "") !== "search") return;
@@ -429,6 +480,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (errors.length) {
       event.preventDefault();
       showErrors(errors);
+      return;
+    }
+    if (!confirm("Xác nhận đặt dịch vụ cho giao dịch này?")) {
+      event.preventDefault();
     }
   });
 

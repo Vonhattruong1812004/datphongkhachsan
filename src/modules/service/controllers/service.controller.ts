@@ -17,25 +17,54 @@ async function cleanupUploadedFile(file?: Express.Multer.File) {
   await fs.unlink(file.path).catch(() => undefined);
 }
 
-function readServiceDrafts(value: unknown) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
+type ServiceDrafts = Record<string, { so_luong?: string; ma_phong?: string; note?: string }>;
+
+function readServiceDraftId(value: string) {
+  const match = value.match(/\d+/);
+  return match ? match[0] : "";
+}
+
+function readServiceDrafts(value: unknown, rawBody: unknown = {}) {
+  const result: ServiceDrafts = {};
+
+  const applyRow = (serviceId: string, row: Record<string, unknown>) => {
+    const normalizedServiceId = readServiceDraftId(serviceId);
+    if (!normalizedServiceId) {
+      return;
+    }
+    result[normalizedServiceId] = {
+      ...result[normalizedServiceId],
+      so_luong: readText(row.so_luong ?? result[normalizedServiceId]?.so_luong),
+      ma_phong: readText(row.ma_phong ?? result[normalizedServiceId]?.ma_phong),
+      note: readText(row.note ?? result[normalizedServiceId]?.note)
+    };
+  };
+
+  if (value && typeof value === "object") {
+    Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        result[key] = result[key] || {};
+        return;
+      }
+      applyRow(key, item as Record<string, unknown>);
+    });
   }
 
-  return Object.entries(value as Record<string, unknown>).reduce<Record<string, { so_luong?: string; ma_phong?: string; note?: string }>>((result, [key, item]) => {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      result[key] = {};
-      return result;
-    }
+  if (rawBody && typeof rawBody === "object" && !Array.isArray(rawBody)) {
+    Object.entries(rawBody as Record<string, unknown>).forEach(([key, fieldValue]) => {
+      const match = key.match(/^services\[(?:svc_)?(\d+)\]\[(so_luong|ma_phong|note)\]$/);
+      if (!match) {
+        return;
+      }
+      const [, serviceId, field] = match;
+      result[serviceId] = {
+        ...result[serviceId],
+        [field]: readText(fieldValue)
+      };
+    });
+  }
 
-    const row = item as Record<string, unknown>;
-    result[key] = {
-      so_luong: readText(row.so_luong),
-      ma_phong: readText(row.ma_phong),
-      note: readText(row.note)
-    };
-    return result;
-  }, {});
+  return result;
 }
 
 async function renderServiceState(
@@ -303,7 +332,7 @@ export async function createServiceOrderAction(req: Request, res: Response) {
     if (!keyword) {
       return renderServiceState(req, res, {
         keyword,
-        error: "Vui lòng nhập mã giao dịch hoặc CMND/CCCD."
+        error: "Vui lòng nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại."
       });
     }
 
@@ -317,7 +346,7 @@ export async function createServiceOrderAction(req: Request, res: Response) {
     });
   }
 
-  const serviceDrafts = readServiceDrafts(req.body.services);
+  const serviceDrafts = readServiceDrafts(req.body.services, req.body);
   try {
     const result = await serviceModuleService.createFrontdeskServiceOrders({
       transactionId: Number(req.body.ma_giao_dich || req.body.transaction_id || 0),

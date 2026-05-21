@@ -5,6 +5,12 @@ import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney } from "../../../shared/utils/format";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 
+const CUSTOMER_NAME_REGEX = /^(?=.*\p{L})[\p{L}\d\s'.-]{2,80}$/u;
+const CUSTOMER_PHONE_REGEX = /^(?:0(?:3|5|7|8|9)\d{8}|\+84(?:3|5|7|8|9)\d{8})$/;
+const CUSTOMER_ID_CARD_REGEX = /^(?:\d{9}|\d{12})$/;
+const CUSTOMER_ADDRESS_REGEX = /^[^<>{}[\]\\]{0,255}$/u;
+const CUSTOMER_PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{6,72}$/;
+
 const customerSchema = z.object({
   customer_id: z.preprocess((value) => {
     const raw = String(value ?? "").trim();
@@ -12,28 +18,48 @@ const customerSchema = z.object({
     const parsed = Number(raw);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : Number.NaN;
   }, z.number().int().positive().optional()),
-  ten_kh: z.string().trim().min(2),
-  sdt: z.string().trim().regex(/^(0|\+84)\d{8,10}$/),
-  email: z.string().trim().toLowerCase().email(),
-  cccd: z.string().trim().regex(/^\d{9,12}$/),
-  dia_chi: z.string().trim().optional().default(""),
-  loai_khach: z.string().trim().optional().default("CaNhan"),
+  ten_kh: z.string()
+    .trim()
+    .min(2, "Họ tên phải có tối thiểu 2 ký tự.")
+    .max(80, "Họ tên không được vượt quá 80 ký tự.")
+    .regex(CUSTOMER_NAME_REGEX, "Họ tên phải có chữ cái và chỉ được gồm chữ cái, chữ số, khoảng trắng, dấu nháy, dấu chấm hoặc dấu gạch nối.")
+    .transform((value) => value.replace(/\s+/g, " ")),
+  sdt: z.preprocess(
+    (value) => String(value ?? "").trim().replace(/[\s.-]/g, ""),
+    z.string().regex(CUSTOMER_PHONE_REGEX, "Số điện thoại Việt Nam phải có dạng 0xxxxxxxxx hoặc +84xxxxxxxxx, đầu số 03/05/07/08/09.")
+  ),
+  email: z.string()
+    .trim()
+    .toLowerCase()
+    .max(120, "Email không được vượt quá 120 ký tự.")
+    .email("Email không đúng định dạng."),
+  cccd: z.preprocess(
+    (value) => String(value ?? "").trim().replace(/\s/g, ""),
+    z.string().regex(CUSTOMER_ID_CARD_REGEX, "CCCD/CMND phải gồm đúng 9 hoặc 12 chữ số.")
+  ),
+  dia_chi: z.string()
+    .trim()
+    .max(255, "Địa chỉ không được vượt quá 255 ký tự.")
+    .regex(CUSTOMER_ADDRESS_REGEX, "Địa chỉ chứa ký tự không an toàn.")
+    .optional()
+    .default(""),
+  loai_khach: z.enum(["CaNhan", "DoanhNghiep", "VIP", "KhachOnline"]).default("CaNhan"),
   password: z.string().trim().optional().default(""),
   force_create: z.coerce.number().int().optional().default(0)
 }).superRefine((input, ctx) => {
   const password = input.password.trim();
-  if (!input.customer_id && password.length < 6) {
+  if (!input.customer_id && !CUSTOMER_PASSWORD_REGEX.test(password)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["password"],
-      message: "Mật khẩu phải >= 6 ký tự."
+      message: "Mật khẩu phải có 6-72 ký tự và có ít nhất 1 chữ cái, 1 chữ số."
     });
   }
-  if (input.customer_id && password && password.length < 6) {
+  if (input.customer_id && password && !CUSTOMER_PASSWORD_REGEX.test(password)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["password"],
-      message: "Mật khẩu mới phải >= 6 ký tự."
+      message: "Mật khẩu mới phải có 6-72 ký tự và có ít nhất 1 chữ cái, 1 chữ số."
     });
   }
 });

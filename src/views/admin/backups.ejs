@@ -1,110 +1,335 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">Admin Backup</div>
-    <h2>Sao luu he thong va cau hinh van hanh</h2>
-    <p class="muted">Phan nay giu logic goc cua he thong cu, nhung da them metadata ro rang de backup/restore an toan hon tren PostgreSQL.</p>
+<%
+  const backups = payload?.backups || [];
+  const autoConfig = payload?.autoBackupConfig || {};
+  const hotelSummary = payload?.hotelSummary || {};
+  const selectedBackup = payload?.selectedBackupInfo || null;
+  const totalSize = backups.reduce((sum, item) => sum + Number(item.size || 0), 0);
+  const latestBackup = backups[0] || null;
+  const autoOn = Boolean(autoConfig.enabled);
+  const safetyScore = Math.min(100, (backups.length ? 55 : 0) + (autoOn ? 30 : 0) + (Number(hotelSummary.count || 0) ? 15 : 0));
+  const safetyLabel = safetyScore >= 80 ? "An toàn" : (safetyScore >= 50 ? "Cần theo dõi" : "Chưa an toàn");
+  const formatSize = (bytes) => {
+    const value = Number(bytes || 0);
+    if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(2)} MB`;
+    return `${(value / 1024).toFixed(1)} KB`;
+  };
+  const typeText = (type) => type === "hom_nay" ? "Trong ngày" : (type === "chon_ngay" ? "Theo ngày chọn" : "Toàn bộ");
+  const isRestorable = (item) => item && (!item.backupType || item.backupType === "toan_bo");
+%>
+<style>
+  .backup-workspace{
+    --bk-ink:#101828;
+    --bk-muted:#667085;
+    --bk-line:rgba(16,24,40,.10);
+    --bk-card:rgba(255,255,255,.86);
+    --bk-green:#10b981;
+    --bk-cyan:#06b6d4;
+    --bk-blue:#2563eb;
+    --bk-amber:#f59e0b;
+    --bk-red:#f43f5e;
+    --bk-violet:#8b5cf6;
+    --bk-shadow:0 24px 80px rgba(15,23,42,.12);
+    min-height:calc(100vh - 84px);
+    padding:34px 18px 58px;
+    color:var(--bk-ink);
+    background:
+      linear-gradient(rgba(255,255,255,.45) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.45) 1px, transparent 1px),
+      radial-gradient(circle at 8% 10%, rgba(16,185,129,.22), transparent 29%),
+      radial-gradient(circle at 88% 8%, rgba(6,182,212,.20), transparent 30%),
+      radial-gradient(circle at 54% 106%, rgba(139,92,246,.13), transparent 34%),
+      linear-gradient(135deg,#f8fffb 0%,#eefaff 47%,#fff7fb 100%);
+    background-size:auto, 42px 42px, auto, auto, auto, auto;
+  }
+  .bk-wrap{max-width:1180px;margin:0 auto}
+  .bk-panel,.bk-score,.bk-stat,.bk-card,.bk-file,.bk-empty{border:1px solid var(--bk-line);background:var(--bk-card);box-shadow:var(--bk-shadow);backdrop-filter:blur(22px)}
+  .bk-hero{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:stretch}
+  .bk-panel{position:relative;overflow:hidden;border-radius:30px;padding:30px}
+  .bk-panel::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.86),transparent 38%),radial-gradient(circle at 88% 18%,rgba(16,185,129,.18),transparent 32%);pointer-events:none}
+  .bk-label{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:8px 13px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.18);color:#047857;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.08em}
+  .bk-label::before{content:"";width:8px;height:8px;border-radius:999px;background:var(--bk-green);box-shadow:0 0 0 7px rgba(16,185,129,.14)}
+  .bk-panel h1{position:relative;z-index:1;margin:22px 0 10px;max-width:760px;font-size:clamp(40px,5vw,68px);line-height:.94;letter-spacing:-.06em}
+  .bk-panel h1 span{color:transparent;background:linear-gradient(135deg,#10b981,#06b6d4 52%,#8b5cf6);-webkit-background-clip:text;background-clip:text}
+  .bk-lead{position:relative;z-index:1;max-width:720px;margin:0;color:var(--bk-muted);font-size:16px;line-height:1.62}
+  .bk-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .bk-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border:1px solid rgba(16,24,40,.12);border-radius:999px;padding:10px 16px;background:rgba(255,255,255,.78);color:var(--bk-ink);font:inherit;font-size:14px;font-weight:950;text-decoration:none;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .bk-button:hover{transform:translateY(-2px);border-color:var(--bk-cyan);box-shadow:0 18px 42px rgba(6,182,212,.14)}
+  .bk-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#10b981,#06b6d4);box-shadow:0 18px 44px rgba(16,185,129,.22)}
+  .bk-score{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:30px;padding:24px;background:linear-gradient(160deg,rgba(255,255,255,.94),rgba(240,253,250,.78))}
+  .bk-ring{--score:<%= safetyScore %>;position:relative;width:194px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--bk-green) calc(var(--score)*1%),rgba(16,24,40,.09) 0);box-shadow:inset 0 0 0 15px rgba(255,255,255,.84),0 22px 70px rgba(16,185,129,.18)}
+  .bk-ring::after{content:"";position:absolute;inset:28px;border-radius:50%;border:1px solid rgba(16,24,40,.08);background:rgba(255,255,255,.95)}
+  .bk-ring-value{position:relative;z-index:1;text-align:center}
+  .bk-ring-value strong{display:block;font-size:46px;line-height:1;letter-spacing:-.07em}
+  .bk-ring-value span{display:block;margin-top:7px;color:var(--bk-muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
+  .bk-score h2{margin:18px 0 6px;font-size:26px;letter-spacing:-.04em}
+  .bk-score p{margin:0;color:var(--bk-muted);font-size:13px;text-align:center;line-height:1.5}
+  .bk-flash{margin:18px 0 0;border-radius:18px;padding:13px 15px;font-weight:850;border:1px solid rgba(16,24,40,.10);background:rgba(255,255,255,.72)}
+  .bk-flash--success{color:#047857;background:rgba(16,185,129,.12)}
+  .bk-flash--error{color:#be123c;background:rgba(244,63,94,.12)}
+  .bk-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+  .bk-stat{position:relative;overflow:hidden;border-radius:24px;padding:18px;background:rgba(255,255,255,.74)}
+  .bk-stat::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--stat-color),transparent)}
+  .bk-stat strong{display:block;font-size:32px;line-height:1;letter-spacing:-.05em}
+  .bk-stat span{display:block;margin-top:8px;color:var(--bk-muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
+  .bk-section{margin-top:20px}
+  .bk-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .bk-section-head h2{margin:0;font-size:25px;letter-spacing:-.04em}
+  .bk-section-head p{margin:4px 0 0;color:var(--bk-muted);font-size:13px}
+  .bk-grid{display:grid;grid-template-columns:380px minmax(0,1fr);gap:14px;align-items:start}
+  .bk-card{border-radius:28px;padding:20px;background:rgba(255,255,255,.78)}
+  .bk-card h3{margin:0 0 6px;font-size:21px;letter-spacing:-.03em}
+  .bk-card p{margin:0 0 16px;color:var(--bk-muted);font-size:13px;line-height:1.55}
+  .bk-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .bk-field{display:flex;flex-direction:column;gap:7px}
+  .bk-field label{font-size:12px;font-weight:1000;color:#475467;text-transform:uppercase;letter-spacing:.05em}
+  .bk-field input,.bk-field select{width:100%;min-height:46px;border:1px solid rgba(16,24,40,.13);border-radius:16px;padding:10px 13px;background:rgba(255,255,255,.92);color:var(--bk-ink);font:inherit;font-weight:800;outline:none;transition:border-color .18s ease,box-shadow .18s ease}
+  .bk-field input:focus,.bk-field select:focus{border-color:var(--bk-cyan);box-shadow:0 0 0 4px rgba(6,182,212,.13)}
+  .bk-field input[readonly]{color:#475467;background:rgba(248,250,252,.82)}
+  .bk-hint{margin-top:10px;color:var(--bk-muted);font-size:12px;line-height:1.5}
+  .bk-mode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+  .bk-mode-item{border:1px solid rgba(16,24,40,.10);border-radius:18px;padding:12px;background:rgba(255,255,255,.62)}
+  .bk-mode-item strong{display:block;font-size:14px}
+  .bk-mode-item span{display:block;margin-top:5px;color:var(--bk-muted);font-size:12px;line-height:1.45}
+  .bk-file-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .bk-file{position:relative;overflow:hidden;border-radius:24px;padding:17px;background:rgba(255,255,255,.78)}
+  .bk-file::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#10b981,#06b6d4,transparent)}
+  .bk-file-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .bk-badge{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;background:rgba(16,185,129,.12);color:#047857;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}
+  .bk-file h3{margin:12px 0 6px;font-size:17px;line-height:1.25;word-break:break-word}
+  .bk-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+  .bk-meta div{border-radius:14px;padding:9px 10px;background:rgba(248,250,252,.82);border:1px solid rgba(16,24,40,.07)}
+  .bk-meta span{display:block;color:var(--bk-muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+  .bk-meta strong{display:block;margin-top:4px;font-size:13px}
+  .bk-empty{border-radius:26px;padding:28px;background:rgba(255,255,255,.72);text-align:center}
+  .bk-empty strong{display:block;font-size:21px;margin-bottom:8px}
+  .bk-empty p{margin:0 auto 18px;max-width:520px;color:var(--bk-muted);font-size:13px;line-height:1.55}
+  .bk-preview{border-radius:20px;padding:14px;background:rgba(248,250,252,.84);border:1px solid rgba(16,24,40,.08)}
+  .bk-preview h4{margin:0 0 10px;font-size:15px}
+  .bk-preview dl{display:grid;grid-template-columns:130px 1fr;gap:8px 10px;margin:0;font-size:13px}
+  .bk-preview dt{color:var(--bk-muted);font-weight:900}
+  .bk-preview dd{margin:0;font-weight:850;word-break:break-word}
+  .bk-invalid{display:none;margin-top:8px;color:#be123c;font-size:12px;font-weight:850}
+  .bk-field[data-invalid="true"] input,.bk-field[data-invalid="true"] select{border-color:#fb7185;box-shadow:0 0 0 4px rgba(244,63,94,.10)}
+  .bk-field[data-invalid="true"] .bk-invalid{display:block}
+  @media(max-width:1080px){.bk-hero,.bk-grid{grid-template-columns:1fr}.bk-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:760px){.backup-workspace{padding:22px 12px 48px}.bk-panel,.bk-score,.bk-card{padding:20px;border-radius:26px}.bk-panel h1{font-size:42px}.bk-stats,.bk-form-grid,.bk-mode,.bk-file-grid,.bk-meta{grid-template-columns:1fr}.bk-section-head{display:block}.bk-ring{width:176px}}
+</style>
 
-    <% if (success) { %>
-      <div class="flash flash--success"><%= success %></div>
-    <% } %>
-    <% if (error) { %>
-      <div class="flash flash--error"><%= error %></div>
-    <% } %>
-
-    <div class="dashboard-grid" style="margin-top:16px;">
-      <article class="dashboard-card"><strong><%= payload.backups.length %></strong><h3>Backup files</h3></article>
-      <article class="dashboard-card"><strong><%= payload.hotelSummary.count %></strong><h3>Hotels in scope</h3></article>
-      <article class="dashboard-card"><strong><%= payload.autoBackupConfig.enabled ? "ON" : "OFF" %></strong><h3>Auto backup</h3></article>
-    </div>
-
-    <div class="nav-links" style="margin-top:16px;">
-      <a class="chip" href="/admin/restore">Restore</a>
-      <a class="chip" href="/admin/diagnostics">Diagnostics</a>
-      <a class="chip" href="/api/admin/backups">Backup JSON</a>
-    </div>
-  </section>
-
-  <section class="panel">
-    <div class="section-eyebrow">Auto Backup</div>
-    <h3>Thiet lap sao luu tu dong</h3>
-    <form method="post" action="/admin/backups/config">
-      <div class="field-grid">
-        <div class="field">
-          <label>Che do</label>
-          <select name="mode">
-            <option value="auto" <%= payload.autoBackupConfig.enabled ? "selected" : "" %>>Tu dong backup khi gan hook van hanh</option>
-            <option value="manual" <%= !payload.autoBackupConfig.enabled ? "selected" : "" %>>Tat auto backup</option>
-          </select>
+<main class="backup-workspace">
+  <div class="bk-wrap">
+    <section class="bk-hero" aria-label="Sao lưu dữ liệu">
+      <div class="bk-panel">
+        <div class="bk-label">Admin backup workspace</div>
+        <h1>Sao lưu <span>dữ liệu hệ thống</span></h1>
+        <p class="bk-lead">Tạo file SQL có metadata rõ ràng, bật/tắt sao lưu tự động và chuyển nhanh sang phục hồi khi cần. UC này chỉ tác động vào vùng backup, không tự sửa dữ liệu nghiệp vụ.</p>
+        <div class="bk-actions">
+          <a class="bk-button bk-button--primary" href="#manual-backup">Tạo backup</a>
+          <a class="bk-button" href="/admin/restore">Phục hồi dữ liệu</a>
+          <a class="bk-button" href="/admin/diagnostics">Sức khỏe hệ thống</a>
+          <a class="bk-button" href="/dashboard/admin">Về dashboard Admin</a>
+          <a class="bk-button" href="/api/admin/backups">Backup JSON</a>
         </div>
-        <div class="field">
-          <label>Backup root</label>
-          <input value="storage/backups" readonly />
+        <% if (success) { %>
+          <div class="bk-flash bk-flash--success"><%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="bk-flash bk-flash--error"><%= error %></div>
+        <% } %>
+      </div>
+      <aside class="bk-score">
+        <div class="bk-ring" aria-label="Điểm an toàn backup">
+          <div class="bk-ring-value"><strong><%= safetyScore %></strong><span>Điểm</span></div>
+        </div>
+        <h2><%= safetyLabel %></h2>
+        <p><%= latestBackup ? `Backup mới nhất: ${latestBackup.createdAt || latestBackup.name}` : "Chưa có file backup nào." %></p>
+      </aside>
+    </section>
+
+    <section class="bk-stats" aria-label="Tổng quan backup">
+      <article class="bk-stat" style="--stat-color:#10b981"><strong><%= backups.length %></strong><span>File sao lưu</span></article>
+      <article class="bk-stat" style="--stat-color:#06b6d4"><strong><%= hotelSummary.count || 0 %></strong><span>Cơ sở trong scope</span></article>
+      <article class="bk-stat" style="--stat-color:<%= autoOn ? "#10b981" : "#f59e0b" %>"><strong><%= autoOn ? "Bật" : "Tắt" %></strong><span>Auto backup</span></article>
+      <article class="bk-stat" style="--stat-color:#8b5cf6"><strong><%= formatSize(totalSize) %></strong><span>Dung lượng</span></article>
+    </section>
+
+    <section class="bk-section" aria-label="Cấu hình và tạo backup">
+      <div class="bk-section-head">
+        <div>
+          <h2>Thiết lập sao lưu</h2>
+          <p>Gom cấu hình tự động và tạo backup thủ công vào một luồng dễ kiểm soát.</p>
         </div>
       </div>
-      <p class="muted">Cap nhat gan nhat: <%= payload.autoBackupConfig.updated_at || "Chua co" %> · boi <%= payload.autoBackupConfig.updated_by || "system" %></p>
-      <p class="muted">Lan auto backup cuoi: <%= payload.autoBackupConfig.last_backup || "Chua co" %></p>
-      <div class="nav-links" style="margin-top:16px;">
-        <button class="button button--primary" type="submit">Luu cau hinh</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="panel">
-    <div class="section-eyebrow">Manual Backup</div>
-    <h3>Tao backup SQL moi</h3>
-    <form method="post" action="/admin/backups">
-      <div class="field-grid">
-        <div class="field">
-          <label>Ten file</label>
-          <input name="ten_file" value="abc_resort_backup" required />
-        </div>
-        <div class="field">
-          <label>Thu muc con</label>
-          <input name="thu_muc" placeholder="vd: nightly" />
-        </div>
-        <div class="field">
-          <label>Hinh thuc</label>
-          <select name="hinh_thuc">
-            <option value="toan_bo">Toan bo</option>
-            <option value="hom_nay">Hom nay</option>
-            <option value="chon_ngay">Chon ngay</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Ngay backup neu chon ngay</label>
-          <input type="date" name="ngay_chon" />
-        </div>
-      </div>
-      <div class="nav-links" style="margin-top:16px;">
-        <button class="button button--primary" type="submit">Tao backup</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="panel">
-    <div class="section-eyebrow">Backup Files</div>
-    <h3>Danh sach backup kha dung</h3>
-    <% if (!payload.backups.length) { %>
-      <div class="empty-state">Chua co file backup nao trong `storage/backups`.</div>
-    <% } else { %>
-      <div class="room-grid room-grid--wide">
-        <% payload.backups.forEach((item) => { %>
-          <article class="room-card">
-            <span class="badge"><%= item.backupType || "sql" %></span>
-            <h3><%= item.name %></h3>
-            <p class="muted">Tao luc: <%= item.createdAt || "N/A" %></p>
-            <p class="muted">Kich thuoc: <%= (item.size / 1024).toFixed(1) %> KB</p>
-            <p class="muted">Scope: <%= item.backupScope || "system_wide" %> · Hotels: <%= item.hotelCount %></p>
-            <div class="nav-links" style="margin-top:12px;">
-              <a class="chip" href="/admin/restore?file=<%= encodeURIComponent(item.name) %>">Restore</a>
-              <a class="chip" href="/admin/backups?file=<%= encodeURIComponent(item.name) %>">Preview</a>
+      <div class="bk-grid">
+        <article class="bk-card">
+          <h3>Auto backup</h3>
+          <p>Bật khi muốn hệ thống tự tạo backup tại các hook vận hành đã gắn sẵn.</p>
+          <form method="post" action="/admin/backups/config">
+            <div class="bk-field">
+              <label for="mode">Chế độ</label>
+              <select id="mode" name="mode">
+                <option value="auto" <%= autoOn ? "selected" : "" %>>Bật auto backup</option>
+                <option value="manual" <%= !autoOn ? "selected" : "" %>>Tắt auto backup</option>
+              </select>
             </div>
-          </article>
-        <% }) %>
+            <div class="bk-mode">
+              <div class="bk-mode-item">
+                <strong>Root lưu trữ</strong>
+                <span>storage/backups</span>
+              </div>
+              <div class="bk-mode-item">
+                <strong>Cập nhật gần nhất</strong>
+                <span><%= autoConfig.updated_at || "Chưa có" %> · <%= autoConfig.updated_by || "system" %></span>
+              </div>
+              <div class="bk-mode-item">
+                <strong>Lần auto gần nhất</strong>
+                <span><%= autoConfig.last_backup || "Chưa có" %></span>
+              </div>
+              <div class="bk-mode-item">
+                <strong>Trạng thái</strong>
+                <span><%= autoOn ? "Đang theo dõi tự động." : "Đang dùng chế độ thủ công." %></span>
+              </div>
+            </div>
+            <button class="bk-button bk-button--primary" type="submit">Lưu cấu hình</button>
+          </form>
+        </article>
+
+        <article class="bk-card" id="manual-backup">
+          <h3>Tạo backup thủ công</h3>
+          <p>File SQL sinh ra sẽ có metadata: người tạo, thời gian, scope đa cơ sở, Node và PostgreSQL version.</p>
+          <form method="post" action="/admin/backups" id="backupCreateForm" novalidate>
+            <div class="bk-form-grid">
+              <div class="bk-field" data-field="ten_file">
+                <label for="ten_file">Tên file</label>
+                <input id="ten_file" name="ten_file" value="abc_resort_backup" autocomplete="off" required />
+                <span class="bk-invalid">Chỉ dùng chữ, số, dấu gạch dưới hoặc gạch ngang.</span>
+              </div>
+              <div class="bk-field" data-field="thu_muc">
+                <label for="thu_muc">Thư mục con</label>
+                <input id="thu_muc" name="thu_muc" placeholder="vd: nightly" autocomplete="off" />
+                <span class="bk-invalid">Thư mục con chỉ nên dùng chữ, số, gạch dưới hoặc gạch ngang.</span>
+              </div>
+              <div class="bk-field">
+                <label for="hinh_thuc">Hình thức</label>
+                <select id="hinh_thuc" name="hinh_thuc">
+                  <option value="toan_bo">Snapshot toàn bộ hệ thống</option>
+                  <option value="hom_nay">Trích xuất hôm nay</option>
+                  <option value="chon_ngay">Trích xuất theo ngày</option>
+                </select>
+              </div>
+              <div class="bk-field" data-field="ngay_chon">
+                <label for="ngay_chon">Ngày cần backup</label>
+                <input id="ngay_chon" type="date" name="ngay_chon" />
+                <span class="bk-invalid">Chọn ngày khi hình thức là “Chọn một ngày”.</span>
+              </div>
+            </div>
+            <p class="bk-hint">Chỉ snapshot toàn bộ hệ thống được dùng để phục hồi. Trích xuất theo ngày dùng cho đối soát, báo cáo hoặc kiểm tra dữ liệu.</p>
+            <div class="bk-actions">
+              <button class="bk-button bk-button--primary" type="submit">Tạo backup</button>
+              <a class="bk-button" href="/admin/restore">Sang phục hồi dữ liệu</a>
+            </div>
+          </form>
+        </article>
       </div>
+    </section>
+
+    <section class="bk-section" aria-label="Danh sách backup">
+      <div class="bk-section-head">
+        <div>
+          <h2>Kho sao lưu</h2>
+          <p>Danh sách file SQL có thể preview hoặc chuyển sang UC phục hồi.</p>
+        </div>
+      </div>
+      <% if (!backups.length) { %>
+        <div class="bk-empty">
+          <strong>Chưa có file backup</strong>
+          <p>Hãy tạo một bản backup thủ công trước khi thử phục hồi hoặc trước các thay đổi lớn trên hệ thống.</p>
+          <a class="bk-button bk-button--primary" href="#manual-backup">Tạo backup đầu tiên</a>
+        </div>
+      <% } else { %>
+        <div class="bk-file-grid">
+          <% backups.forEach((item) => { %>
+            <article class="bk-file">
+              <div class="bk-file-top">
+                <span class="bk-badge"><%= typeText(item.backupType) %></span>
+                <span class="bk-badge"><%= item.backupMode || "SQL" %></span>
+              </div>
+              <h3><%= item.name %></h3>
+              <div class="bk-meta">
+                <div><span>Tạo lúc</span><strong><%= item.createdAt || "Không rõ" %></strong></div>
+                <div><span>Kích thước</span><strong><%= formatSize(item.size) %></strong></div>
+                <div><span>Scope</span><strong><%= item.backupScope || "Toàn hệ thống" %></strong></div>
+                <div><span>Cơ sở</span><strong><%= item.hotelCount || 0 %></strong></div>
+              </div>
+              <div class="bk-actions">
+                <% if (isRestorable(item)) { %>
+                  <a class="bk-button bk-button--primary" href="/admin/restore?file=<%= encodeURIComponent(item.name) %>">Phục hồi dữ liệu</a>
+                <% } else { %>
+                  <a class="bk-button" href="/admin/backups?file=<%= encodeURIComponent(item.name) %>">Chỉ đối soát</a>
+                <% } %>
+                <a class="bk-button" href="/admin/backups?file=<%= encodeURIComponent(item.name) %>">Preview</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <% if (selectedBackup) { %>
+      <section class="bk-section" aria-label="Preview backup">
+        <div class="bk-card">
+          <h3>Preview file đang chọn</h3>
+          <div class="bk-preview">
+            <dl>
+              <dt>Tên file</dt><dd><%= selectedBackup.name %></dd>
+              <dt>Loại backup</dt><dd><%= typeText(selectedBackup.backupType) %></dd>
+              <dt>Ngày tạo</dt><dd><%= selectedBackup.createdAt || "Không rõ" %></dd>
+              <dt>Dung lượng</dt><dd><%= formatSize(selectedBackup.size) %></dd>
+              <dt>Scope</dt><dd><%= selectedBackup.backupScope || "Toàn hệ thống" %></dd>
+            </dl>
+          </div>
+        </div>
+      </section>
     <% } %>
-  </section>
+  </div>
 </main>
+
+<script>
+  (() => {
+    const form = document.getElementById("backupCreateForm");
+    const fileInput = document.getElementById("ten_file");
+    const dirInput = document.getElementById("thu_muc");
+    const typeInput = document.getElementById("hinh_thuc");
+    const dateInput = document.getElementById("ngay_chon");
+    const safeName = /^[A-Za-z0-9_-]+$/;
+    const setInvalid = (name, invalid) => {
+      const field = form?.querySelector(`[data-field="${name}"]`);
+      if (field) field.dataset.invalid = invalid ? "true" : "false";
+    };
+    const syncDate = () => {
+      const needsDate = typeInput.value === "chon_ngay";
+      dateInput.disabled = !needsDate;
+      dateInput.required = needsDate;
+      if (!needsDate) {
+        dateInput.value = "";
+        setInvalid("ngay_chon", false);
+      }
+    };
+    typeInput?.addEventListener("change", syncDate);
+    syncDate();
+    form?.addEventListener("submit", (event) => {
+      let invalid = false;
+      const fileOk = safeName.test(fileInput.value.trim());
+      const dirValue = dirInput.value.trim();
+      const dirOk = !dirValue || safeName.test(dirValue);
+      const dateOk = typeInput.value !== "chon_ngay" || Boolean(dateInput.value);
+      setInvalid("ten_file", !fileOk);
+      setInvalid("thu_muc", !dirOk);
+      setInvalid("ngay_chon", !dateOk);
+      invalid = !fileOk || !dirOk || !dateOk;
+      if (invalid) event.preventDefault();
+    });
+  })();
+</script>
 <%- include("../partials/footer") %>

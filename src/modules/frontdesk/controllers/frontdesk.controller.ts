@@ -473,6 +473,13 @@ export async function checkoutRoomApi(req: Request, res: Response) {
     });
   }
 
+  if (["transfer", "bank", "banking", "chuyenkhoan", "chuyen_khoan"].includes(String(paymentMethod || "").trim().toLowerCase())) {
+    return res.status(409).json({
+      ok: false,
+      message: "Chuyen khoan checkout phai cho SePay webhook xac nhan, khong checkout thu cong."
+    });
+  }
+
   const payload = await frontdeskService.checkoutRoom(transactionId, roomId, paymentMethod, roomCondition, note);
 
   return res.json({
@@ -699,7 +706,7 @@ export async function submitCheckoutPage(req: Request, res: Response) {
     if (!keyword) {
       return renderCheckoutState(req, res, {
         keyword,
-        error: "Vui lòng nhập mã giao dịch hoặc CMND/CCCD."
+        error: "Vui lòng nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại."
       });
     }
 
@@ -720,6 +727,15 @@ export async function submitCheckoutPage(req: Request, res: Response) {
     });
   }
 
+  const paymentMethod = readText(req.body.payment_method);
+  if (["transfer", "bank", "banking", "chuyenkhoan", "chuyen_khoan"].includes(paymentMethod.toLowerCase())) {
+    return renderCheckoutState(req, res, {
+      keyword,
+      selectedRoomId: Number(req.body.room_id || req.body.selected_room || 0),
+      error: "Chuyển khoản checkout phải chờ SePay xác nhận. Vui lòng quét QR đúng nội dung, hệ thống sẽ tự hoàn tất check-out."
+    });
+  }
+
   if (readText(req.body.payment_status || "unpaid") !== "paid") {
     return renderCheckoutState(req, res, {
       keyword,
@@ -728,7 +744,7 @@ export async function submitCheckoutPage(req: Request, res: Response) {
     });
   }
 
-  if (!readText(req.body.payment_method)) {
+  if (!paymentMethod) {
     return renderCheckoutState(req, res, {
       keyword,
       selectedRoomId: Number(req.body.room_id || req.body.selected_room || 0),

@@ -5,3 +5,4 @@ public/build
 npm-debug.log*
 .DS_Store
 uploads/ekyc
+storage/backups/*.sql

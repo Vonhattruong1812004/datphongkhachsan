@@ -171,6 +171,16 @@ export class AIService {
 
     const conciergeCount = requestStats.rows.find((item) => item.endpoint === "/api/ai/concierge")?.total ?? 0;
     const recommendationCount = requestStats.rows.find((item) => item.endpoint === "/api/booking/recommendations")?.total ?? 0;
+    const totalAiRequests = conciergeCount + recommendationCount;
+    const totalServiceOrders = topServices.rows.reduce((sum, item) => sum + Number(item.total || 0), 0);
+    const topServiceRevenue = topServices.rows.reduce((sum, item) => sum + Number(item.revenue || 0), 0);
+    const peakDay = dailyTrend.rows.reduce<{ day: string; total: number } | null>((current, item) => {
+      const total = Number(item.total || 0);
+      if (!current || total > current.total) return { day: item.day, total };
+      return current;
+    }, null);
+    const topHotel = hotelBreakdown.rows[0] ?? null;
+    const topService = topServices.rows[0] ?? null;
 
     return {
       generatedAt: new Date().toISOString(),
@@ -178,20 +188,54 @@ export class AIService {
         mode: "local",
         provider: "local-heuristic",
         adapterReady: true,
-        summary: "He thong dang chay local heuristic, san sang noi them provider ngoai sau nay."
+        summary: "Hệ thống đang chạy local heuristic: không tốn phí API ngoài, đủ để gợi ý phòng/dịch vụ theo luật nghiệp vụ và sẵn sàng nối provider AI ngoài khi triển khai."
       },
       summary: {
-        totalAiRequests: conciergeCount + recommendationCount,
+        totalAiRequests,
         conciergeCount,
         recommendationCount,
-        topServiceConversions: topServices.rows.reduce((sum, item) => sum + Number(item.total || 0), 0)
+        conciergeShare: totalAiRequests ? Math.round((conciergeCount / totalAiRequests) * 100) : 0,
+        recommendationShare: totalAiRequests ? Math.round((recommendationCount / totalAiRequests) * 100) : 0,
+        topServiceConversions: totalServiceOrders,
+        topServiceRevenue,
+        topHotelName: topHotel?.hotelName ?? null,
+        topHotelBookings: Number(topHotel?.total ?? 0),
+        topServiceName: topService?.serviceName ?? null,
+        peakDay: peakDay?.day ?? null,
+        peakDayRequests: peakDay?.total ?? 0,
+        activeTrendDays: dailyTrend.rows.length
       },
+      endpointBreakdown: [
+        {
+          label: "Tư vấn AI Concierge",
+          endpoint: "/api/ai/concierge",
+          total: conciergeCount,
+          share: totalAiRequests ? Math.round((conciergeCount / totalAiRequests) * 100) : 0,
+          detail: "Khách nhập nhu cầu bằng tiếng Việt, hệ thống trích bộ lọc và trả lời theo ngữ cảnh."
+        },
+        {
+          label: "Gợi ý đặt phòng",
+          endpoint: "/api/booking/recommendations",
+          total: recommendationCount,
+          share: totalAiRequests ? Math.round((recommendationCount / totalAiRequests) * 100) : 0,
+          detail: "Gợi ý phòng dựa trên ngày ở, ngân sách, số khách, loại phòng, view và lịch sử khách."
+        }
+      ],
       dailyTrend: dailyTrend.rows,
       hotelBreakdown: hotelBreakdown.rows,
       topServices: topServices.rows.map((item) => ({
         ...item,
         revenue: Number(item.revenue || 0)
-      }))
+      })),
+      nextActions: [
+        totalAiRequests
+          ? "Theo dõi tỉ lệ concierge/recommendation để biết khách đang cần tư vấn hay đang dùng gợi ý đặt phòng nhiều hơn."
+          : "Chưa có request AI: hãy test AI Concierge hoặc gọi API recommendation để tạo tín hiệu ban đầu.",
+        topServices.rows.length
+          ? "Dùng Top Services để quyết định dịch vụ nên gợi ý kèm booking hoặc đẩy lên gói combo."
+          : "Chưa có dữ liệu dịch vụ: cần có order dịch vụ để đo conversion.",
+        "Khi deploy cloud, có thể thay local heuristic bằng provider AI ngoài nhưng vẫn giữ fallback local để hệ thống không bị phụ thuộc."
+      ]
     };
   }
 

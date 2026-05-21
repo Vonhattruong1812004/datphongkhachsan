@@ -509,7 +509,8 @@ export class FrontdeskService {
       ngayDi: this.toInputDate(chosenRoom.ngayTraDuKien),
       soNguoi: Number(chosenRoom.soNguoi || 1),
       maPhong: chosenRoom.maPhong,
-      maKhachSan: chosenRoom.maKhachSan
+      maKhachSan: chosenRoom.maKhachSan,
+      trangThai: chosenRoom.trangThai
     };
     const facility = {
       id: Number(chosenRoom.maKhachSan || 0),
@@ -653,6 +654,11 @@ export class FrontdeskService {
       throw new HttpError(409, "Phong dang co khach o khong duoc doi ngay nhan; chi duoc dieu chinh ngay tra neu con kha dung.");
     }
 
+    const currentCheckoutDate = this.toInputDate(currentRoom.ngayTraDuKien);
+    if (currentRoom.trangThai === "CheckedIn" && currentCheckoutDate && input.ngayDi < currentCheckoutDate) {
+      throw new HttpError(409, "Phong dang co khach o khong duoc rut ngay tra trong man sua booking. Neu khach tra som, vui long dung check-out de tinh tien va dong phong dung nghiep vu.");
+    }
+
     const roomMeta = await this.getRoomMeta(input.newRoomId);
     if (!roomMeta) {
       throw new HttpError(404, "Phong moi khong ton tai.");
@@ -678,7 +684,10 @@ export class FrontdeskService {
     const roomTotal = roomMeta.gia * nights;
 
     await withTransaction(async (client) => {
-      if (snapshot.transaction.maKhachHang) {
+      const currentRoomBelongsToLeader = !currentRoom.cccd
+        || !snapshot.transaction.cccd
+        || String(currentRoom.cccd) === String(snapshot.transaction.cccd);
+      if (snapshot.transaction.maKhachHang && currentRoomBelongsToLeader) {
         await client.query(
           `
             UPDATE khachhang
@@ -808,6 +817,23 @@ export class FrontdeskService {
         input.transactionId,
         totals.total
       ]);
+
+      await client.query(
+        `
+          UPDATE doan d
+          SET songuoi = COALESCE(guest_summary.total_guests, d.songuoi)
+          FROM giaodich gd
+          LEFT JOIN LATERAL (
+            SELECT SUM(ct.songuoi)::int AS total_guests
+            FROM chitietgiaodich ct
+            WHERE ct.magiaodich = gd.magiaodich
+              AND ct.trangthai IN ('Booked', 'CheckedIn')
+          ) guest_summary ON TRUE
+          WHERE gd.magiaodich = $1
+            AND d.madoan = gd.madoan
+        `,
+        [input.transactionId]
+      );
     });
 
     realtimeHub.publish({
@@ -2822,9 +2848,9 @@ export class FrontdeskService {
   }
 
   private async findTransactionIdForEdit(keyword: string) {
-    const normalized = keyword.trim();
-    if (!/^\d+$/.test(normalized)) {
-      throw new HttpError(422, "Chi duoc nhap so khi tim giao dich.");
+    const normalized = keyword.trim().replace(/\D/g, "");
+    if (!normalized) {
+      throw new HttpError(422, "Vui lòng nhập mã giao dịch, mã đặt chỗ, CCCD hoặc số điện thoại.");
     }
 
     const maybeTransactionId = Number(normalized);
@@ -2842,17 +2868,21 @@ export class FrontdeskService {
         LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
         LEFT JOIN doan d ON d.madoan = gd.madoan
         LEFT JOIN khachhang kh_td ON kh_td.makhachhang = d.matruongdoan
-        WHERE kh.cccd = $1
-           OR kh.sdt = $1
-           OR kh_td.cccd = $1
-           OR kh_td.sdt = $1
+        WHERE regexp_replace(COALESCE(gd.madatcho, ''), '\\D', '', 'g') = $1
+           OR regexp_replace(COALESCE(kh.cccd, ''), '\\D', '', 'g') = $1
+           OR regexp_replace(COALESCE(kh.sdt, ''), '\\D', '', 'g') = $1
+           OR regexp_replace(COALESCE(kh_td.cccd, ''), '\\D', '', 'g') = $1
+           OR regexp_replace(COALESCE(kh_td.sdt, ''), '\\D', '', 'g') = $1
            OR EXISTS (
                 SELECT 1
                 FROM chitietgiaodich ct
                 WHERE ct.magiaodich = gd.magiaodich
-                  AND (ct.cccd = $1 OR ct.sdt = $1)
+                  AND (
+                    regexp_replace(COALESCE(ct.cccd, ''), '\\D', '', 'g') = $1
+                    OR regexp_replace(COALESCE(ct.sdt, ''), '\\D', '', 'g') = $1
+                  )
               )
-        ORDER BY gd.magiaodich DESC
+        ORDER BY gd.ngaygiaodich DESC, gd.magiaodich DESC
         LIMIT 1
       `,
       [normalized]
@@ -3612,20 +3642,46 @@ export class FrontdeskService {
     const result = await query<ServiceRow>(
       `
         SELECT
-          ctdv.mactdv AS "maCtDv",
+          MIN(ctdv.mactdv) AS "maCtDv",
           ctdv.madichvu AS "maDichVu",
           ctdv.maphong AS "maPhong",
           dv.tendichvu AS "tenDichVu",
-          ctdv.soluong AS "soLuong",
-          ctdv.giaban AS "giaBan",
-          ctdv.thanhtien AS "thanhTien",
-          ctdv.trangthaidichvu AS "trangThaiDichVu",
-          ctdv.ghichu AS "ghiChu"
+          SUM(COALESCE(ctdv.soluong, 0))::int AS "soLuong",
+          COALESCE(NULLIF(ctdv.giaban, 0), dv.giadichvu, 0) AS "giaBan",
+          SUM(
+            COALESCE(
+              ctdv.thanhtien,
+              COALESCE(ctdv.soluong, 0) * COALESCE(NULLIF(ctdv.giaban, 0), dv.giadichvu, 0),
+              0
+            )
+          ) AS "thanhTien",
+          CASE
+            WHEN BOOL_OR(ctdv.trangthaidichvu = 'DangSuDung') THEN 'DangSuDung'
+            WHEN BOOL_OR(ctdv.trangthaidichvu = 'ChuaSuDung') THEN 'ChuaSuDung'
+            ELSE 'DaSuDung'
+          END AS "trangThaiDichVu",
+          STRING_AGG(DISTINCT NULLIF(ctdv.ghichu, ''), ' | ') AS "ghiChu"
         FROM chitietdichvu ctdv
         INNER JOIN dichvu dv ON dv.madichvu = ctdv.madichvu
         WHERE ctdv.magiaodich = $1
-          AND (ctdv.maphong = $2 OR ctdv.maphong IS NULL)
-        ORDER BY ctdv.mactdv ASC
+          AND (
+            ctdv.maphong = $2
+            OR (
+              ctdv.maphong IS NULL
+              AND 1 = (
+                SELECT COUNT(*)::int
+                FROM chitietgiaodich ct
+                WHERE ct.magiaodich = $1
+                  AND ct.trangthai IN ('Booked', 'CheckedIn', 'CheckedOut')
+              )
+            )
+          )
+        GROUP BY
+          ctdv.madichvu,
+          ctdv.maphong,
+          dv.tendichvu,
+          COALESCE(NULLIF(ctdv.giaban, 0), dv.giadichvu, 0)
+        ORDER BY MIN(ctdv.mactdv) ASC
       `,
       [transactionId, roomId]
     );

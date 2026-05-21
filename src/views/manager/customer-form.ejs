@@ -41,52 +41,131 @@
     --ink: #172033;
     --muted: #667085;
     --line: rgba(23, 32, 51, .10);
-    --panel: #ffffff;
+    --panel: rgba(255,255,255,.88);
+    --soft: #f7fbff;
     --cyan: #00a6d6;
     --mint: #19b879;
     --sun: #f5b700;
     --coral: #ff6b6b;
     --berry: #d946ef;
+    --blue: #3b82f6;
+    --shadow: 0 18px 44px rgba(23, 32, 51, .09);
+    --shadow-pop: 0 24px 56px rgba(0, 166, 214, .16);
     min-height: calc(100vh - 84px);
     position: relative;
+    isolation: isolate;
+    overflow: clip;
     padding: 24px 18px 54px;
     color: var(--ink);
     background:
+      linear-gradient(118deg, transparent 0 58%, rgba(217, 70, 239, .08) 58% 68%, transparent 68%),
+      linear-gradient(64deg, transparent 0 18%, rgba(245, 183, 0, .10) 18% 27%, transparent 27%),
       linear-gradient(135deg, rgba(255, 107, 107, .10), transparent 32%),
       linear-gradient(225deg, rgba(0, 166, 214, .12), transparent 38%),
       repeating-linear-gradient(90deg, rgba(23, 32, 51, .035) 0 1px, transparent 1px 44px),
       linear-gradient(180deg, #fffefa 0%, #f5fcff 48%, #fff8fb 100%);
   }
-  .cust-edit::before { content: ""; position: absolute; inset: 0 0 auto; height: 9px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan), var(--berry)); }
-  .cust-shell { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+  .cust-edit::before,
+  .cust-edit::after { content: ""; position: absolute; pointer-events: none; z-index: -1; }
+  .cust-edit::before { inset: 0 0 auto; height: 9px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan), var(--berry)); }
+  .cust-edit::after {
+    width: 420px;
+    height: 420px;
+    right: -170px;
+    top: 96px;
+    border-radius: 999px;
+    background: conic-gradient(from 140deg, rgba(0,166,214,.18), rgba(25,184,121,.14), rgba(245,183,0,.14), rgba(255,107,107,.12), rgba(0,166,214,.18));
+    filter: blur(2px);
+  }
+  .cust-shell { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; position: relative; }
   .cust-hero,
   .cust-panel {
     border: 1px solid var(--line);
     background: var(--panel);
-    box-shadow: 0 18px 44px rgba(23, 32, 51, .09);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(20px);
   }
-  .cust-hero { border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; gap: 18px; align-items: flex-end; flex-wrap: wrap; border-top: 5px solid var(--cyan); }
-  .cust-chip { display: inline-flex; border-radius: 8px; padding: 7px 10px; color: #087894; background: #effbff; border: 1px solid rgba(0,166,214,.22); font-size: 12px; font-weight: 900; letter-spacing: 0; text-transform: uppercase; }
-  .cust-hero h1 { margin: 14px 0 8px; max-width: 760px; font-size: 46px; line-height: 1; letter-spacing: 0; }
+  .cust-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    padding: 26px 28px;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    color: #fff;
+    background: #14243d;
+    box-shadow: var(--shadow-pop);
+  }
+  .cust-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(100deg, rgba(255,107,107,.90), rgba(245,183,0,.82), rgba(25,184,121,.72), rgba(0,166,214,.72), rgba(217,70,239,.66)),
+      #14243d;
+    opacity: .94;
+  }
+  .cust-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(20,36,61,.88), rgba(20,36,61,.50) 46%, rgba(20,36,61,.12)),
+      repeating-linear-gradient(135deg, rgba(255,255,255,.18) 0 1px, transparent 1px 16px);
+  }
+  .cust-hero > * { position: relative; z-index: 1; }
+  .cust-chip { display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; padding: 7px 10px; color: #fff; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28); font-size: 12px; font-weight: 900; letter-spacing: 0; text-transform: uppercase; }
+  .cust-chip::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: #67e8f9; box-shadow: 0 0 0 4px rgba(103,232,249,.18); }
+  .cust-hero h1 { margin: 16px 0 8px; max-width: 760px; color: #fff; font-size: 52px; line-height: 1; letter-spacing: 0; }
+  .cust-hero h1 span { color: #fff2a8; }
+  .cust-hero .cust-muted { color: rgba(255,255,255,.82); max-width: 780px; font-size: 15px; }
   .cust-muted { color: var(--muted); font-size: 13px; line-height: 1.58; }
   .cust-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-  .cust-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 8px; padding: 9px 14px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); text-decoration: none; font: inherit; font-size: 14px; font-weight: 850; cursor: pointer; }
+  .cust-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 8px; padding: 9px 14px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); text-decoration: none; font: inherit; font-size: 14px; font-weight: 850; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease; }
+  .cust-button:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(23,32,51,.10); border-color: rgba(0,166,214,.32); }
   .cust-button--primary { color: #fff; border-color: transparent; background: linear-gradient(135deg, #00a6d6, #19b879); box-shadow: 0 14px 28px rgba(0,166,214,.18); }
+  .cust-hero .cust-button { border-color: rgba(255,255,255,.25); background: rgba(255,255,255,.94); }
+  .cust-hero .cust-button--primary { background: #fff; color: #075985; box-shadow: 0 16px 34px rgba(5, 16, 31, .24); }
   .cust-button--danger { color: #b42318; border-color: rgba(255,107,107,.28); background: #fff7f7; }
+  .cust-hero-mark { position: absolute; z-index: 1; right: 28px; bottom: 24px; width: min(260px, 26vw); display: grid; gap: 8px; }
+  .cust-mark-line { height: 12px; border-radius: 8px; background: rgba(255,255,255,.22); overflow: hidden; }
+  .cust-mark-line span { display: block; height: 100%; border-radius: inherit; background: #fff; }
+  .cust-mark-line:nth-child(1) span { width: 86%; background: #67e8f9; }
+  .cust-mark-line:nth-child(2) span { width: 64%; background: #fff2a8; }
+  .cust-mark-line:nth-child(3) span { width: 76%; background: #bbf7d0; }
+  .cust-mark-line:nth-child(4) span { width: 50%; background: #fecdd3; }
   .cust-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
-  .cust-panel { border-radius: 8px; padding: 20px; }
+  .cust-panel { position: relative; overflow: hidden; border-radius: 8px; padding: 20px; background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(249,253,255,.88)); }
+  .cust-panel::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan)); }
   .cust-panel h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
+  .cust-panel-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+  .cust-live-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; border-radius: 8px; padding: 7px 10px; color: #087894; background: #effbff; border: 1px solid rgba(0,166,214,.22); font-size: 12px; font-weight: 850; }
+  .cust-live-pill::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--mint); }
   .cust-alert { margin: 14px 0 0; border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(23,32,51,.10); font-size: 14px; font-weight: 800; line-height: 1.5; }
   .cust-alert--error { color: #b42318; background: #fff4f4; border-color: rgba(255,107,107,.30); }
   .cust-alert--success { color: #047857; background: #effcf6; border-color: rgba(25,184,121,.28); }
   .cust-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 18px; }
-  .cust-field { display: grid; gap: 7px; }
+  .cust-field { position: relative; display: grid; gap: 7px; }
+  .cust-field::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 8px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan)); opacity: 0; transition: opacity .16s ease; }
+  .cust-field:focus-within::after { opacity: 1; }
   .cust-field.is-wide { grid-column: 1 / -1; }
   .cust-field label { color: #405066; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
   .cust-field input,
   .cust-field select { width: 100%; min-height: 42px; border-radius: 8px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); padding: 10px 12px; outline: none; font: inherit; }
   .cust-field input:focus,
   .cust-field select:focus { border-color: rgba(0,166,214,.55); box-shadow: 0 0 0 4px rgba(0,166,214,.12); }
+  .cust-help { margin: 0; color: #667085; font-size: 12px; line-height: 1.45; }
+  .cust-field-error { display: none; margin: 0; color: #b42318; font-size: 12px; font-weight: 850; line-height: 1.45; }
+  .cust-field.is-invalid input,
+  .cust-field.is-invalid select { border-color: rgba(255,107,107,.70); background: #fff8f8; box-shadow: 0 0 0 4px rgba(255,107,107,.10); }
+  .cust-field.is-invalid .cust-field-error { display: block; }
+  .cust-field.is-valid input,
+  .cust-field.is-valid select { border-color: rgba(25,184,121,.48); box-shadow: 0 0 0 4px rgba(25,184,121,.09); }
   .cust-status { display: inline-flex; align-items: center; border-radius: 8px; padding: 6px 9px; font-size: 12px; font-weight: 850; }
   .cust-status--green { color: #047857; background: #effcf6; }
   .cust-status--cyan { color: #087894; background: #effbff; }
@@ -94,18 +173,19 @@
   .cust-status--rose { color: #b42318; background: #fff4f4; }
   .cust-status--slate { color: #475569; background: #f3f5f8; }
   .cust-list { display: grid; gap: 10px; margin-top: 14px; }
-  .cust-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--coral); }
+  .cust-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--coral); box-shadow: 0 10px 24px rgba(23,32,51,.06); }
   .cust-money { font-weight: 900; color: #047857; }
+  @media (max-width: 1100px) { .cust-hero-mark { display: none; } }
   @media (max-width: 980px) { .cust-layout { grid-template-columns: 1fr; } }
-  @media (max-width: 640px) { .cust-edit { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 36px; } .cust-field-grid { grid-template-columns: 1fr; } .cust-field.is-wide { grid-column: auto; } }
+  @media (max-width: 640px) { .cust-edit { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 38px; } .cust-field-grid { grid-template-columns: 1fr; } .cust-field.is-wide { grid-column: auto; } }
 </style>
 
 <main class="cust-edit">
   <div class="cust-shell">
     <section class="cust-hero">
       <div>
-        <span class="cust-chip">Manager CRM</span>
-        <h1><%= isEdit ? "Sửa hồ sơ khách hàng" : "Thêm khách hàng mới" %></h1>
+        <span class="cust-chip">Quản lý khách hàng</span>
+        <h1><%= isEdit ? "Sửa hồ sơ" : "Thêm" %> <span>khách hàng</span></h1>
         <p class="cust-muted">
           <%= isEdit
             ? `Đang xử lý hồ sơ #${formValues.id}. Trang riêng giúp sửa dữ liệu, đổi mật khẩu và kiểm tra trùng mềm rõ ràng hơn.`
@@ -116,12 +196,23 @@
         <a class="cust-button" href="/manager/customers">Danh sách</a>
         <% if (isEdit && formValues.id) { %><a class="cust-button" href="/manager/customers/<%= formValues.id %>">Chi tiết</a><% } %>
       </div>
+      <div class="cust-hero-mark" aria-hidden="true">
+        <div class="cust-mark-line"><span></span></div>
+        <div class="cust-mark-line"><span></span></div>
+        <div class="cust-mark-line"><span></span></div>
+        <div class="cust-mark-line"><span></span></div>
+      </div>
     </section>
 
     <section class="cust-layout">
       <section class="cust-panel">
-        <h2><%= isEdit ? "Thông tin cần cập nhật" : "Thông tin hồ sơ" %></h2>
-        <p class="cust-muted">Email, SĐT và CCCD là bộ khóa định danh; khi sửa một hồ sơ hiện hữu, hệ thống tự loại trừ chính khách hàng đó khỏi kiểm tra trùng.</p>
+        <div class="cust-panel-head">
+          <div>
+            <h2><%= isEdit ? "Thông tin cần cập nhật" : "Thông tin hồ sơ" %></h2>
+            <p class="cust-muted">Email, SĐT và CCCD là bộ khóa định danh; khi sửa một hồ sơ hiện hữu, hệ thống tự loại trừ chính khách hàng đó khỏi kiểm tra trùng.</p>
+          </div>
+          <span class="cust-live-pill"><%= isEdit ? "Đang sửa hồ sơ hiện có" : "Sẵn sàng tạo khách mới" %></span>
+        </div>
         <% if (formError) { %><div class="cust-alert cust-alert--error"><%= formError %></div><% } %>
         <% if (success) { %><div class="cust-alert cust-alert--success"><%= success %></div><% } %>
         <% if (duplicateModeValue === "hard_duplicate" && hardDuplicateRows.length) { %>
@@ -139,7 +230,7 @@
             <% }) %>
           </div>
         <% } %>
-        <form method="post" action="/manager/customers" autocomplete="off" novalidate>
+        <form method="post" action="/manager/customers" autocomplete="off" novalidate data-customer-form data-mode="<%= isEdit ? "edit" : "create" %>">
           <input type="hidden" name="customer_id" value="<%= formValues.id || "" %>" autocomplete="off" />
           <div class="cust-field-grid">
             <div class="cust-field">
@@ -148,19 +239,27 @@
             </div>
             <div class="cust-field">
               <label for="ten_kh">Họ tên</label>
-              <input id="ten_kh" name="ten_kh" required value="<%= formValues.tenKh || "" %>" autocomplete="off" />
+              <input id="ten_kh" name="ten_kh" required minlength="2" maxlength="80" value="<%= formValues.tenKh || "" %>" autocomplete="off" aria-describedby="ten_kh_help ten_kh_error" />
+              <p class="cust-help" id="ten_kh_help">2-80 ký tự, phải có chữ cái; được dùng chữ số, khoảng trắng, dấu nháy, dấu chấm hoặc dấu gạch nối.</p>
+              <p class="cust-field-error" id="ten_kh_error"></p>
             </div>
             <div class="cust-field">
               <label for="sdt">SĐT</label>
-              <input id="sdt" name="sdt" required value="<%= formValues.sdt || "" %>" autocomplete="off" />
+              <input id="sdt" name="sdt" required inputmode="tel" maxlength="13" pattern="(?:0(?:3|5|7|8|9)[0-9]{8}|\+84(?:3|5|7|8|9)[0-9]{8})" value="<%= formValues.sdt || "" %>" autocomplete="off" aria-describedby="sdt_help sdt_error" />
+              <p class="cust-help" id="sdt_help">Ví dụ: 0901234567 hoặc +84901234567. Chỉ nhận đầu số 03/05/07/08/09.</p>
+              <p class="cust-field-error" id="sdt_error"></p>
             </div>
             <div class="cust-field">
               <label for="email">Email</label>
-              <input id="email" name="email" type="email" required value="<%= formValues.email || "" %>" autocomplete="off" />
+              <input id="email" name="email" type="email" required maxlength="120" value="<%= formValues.email || "" %>" autocomplete="off" aria-describedby="email_help email_error" />
+              <p class="cust-help" id="email_help">Email dùng làm username đăng nhập, không được trùng hồ sơ khác.</p>
+              <p class="cust-field-error" id="email_error"></p>
             </div>
             <div class="cust-field">
               <label for="cccd">CCCD</label>
-              <input id="cccd" name="cccd" required value="<%= formValues.cccd || "" %>" autocomplete="off" />
+              <input id="cccd" name="cccd" required inputmode="numeric" maxlength="12" pattern="(?:[0-9]{9}|[0-9]{12})" value="<%= formValues.cccd || "" %>" autocomplete="off" aria-describedby="cccd_help cccd_error" />
+              <p class="cust-help" id="cccd_help">Nhập đúng 9 số CMND hoặc 12 số CCCD.</p>
+              <p class="cust-field-error" id="cccd_error"></p>
             </div>
             <div class="cust-field">
               <label for="loai_khach">Loại khách</label>
@@ -172,11 +271,15 @@
             </div>
             <div class="cust-field">
               <label for="password">Mật khẩu</label>
-              <input id="password" name="password" type="password" placeholder="<%= isEdit ? "Để trống nếu không đổi" : "Tối thiểu 6 ký tự" %>" autocomplete="new-password" />
+              <input id="password" name="password" type="password" minlength="6" maxlength="72" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{6,72}" placeholder="<%= isEdit ? "Để trống nếu không đổi" : "Ví dụ: Abc123" %>" autocomplete="new-password" aria-describedby="password_help password_error" />
+              <p class="cust-help" id="password_help"><%= isEdit ? "Để trống nếu không đổi. Nếu nhập mới: 6-72 ký tự, có ít nhất 1 chữ cái và 1 chữ số." : "Bắt buộc khi tạo mới: 6-72 ký tự, có ít nhất 1 chữ cái và 1 chữ số." %></p>
+              <p class="cust-field-error" id="password_error"></p>
             </div>
             <div class="cust-field is-wide">
               <label for="dia_chi">Địa chỉ</label>
-              <input id="dia_chi" name="dia_chi" value="<%= formValues.diaChi || "" %>" autocomplete="off" />
+              <input id="dia_chi" name="dia_chi" maxlength="255" value="<%= formValues.diaChi || "" %>" autocomplete="off" aria-describedby="dia_chi_help dia_chi_error" />
+              <p class="cust-help" id="dia_chi_help">Tối đa 255 ký tự, không dùng các ký tự nguy hiểm như &lt; &gt; { } [ ] \.</p>
+              <p class="cust-field-error" id="dia_chi_error"></p>
             </div>
           </div>
           <div class="cust-actions">
@@ -187,7 +290,12 @@
       </section>
 
       <aside class="cust-panel">
-        <h2>Ngữ cảnh</h2>
+        <div class="cust-panel-head">
+          <div>
+            <h2>Ngữ cảnh</h2>
+            <p class="cust-muted">Tóm tắt hồ sơ và cảnh báo trùng để quản lý ra quyết định nhanh.</p>
+          </div>
+        </div>
         <% if (detailCustomer) { %>
           <div class="cust-list">
             <article class="cust-insight">
@@ -235,5 +343,106 @@
     </section>
   </div>
 </main>
+
+<script>
+  (() => {
+    const form = document.querySelector("[data-customer-form]");
+    if (!form) return;
+
+    const isCreate = form.dataset.mode === "create";
+    const nameRegex = /^(?=.*\p{L})[\p{L}\d\s'.-]{2,80}$/u;
+    const phoneRegex = /^(?:0(?:3|5|7|8|9)\d{8}|\+84(?:3|5|7|8|9)\d{8})$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const cccdRegex = /^(?:\d{9}|\d{12})$/;
+    const addressRegex = /^[^<>{}\[\]\\]{0,255}$/u;
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,72}$/;
+
+    const validators = {
+      ten_kh(value) {
+        const normalized = value.trim().replace(/\s+/g, " ");
+        if (!normalized) return "Vui lòng nhập họ tên khách hàng.";
+        if (!nameRegex.test(normalized)) return "Họ tên phải có chữ cái và chỉ gồm chữ cái, chữ số, khoảng trắng, dấu nháy, dấu chấm hoặc dấu gạch nối.";
+        return "";
+      },
+      sdt(value) {
+        const normalized = value.trim().replace(/[\s.-]/g, "");
+        if (!normalized) return "Vui lòng nhập số điện thoại.";
+        if (!phoneRegex.test(normalized)) return "SĐT phải là số Việt Nam hợp lệ: 0901234567 hoặc +84901234567.";
+        return "";
+      },
+      email(value) {
+        const normalized = value.trim().toLowerCase();
+        if (!normalized) return "Vui lòng nhập email.";
+        if (normalized.length > 120 || !emailRegex.test(normalized)) return "Email không đúng định dạng.";
+        return "";
+      },
+      cccd(value) {
+        const normalized = value.trim().replace(/\s/g, "");
+        if (!normalized) return "Vui lòng nhập CCCD/CMND.";
+        if (!cccdRegex.test(normalized)) return "CCCD/CMND phải gồm đúng 9 hoặc 12 chữ số.";
+        return "";
+      },
+      password(value) {
+        const normalized = value.trim();
+        if (!normalized && !isCreate) return "";
+        if (!normalized) return "Vui lòng nhập mật khẩu khi tạo khách mới.";
+        if (!passwordRegex.test(normalized)) return "Mật khẩu phải có 6-72 ký tự, gồm ít nhất 1 chữ cái và 1 chữ số.";
+        return "";
+      },
+      dia_chi(value) {
+        const normalized = value.trim();
+        if (!addressRegex.test(normalized)) return "Địa chỉ chứa ký tự không an toàn hoặc vượt quá 255 ký tự.";
+        return "";
+      }
+    };
+
+    const normalizeBeforeSubmit = () => {
+      const phone = form.elements.sdt;
+      const cccd = form.elements.cccd;
+      const email = form.elements.email;
+      const name = form.elements.ten_kh;
+      if (phone) phone.value = phone.value.trim().replace(/[\s.-]/g, "");
+      if (cccd) cccd.value = cccd.value.trim().replace(/\s/g, "");
+      if (email) email.value = email.value.trim().toLowerCase();
+      if (name) name.value = name.value.trim().replace(/\s+/g, " ");
+    };
+
+    const setFieldState = (input, message) => {
+      const field = input.closest(".cust-field");
+      const error = field?.querySelector(".cust-field-error");
+      if (!field || !error) return;
+
+      field.classList.toggle("is-invalid", Boolean(message));
+      field.classList.toggle("is-valid", !message && Boolean(input.value.trim()));
+      error.textContent = message || "";
+    };
+
+    const validateInput = (input) => {
+      const validator = validators[input.name];
+      if (!validator) return true;
+      const message = validator(input.value || "");
+      setFieldState(input, message);
+      return !message;
+    };
+
+    const inputs = Array.from(form.querySelectorAll("input[name]"))
+      .filter((input) => validators[input.name]);
+
+    inputs.forEach((input) => {
+      input.addEventListener("input", () => validateInput(input));
+      input.addEventListener("blur", () => validateInput(input));
+    });
+
+    form.addEventListener("submit", (event) => {
+      normalizeBeforeSubmit();
+      const firstInvalid = inputs.find((input) => !validateInput(input));
+      if (!firstInvalid) return;
+
+      event.preventDefault();
+      firstInvalid.focus();
+      firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  })();
+</script>
 
 <%- include("../partials/footer") %>

@@ -3,8 +3,8 @@ import { AdminService } from "../services/admin.service";
 
 const adminService = new AdminService();
 
-export async function renderUsersPage(_req: Request, res: Response) {
-  const payload = await adminService.listUsers();
+export async function renderUsersPage(req: Request, res: Response) {
+  const payload = await adminService.listUsers(req.query);
   return res.render("admin/users", {
     title: "Quan tri nguoi dung",
     payload
@@ -16,8 +16,8 @@ export async function saveUserAction(req: Request, res: Response) {
   return res.redirect("/admin/users");
 }
 
-export async function usersApi(_req: Request, res: Response) {
-  const payload = await adminService.listUsers();
+export async function usersApi(req: Request, res: Response) {
+  const payload = await adminService.listUsers(req.query);
   return res.json({ ok: true, message: "Tai danh sach user thanh cong.", data: payload });
 }
 
@@ -136,37 +136,40 @@ export async function renderRestorePage(req: Request, res: Response) {
 
 export async function saveBackupConfigAction(req: Request, res: Response) {
   await adminService.saveAutoBackupMode(req.body, req.session.user?.username ?? "admin");
-  return res.redirect("/admin/backups?success=Da%20luu%20cau%20hinh%20sao%20luu%20tu%20dong.");
+  return res.redirect("/admin/backups?success=Đã%20lưu%20cấu%20hình%20sao%20lưu%20tự%20động.");
 }
 
 export async function createBackupAction(req: Request, res: Response) {
   const payload = await adminService.createBackup(req.body, req.session.user?.username ?? "admin");
-  const success = encodeURIComponent(`Sao luu thanh cong: ${payload.fileName}`);
+  const success = encodeURIComponent(`Sao lưu thành công: ${payload.fileName}`);
   return res.redirect(`/admin/backups?success=${success}&file=${encodeURIComponent(payload.relativeName)}`);
 }
 
 export async function restoreBackupAction(req: Request, res: Response) {
   const payload = await adminService.restoreBackup(req.body, req.session.user?.username ?? "admin");
-  const success = encodeURIComponent(`Phuc hoi thanh cong tu file ${payload.fileName}.`);
+  const preBackupName = payload.preRestoreBackup?.relativeName
+    ? ` Hệ thống đã tự tạo backup an toàn trước phục hồi: ${payload.preRestoreBackup.relativeName}.`
+    : "";
+  const success = encodeURIComponent(`Phục hồi thành công từ file ${payload.fileName}.${preBackupName}`);
   return res.redirect(`/admin/restore?success=${success}&file=${encodeURIComponent(payload.fileName)}`);
 }
 
 export async function backupsApi(req: Request, res: Response) {
   const payload = await adminService.getBackupDashboard(typeof req.query.file === "string" ? req.query.file : "");
-  return res.json({ ok: true, message: "Tai danh sach backup thanh cong.", data: payload });
+  return res.json({ ok: true, message: "Tải danh sách backup thành công.", data: payload });
 }
 
 export async function saveBackupConfigApi(req: Request, res: Response) {
   const payload = await adminService.saveAutoBackupMode(req.body, req.session.user?.username ?? "admin");
-  return res.json({ ok: true, message: "Da luu cau hinh auto backup.", data: payload });
+  return res.json({ ok: true, message: "Đã lưu cấu hình auto backup.", data: payload });
 }
 
 export async function createBackupApi(req: Request, res: Response) {
   const payload = await adminService.createBackup(req.body, req.session.user?.username ?? "admin");
-  return res.json({ ok: true, message: "Sao luu thanh cong.", data: payload });
+  return res.json({ ok: true, message: "Sao lưu thành công.", data: payload });
 }
 
 export async function restoreBackupApi(req: Request, res: Response) {
   const payload = await adminService.restoreBackup(req.body, req.session.user?.username ?? "admin");
-  return res.json({ ok: true, message: "Phuc hoi du lieu thanh cong.", data: payload });
+  return res.json({ ok: true, message: "Phục hồi dữ liệu thành công.", data: payload });
 }

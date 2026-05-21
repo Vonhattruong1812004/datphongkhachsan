@@ -1,58 +1,373 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">AI Analytics</div>
-    <h2>Thong ke concierge, recommendation va service conversion</h2>
-    <div class="dashboard-grid">
-      <article class="dashboard-card"><strong><%= payload.summary.totalAiRequests %></strong><h3>Total AI requests</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.conciergeCount %></strong><h3>Concierge calls</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.recommendationCount %></strong><h3>Recommendation calls</h3></article>
-    </div>
-    <p class="muted" style="margin-top:16px;">Mode: <%= payload.provider.mode %> · Provider: <%= payload.provider.provider %> · <%= payload.provider.summary %></p>
-    <div class="nav-links" style="margin-top:16px;">
-      <a class="chip" href="/api/ai/analytics">Analytics JSON</a>
-      <a class="chip" href="/ai/concierge">AI Concierge</a>
-    </div>
-  </section>
+<%
+  const summary = payload?.summary || {};
+  const provider = payload?.provider || {};
+  const dailyTrend = Array.isArray(payload?.dailyTrend) ? payload.dailyTrend : [];
+  const hotelBreakdown = Array.isArray(payload?.hotelBreakdown) ? payload.hotelBreakdown : [];
+  const topServices = Array.isArray(payload?.topServices) ? payload.topServices : [];
+  const endpoints = Array.isArray(payload?.endpointBreakdown) ? payload.endpointBreakdown : [];
+  const nextActions = Array.isArray(payload?.nextActions) ? payload.nextActions : [];
+  const totalRequests = Number(summary.totalAiRequests || 0);
+  const maxTrend = Math.max(1, ...dailyTrend.map((item) => Number(item.total || 0)));
+  const maxHotel = Math.max(1, ...hotelBreakdown.map((item) => Number(item.total || 0)));
+  const maxRevenue = Math.max(1, ...topServices.map((item) => Number(item.revenue || 0)));
+  const formatMoney = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+  const formatDateTime = (value) => {
+    if (!value) return "Chưa có";
+    try {
+      return new Date(value).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" });
+    } catch {
+      return value;
+    }
+  };
+  const dashboardHref = backHref || "/dashboard/admin";
+%>
+<style>
+  .ai-analytics {
+    --ai-ink: #111827;
+    --ai-muted: #667085;
+    --ai-line: rgba(17,24,39,.10);
+    --ai-card: rgba(255,255,255,.84);
+    --ai-cyan: #06b6d4;
+    --ai-blue: #2563eb;
+    --ai-green: #10b981;
+    --ai-amber: #f59e0b;
+    --ai-rose: #f43f5e;
+    --ai-violet: #8b5cf6;
+    --ai-shadow: 0 24px 80px rgba(15,23,42,.12);
+    min-height: calc(100vh - 84px);
+    padding: 34px 18px 58px;
+    color: var(--ai-ink);
+    background:
+      linear-gradient(rgba(255,255,255,.42) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.42) 1px, transparent 1px),
+      radial-gradient(circle at 8% 8%, rgba(6,182,212,.20), transparent 30%),
+      radial-gradient(circle at 88% 10%, rgba(139,92,246,.18), transparent 28%),
+      radial-gradient(circle at 54% 108%, rgba(16,185,129,.15), transparent 34%),
+      linear-gradient(135deg, #f8fdff 0%, #f4fbff 45%, #fff8fb 100%);
+    background-size: auto, 42px 42px, auto, auto, auto, auto;
+  }
+  .ai-wrap { max-width: 1180px; margin: 0 auto; }
+  .ai-panel,
+  .ai-score,
+  .ai-stat,
+  .ai-card,
+  .ai-row,
+  .ai-empty {
+    border: 1px solid var(--ai-line);
+    background: var(--ai-card);
+    box-shadow: var(--ai-shadow);
+    backdrop-filter: blur(22px);
+  }
+  .ai-hero { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: stretch; }
+  .ai-panel { position: relative; overflow: hidden; border-radius: 30px; padding: 30px; }
+  .ai-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(255,255,255,.88), transparent 42%), radial-gradient(circle at 90% 16%, rgba(6,182,212,.18), transparent 32%);
+    pointer-events: none;
+  }
+  .ai-label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 999px;
+    padding: 8px 13px;
+    background: rgba(6,182,212,.12);
+    border: 1px solid rgba(6,182,212,.18);
+    color: #075985;
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .ai-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--ai-cyan);
+    box-shadow: 0 0 0 7px rgba(6,182,212,.14);
+  }
+  .ai-panel h1 {
+    position: relative;
+    z-index: 1;
+    margin: 22px 0 10px;
+    max-width: 780px;
+    font-size: clamp(42px, 5vw, 72px);
+    line-height: .94;
+    letter-spacing: -.06em;
+  }
+  .ai-panel h1 span {
+    color: transparent;
+    background: linear-gradient(135deg, #06b6d4, #2563eb 48%, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  .ai-lead {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0;
+    color: var(--ai-muted);
+    font-size: 16px;
+    line-height: 1.62;
+  }
+  .ai-actions { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .ai-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border: 1px solid rgba(17,24,39,.12);
+    border-radius: 999px;
+    padding: 10px 16px;
+    background: rgba(255,255,255,.78);
+    color: var(--ai-ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .ai-button:hover { transform: translateY(-2px); border-color: var(--ai-cyan); box-shadow: 0 18px 42px rgba(6,182,212,.14); }
+  .ai-button--primary { border-color: transparent; color: #fff; background: linear-gradient(135deg, #06b6d4, #2563eb); box-shadow: 0 18px 44px rgba(6,182,212,.22); }
+  .ai-score {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 30px;
+    padding: 24px;
+    background: linear-gradient(160deg, rgba(255,255,255,.95), rgba(240,249,255,.78));
+  }
+  .ai-score strong { display: block; font-size: 56px; line-height: 1; letter-spacing: -.08em; }
+  .ai-score span { display: block; margin-top: 8px; color: var(--ai-muted); font-size: 12px; font-weight: 1000; text-transform: uppercase; letter-spacing: .07em; }
+  .ai-score p { margin: 18px 0 0; color: var(--ai-muted); font-size: 13px; line-height: 1.55; }
+  .ai-provider {
+    margin-top: 18px;
+    border-radius: 18px;
+    padding: 13px;
+    background: rgba(6,182,212,.10);
+    border: 1px solid rgba(6,182,212,.14);
+  }
+  .ai-provider b { display: block; color: #075985; margin-bottom: 4px; }
+  .ai-provider small { color: #475467; line-height: 1.45; }
+  .ai-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+  .ai-stat { position: relative; overflow: hidden; border-radius: 24px; padding: 18px; background: rgba(255,255,255,.74); }
+  .ai-stat::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: linear-gradient(90deg, var(--stat-color), transparent); }
+  .ai-stat strong { display: block; font-size: 32px; line-height: 1; letter-spacing: -.05em; }
+  .ai-stat span { display: block; margin-top: 8px; color: var(--ai-muted); font-size: 12px; font-weight: 1000; text-transform: uppercase; letter-spacing: .06em; }
+  .ai-section { margin-top: 20px; }
+  .ai-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .ai-section-head h2 { margin: 0; font-size: 25px; letter-spacing: -.04em; }
+  .ai-section-head p { margin: 4px 0 0; color: var(--ai-muted); font-size: 13px; }
+  .ai-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .ai-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ai-card, .ai-row, .ai-empty { border-radius: 24px; padding: 18px; background: rgba(255,255,255,.78); }
+  .ai-card h3, .ai-row h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.03em; }
+  .ai-card p, .ai-row p, .ai-empty p { margin: 0; color: var(--ai-muted); font-size: 13px; line-height: 1.55; }
+  .ai-badge { display: inline-flex; width: max-content; border-radius: 999px; padding: 6px 10px; background: rgba(6,182,212,.12); color: #075985; font-size: 11px; font-weight: 1000; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
+  .ai-progress { height: 9px; border-radius: 999px; overflow: hidden; background: rgba(17,24,39,.08); margin-top: 12px; }
+  .ai-progress span { display: block; height: 100%; width: var(--bar, 0%); border-radius: inherit; background: linear-gradient(90deg, var(--bar-color, #06b6d4), rgba(139,92,246,.82)); }
+  .ai-trend { display: grid; gap: 9px; }
+  .ai-trend-row { display: grid; grid-template-columns: 104px minmax(0, 1fr) 70px; gap: 10px; align-items: center; font-size: 13px; font-weight: 850; color: #344054; }
+  .ai-trend-bar { height: 11px; border-radius: 999px; background: rgba(17,24,39,.08); overflow: hidden; }
+  .ai-trend-bar span { display: block; height: 100%; width: var(--bar, 0%); border-radius: inherit; background: linear-gradient(90deg, #06b6d4, #10b981); }
+  .ai-list { display: grid; gap: 10px; }
+  .ai-row { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 14px; align-items: center; box-shadow: none; }
+  .ai-row strong { font-size: 20px; letter-spacing: -.04em; text-align: right; }
+  .ai-empty { text-align: center; }
+  .ai-empty strong { display: block; margin-bottom: 8px; font-size: 19px; }
+  @media (max-width: 1080px) {
+    .ai-hero, .ai-grid, .ai-grid--3 { grid-template-columns: 1fr; }
+    .ai-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .ai-analytics { padding: 22px 12px 48px; }
+    .ai-panel, .ai-score, .ai-card, .ai-row { border-radius: 26px; padding: 20px; }
+    .ai-panel h1 { font-size: 42px; }
+    .ai-stats { grid-template-columns: 1fr; }
+    .ai-row, .ai-trend-row { grid-template-columns: 1fr; }
+    .ai-row strong { text-align: left; }
+    .ai-section-head { display: block; }
+  }
+</style>
 
-  <section class="panel">
-    <div class="section-eyebrow">Daily Trend</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.dailyTrend.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge">trend</span>
-          <h3><%= item.day %></h3>
-          <p class="muted"><%= item.total %> requests</p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+<main class="ai-analytics">
+  <div class="ai-wrap">
+    <section class="ai-hero" aria-label="AI Analytics">
+      <div class="ai-panel">
+        <div class="ai-label">AI insights workspace</div>
+        <h1>AI Analytics <span>đọc được nghiệp vụ.</span></h1>
+        <p class="ai-lead">Theo dõi lớp AI đang hỗ trợ khách tìm phòng, gọi recommendation và tạo tín hiệu dịch vụ. Trang này không phải UC chính của Admin, nhưng là màn quan sát để biết AI có đang mang lại giá trị thật hay chỉ đang chạy cho có.</p>
+        <div class="ai-actions">
+          <a class="ai-button ai-button--primary" href="/ai/concierge">Mở AI Concierge</a>
+          <a class="ai-button" href="/admin/ai-diagnostics">AI diagnostics</a>
+          <a class="ai-button" href="/admin/diagnostics">Sức khỏe hệ thống</a>
+          <a class="ai-button" href="<%= dashboardHref %>">Về dashboard</a>
+          <a class="ai-button" href="/api/ai/analytics">Analytics JSON</a>
+        </div>
+      </div>
+      <aside class="ai-score">
+        <strong><%= totalRequests %></strong>
+        <span>Tổng request AI</span>
+        <p>Cập nhật: <%= formatDateTime(payload.generatedAt) %></p>
+        <div class="ai-provider">
+          <b><%= provider.provider || "local-heuristic" %> · <%= provider.mode || "local" %></b>
+          <small><%= provider.summary || "Đang chạy provider nội bộ." %></small>
+        </div>
+      </aside>
+    </section>
 
-  <section class="panel">
-    <div class="section-eyebrow">Hotel Breakdown</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.hotelBreakdown.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge">hotel</span>
-          <h3><%= item.hotelName %></h3>
-          <p class="muted"><%= item.total %> booking records</p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+    <section class="ai-stats" aria-label="KPI AI">
+      <article class="ai-stat" style="--stat-color:#06b6d4"><strong><%= summary.conciergeCount || 0 %></strong><span>Concierge</span></article>
+      <article class="ai-stat" style="--stat-color:#2563eb"><strong><%= summary.recommendationCount || 0 %></strong><span>Recommendation</span></article>
+      <article class="ai-stat" style="--stat-color:#10b981"><strong><%= summary.topServiceConversions || 0 %></strong><span>Service orders</span></article>
+      <article class="ai-stat" style="--stat-color:#f59e0b"><strong><%= formatMoney(summary.topServiceRevenue) %></strong><span>Service value</span></article>
+    </section>
 
-  <section class="panel">
-    <div class="section-eyebrow">Top Services</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.topServices.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge">service</span>
-          <h3><%= item.serviceName %></h3>
-          <p class="muted"><%= item.total %> orders · <%= Number(item.revenue || 0).toLocaleString("vi-VN") %> VND</p>
+    <section class="ai-section" aria-label="Luồng AI">
+      <div class="ai-section-head">
+        <div>
+          <h2>AI đang được dùng ở đâu</h2>
+          <p>Tách rõ tư vấn hội thoại và gợi ý đặt phòng để biết nên tối ưu luồng nào.</p>
+        </div>
+      </div>
+      <div class="ai-grid">
+        <% endpoints.forEach((item) => { %>
+          <article class="ai-card">
+            <span class="ai-badge"><%= item.share %>% traffic</span>
+            <h3><%= item.label %></h3>
+            <p><%= item.detail %></p>
+            <div class="ai-progress" aria-label="<%= item.label %> share">
+              <span style="--bar:<%= item.share %>%;--bar-color:<%= item.endpoint === '/api/ai/concierge' ? '#06b6d4' : '#2563eb' %>"></span>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="ai-section" aria-label="Tín hiệu chính">
+      <div class="ai-section-head">
+        <div>
+          <h2>Tín hiệu đáng chú ý</h2>
+          <p>Những điểm Admin/Quản lý cần nhìn nhanh trước khi quyết định nâng cấp provider hoặc tối ưu gợi ý.</p>
+        </div>
+      </div>
+      <div class="ai-grid ai-grid--3">
+        <article class="ai-card">
+          <span class="ai-badge">Cơ sở nổi bật</span>
+          <h3><%= summary.topHotelName || "Chưa có dữ liệu" %></h3>
+          <p><%= summary.topHotelBookings || 0 %> booking records trong dữ liệu hiện tại.</p>
         </article>
-      <% }) %>
-    </div>
-  </section>
+        <article class="ai-card">
+          <span class="ai-badge">Dịch vụ nổi bật</span>
+          <h3><%= summary.topServiceName || "Chưa có dữ liệu" %></h3>
+          <p>Đang tạo phần lớn giá trị trong nhóm dịch vụ được đặt.</p>
+        </article>
+        <article class="ai-card">
+          <span class="ai-badge">Ngày cao điểm</span>
+          <h3><%= summary.peakDay || "Chưa có request" %></h3>
+          <p><%= summary.peakDayRequests || 0 %> request trong 14 ngày gần nhất.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="ai-section" aria-label="Xu hướng 14 ngày">
+      <div class="ai-section-head">
+        <div>
+          <h2>Xu hướng 14 ngày</h2>
+          <p>Đọc nhanh nhịp gọi AI gần đây để phát hiện ngày tăng bất thường hoặc không có traffic.</p>
+        </div>
+      </div>
+      <% if (!dailyTrend.length) { %>
+        <div class="ai-empty"><strong>Chưa có request AI gần đây</strong><p>Hãy thử AI Concierge hoặc API recommendation để tạo dữ liệu phân tích ban đầu.</p></div>
+      <% } else { %>
+        <div class="ai-card ai-trend">
+          <% dailyTrend.forEach((item) => {
+            const total = Number(item.total || 0);
+            const percent = Math.max(4, Math.round((total / maxTrend) * 100));
+          %>
+            <div class="ai-trend-row">
+              <span><%= item.day %></span>
+              <div class="ai-trend-bar"><span style="--bar:<%= percent %>%"></span></div>
+              <strong><%= total %> request</strong>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="ai-section" aria-label="Cơ sở và dịch vụ">
+      <div class="ai-section-head">
+        <div>
+          <h2>Booking theo cơ sở và dịch vụ</h2>
+          <p>Dữ liệu này giúp biết nên ưu tiên gợi ý cơ sở nào và dịch vụ nào nên bán kèm.</p>
+        </div>
+      </div>
+      <div class="ai-grid">
+        <div class="ai-list">
+          <% if (!hotelBreakdown.length) { %>
+            <div class="ai-empty"><strong>Chưa có booking theo cơ sở</strong><p>Cần có giao dịch đặt phòng để đo phân bổ.</p></div>
+          <% } %>
+          <% hotelBreakdown.forEach((item) => {
+            const total = Number(item.total || 0);
+            const percent = Math.max(4, Math.round((total / maxHotel) * 100));
+          %>
+            <article class="ai-row">
+              <div>
+                <span class="ai-badge">Hotel</span>
+                <h3><%= item.hotelName %></h3>
+                <p><%= total %> booking records</p>
+                <div class="ai-progress"><span style="--bar:<%= percent %>%;--bar-color:#06b6d4"></span></div>
+              </div>
+              <strong><%= total %></strong>
+            </article>
+          <% }) %>
+        </div>
+
+        <div class="ai-list">
+          <% if (!topServices.length) { %>
+            <div class="ai-empty"><strong>Chưa có conversion dịch vụ</strong><p>Khi khách đặt dịch vụ, hệ thống sẽ dùng dữ liệu này để tối ưu gợi ý.</p></div>
+          <% } %>
+          <% topServices.forEach((item) => {
+            const revenue = Number(item.revenue || 0);
+            const percent = Math.max(4, Math.round((revenue / maxRevenue) * 100));
+          %>
+            <article class="ai-row">
+              <div>
+                <span class="ai-badge">Service</span>
+                <h3><%= item.serviceName %></h3>
+                <p><%= item.total %> orders · <%= formatMoney(revenue) %></p>
+                <div class="ai-progress"><span style="--bar:<%= percent %>%;--bar-color:#10b981"></span></div>
+              </div>
+              <strong><%= formatMoney(revenue) %></strong>
+            </article>
+          <% }) %>
+        </div>
+      </div>
+    </section>
+
+    <section class="ai-section" aria-label="Khuyến nghị vận hành">
+      <div class="ai-section-head">
+        <div>
+          <h2>Khuyến nghị vận hành</h2>
+          <p>Giữ AI Analytics gắn với quyết định thật, không chỉ là số liệu kỹ thuật.</p>
+        </div>
+      </div>
+      <div class="ai-grid ai-grid--3">
+        <% nextActions.forEach((item, index) => { %>
+          <article class="ai-card">
+            <span class="ai-badge">Gợi ý <%= index + 1 %></span>
+            <p><%= item %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+  </div>
 </main>
 <%- include("../partials/footer") %>

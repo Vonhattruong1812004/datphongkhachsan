@@ -7,16 +7,58 @@ import { env } from "../../../config/env";
 import { pool, query, withTransaction } from "../../../config/database";
 import { HttpError } from "../../../shared/http/http-error";
 
+const trimString = (message: string) => z.string({ required_error: message }).trim();
+const adminEmailSchema = trimString("Email bat buoc.")
+  .regex(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i, "Email phai dung dinh dang, vi du user@example.com.");
+const adminPhoneSchema = trimString("So dien thoai bat buoc.")
+  .regex(/^(0\d{9}|\+84\d{9})$/, "So dien thoai phai gom 10 so bat dau bang 0 hoac +84 kem 9 so.");
+const adminCccdSchema = trimString("CCCD khong hop le.").optional().default("");
+
 const adminUserSchema = z.object({
   user_id: z.coerce.number().int().optional(),
-  ho_ten: z.string().min(2),
-  username: z.string().min(5).max(30).regex(/^[a-zA-Z0-9_]+$/),
-  password: z.string().optional().default("Abc@123"),
-  email: z.string().email(),
-  sdt: z.string().regex(/^(0|\+84)\d{8,10}$/),
+  ho_ten: trimString("Ho ten bat buoc.").min(2, "Ho ten phai co it nhat 2 ky tu."),
+  username: trimString("Username bat buoc.")
+    .min(5, "Username phai co it nhat 5 ky tu.")
+    .max(30, "Username toi da 30 ky tu.")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username chi duoc gom chu cai, so va dau gach duoi."),
+  password: z.string().trim().optional().default("Abc@123"),
+  email: adminEmailSchema,
+  sdt: adminPhoneSchema,
   vai_tro: z.coerce.number().int().min(1).max(7),
   trang_thai: z.enum(["HoatDong", "Khoa", "Ngung"]).default("HoatDong"),
-  cccd: z.string().optional().default("")
+  cccd: adminCccdSchema
+}).superRefine((input, ctx) => {
+  if (!input.user_id && input.password.length < 6) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["password"],
+      message: "Mat khau tao moi phai co it nhat 6 ky tu."
+    });
+  }
+
+  if (input.password && input.password.length > 0 && input.password.length < 6) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["password"],
+      message: "Mat khau phai co it nhat 6 ky tu."
+    });
+  }
+
+  if (input.cccd && !/^\d{9,12}$/.test(input.cccd)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["cccd"],
+      message: "CCCD/CMND phai gom 9-12 chu so."
+    });
+  }
+
+  if (input.vai_tro === 7 && !/^\d{9,12}$/.test(input.cccd)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["cccd"],
+      message: "Tai khoan khach hang bat buoc co CCCD/CMND 9-12 chu so."
+    });
+  }
 });
 
 const autoBackupConfigSchema = z.object({
@@ -115,7 +157,58 @@ const DATE_COLUMN_PRIORITY = [
 ];
 
 export class AdminService {
-  async listUsers() {
+  async listUsers(rawFilters: unknown = {}) {
+    const filterSource = rawFilters && typeof rawFilters === "object" ? rawFilters as Record<string, unknown> : {};
+    const keyword = typeof filterSource.keyword === "string" ? filterSource.keyword.trim() : "";
+    const requestedRoleId = Number(filterSource.vai_tro);
+    const roleId = Number.isInteger(requestedRoleId) && requestedRoleId > 0 ? requestedRoleId : 0;
+    const requestedStatus = typeof filterSource.trang_thai === "string" ? filterSource.trang_thai : "all";
+    const status = ["HoatDong", "Khoa", "Ngung"].includes(requestedStatus) ? requestedStatus : "all";
+    const requestedLink = typeof filterSource.lien_ket === "string" ? filterSource.lien_ket : "all";
+    const link = ["staff", "customer", "orphan"].includes(requestedLink) ? requestedLink : "all";
+    const filters = {
+      keyword,
+      vai_tro: roleId ? String(roleId) : "all",
+      trang_thai: status,
+      lien_ket: link
+    };
+    const where: string[] = [];
+    const params: Array<number | string> = [];
+
+    if (keyword) {
+      params.push(`%${keyword}%`);
+      where.push(`
+        (
+          tk.username ILIKE $${params.length}
+          OR COALESCE(vr.tenvaitro, '') ILIKE $${params.length}
+          OR COALESCE(kh.tenkh, nv.tennv, '') ILIKE $${params.length}
+          OR COALESCE(kh.email, nv.email, '') ILIKE $${params.length}
+          OR COALESCE(kh.sdt, nv.sdt, '') ILIKE $${params.length}
+          OR COALESCE(kh.cccd, '') ILIKE $${params.length}
+        )
+      `);
+    }
+
+    if (roleId) {
+      params.push(roleId);
+      where.push(`tk.mavaitro = $${params.length}`);
+    }
+
+    if (status !== "all") {
+      params.push(status);
+      where.push(`tk.trangthai = $${params.length}`);
+    }
+
+    if (link === "staff") {
+      where.push("tk.manhanvien IS NOT NULL");
+    } else if (link === "customer") {
+      where.push("tk.makhachhang IS NOT NULL");
+    } else if (link === "orphan") {
+      where.push("tk.manhanvien IS NULL AND tk.makhachhang IS NULL");
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
+
     const result = await query<{
       id: number;
       username: string;
@@ -131,6 +224,7 @@ export class AdminService {
       emailNv: string | null;
       sdtKh: string | null;
       sdtNv: string | null;
+      cccdKh: string | null;
     }>(
       `
         SELECT
@@ -147,22 +241,49 @@ export class AdminService {
           kh.email AS "emailKh",
           nv.email AS "emailNv",
           kh.sdt AS "sdtKh",
-          nv.sdt AS "sdtNv"
+          nv.sdt AS "sdtNv",
+          kh.cccd AS "cccdKh"
         FROM taikhoan tk
         LEFT JOIN vaitro vr ON vr.mavaitro = tk.mavaitro
         LEFT JOIN khachhang kh ON kh.makhachhang = tk.makhachhang
         LEFT JOIN nhanvien nv ON nv.manhanvien = tk.manhanvien
+        ${whereClause}
         ORDER BY tk.matk DESC
-      `
+      `,
+      params
     );
 
-    const roles = await query<{ id: number; tenVaiTro: string }>(
-      "SELECT mavaitro AS id, tenvaitro AS \"tenVaiTro\" FROM vaitro ORDER BY mavaitro ASC"
-    );
+    const [roles, summary] = await Promise.all([
+      query<{ id: number; tenVaiTro: string }>(
+        "SELECT mavaitro AS id, tenvaitro AS \"tenVaiTro\" FROM vaitro ORDER BY mavaitro ASC"
+      ),
+      query<{
+        total: number;
+        active: number;
+        locked: number;
+        staff: number;
+        customer: number;
+        orphan: number;
+      }>(
+        `
+          SELECT
+            COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE trangthai = 'HoatDong')::int AS active,
+            COUNT(*) FILTER (WHERE trangthai <> 'HoatDong')::int AS locked,
+            COUNT(*) FILTER (WHERE manhanvien IS NOT NULL)::int AS staff,
+            COUNT(*) FILTER (WHERE makhachhang IS NOT NULL)::int AS customer,
+            COUNT(*) FILTER (WHERE manhanvien IS NULL AND makhachhang IS NULL)::int AS orphan
+          FROM taikhoan
+        `
+      )
+    ]);
 
     return {
       users: result.rows,
-      roles: roles.rows
+      roles: roles.rows,
+      filters,
+      summary: summary.rows[0],
+      filteredCount: result.rows.length
     };
   }
 
@@ -274,18 +395,22 @@ export class AdminService {
   }
 
   async updateUserRole(userId: number, roleId: number) {
+    const safeUserId = z.coerce.number().int().positive("Ma tai khoan khong hop le.").parse(userId);
+    const safeRoleId = z.coerce.number().int().min(1).max(7).parse(roleId);
     const result = await query<{ id: number }>(
       "UPDATE taikhoan SET mavaitro = $2 WHERE matk = $1 RETURNING matk AS id",
-      [userId, roleId]
+      [safeUserId, safeRoleId]
     );
     if (!result.rows[0]) throw new HttpError(404, "Khong tim thay tai khoan.");
     return result.rows[0];
   }
 
-  async updateUserStatus(userId: number, status: "HoatDong" | "Khoa" | "Ngung") {
+  async updateUserStatus(userId: number, status: unknown) {
+    const safeUserId = z.coerce.number().int().positive("Ma tai khoan khong hop le.").parse(userId);
+    const safeStatus = z.enum(["HoatDong", "Khoa", "Ngung"]).parse(status);
     const result = await query<{ id: number }>(
       "UPDATE taikhoan SET trangthai = $2 WHERE matk = $1 RETURNING matk AS id",
-      [userId, status]
+      [safeUserId, safeStatus]
     );
     if (!result.rows[0]) throw new HttpError(404, "Khong tim thay tai khoan.");
     return result.rows[0];
@@ -377,6 +502,11 @@ export class AdminService {
       throw new HttpError(404, "File backup khong ton tai hoac dang rong.");
     }
 
+    const metadata = this.readBackupMetadata(filePath);
+    if (metadata.backupType && metadata.backupType !== "toan_bo") {
+      throw new HttpError(422, "Chi backup toan bo he thong moi duoc dung de phuc hoi. Backup theo ngay chi dung de doi soat/xuat du lieu.");
+    }
+
     const content = fs.readFileSync(filePath, "utf8");
     const sqlContent = this.extractSQLFromBackup(content);
 
@@ -384,11 +514,22 @@ export class AdminService {
       throw new HttpError(422, "File backup khong chua SQL hop le.");
     }
 
+    // Always keep a current snapshot before destructive restore.
+    const preRestoreBackup = await this.createBackup(
+      {
+        ten_file: "pre_restore",
+        hinh_thuc: "toan_bo",
+        thu_muc: "pre_restore"
+      },
+      actor
+    );
+
     const result = await this.importDatabase(sqlContent);
     return {
       ...result,
       restoredBy: actor,
-      fileName: input.backup_file
+      fileName: input.backup_file,
+      preRestoreBackup
     };
   }
 
@@ -443,16 +584,16 @@ export class AdminService {
   async runtimeDiagnostics() {
     const backupDir = this.ensureBackupDir();
     const checks = [
-      this.buildPathCheck("public_build", "Build assets", path.resolve(process.cwd(), "public/build"), true),
+      this.buildPathCheck("public_build", "Tài nguyên build", path.resolve(process.cwd(), "public/build"), true),
       this.buildPathCheck("manifest", "PWA manifest", path.resolve(process.cwd(), "public/manifest.webmanifest"), false),
       this.buildPathCheck("service_worker", "Service worker", path.resolve(process.cwd(), "public/sw.js"), false),
-      this.buildPathCheck("offline_page", "Offline page", path.resolve(process.cwd(), "public/offline.html"), false),
-      this.buildPathCheck("uploads_root", "Uploads root", path.resolve(process.cwd(), "uploads"), true),
-      this.buildPathCheck("uploads_ekyc", "eKYC uploads", path.resolve(process.cwd(), "uploads/ekyc"), true),
-      this.buildPathCheck("uploads_rooms", "Room uploads", path.resolve(process.cwd(), "uploads/rooms"), true),
-      this.buildPathCheck("storage_root", "Storage root", this.ensureStorageRoot(), true),
-      this.buildPathCheck("backup_dir", "Backup storage", backupDir, true),
-      this.buildPathCheck("backup_config", "Backup config", this.getBackupConfigPath(), false)
+      this.buildPathCheck("offline_page", "Trang offline", path.resolve(process.cwd(), "public/offline.html"), false),
+      this.buildPathCheck("uploads_root", "Thư mục upload", path.resolve(process.cwd(), "uploads"), true),
+      this.buildPathCheck("uploads_ekyc", "Upload eKYC", path.resolve(process.cwd(), "uploads/ekyc"), true),
+      this.buildPathCheck("uploads_rooms", "Upload ảnh phòng", path.resolve(process.cwd(), "uploads/phong"), true),
+      this.buildPathCheck("storage_root", "Kho lưu trữ nội bộ", this.ensureStorageRoot(), true),
+      this.buildPathCheck("backup_dir", "Kho backup", backupDir, true),
+      this.buildPathCheck("backup_config", "Cấu hình backup", this.getBackupConfigPath(), false)
     ];
 
     let dbReady = false;
@@ -465,9 +606,10 @@ export class AdminService {
 
     checks.unshift({
       key: "database",
-      label: "Database connectivity",
+      label: "Kết nối cơ sở dữ liệu",
       status: dbReady ? "ready" : "blocked",
-      detail: dbReady ? "PostgreSQL dang ket noi tot." : "Khong the ping PostgreSQL."
+      detail: dbReady ? "PostgreSQL đang kết nối tốt." : "Không thể ping PostgreSQL.",
+      technical_path: ""
     });
 
     const summary = this.summarizeChecks(checks);
@@ -477,23 +619,23 @@ export class AdminService {
       checks,
       next_actions: checks
         .filter((item) => item.status !== "ready")
-        .map((item) => `Xu ly ${item.label.toLowerCase()} de runtime on dinh hon.`)
+        .map((item) => `Xử lý ${item.label.toLowerCase()} để runtime ổn định hơn.`)
     };
   }
 
   async systemReadiness() {
     const modules = [
-      { key: "auth", name: "Auth", ready: true, detail: "Dang nhap / register / session da san sang." },
-      { key: "booking", name: "Booking", ready: true, detail: "Search / preview / create / lookup / invoice da co." },
-      { key: "frontdesk", name: "Frontdesk", ready: true, detail: "Da tach rieng direct booking, group registration, check-in, checkout, sua va huy dat phong." },
-      { key: "service", name: "Service", ready: true, detail: "Catalog / room feed / inspection da co." },
-      { key: "manager", name: "Manager", ready: true, detail: "Customers / promotions / rooms / audit da co." },
-      { key: "accounting", name: "Accounting", ready: true, detail: "Dashboard / revenue / expense / debt / report da co." },
-      { key: "admin", name: "Admin", ready: true, detail: "Users / role / status / diagnostics / backup / restore da co." },
-      { key: "ekyc", name: "eKYC", ready: true, detail: "Customer submit + staff review queue da co." },
-      { key: "feedback", name: "Feedback", ready: true, detail: "Create / filter / reply / status da co." },
-      { key: "ai", name: "AI layer", ready: true, detail: "Da co concierge / recommendation / analytics / local provider diagnostics." },
-      { key: "pwa_mobile", name: "PWA / Mobile", ready: true, detail: "Da co mobile hub, manifest, service worker va offline snapshot." }
+      { key: "auth", name: "Đăng nhập", ready: true, detail: "Đăng nhập, đăng ký và phiên làm việc đã sẵn sàng." },
+      { key: "booking", name: "Đặt phòng", ready: true, detail: "Tìm phòng, preview, tạo booking, tra cứu và hóa đơn đã có." },
+      { key: "frontdesk", name: "Lễ tân", ready: true, detail: "Đặt tại quầy, đăng ký đoàn, check-in, check-out, sửa và hủy đặt phòng đã tách riêng." },
+      { key: "service", name: "Dịch vụ", ready: true, detail: "Danh mục dịch vụ, room feed và kiểm tra phòng đã có." },
+      { key: "manager", name: "Quản lý", ready: true, detail: "Khách hàng, khuyến mãi, phòng và audit đã có." },
+      { key: "accounting", name: "Kế toán", ready: true, detail: "Dashboard, doanh thu, chi phí, công nợ và báo cáo đã có." },
+      { key: "admin", name: "Admin", ready: true, detail: "Người dùng, phân quyền, trạng thái, chẩn đoán, backup và restore đã có." },
+      { key: "ekyc", name: "eKYC", ready: true, detail: "Khách gửi hồ sơ và nhân viên duyệt queue đã có." },
+      { key: "feedback", name: "Phản hồi", ready: true, detail: "Tạo, lọc, trả lời và cập nhật trạng thái phản hồi đã có." },
+      { key: "ai", name: "Lớp AI", ready: true, detail: "Concierge, gợi ý, analytics và local provider diagnostics đã có." },
+      { key: "pwa_mobile", name: "PWA / Mobile", ready: true, detail: "Mobile hub, manifest, service worker và offline snapshot đã có." }
     ];
 
     const summary = {
@@ -508,7 +650,7 @@ export class AdminService {
       modules,
       next_actions: modules
         .filter((item) => !item.ready)
-        .map((item) => `Hoan thien ${item.name} de tang do phu he thong.`)
+        .map((item) => `Hoàn thiện ${item.name} để tăng độ phủ hệ thống.`)
     };
   }
 
@@ -757,7 +899,7 @@ export class AdminService {
     const backupRoot = path.resolve(this.ensureStorageRoot(), "backups");
     const finalDir = sanitized ? path.resolve(backupRoot, sanitized) : backupRoot;
 
-    if (!finalDir.startsWith(backupRoot)) {
+    if (!this.isPathInside(backupRoot, finalDir)) {
       throw new HttpError(422, "Thu muc backup khong hop le.");
     }
 
@@ -987,11 +1129,16 @@ export class AdminService {
     const backupRoot = this.ensureBackupDir();
     const candidate = path.resolve(backupRoot, relativeName);
 
-    if (!candidate.startsWith(backupRoot)) {
+    if (!this.isPathInside(backupRoot, candidate)) {
       throw new HttpError(422, "File backup khong hop le.");
     }
 
     return candidate;
+  }
+
+  private isPathInside(rootPath: string, targetPath: string) {
+    const relative = path.relative(rootPath, targetPath);
+    return relative === "" || Boolean(relative && !relative.startsWith("..") && !path.isAbsolute(relative));
   }
 
   private extractSQLFromBackup(content: string) {
@@ -1015,7 +1162,7 @@ export class AdminService {
     let executed = 0;
 
     try {
-      const statements = this.splitSqlStatements(sql);
+      const statements = this.prepareRestoreStatements(this.splitSqlStatements(sql));
       for (const statement of statements) {
         const trimmed = statement.trim();
         if (!trimmed) {
@@ -1028,7 +1175,7 @@ export class AdminService {
 
       return {
         success: true,
-        message: `Da thuc thi ${executed} cau lenh SQL thanh cong.`
+        message: `Đã thực thi ${executed} câu lệnh SQL thành công.`
       };
     } catch (error) {
       try {
@@ -1037,8 +1184,8 @@ export class AdminService {
         // ignore rollback follow-up errors
       }
 
-      const message = error instanceof Error ? error.message : "Khong the import backup.";
-      throw new HttpError(422, `Restore that bai: ${message}`);
+      const message = error instanceof Error ? error.message : "Không thể import backup.";
+      throw new HttpError(422, `Phục hồi thất bại: ${message}`);
     } finally {
       client.release();
     }
@@ -1085,6 +1232,198 @@ export class AdminService {
     }
 
     return statements;
+  }
+
+  private prepareRestoreStatements(statements: string[]) {
+    const prepared: string[] = [];
+    const deferredUpdates: string[] = [];
+
+    for (const statement of statements) {
+      const customerRewrite = this.rewriteCustomerInsertForRestore(statement);
+      if (customerRewrite) {
+        prepared.push(customerRewrite.statement);
+        deferredUpdates.push(...customerRewrite.deferredUpdates);
+        continue;
+      }
+
+      if (this.statementHasCommit(statement) && deferredUpdates.length) {
+        prepared.push(...deferredUpdates);
+      }
+
+      prepared.push(statement);
+    }
+
+    if (deferredUpdates.length && !statements.some((statement) => this.statementHasCommit(statement))) {
+      prepared.push(...deferredUpdates);
+    }
+
+    return prepared;
+  }
+
+  private statementHasCommit(statement: string) {
+    return /(?:^|\n)\s*COMMIT\s*;?\s*$/i.test(statement);
+  }
+
+  private rewriteCustomerInsertForRestore(statement: string) {
+    const insertStart = statement.search(/\bINSERT\s+INTO\b/i);
+    if (insertStart < 0) {
+      return null;
+    }
+
+    const insertStatement = statement.slice(insertStart);
+    const schemaPrefix = `${this.quoteIdent(env.PGSCHEMA)}\\.`;
+    const customerInsertPattern = new RegExp(
+      `^\\s*INSERT\\s+INTO\\s+(?:${schemaPrefix})?${this.quoteIdent("khachhang")}\\s*\\(([^]+?)\\)\\s+VALUES\\s+([^]+?);?\\s*$`,
+      "i"
+    );
+    const match = insertStatement.match(customerInsertPattern);
+    if (!match) {
+      return null;
+    }
+
+    const columns = this.splitSqlList(match[1]).map((column) => column.replace(/^"|"$/g, "").replace(/""/g, "\""));
+    const customerIdIndex = columns.findIndex((column) => column.toLowerCase() === "makhachhang");
+    const accountIdIndex = columns.findIndex((column) => column.toLowerCase() === "matk");
+    if (customerIdIndex < 0 || accountIdIndex < 0) {
+      return null;
+    }
+
+    const tuples = this.splitSqlTuples(match[2]);
+    const linkRows: string[] = [];
+    const rewrittenTuples = tuples.map((tuple) => {
+      const values = this.splitSqlList(tuple);
+      if (values.length !== columns.length) {
+        return `(${tuple})`;
+      }
+
+      const customerId = values[customerIdIndex]?.trim();
+      const accountId = values[accountIdIndex]?.trim();
+      if (customerId && accountId && !/^null$/i.test(customerId) && !/^null$/i.test(accountId)) {
+        linkRows.push(`(${customerId}, ${accountId})`);
+        values[accountIdIndex] = "NULL";
+      }
+
+      return `(${values.join(", ")})`;
+    });
+
+    if (!linkRows.length) {
+      return null;
+    }
+
+    const columnRefs = columns.map((column) => this.quoteIdent(column)).join(", ");
+    const statementWithoutCyclicLink = `INSERT INTO ${this.schemaTableRef("khachhang")} (${columnRefs}) VALUES\n${rewrittenTuples.join(",\n")};`;
+    const deferredUpdate = `
+      UPDATE ${this.schemaTableRef("khachhang")} AS kh
+      SET ${this.quoteIdent("matk")} = link.${this.quoteIdent("matk")}
+      FROM (VALUES ${linkRows.join(", ")}) AS link(${this.quoteIdent("makhachhang")}, ${this.quoteIdent("matk")})
+      WHERE kh.${this.quoteIdent("makhachhang")} = link.${this.quoteIdent("makhachhang")};
+    `;
+
+    return {
+      statement: statementWithoutCyclicLink,
+      deferredUpdates: [deferredUpdate]
+    };
+  }
+
+  private splitSqlTuples(valuesSql: string) {
+    const tuples: string[] = [];
+    let current = "";
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+
+    for (let i = 0; i < valuesSql.length; i += 1) {
+      const char = valuesSql[i];
+      const next = i + 1 < valuesSql.length ? valuesSql[i + 1] : "";
+
+      if (char === "'" && !inDoubleQuote && inSingleQuote && next === "'") {
+        if (depth > 0) current += char + next;
+        i += 1;
+        continue;
+      }
+
+      if (char === "\"" && !inSingleQuote && inDoubleQuote && next === "\"") {
+        if (depth > 0) current += char + next;
+        i += 1;
+        continue;
+      }
+
+      if (char === "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      } else if (char === "\"" && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && char === "(") {
+        if (depth > 0) current += char;
+        depth += 1;
+        continue;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && char === ")") {
+        depth -= 1;
+        if (depth === 0) {
+          tuples.push(current.trim());
+          current = "";
+          continue;
+        }
+      }
+
+      if (depth > 0) {
+        current += char;
+      }
+    }
+
+    return tuples;
+  }
+
+  private splitSqlList(input: string) {
+    const items: string[] = [];
+    let current = "";
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+
+    for (let i = 0; i < input.length; i += 1) {
+      const char = input[i];
+      const next = i + 1 < input.length ? input[i + 1] : "";
+
+      if (char === "'" && !inDoubleQuote && inSingleQuote && next === "'") {
+        current += char + next;
+        i += 1;
+        continue;
+      }
+
+      if (char === "\"" && !inSingleQuote && inDoubleQuote && next === "\"") {
+        current += char + next;
+        i += 1;
+        continue;
+      }
+
+      if (char === "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+      } else if (char === "\"" && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+      } else if (!inSingleQuote && !inDoubleQuote && char === "(") {
+        depth += 1;
+      } else if (!inSingleQuote && !inDoubleQuote && char === ")") {
+        depth -= 1;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && depth === 0 && char === ",") {
+        items.push(current.trim());
+        current = "";
+        continue;
+      }
+
+      current += char;
+    }
+
+    if (current.trim()) {
+      items.push(current.trim());
+    }
+
+    return items;
   }
 
   private async exportDatabase(type: BackupType, selectedDate: string | null) {
@@ -1281,14 +1620,19 @@ export class AdminService {
   private buildPathCheck(key: string, label: string, targetPath: string, directory: boolean) {
     const exists = fs.existsSync(targetPath);
     const writable = exists ? this.isWritable(targetPath) : false;
+    const missingDetail =
+      key === "backup_config"
+        ? "Chưa lưu cấu hình sao lưu tự động. Mở UC Sao lưu để chọn chế độ sao lưu."
+        : `${directory ? "Thư mục" : "File"} cần cho vận hành chưa được tạo.`;
 
     return {
       key,
       label,
       status: exists ? "ready" : "blocked",
       detail: exists
-        ? `${directory ? "Thu muc" : "File"} ton tai${directory ? (writable ? " va co the ghi." : ".") : "."}`
-        : `${directory ? "Thu muc" : "File"} chua ton tai: ${targetPath}`
+        ? `${directory ? "Thư mục" : "File"} đã tồn tại${directory ? (writable ? " và có thể ghi." : ".") : "."}`
+        : missingDetail,
+      technical_path: targetPath
     };
   }
 

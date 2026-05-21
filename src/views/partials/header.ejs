@@ -1,10 +1,33 @@
 <header class="site-header">
+  <%
+    const roleId = currentUser ? Number(currentUser.maVaiTro) : 0;
+    const dashboardHrefByRole = {
+      1: "/dashboard/admin",
+      2: "/dashboard/letan",
+      3: "/accounting",
+      4: "/dashboard/dichvu",
+      5: "/dashboard/cskh",
+      6: "/dashboard/quanly",
+      7: "/customer/dashboard"
+    };
+    const dashboardLabelByRole = {
+      1: "Dashboard Admin",
+      2: "Dashboard Lễ tân",
+      3: "Dashboard Kế toán",
+      4: "Dashboard Dịch vụ",
+      5: "Dashboard CSKH",
+      6: "Dashboard Quản lý",
+      7: "Trang của tôi"
+    };
+    const showBookingSearch = !currentUser || roleId === 7;
+  %>
   <div class="container site-header__inner">
     <a href="/" class="brand">
       <strong>Bento Resort</strong>
       <span>Hệ thống đặt phòng và vận hành resort</span>
     </a>
 
+    <% if (showBookingSearch) { %>
     <form class="header-search" action="/booking/search" method="get" role="search" id="headerSearchForm">
       <div class="header-search__shell" id="headerSearchShell" aria-label="Tìm phòng">
         <span class="header-search__icon" aria-hidden="true">
@@ -77,33 +100,14 @@
         </div>
       </div>
     </form>
+    <% } %>
 
     <nav class="nav-links">
       <% if (currentUser) { %>
-        <% if (currentUser.maVaiTro === 1) { %>
-          <a class="chip" href="/admin/users">Admin</a>
+        <% if (dashboardHrefByRole[roleId]) { %>
+          <a class="chip chip--dashboard" href="<%= dashboardHrefByRole[roleId] %>"><%= dashboardLabelByRole[roleId] %></a>
         <% } %>
-        <% if (currentUser.maVaiTro === 1 || currentUser.maVaiTro === 6) { %>
-          <a class="chip" href="/ai/analytics">AI Analytics</a>
-        <% } %>
-        <% if (currentUser.maVaiTro === 6) { %>
-          <a class="chip" href="/dashboard/quanly">Quản lý</a>
-        <% } %>
-        <% if (currentUser.maVaiTro === 3) { %>
-          <a class="chip" href="/accounting">Kế toán</a>
-          <a class="chip" href="/accounting/cashflow">Thu chi</a>
-          <a class="chip" href="/accounting/refunds">Hoàn tiền</a>
-        <% } %>
-        <% if (currentUser.maVaiTro === 5 || currentUser.maVaiTro === 6 || currentUser.maVaiTro === 1) { %>
-          <a class="chip" href="/feedback/manage">Feedback</a>
-        <% } %>
-        <% if (currentUser.maVaiTro === 7) { %>
-          <a class="chip" href="/customer/dashboard">Portal</a>
-          <a class="chip" href="/customer/profile">Hồ sơ</a>
-          <a class="chip" href="/customer/services">Dịch vụ</a>
-          <a class="chip" href="/feedback/new">Phản hồi</a>
-        <% } %>
-        <span class="chip"><%= currentUser.displayName %> · <%= currentUser.tenVaiTro %></span>
+        <span class="chip chip--user"><%= currentUser.displayName %> · <%= currentUser.tenVaiTro %></span>
         <form action="/auth/logout" method="post">
           <button class="button" type="submit">Đăng xuất</button>
         </form>

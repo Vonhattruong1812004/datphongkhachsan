@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { ROLE_REDIRECTS } from "../../../shared/constants/roles";
 import { AIService } from "../services/ai.service";
 
 const aiService = new AIService();
@@ -9,11 +10,13 @@ export async function renderConciergePage(_req: Request, res: Response) {
   });
 }
 
-export async function renderAnalyticsPage(_req: Request, res: Response) {
+export async function renderAnalyticsPage(req: Request, res: Response) {
   const payload = await aiService.analytics();
+  const backHref = ROLE_REDIRECTS[req.session.user?.maVaiTro ?? 0] ?? "/dashboard/admin";
   return res.render("ai/analytics", {
     title: "AI Analytics",
-    payload
+    payload,
+    backHref
   });
 }
 

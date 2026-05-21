@@ -434,19 +434,16 @@ export class ServiceModuleService {
 
   async getFrontdeskServicePayload(keyword: string) {
     const normalized = keyword.trim();
+    const lookupKey = normalized.replace(/\D/g, "");
     if (!normalized) {
       return null;
     }
 
-    if (!/^\d+$/.test(normalized)) {
-      throw new HttpError(422, "Chi duoc nhap so khi tim giao dich.");
+    if (!lookupKey) {
+      throw new HttpError(422, "Vui lòng nhập mã giao dịch, CCCD hoặc số điện thoại.");
     }
 
-    if (normalized.length > 12) {
-      throw new HttpError(422, "Toi da 12 so khi tim giao dich.");
-    }
-
-    const transactionId = await this.findFrontdeskTransactionId(normalized);
+    const transactionId = await this.findFrontdeskTransactionId(lookupKey);
     if (!transactionId) {
       throw new HttpError(404, "Khong tim thay giao dich.");
     }
@@ -884,17 +881,17 @@ export class ServiceModuleService {
     });
 
     if (!selectedItems.length) {
-      throw new HttpError(422, "Vui long chon it nhat mot dich vu.");
+      throw new HttpError(422, "Vui lòng chọn ít nhất một dịch vụ.");
     }
 
     for (const item of selectedItems) {
       if (!serviceMap.has(item.serviceId)) {
-        throw new HttpError(422, "Dich vu khong hop le.");
+        throw new HttpError(422, "Dịch vụ không hợp lệ.");
       }
 
       const room = roomMap.get(item.roomId);
       if (!room) {
-        throw new HttpError(422, "Phong khong hop le.");
+        throw new HttpError(422, "Phòng không hợp lệ.");
       }
 
       const service = serviceMap.get(item.serviceId)!;
@@ -903,7 +900,7 @@ export class ServiceModuleService {
       }
 
       if (!Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 20) {
-        throw new HttpError(422, "So luong dich vu phai tu 1 den 20.");
+        throw new HttpError(422, "Số lượng dịch vụ phải từ 1 đến 20.");
       }
     }
 
@@ -1169,12 +1166,26 @@ export class ServiceModuleService {
   }
 
   private async findFrontdeskTransactionId(keyword: string) {
-    if (keyword.length <= 8) {
+    const normalized = String(keyword || "").replace(/\D/g, "");
+    if (!normalized) {
+      return null;
+    }
+
+    const maybeTransactionId = Number(normalized);
+    if (Number.isSafeInteger(maybeTransactionId) && maybeTransactionId > 0 && maybeTransactionId <= 2147483647) {
       const result = await query<{ maGiaoDich: number }>(
-        "SELECT magiaodich AS \"maGiaoDich\" FROM giaodich WHERE magiaodich = $1 LIMIT 1",
-        [Number(keyword)]
+        `
+          SELECT magiaodich AS "maGiaoDich"
+          FROM giaodich
+          WHERE magiaodich = $1
+            AND trangthai = 'Stayed'
+          LIMIT 1
+        `,
+        [maybeTransactionId]
       );
-      return result.rows[0]?.maGiaoDich ?? null;
+      if (result.rows[0]?.maGiaoDich) {
+        return result.rows[0].maGiaoDich;
+      }
     }
 
     const result = await query<{ maGiaoDich: number }>(
@@ -1184,18 +1195,27 @@ export class ServiceModuleService {
         LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
         LEFT JOIN doan d ON d.madoan = gd.madoan
         LEFT JOIN khachhang kh_td ON kh_td.makhachhang = d.matruongdoan
-        WHERE kh.cccd = $1
-           OR kh_td.cccd = $1
+        WHERE gd.trangthai = 'Stayed'
+          AND (
+            regexp_replace(COALESCE(gd.madatcho, ''), '\\D', '', 'g') = $1
+            OR regexp_replace(COALESCE(kh.cccd, ''), '\\D', '', 'g') = $1
+            OR regexp_replace(COALESCE(kh.sdt, ''), '\\D', '', 'g') = $1
+            OR regexp_replace(COALESCE(kh_td.cccd, ''), '\\D', '', 'g') = $1
+            OR regexp_replace(COALESCE(kh_td.sdt, ''), '\\D', '', 'g') = $1
            OR EXISTS (
                 SELECT 1
                 FROM chitietgiaodich ct
                 WHERE ct.magiaodich = gd.magiaodich
-                  AND ct.cccd = $1
+                  AND (
+                    regexp_replace(COALESCE(ct.cccd, ''), '\\D', '', 'g') = $1
+                    OR regexp_replace(COALESCE(ct.sdt, ''), '\\D', '', 'g') = $1
+                  )
               )
-        ORDER BY gd.magiaodich DESC
+          )
+        ORDER BY gd.ngaygiaodich DESC, gd.magiaodich DESC
         LIMIT 1
       `,
-      [keyword]
+      [normalized]
     );
 
     return result.rows[0]?.maGiaoDich ?? null;

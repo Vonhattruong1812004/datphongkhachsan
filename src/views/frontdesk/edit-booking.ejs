@@ -13,6 +13,7 @@
   const capacity = edit?.capacity || {};
   const promotion = edit?.promotion || { label: "Khong ap dung", value: 0, type: "PERCENT" };
   const money = edit?.money || {};
+  const isCheckedInRoom = form?.trangThai === "CheckedIn";
 %>
 <style>
   .edit-booking-shell{
@@ -71,6 +72,7 @@
   .edit-info-tile strong{display:block;margin-top:4px;color:var(--ux-heading)}
   .edit-section-title{margin:18px 0 10px;padding-top:4px;color:var(--ux-heading);font-size:18px;font-weight:900;letter-spacing:-.02em}
   .capacity-hint{display:none;margin-top:10px;border-radius:16px;padding:12px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.45}
+  .edit-lock-note{margin:10px 0 16px;border:1px solid rgba(81,208,177,.28);border-radius:18px;padding:12px 14px;background:rgba(81,208,177,.1);color:#bbf7d0;font-size:13px;line-height:1.5}
   .payment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
   @media (max-width:800px){.edit-booking-title,.edit-actions{flex-direction:column}.edit-row,.edit-row--4,.payment-grid,.edit-info-grid{grid-template-columns:1fr}.edit-card{padding:16px}}
 </style>
@@ -210,10 +212,10 @@
 
   <form method="post" action="/frontdesk/edit-booking" id="formSearch" class="edit-card">
     <h2>Tìm kiếm giao dịch <span class="tag">Bước 1</span></h2>
-    <p class="edit-muted">Nhập mã giao dịch, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng.</p>
+    <p class="edit-muted">Nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng.</p>
     <div class="edit-search-grid">
       <div class="edit-field">
-        <label for="search_keyword">Mã giao dịch / CMND/CCCD / SĐT</label>
+        <label for="search_keyword">Mã giao dịch / mã đặt chỗ / CMND/CCCD / SĐT</label>
         <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 335, 012345678901 hoặc 0901234567" />
         <div class="edit-error-msg" id="err_search_keyword"></div>
       </div>
@@ -233,6 +235,13 @@
       <input type="hidden" name="search_keyword" value="<%= keyword || transaction.maGiaoDich %>" />
       <input type="hidden" id="km_giatri" value="<%= promotion.value || 0 %>" />
       <input type="hidden" id="km_type" value="<%= promotion.type || "PERCENT" %>" />
+      <% if (isCheckedInRoom) { %>
+        <input type="hidden" name="ngay_den" value="<%= form.ngayDen || "" %>" />
+        <input type="hidden" name="ma_phong" value="<%= form.maPhong || "" %>" />
+        <div class="edit-lock-note">
+          Phòng đang ở: được sửa thông tin khách, số người trong sức chứa, dịch vụ và gia hạn ngày đi nếu không trùng lịch. Không đổi ngày đến, không đổi phòng trong màn này; trả sớm xử lý bằng check-out.
+        </div>
+      <% } %>
 
       <div class="edit-row">
         <div class="edit-field">
@@ -273,10 +282,12 @@
         <div class="edit-info-tile">
           <small>Tổng khách hiện tại</small>
           <strong><%= capacity.totalGuests || 0 %> khách</strong>
+          <span class="edit-muted">Cộng tất cả phòng trong giao dịch.</span>
         </div>
         <div class="edit-info-tile">
           <small>Tổng sức chứa</small>
           <strong><%= capacity.totalCapacity || 0 %> khách</strong>
+          <span class="edit-muted">Cộng sức chứa các phòng đang đặt/đang ở.</span>
         </div>
       </div>
 
@@ -311,12 +322,18 @@
       <div class="edit-row edit-row--4">
         <div class="edit-field">
           <label for="ngay_den">Ngày đến *</label>
-          <input type="date" id="ngay_den" name="ngay_den" value="<%= form.ngayDen || "" %>" />
+          <input type="date" id="ngay_den" name="ngay_den" value="<%= form.ngayDen || "" %>" <%= isCheckedInRoom ? "disabled" : "" %> />
+          <% if (isCheckedInRoom) { %>
+            <span class="edit-muted">Đã check-in nên ngày đến được giữ nguyên.</span>
+          <% } %>
           <div class="edit-error-msg" id="err_ngay_den"></div>
         </div>
         <div class="edit-field">
           <label for="ngay_di">Ngày đi *</label>
           <input type="date" id="ngay_di" name="ngay_di" value="<%= form.ngayDi || "" %>" />
+          <% if (isCheckedInRoom) { %>
+            <span class="edit-muted">Chỉ gia hạn ngày đi tại đây. Trả sớm dùng check-out để tính tiền đúng.</span>
+          <% } %>
           <div class="edit-error-msg" id="err_ngay_di"></div>
         </div>
         <div class="edit-field">
@@ -324,8 +341,12 @@
           <input type="text" id="so_dem" value="0" readonly />
         </div>
         <div class="edit-field">
-          <label for="so_nguoi">Số người *</label>
+          <label for="so_nguoi">Số người phòng đang sửa *</label>
           <input type="number" min="1" id="so_nguoi" name="so_nguoi" value="<%= form.soNguoi || 1 %>" />
+          <span class="edit-muted">
+            Riêng phòng đang chọn. Tổng đoàn hiện có <%= capacity.totalGuests || 0 %> khách.
+            Sau sửa: <strong id="projectedGuestsText"><%= capacity.totalGuests || 0 %> khách</strong>.
+          </span>
           <div class="edit-error-msg" id="err_so_nguoi"></div>
           <div
             class="capacity-hint"
@@ -342,7 +363,7 @@
         <div class="edit-field">
           <label for="ma_phong">Phòng *</label>
           <span class="edit-muted">Chỉ hiển thị phòng thuộc <strong><%= edit.facility?.label || "cơ sở hiện tại" %></strong>.</span>
-          <select id="ma_phong" name="ma_phong">
+          <select id="ma_phong" name="ma_phong" <%= isCheckedInRoom ? "disabled" : "" %>>
             <option value="">-- Chọn phòng --</option>
             <% availableRooms.forEach((room) => { %>
               <option value="<%= room.maPhong %>" data-dongia="<%= room.gia %>" data-capacity="<%= room.soKhachToiDa %>" <%= room.maPhong === form.maPhong ? "selected" : "" %>>
@@ -350,6 +371,9 @@
               </option>
             <% }) %>
           </select>
+          <% if (isCheckedInRoom) { %>
+            <span class="edit-muted">Phòng đã nhận khách nên không đổi phòng trong UC sửa thông tin.</span>
+          <% } %>
           <div class="edit-error-msg" id="err_ma_phong"></div>
         </div>
       </div>
@@ -552,8 +576,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function validateSearch(fromSubmit) {
     const value = (searchField?.value || "").trim();
     clearSearchError();
-    if (!value && fromSubmit) return setSearchError("Vui lòng nhập mã giao dịch, CMND/CCCD hoặc SĐT."), false;
-    if (value && !/^\d+$/.test(value)) return setSearchError("Chỉ được nhập số."), false;
+    if (!value && fromSubmit) return setSearchError("Vui lòng nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc SĐT."), false;
+    if (value && !/\d/.test(value)) return setSearchError("Thông tin tìm kiếm cần có ít nhất một chữ số."), false;
     if (value.length > 18) return setSearchError("Tối đa 18 số."), false;
     return true;
   }
@@ -598,6 +622,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ma_phong: document.getElementById("err_ma_phong")
   };
   const capacityHint = document.getElementById("capacityHint");
+  const projectedGuestsText = document.getElementById("projectedGuestsText");
   const addRoomHint = document.getElementById("addRoomHint");
 
   function setError(name, msg) {
@@ -700,6 +725,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const currentCapacity = Number(capacityHint.dataset.currentCapacity || 0);
     const projectedGuests = Math.max(0, totalGuests - currentGuests + newGuests);
     const projectedCapacity = Math.max(0, totalCapacity - currentCapacity + selectedCapacity);
+    if (projectedGuestsText) projectedGuestsText.textContent = `${projectedGuests} khách`;
 
     refreshRoomCapacityOptions(newGuests);
     capacityHint.style.display = "none";

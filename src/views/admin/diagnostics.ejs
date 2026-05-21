@@ -1,51 +1,210 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">Runtime Diagnostics</div>
-    <h2>Runtime health va system readiness</h2>
-    <div class="dashboard-grid">
-      <article class="dashboard-card"><strong><%= runtime.summary.overall_score %>%</strong><h3>Runtime score</h3></article>
-      <article class="dashboard-card"><strong><%= system.summary.overall_score %>%</strong><h3>System score</h3></article>
-      <article class="dashboard-card"><strong><%= runtime.summary.blocked %></strong><h3>Runtime blocked</h3></article>
-    </div>
-    <div class="nav-links" style="margin-top:16px">
-      <a class="chip" href="/api/admin/diagnostics/runtime">Runtime JSON</a>
-      <a class="chip" href="/api/admin/diagnostics/system">System JSON</a>
-      <a class="chip" href="/admin/runtime-health">Runtime Health</a>
-      <a class="chip" href="/admin/system-readiness">System Readiness</a>
-      <a class="chip" href="/admin/mobile-readiness">Mobile Readiness</a>
-      <a class="chip" href="/admin/ai-diagnostics">AI Diagnostics</a>
-      <a class="chip" href="/admin/multi-hotel-diagnostics">Multi-Hotel</a>
-      <a class="chip" href="/admin/backups">Backups</a>
-      <a class="chip" href="/admin/restore">Restore</a>
-    </div>
-  </section>
+<%
+  const runtimeScore = Number(runtime?.summary?.overall_score || 0);
+  const systemScore = Number(system?.summary?.overall_score || 0);
+  const runtimeChecks = runtime?.checks || [];
+  const systemModules = system?.modules || [];
+  const runtimeIssues = runtimeChecks.filter((item) => item.status !== "ready");
+  const systemIssues = systemModules.filter((item) => !item.ready);
+  const allIssues = [
+    ...runtimeIssues.map((item) => ({ ...item, source: "Hạ tầng" })),
+    ...systemIssues.map((item) => ({ label: item.name, status: "partial", detail: item.detail, source: "Module" }))
+  ];
+  const overallScore = Math.round((runtimeScore + systemScore) / 2);
+  const healthLabel = allIssues.length ? (overallScore >= 80 ? "Cần theo dõi" : "Cần xử lý") : "Ổn định";
+  const generatedAt = runtime?.generatedAt || system?.generatedAt || new Date().toISOString();
+  const shortTime = new Date(generatedAt).toLocaleString("vi-VN", { hour12: false });
+  const statusText = (status) => status === "ready" ? "Sẵn sàng" : (status === "blocked" ? "Cần xử lý" : "Theo dõi");
+  const actionHref = (item) => item.key === "backup_config" ? "/admin/backups" : "/admin/runtime-health";
+  const actionLabel = (item) => item.key === "backup_config" ? "Mở sao lưu" : "Xem runtime";
+  const groups = [
+    { title: "Vận hành", keys: ["booking", "frontdesk", "service", "manager"] },
+    { title: "Tài chính", keys: ["accounting", "admin"] },
+    { title: "Trải nghiệm", keys: ["auth", "ekyc", "feedback"] },
+    { title: "Công nghệ", keys: ["ai", "pwa_mobile"] }
+  ];
+%>
+<style>
+  .health-board{
+    --hb-ink:#101828;
+    --hb-muted:#667085;
+    --hb-line:rgba(16,24,40,.10);
+    --hb-card:rgba(255,255,255,.84);
+    --hb-green:#12b981;
+    --hb-cyan:#06b6d4;
+    --hb-blue:#2563eb;
+    --hb-amber:#f59e0b;
+    --hb-red:#f43f5e;
+    --hb-violet:#8b5cf6;
+    --hb-shadow:0 24px 80px rgba(15,23,42,.12);
+    min-height:calc(100vh - 84px);
+    padding:34px 18px 58px;
+    color:var(--hb-ink);
+    background:
+      linear-gradient(rgba(255,255,255,.42) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.42) 1px, transparent 1px),
+      radial-gradient(circle at 8% 10%, rgba(18,185,129,.22), transparent 29%),
+      radial-gradient(circle at 88% 12%, rgba(37,99,235,.20), transparent 30%),
+      radial-gradient(circle at 52% 106%, rgba(245,158,11,.14), transparent 34%),
+      linear-gradient(135deg,#f8fffb 0%,#eff8ff 48%,#fff7ed 100%);
+    background-size:auto, 42px 42px, auto, auto, auto, auto;
+  }
+  .hb-wrap{max-width:1180px;margin:0 auto}
+  .hb-panel,.hb-score,.hb-stat,.hb-action,.hb-module-group,.hb-tech{border:1px solid var(--hb-line);background:var(--hb-card);box-shadow:var(--hb-shadow);backdrop-filter:blur(22px)}
+  .hb-hero{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:stretch}
+  .hb-panel{position:relative;overflow:hidden;border-radius:30px;padding:30px}
+  .hb-panel::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.86),transparent 38%),radial-gradient(circle at 88% 18%,rgba(6,182,212,.18),transparent 32%);pointer-events:none}
+  .hb-label{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:8px 13px;background:rgba(18,185,129,.11);border:1px solid rgba(18,185,129,.18);color:#047857;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.08em}
+  .hb-label::before{content:"";width:8px;height:8px;border-radius:999px;background:var(--hb-green);box-shadow:0 0 0 7px rgba(18,185,129,.13)}
+  .hb-panel h1{position:relative;z-index:1;margin:22px 0 10px;max-width:760px;font-size:clamp(40px,5vw,68px);line-height:.94;letter-spacing:-.06em}
+  .hb-panel h1 span{color:transparent;background:linear-gradient(135deg,#12b981,#06b6d4 52%,#8b5cf6);-webkit-background-clip:text;background-clip:text}
+  .hb-lead{position:relative;z-index:1;max-width:690px;margin:0;color:var(--hb-muted);font-size:16px;line-height:1.62}
+  .hb-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .hb-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border:1px solid rgba(16,24,40,.12);border-radius:999px;padding:10px 16px;background:rgba(255,255,255,.78);color:var(--hb-ink);font:inherit;font-size:14px;font-weight:950;text-decoration:none;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .hb-button:hover{transform:translateY(-2px);border-color:var(--hb-cyan);box-shadow:0 18px 42px rgba(6,182,212,.14)}
+  .hb-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#12b981,#06b6d4);box-shadow:0 18px 44px rgba(18,185,129,.22)}
+  .hb-score{display:flex;flex-direction:column;justify-content:center;align-items:center;border-radius:30px;padding:24px;background:linear-gradient(160deg,rgba(255,255,255,.93),rgba(240,253,250,.76))}
+  .hb-ring{--score:<%= overallScore %>;position:relative;width:194px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--hb-green) calc(var(--score)*1%),rgba(16,24,40,.09) 0);box-shadow:inset 0 0 0 15px rgba(255,255,255,.82),0 22px 70px rgba(18,185,129,.18)}
+  .hb-ring::after{content:"";position:absolute;inset:28px;border-radius:50%;border:1px solid rgba(16,24,40,.08);background:rgba(255,255,255,.94)}
+  .hb-ring-value{position:relative;z-index:1;text-align:center}
+  .hb-ring-value strong{display:block;font-size:46px;line-height:1;letter-spacing:-.07em}
+  .hb-ring-value span{display:block;margin-top:7px;color:var(--hb-muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
+  .hb-score h2{margin:18px 0 6px;font-size:26px;letter-spacing:-.04em}
+  .hb-score p{margin:0;color:var(--hb-muted);font-size:13px;text-align:center;line-height:1.5}
+  .hb-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
+  .hb-stat{position:relative;overflow:hidden;border-radius:24px;padding:18px;background:rgba(255,255,255,.72)}
+  .hb-stat::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--stat-color),transparent)}
+  .hb-stat strong{display:block;font-size:34px;line-height:1;letter-spacing:-.06em}
+  .hb-stat span{display:block;margin-top:8px;color:var(--hb-muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
+  .hb-section{margin-top:20px}
+  .hb-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .hb-section-head h2{margin:0;font-size:25px;letter-spacing:-.04em}
+  .hb-section-head p{margin:4px 0 0;color:var(--hb-muted);font-size:13px}
+  .hb-action-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .hb-action{position:relative;overflow:hidden;border-radius:26px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;background:rgba(255,255,255,.78)}
+  .hb-action::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:var(--action-color,#f59e0b)}
+  .hb-action small{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;background:color-mix(in srgb,var(--action-color,#f59e0b) 14%,white);color:var(--action-color,#f59e0b);font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.05em}
+  .hb-action h3{margin:11px 0 6px;font-size:19px;letter-spacing:-.02em}
+  .hb-action p{margin:0;color:var(--hb-muted);font-size:13px;line-height:1.5}
+  .hb-empty{border:1px dashed rgba(16,24,40,.16);border-radius:24px;padding:18px;background:rgba(255,255,255,.62);color:var(--hb-muted);font-weight:850}
+  .hb-module-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .hb-module-group{border-radius:26px;padding:16px;background:rgba(255,255,255,.74)}
+  .hb-module-group h3{margin:0 0 12px;font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:#475467}
+  .hb-module{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:16px;padding:10px 11px;background:rgba(255,255,255,.68);border:1px solid rgba(16,24,40,.07)}
+  .hb-module + .hb-module{margin-top:8px}
+  .hb-module strong{font-size:13px}
+  .hb-pill{border-radius:999px;padding:5px 8px;background:rgba(18,185,129,.12);color:#047857;font-size:11px;font-weight:1000}
+  .hb-tech{border-radius:26px;overflow:hidden}
+  .hb-tech summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px;padding:18px 20px;font-size:18px;font-weight:1000;list-style:none}
+  .hb-tech summary::-webkit-details-marker{display:none}
+  .hb-tech summary span{color:var(--hb-muted);font-size:13px;font-weight:850}
+  .hb-tech-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 20px 20px}
+  .hb-tech-item{border-radius:18px;padding:12px;background:rgba(255,255,255,.62);border:1px solid rgba(16,24,40,.08)}
+  .hb-tech-item strong{display:block;font-size:13px}
+  .hb-tech-item p{margin:5px 0 0;color:var(--hb-muted);font-size:12px;line-height:1.45}
+  .hb-tech-path{display:block;margin-top:6px;color:#98a2b3;font-size:11px;word-break:break-all}
+  @media(max-width:1080px){.hb-hero{grid-template-columns:1fr}.hb-module-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:760px){.health-board{padding:22px 12px 48px}.hb-panel,.hb-score{padding:20px;border-radius:26px}.hb-panel h1{font-size:42px}.hb-stats,.hb-action-list,.hb-module-board,.hb-tech-grid{grid-template-columns:1fr}.hb-action{grid-template-columns:1fr}.hb-section-head{display:block}.hb-ring{width:176px}}
+</style>
 
-  <section class="panel">
-    <div class="section-eyebrow">Runtime Checks</div>
-    <div class="room-grid room-grid--wide">
-      <% runtime.checks.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge"><%= item.status %></span>
-          <h3><%= item.label %></h3>
-          <p class="muted"><%= item.detail %></p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+<main class="health-board">
+  <div class="hb-wrap">
+    <section class="hb-hero" aria-label="Kiểm tra sức khỏe hệ thống">
+      <div class="hb-panel">
+        <div class="hb-label">Trung tâm sức khỏe</div>
+        <h1>Hệ thống đang <span><%= healthLabel.toLowerCase() %></span></h1>
+        <p class="hb-lead">Một màn hình để Admin ra quyết định nhanh: hạ tầng có ổn không, module nào sẵn sàng, và việc nào cần xử lý trước khi cho các actor vận hành sâu.</p>
+        <div class="hb-actions">
+          <button class="hb-button hb-button--primary" type="button" onclick="window.location.reload()">Kiểm tra lại</button>
+          <a class="hb-button" href="/admin/runtime-health">Chi tiết runtime</a>
+          <a class="hb-button" href="/admin/backups">Sao lưu</a>
+          <a class="hb-button" href="/dashboard/admin">Về dashboard Admin</a>
+        </div>
+      </div>
+      <aside class="hb-score">
+        <div class="hb-ring" aria-label="Điểm sức khỏe hệ thống">
+          <div class="hb-ring-value"><strong><%= overallScore %></strong><span>Điểm</span></div>
+        </div>
+        <h2><%= healthLabel %></h2>
+        <p>Cập nhật lúc <%= shortTime %></p>
+      </aside>
+    </section>
 
-  <section class="panel">
-    <div class="section-eyebrow">System Modules</div>
-    <div class="room-grid room-grid--wide">
-      <% system.modules.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge"><%= item.ready ? "ready" : "partial" %></span>
-          <h3><%= item.name %></h3>
-          <p class="muted"><%= item.detail %></p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+    <section class="hb-stats" aria-label="Tổng quan sức khỏe">
+      <article class="hb-stat" style="--stat-color:#06b6d4"><strong><%= runtimeScore %>%</strong><span>Hạ tầng</span></article>
+      <article class="hb-stat" style="--stat-color:#12b981"><strong><%= systemScore %>%</strong><span>Nghiệp vụ</span></article>
+      <article class="hb-stat" style="--stat-color:<%= allIssues.length ? "#f59e0b" : "#12b981" %>"><strong><%= allIssues.length %></strong><span>Cần xử lý</span></article>
+    </section>
+
+    <section class="hb-section" aria-label="Việc cần xử lý">
+      <div class="hb-section-head">
+        <div>
+          <h2>Việc cần xử lý</h2>
+          <p>Chỉ giữ lại những việc có ảnh hưởng tới vận hành.</p>
+        </div>
+      </div>
+      <% if (!allIssues.length) { %>
+        <div class="hb-empty">Không có việc khẩn cấp. Hệ thống đủ điều kiện vận hành.</div>
+      <% } else { %>
+        <div class="hb-action-list">
+          <% allIssues.slice(0, 4).forEach((item) => {
+            const color = item.status === "blocked" ? "#f43f5e" : "#f59e0b";
+          %>
+            <article class="hb-action" style="--action-color:<%= color %>">
+              <div>
+                <small><%= item.source %> · <%= statusText(item.status) %></small>
+                <h3><%= item.label %></h3>
+                <p><%= item.detail %></p>
+              </div>
+              <a class="hb-button" href="<%= actionHref(item) %>"><%= actionLabel(item) %></a>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="hb-section" aria-label="Bản đồ module">
+      <div class="hb-section-head">
+        <div>
+          <h2>Bản đồ module</h2>
+          <p>Nhìn theo cụm nghiệp vụ thay vì liệt kê dài.</p>
+        </div>
+        <a class="hb-button" href="/admin/system-readiness">Xem đầy đủ</a>
+      </div>
+      <div class="hb-module-board">
+        <% groups.forEach((group) => {
+          const modules = systemModules.filter((item) => group.keys.includes(item.key));
+        %>
+          <article class="hb-module-group">
+            <h3><%= group.title %></h3>
+            <% modules.forEach((item) => { %>
+              <div class="hb-module">
+                <strong><%= item.name %></strong>
+                <span class="hb-pill"><%= item.ready ? "Sẵn sàng" : "Theo dõi" %></span>
+              </div>
+            <% }) %>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="hb-section" aria-label="Chi tiết kỹ thuật">
+      <details class="hb-tech">
+        <summary>Chi tiết kỹ thuật <span>Mở khi cần đối soát runtime/API</span></summary>
+        <div class="hb-tech-grid">
+          <% runtimeChecks.forEach((item) => { %>
+            <div class="hb-tech-item">
+              <strong><%= item.label %> · <%= statusText(item.status) %></strong>
+              <p><%= item.detail %></p>
+              <% if (item.technical_path) { %>
+                <span class="hb-tech-path"><%= item.technical_path %></span>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      </details>
+    </section>
+  </div>
 </main>
 <%- include("../partials/footer") %>

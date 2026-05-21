@@ -1,78 +1,273 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">Admin Restore</div>
-    <h2>Phuc hoi du lieu tu backup SQL</h2>
-    <p class="muted">Restore se ghi de lai du lieu trong schema `abc_resort1`. Chi chay khi ban chac chan file backup la dung snapshot mong muon.</p>
+<%
+  const backups = payload?.backups || [];
+  const selectedBackup = payload?.selectedBackupInfo || null;
+  const hotelSummary = payload?.hotelSummary || {};
+  const selectedName = selectedBackup?.name || "";
+  const formatSize = (bytes) => {
+    const value = Number(bytes || 0);
+    if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(2)} MB`;
+    return `${(value / 1024).toFixed(1)} KB`;
+  };
+  const typeText = (type) => type === "hom_nay" ? "Trong ngày" : (type === "chon_ngay" ? "Theo ngày chọn" : (type === "toan_bo" ? "Toàn bộ" : "SQL"));
+  const isRestorable = (item) => item && (!item.backupType || item.backupType === "toan_bo");
+  const selectedRestorable = isRestorable(selectedBackup);
+  const readyScore = selectedBackup ? Math.min(100, 70 + (Number(selectedBackup.hotelCount || hotelSummary.count || 0) ? 15 : 0) + (selectedBackup.createdAt ? 15 : 0)) : (backups.length ? 45 : 10);
+  const readyLabel = selectedBackup ? (selectedRestorable ? "Sẵn sàng phục hồi" : "Chỉ để đối soát") : (backups.length ? "Cần chọn file" : "Chưa có backup");
+%>
+<style>
+  .restore-workspace{
+    --rs-ink:#101828;
+    --rs-muted:#667085;
+    --rs-line:rgba(16,24,40,.10);
+    --rs-card:rgba(255,255,255,.86);
+    --rs-green:#10b981;
+    --rs-cyan:#06b6d4;
+    --rs-blue:#2563eb;
+    --rs-amber:#f59e0b;
+    --rs-red:#f43f5e;
+    --rs-violet:#8b5cf6;
+    --rs-shadow:0 24px 80px rgba(15,23,42,.12);
+    min-height:calc(100vh - 84px);
+    padding:34px 18px 58px;
+    color:var(--rs-ink);
+    background:
+      linear-gradient(rgba(255,255,255,.45) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.45) 1px, transparent 1px),
+      radial-gradient(circle at 8% 8%, rgba(139,92,246,.20), transparent 29%),
+      radial-gradient(circle at 88% 10%, rgba(244,63,94,.16), transparent 30%),
+      radial-gradient(circle at 54% 106%, rgba(6,182,212,.15), transparent 34%),
+      linear-gradient(135deg,#fbf8ff 0%,#f0fbff 48%,#fff8fb 100%);
+    background-size:auto,42px 42px,auto,auto,auto,auto;
+  }
+  .rs-wrap{max-width:1180px;margin:0 auto}
+  .rs-panel,.rs-score,.rs-stat,.rs-card,.rs-file,.rs-empty,.rs-warning{border:1px solid var(--rs-line);background:var(--rs-card);box-shadow:var(--rs-shadow);backdrop-filter:blur(22px)}
+  .rs-hero{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:stretch}
+  .rs-panel{position:relative;overflow:hidden;border-radius:30px;padding:30px}
+  .rs-panel::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.86),transparent 38%),radial-gradient(circle at 88% 18%,rgba(139,92,246,.17),transparent 32%);pointer-events:none}
+  .rs-label{position:relative;z-index:1;display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:8px 13px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.18);color:#6d28d9;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.08em}
+  .rs-label::before{content:"";width:8px;height:8px;border-radius:999px;background:var(--rs-violet);box-shadow:0 0 0 7px rgba(139,92,246,.14)}
+  .rs-panel h1{position:relative;z-index:1;margin:22px 0 10px;max-width:780px;font-size:clamp(40px,5vw,68px);line-height:.94;letter-spacing:-.06em}
+  .rs-panel h1 span{color:transparent;background:linear-gradient(135deg,#8b5cf6,#06b6d4 52%,#f43f5e);-webkit-background-clip:text;background-clip:text}
+  .rs-lead{position:relative;z-index:1;max-width:720px;margin:0;color:var(--rs-muted);font-size:16px;line-height:1.62}
+  .rs-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .rs-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border:1px solid rgba(16,24,40,.12);border-radius:999px;padding:10px 16px;background:rgba(255,255,255,.78);color:var(--rs-ink);font:inherit;font-size:14px;font-weight:950;text-decoration:none;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,opacity .18s ease}
+  .rs-button:hover{transform:translateY(-2px);border-color:var(--rs-violet);box-shadow:0 18px 42px rgba(139,92,246,.14)}
+  .rs-button[disabled]{opacity:.48;cursor:not-allowed;transform:none;box-shadow:none}
+  .rs-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#8b5cf6,#06b6d4);box-shadow:0 18px 44px rgba(139,92,246,.22)}
+  .rs-button--danger{border-color:transparent;color:#fff;background:linear-gradient(135deg,#f43f5e,#f59e0b);box-shadow:0 18px 44px rgba(244,63,94,.20)}
+  .rs-score{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:30px;padding:24px;background:linear-gradient(160deg,rgba(255,255,255,.94),rgba(245,243,255,.78))}
+  .rs-ring{--score:<%= readyScore %>;position:relative;width:194px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--rs-violet) calc(var(--score)*1%),rgba(16,24,40,.09) 0);box-shadow:inset 0 0 0 15px rgba(255,255,255,.84),0 22px 70px rgba(139,92,246,.18)}
+  .rs-ring::after{content:"";position:absolute;inset:28px;border-radius:50%;border:1px solid rgba(16,24,40,.08);background:rgba(255,255,255,.95)}
+  .rs-ring-value{position:relative;z-index:1;text-align:center}
+  .rs-ring-value strong{display:block;font-size:46px;line-height:1;letter-spacing:-.07em}
+  .rs-ring-value span{display:block;margin-top:7px;color:var(--rs-muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
+  .rs-score h2{margin:18px 0 6px;font-size:25px;letter-spacing:-.04em;text-align:center}
+  .rs-score p{margin:0;color:var(--rs-muted);font-size:13px;text-align:center;line-height:1.5}
+  .rs-flash{margin:18px 0 0;border-radius:18px;padding:13px 15px;font-weight:850;border:1px solid rgba(16,24,40,.10);background:rgba(255,255,255,.72)}
+  .rs-flash--success{color:#047857;background:rgba(16,185,129,.12)}
+  .rs-flash--error{color:#be123c;background:rgba(244,63,94,.12)}
+  .rs-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+  .rs-stat{position:relative;overflow:hidden;border-radius:24px;padding:18px;background:rgba(255,255,255,.74)}
+  .rs-stat::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--stat-color),transparent)}
+  .rs-stat strong{display:block;font-size:30px;line-height:1;letter-spacing:-.05em;word-break:break-word}
+  .rs-stat span{display:block;margin-top:8px;color:var(--rs-muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
+  .rs-section{margin-top:20px}
+  .rs-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .rs-section-head h2{margin:0;font-size:25px;letter-spacing:-.04em}
+  .rs-section-head p{margin:4px 0 0;color:var(--rs-muted);font-size:13px}
+  .rs-grid{display:grid;grid-template-columns:390px minmax(0,1fr);gap:14px;align-items:start}
+  .rs-card{border-radius:28px;padding:20px;background:rgba(255,255,255,.78)}
+  .rs-card h3{margin:0 0 6px;font-size:21px;letter-spacing:-.03em}
+  .rs-card p{margin:0 0 16px;color:var(--rs-muted);font-size:13px;line-height:1.55}
+  .rs-field{display:flex;flex-direction:column;gap:7px}
+  .rs-field label{font-size:12px;font-weight:1000;color:#475467;text-transform:uppercase;letter-spacing:.05em}
+  .rs-field select{width:100%;min-height:48px;border:1px solid rgba(16,24,40,.13);border-radius:16px;padding:10px 13px;background:rgba(255,255,255,.92);color:var(--rs-ink);font:inherit;font-weight:800;outline:none}
+  .rs-warning{border-radius:22px;padding:16px;background:rgba(255,247,237,.82);border-color:rgba(245,158,11,.20);box-shadow:none}
+  .rs-warning strong{display:block;color:#9a3412;margin-bottom:7px}
+  .rs-warning p{margin:0;color:#9a3412;font-size:13px;line-height:1.5}
+  .rs-check{display:flex;gap:10px;align-items:flex-start;margin:14px 0;color:#475467;font-size:13px;line-height:1.5;font-weight:850}
+  .rs-check input{width:18px;height:18px;margin-top:1px;accent-color:#8b5cf6}
+  .rs-preview{border-radius:22px;padding:16px;background:rgba(248,250,252,.84);border:1px solid rgba(16,24,40,.08)}
+  .rs-preview h4{margin:0 0 12px;font-size:16px}
+  .rs-preview dl{display:grid;grid-template-columns:120px 1fr;gap:9px 12px;margin:0;font-size:13px}
+  .rs-preview dt{color:var(--rs-muted);font-weight:950}
+  .rs-preview dd{margin:0;font-weight:850;word-break:break-word}
+  .rs-file-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .rs-file{position:relative;overflow:hidden;border-radius:24px;padding:17px;background:rgba(255,255,255,.78)}
+  .rs-file::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#8b5cf6,#06b6d4,transparent)}
+  .rs-badge{display:inline-flex;width:max-content;border-radius:999px;padding:6px 10px;background:rgba(139,92,246,.12);color:#6d28d9;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}
+  .rs-file h3{margin:12px 0 6px;font-size:17px;line-height:1.25;word-break:break-word}
+  .rs-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+  .rs-meta div{border-radius:14px;padding:9px 10px;background:rgba(248,250,252,.82);border:1px solid rgba(16,24,40,.07)}
+  .rs-meta span{display:block;color:var(--rs-muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+  .rs-meta strong{display:block;margin-top:4px;font-size:13px}
+  .rs-empty{border-radius:26px;padding:28px;background:rgba(255,255,255,.72);text-align:center}
+  .rs-empty strong{display:block;font-size:21px;margin-bottom:8px}
+  .rs-empty p{margin:0 auto 18px;max-width:520px;color:var(--rs-muted);font-size:13px;line-height:1.55}
+  @media(max-width:1080px){.rs-hero,.rs-grid{grid-template-columns:1fr}.rs-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:760px){.restore-workspace{padding:22px 12px 48px}.rs-panel,.rs-score,.rs-card{padding:20px;border-radius:26px}.rs-panel h1{font-size:42px}.rs-stats,.rs-file-grid,.rs-meta{grid-template-columns:1fr}.rs-section-head{display:block}.rs-ring{width:176px}.rs-preview dl{grid-template-columns:1fr}}
+</style>
 
-    <% if (success) { %>
-      <div class="flash flash--success"><%= success %></div>
-    <% } %>
-    <% if (error) { %>
-      <div class="flash flash--error"><%= error %></div>
-    <% } %>
-
-    <div class="nav-links" style="margin-top:16px;">
-      <a class="chip" href="/admin/backups">Backups</a>
-      <a class="chip" href="/api/admin/backups">Backup JSON</a>
-    </div>
-  </section>
-
-  <% if (payload.selectedBackupInfo) { %>
-    <section class="panel">
-      <div class="section-eyebrow">Selected Backup</div>
-      <div class="dashboard-grid">
-        <article class="dashboard-card"><strong><%= payload.selectedBackupInfo.name %></strong><h3>File dang chon</h3></article>
-        <article class="dashboard-card"><strong><%= payload.selectedBackupInfo.backupType || "sql" %></strong><h3>Loai backup</h3></article>
-        <article class="dashboard-card"><strong><%= payload.selectedBackupInfo.hotelCount %></strong><h3>Hotel count</h3></article>
+<main class="restore-workspace">
+  <div class="rs-wrap">
+    <section class="rs-hero" aria-label="Phục hồi dữ liệu">
+      <div class="rs-panel">
+        <div class="rs-label">Admin restore workspace</div>
+        <h1>Phục hồi <span>dữ liệu từ backup</span></h1>
+        <p class="rs-lead">Chọn đúng snapshot SQL, kiểm tra metadata và xác nhận trước khi phục hồi. Thao tác này sẽ ghi đè dữ liệu hiện tại, vì vậy nên tạo backup mới trước khi chạy.</p>
+        <div class="rs-actions">
+          <a class="rs-button rs-button--primary" href="/admin/backups">Sao lưu dữ liệu</a>
+          <a class="rs-button" href="/admin/diagnostics">Sức khỏe hệ thống</a>
+          <a class="rs-button" href="/dashboard/admin">Về dashboard Admin</a>
+          <a class="rs-button" href="/api/admin/backups">Backup JSON</a>
+        </div>
+        <% if (success) { %>
+          <div class="rs-flash rs-flash--success"><%= success %></div>
+        <% } %>
+        <% if (error) { %>
+          <div class="rs-flash rs-flash--error"><%= error %></div>
+        <% } %>
       </div>
-      <p class="muted" style="margin-top:16px;">Tao luc: <%= payload.selectedBackupInfo.createdAt || "N/A" %> · Scope: <%= payload.selectedBackupInfo.backupScope || "system_wide" %> · Kich thuoc: <%= (payload.selectedBackupInfo.size / 1024).toFixed(1) %> KB</p>
+      <aside class="rs-score">
+        <div class="rs-ring" aria-label="Điểm sẵn sàng phục hồi">
+          <div class="rs-ring-value"><strong><%= readyScore %></strong><span>Điểm</span></div>
+        </div>
+        <h2><%= readyLabel %></h2>
+        <p><%= selectedBackup ? (selectedRestorable ? selectedBackup.name : "File theo ngày không dùng để restore toàn hệ thống.") : "Chọn một file backup để xem metadata và phục hồi." %></p>
+      </aside>
     </section>
-  <% } %>
 
-  <section class="panel">
-    <div class="section-eyebrow">Restore Action</div>
-    <form method="post" action="/admin/restore">
-      <div class="field">
-        <label>Chon file backup</label>
-        <select name="backup_file" required>
-          <option value="">-- Chon file --</option>
-          <% payload.backups.forEach((item) => { %>
-            <option value="<%= item.name %>" <%= payload.selectedBackupInfo && payload.selectedBackupInfo.name === item.name ? "selected" : "" %>>
-              <%= item.name %> · <%= item.backupType || "sql" %> · <%= item.createdAt || "N/A" %>
-            </option>
-          <% }) %>
-        </select>
-      </div>
-      <div class="flash flash--error" style="margin-top:16px;">
-        Restore se ghi de du lieu hien tai. Nen tao mot backup moi truoc khi phuc hoi.
-      </div>
-      <div class="nav-links" style="margin-top:16px;">
-        <button class="button button--primary" type="submit">Phuc hoi ngay</button>
-      </div>
-    </form>
-  </section>
+    <section class="rs-stats" aria-label="Tổng quan phục hồi">
+      <article class="rs-stat" style="--stat-color:#8b5cf6"><strong><%= backups.length %></strong><span>File có sẵn</span></article>
+      <article class="rs-stat" style="--stat-color:#06b6d4"><strong><%= selectedBackup ? typeText(selectedBackup.backupType) : "Chưa chọn" %></strong><span>Loại backup</span></article>
+      <article class="rs-stat" style="--stat-color:#10b981"><strong><%= selectedBackup ? (selectedBackup.hotelCount || hotelSummary.count || 0) : (hotelSummary.count || 0) %></strong><span>Cơ sở trong scope</span></article>
+      <article class="rs-stat" style="--stat-color:#f59e0b"><strong><%= selectedBackup ? formatSize(selectedBackup.size) : "0 KB" %></strong><span>Dung lượng chọn</span></article>
+    </section>
 
-  <section class="panel">
-    <div class="section-eyebrow">Available Files</div>
-    <% if (!payload.backups.length) { %>
-      <div class="empty-state">Chua co file backup nao de phuc hoi.</div>
-    <% } else { %>
-      <div class="room-grid room-grid--wide">
-        <% payload.backups.forEach((item) => { %>
-          <article class="room-card">
-            <span class="badge"><%= item.backupType || "sql" %></span>
-            <h3><%= item.name %></h3>
-            <p class="muted">Tao luc: <%= item.createdAt || "N/A" %></p>
-            <p class="muted">Scope: <%= item.backupScope || "system_wide" %></p>
-            <div class="nav-links" style="margin-top:12px;">
-              <a class="chip" href="/admin/restore?file=<%= encodeURIComponent(item.name) %>">Chon file</a>
+    <section class="rs-section" aria-label="Hành động phục hồi">
+      <div class="rs-section-head">
+        <div>
+          <h2>Phục hồi có kiểm soát</h2>
+          <p>Chỉ file “Toàn bộ hệ thống” mới được phép phục hồi. File theo ngày chỉ dùng để đối soát/xuất dữ liệu.</p>
+        </div>
+      </div>
+      <div class="rs-grid">
+        <article class="rs-card">
+          <h3>Chọn snapshot</h3>
+          <p>Ưu tiên file mới nhất hoặc file đã được tạo ngay trước thay đổi lớn.</p>
+          <form method="post" action="/admin/restore" id="restoreForm">
+            <div class="rs-field">
+              <label for="backup_file">File backup</label>
+              <select id="backup_file" name="backup_file" required>
+                <option value="">-- Chọn file backup --</option>
+                <% backups.forEach((item) => { %>
+                  <option value="<%= item.name %>" <%= selectedName === item.name ? "selected" : "" %>>
+                    <%= item.name %> · <%= typeText(item.backupType) %> · <%= item.createdAt || "Không rõ" %>
+                  </option>
+                <% }) %>
+              </select>
             </div>
-          </article>
-        <% }) %>
+            <div class="rs-warning" style="margin-top:14px;">
+              <strong>Cảnh báo ghi đè dữ liệu</strong>
+              <p>Restore sẽ import lại dữ liệu từ file SQL vào database hiện tại. Khi bấm phục hồi, hệ thống sẽ tự tạo một bản pre_restore trước rồi mới ghi đè.</p>
+            </div>
+            <% if (selectedBackup && !selectedRestorable) { %>
+              <div class="rs-warning" style="margin-top:12px;">
+                <strong>Không thể phục hồi file này</strong>
+                <p>File “<%= typeText(selectedBackup.backupType) %>” là bản trích xuất theo phạm vi nhỏ. Nếu restore như snapshot toàn bộ, dữ liệu ngoài phạm vi có thể bị mất nên hệ thống đã chặn.</p>
+              </div>
+            <% } %>
+            <label class="rs-check">
+              <input id="restoreConfirm" type="checkbox" />
+              <span>Tôi đã kiểm tra đúng file backup và hiểu thao tác phục hồi sẽ ghi đè dữ liệu hiện tại.</span>
+            </label>
+            <div class="rs-actions">
+              <button class="rs-button rs-button--danger" id="restoreSubmit" type="submit" data-restorable="<%= selectedRestorable ? "true" : "false" %>" disabled>Phục hồi ngay</button>
+              <a class="rs-button" href="/admin/backups#manual-backup">Tạo backup trước</a>
+            </div>
+          </form>
+        </article>
+
+        <article class="rs-card">
+          <h3>File đang chọn</h3>
+          <% if (!selectedBackup) { %>
+            <div class="rs-empty">
+              <strong>Chưa chọn snapshot</strong>
+              <p>Chọn một file ở form bên trái hoặc từ danh sách bên dưới để xem metadata trước khi phục hồi.</p>
+            </div>
+          <% } else { %>
+            <div class="rs-preview">
+              <h4><%= selectedBackup.name %></h4>
+              <dl>
+                <dt>Loại backup</dt><dd><%= typeText(selectedBackup.backupType) %></dd>
+                <dt>Tạo lúc</dt><dd><%= selectedBackup.createdAt || "Không rõ" %></dd>
+                <dt>Scope</dt><dd><%= selectedBackup.backupScope || "Toàn hệ thống" %></dd>
+                <dt>Cơ sở</dt><dd><%= selectedBackup.hotelCount || 0 %></dd>
+                <dt>Dung lượng</dt><dd><%= formatSize(selectedBackup.size) %></dd>
+              </dl>
+            </div>
+          <% } %>
+        </article>
       </div>
-    <% } %>
-  </section>
+    </section>
+
+    <section class="rs-section" aria-label="Danh sách file backup">
+      <div class="rs-section-head">
+        <div>
+          <h2>File có thể phục hồi</h2>
+          <p>Danh sách đọc từ `storage/backups`, sắp xếp file mới nhất lên trước.</p>
+        </div>
+      </div>
+      <% if (!backups.length) { %>
+        <div class="rs-empty">
+          <strong>Chưa có file backup</strong>
+          <p>Hãy quay lại UC Sao lưu dữ liệu để tạo bản backup đầu tiên trước khi phục hồi.</p>
+          <a class="rs-button rs-button--primary" href="/admin/backups#manual-backup">Tạo backup</a>
+        </div>
+      <% } else { %>
+        <div class="rs-file-grid">
+          <% backups.forEach((item) => { %>
+            <article class="rs-file">
+              <span class="rs-badge"><%= typeText(item.backupType) %></span>
+              <h3><%= item.name %></h3>
+              <div class="rs-meta">
+                <div><span>Tạo lúc</span><strong><%= item.createdAt || "Không rõ" %></strong></div>
+                <div><span>Dung lượng</span><strong><%= formatSize(item.size) %></strong></div>
+                <div><span>Scope</span><strong><%= item.backupScope || "Toàn hệ thống" %></strong></div>
+                <div><span>Cơ sở</span><strong><%= item.hotelCount || 0 %></strong></div>
+              </div>
+              <div class="rs-actions">
+                <a class="rs-button <%= isRestorable(item) ? "rs-button--primary" : "" %>" href="/admin/restore?file=<%= encodeURIComponent(item.name) %>"><%= isRestorable(item) ? "Chọn file" : "Xem metadata" %></a>
+                <a class="rs-button" href="/admin/backups?file=<%= encodeURIComponent(item.name) %>">Xem bên sao lưu</a>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
 </main>
+
+<script>
+  (() => {
+    const select = document.getElementById("backup_file");
+    const confirm = document.getElementById("restoreConfirm");
+    const submit = document.getElementById("restoreSubmit");
+    const sync = () => {
+      const restorable = submit?.dataset.restorable === "true";
+      submit.disabled = !select.value || !confirm.checked || !restorable;
+    };
+    select?.addEventListener("change", () => {
+      if (select.value) {
+        window.location.href = `/admin/restore?file=${encodeURIComponent(select.value)}`;
+      } else {
+        sync();
+      }
+    });
+    confirm?.addEventListener("change", sync);
+    sync();
+  })();
+</script>
 <%- include("../partials/footer") %>

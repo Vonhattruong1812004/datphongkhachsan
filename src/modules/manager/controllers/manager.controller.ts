@@ -360,6 +360,7 @@ function formatCustomerFormError(error: unknown) {
       const field = String(issue.path[0] || "");
       const label = customerFieldLabels[field] || "Dữ liệu";
       if (field === "customer_id") return "Mã khách hàng không hợp lệ. Hãy bấm nút Sửa ở đúng dòng khách hàng rồi cập nhật lại.";
+      if (issue.message && issue.message !== "Required" && issue.message !== "Invalid input") return issue.message;
       if (issue.code === "too_small") return `${label} chưa hợp lệ hoặc còn thiếu.`;
       if (String(issue.code) === "invalid_string" || String(issue.code) === "invalid_format") return `${label} không đúng định dạng.`;
       return issue.message || `${label} không hợp lệ.`;

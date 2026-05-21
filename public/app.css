@@ -230,6 +230,21 @@ a {
   color: var(--text);
 }
 
+.chip--dashboard {
+  border-color: rgba(103, 200, 255, 0.32);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.22), rgba(20, 184, 166, 0.14));
+  color: #f8fafc;
+  font-weight: 900;
+}
+
+.chip--user {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
 .chip--uc {
   background: rgba(30, 41, 59, 0.94);
 }

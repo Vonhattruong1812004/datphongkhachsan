@@ -1,51 +1,514 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">Admin Users</div>
-    <h2>Tao va quan ly tai khoan / phan quyen</h2>
-    <form method="post" action="/admin/users">
-      <div class="field-grid">
-        <div class="field"><label>Ma user (bo trong de tao moi)</label><input name="user_id" /></div>
-        <div class="field"><label>Ho ten</label><input name="ho_ten" required /></div>
-        <div class="field"><label>Username</label><input name="username" required /></div>
-        <div class="field"><label>Password</label><input name="password" value="Abc@123" /></div>
-        <div class="field"><label>Email</label><input name="email" required /></div>
-        <div class="field"><label>SDT</label><input name="sdt" required /></div>
-        <div class="field"><label>Role</label><input name="vai_tro" value="2" list="role-options" required /></div>
-        <div class="field"><label>Trang thai</label><input name="trang_thai" value="HoatDong" /></div>
-        <div class="field"><label>CCCD (neu role khach hang)</label><input name="cccd" /></div>
-      </div>
-      <div class="nav-links" style="margin-top:16px">
-        <button class="button button--primary" type="submit">Luu user</button>
-        <a class="chip" href="/admin/diagnostics">Diagnostics</a>
-        <a class="chip" href="/admin/backups">Backups</a>
-        <a class="chip" href="/admin/restore">Restore</a>
-      </div>
-    </form>
-    <datalist id="role-options">
-      <% payload.roles.forEach((role) => { %>
-        <option value="<%= role.id %>"><%= role.tenVaiTro %></option>
-      <% }) %>
-    </datalist>
-  </section>
+<%
+  const users = payload?.users || [];
+  const roles = payload?.roles || [];
+  const filters = payload?.filters || {};
+  const summary = payload?.summary || {};
+  const roleName = (id) => roles.find((role) => Number(role.id) === Number(id))?.tenVaiTro || `Role ${id}`;
+  const activeCount = Number(summary.active || 0);
+  const lockedCount = Number(summary.locked || 0);
+  const staffCount = Number(summary.staff || 0);
+  const customerCount = Number(summary.customer || 0);
+  const totalCount = Number(summary.total || users.length);
+  const filteredCount = Number(payload?.filteredCount || users.length);
+  const filterQueryString = new URLSearchParams(Object.entries(filters).filter(([, value]) => value && value !== "all")).toString();
+%>
+<style>
+  .admin-users{
+    --admin-ink:#102033;
+    --admin-muted:#667085;
+    --admin-line:rgba(16,32,51,.10);
+    --admin-card:rgba(255,255,255,.82);
+    --admin-blue:#0ea5e9;
+    --admin-teal:#14b8a6;
+    --admin-pink:#fb7185;
+    --admin-amber:#f59e0b;
+    --admin-shadow:0 24px 70px rgba(15,23,42,.14);
+    min-height:calc(100vh - 84px);
+    padding:34px 18px 58px;
+    color:var(--admin-ink);
+    background:
+      radial-gradient(circle at 8% 10%, rgba(14,165,233,.28), transparent 28%),
+      radial-gradient(circle at 88% 12%, rgba(20,184,166,.22), transparent 31%),
+      radial-gradient(circle at 50% 104%, rgba(251,191,36,.18), transparent 38%),
+      linear-gradient(135deg,#f8fcff 0%,#eef8ff 42%,#f4fff9 100%);
+  }
+  .admin-users__wrap{max-width:1220px;margin:0 auto}
+  .admin-hero{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:stretch;margin-bottom:18px}
+  .admin-card,.admin-hero-main,.admin-orbit,.admin-user-card{border:1px solid var(--admin-line);background:var(--admin-card);box-shadow:var(--admin-shadow);backdrop-filter:blur(24px)}
+  .admin-hero-main{position:relative;overflow:hidden;border-radius:34px;padding:32px}
+  .admin-hero-main::before{content:"";position:absolute;inset:-1px;background:linear-gradient(120deg,rgba(255,255,255,.70),transparent 28%),radial-gradient(circle at 88% 18%,rgba(14,165,233,.16),transparent 31%);pointer-events:none}
+  .admin-chip{position:relative;z-index:1;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;background:rgba(14,165,233,.12);border:1px solid rgba(14,165,233,.18);color:#0369a1;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.08em}
+  .admin-pulse{width:8px;height:8px;border-radius:999px;background:var(--admin-blue);box-shadow:0 0 0 7px rgba(14,165,233,.13)}
+  .admin-hero h1{position:relative;z-index:1;max-width:760px;margin:24px 0 12px;font-size:clamp(38px,5vw,64px);line-height:.94;letter-spacing:-.07em}
+  .admin-hero h1 span{color:transparent;background:linear-gradient(135deg,#0ea5e9,#14b8a6 48%,#f59e0b);-webkit-background-clip:text;background-clip:text}
+  .admin-lead{position:relative;z-index:1;max-width:720px;margin:0;color:var(--admin-muted);font-size:15.5px;line-height:1.68}
+  .admin-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+  .admin-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border:1px solid rgba(16,32,51,.12);border-radius:999px;padding:10px 16px;background:rgba(255,255,255,.76);color:var(--admin-ink);font:inherit;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .admin-button:hover{transform:translateY(-2px);border-color:var(--admin-blue);box-shadow:0 18px 42px rgba(14,165,233,.14)}
+  .admin-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#2563eb);box-shadow:0 18px 42px rgba(14,165,233,.22)}
+  .admin-button--danger{color:#be123c;background:rgba(255,241,242,.78);border-color:rgba(251,113,133,.22)}
+  .admin-mini-stats{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:28px}
+  .admin-mini-stat{border-radius:22px;padding:15px;background:rgba(255,255,255,.60);border:1px solid rgba(16,32,51,.08)}
+  .admin-mini-stat strong{display:block;font-size:28px;line-height:1;letter-spacing:-.05em}
+  .admin-mini-stat span{display:block;margin-top:8px;color:var(--admin-muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .admin-orbit{position:relative;overflow:hidden;border-radius:34px;min-height:310px;background:linear-gradient(160deg,rgba(255,255,255,.88),rgba(239,246,255,.76))}
+  .admin-orbit-stage{position:absolute;inset:24px;border-radius:32px;background:linear-gradient(145deg,rgba(15,23,42,.86),rgba(12,74,110,.72));overflow:hidden}
+  .admin-orbit-stage::before{content:"";position:absolute;inset:24px;border:1px dashed rgba(226,232,240,.24);border-radius:999px}
+  .admin-orbit-stage::after{content:"";position:absolute;width:150px;height:150px;left:calc(50% - 75px);top:calc(50% - 75px);border-radius:42px;background:linear-gradient(135deg,#0ea5e9,#14b8a6 55%,#f59e0b);box-shadow:0 24px 70px rgba(14,165,233,.24);transform:rotate(14deg)}
+  .admin-orbit-word{position:absolute;z-index:2;display:inline-flex;border-radius:999px;padding:9px 12px;color:#eff6ff;background:rgba(15,23,42,.48);border:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:1000}
+  .admin-orbit-word:nth-child(1){left:26px;top:36px}.admin-orbit-word:nth-child(2){right:32px;top:84px}.admin-orbit-word:nth-child(3){left:44px;bottom:58px}.admin-orbit-word:nth-child(4){right:38px;bottom:42px}
+  .admin-section{margin-top:18px}
+  .admin-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .admin-section-head h2{margin:0;font-size:24px;letter-spacing:-.045em}
+  .admin-section-head p{margin:4px 0 0;color:var(--admin-muted);font-size:13px}
+  .admin-card{border-radius:30px;padding:22px}
+  .admin-filter-card{position:relative;overflow:hidden}
+  .admin-filter-card::before{content:"";position:absolute;inset:0 auto 0 0;width:6px;background:linear-gradient(180deg,#0ea5e9,#14b8a6,#f59e0b)}
+  .admin-filter-row{display:grid;grid-template-columns:minmax(220px,1.4fr) repeat(3,minmax(150px,.8fr)) auto;gap:12px;align-items:end}
+  .admin-filter-field{display:flex;flex-direction:column;gap:6px}
+  .admin-filter-field label{font-size:12px;font-weight:1000;color:#344054;text-transform:uppercase;letter-spacing:.06em}
+  .admin-search-box{position:relative}
+  .admin-search-box input{padding-left:42px}
+  .admin-search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:2px solid rgba(14,165,233,.72);border-radius:999px}
+  .admin-search-icon::after{content:"";position:absolute;width:7px;height:2px;right:-6px;bottom:-3px;background:rgba(14,165,233,.72);transform:rotate(45deg);border-radius:999px}
+  .admin-filter-field input,.admin-filter-field select{width:100%;height:46px;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.82);color:var(--admin-ink);font:inherit;outline:none}
+  .admin-filter-field input:focus,.admin-filter-field select:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
+  .admin-filter-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+  .admin-quick-filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .admin-quick-filter{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:8px 11px;background:rgba(255,255,255,.70);border:1px solid rgba(16,32,51,.10);color:#344054;text-decoration:none;font-size:12px;font-weight:1000}
+  .admin-quick-filter.is-active{color:#0369a1;background:rgba(14,165,233,.13);border-color:rgba(14,165,233,.22)}
+  .admin-quick-dot{width:8px;height:8px;border-radius:999px;background:var(--quick-color,#0ea5e9)}
+  .admin-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .admin-field{display:flex;flex-direction:column;gap:6px;grid-column:span 4}
+  .admin-field.is-wide{grid-column:span 6}
+  .admin-field label{font-size:12px;font-weight:900;color:#344054;text-transform:uppercase;letter-spacing:.06em}
+  .admin-field input,.admin-field select{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.78);color:var(--admin-ink);font:inherit;outline:none}
+  .admin-field input:focus,.admin-field select:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
+  .admin-field input.is-invalid,.admin-field select.is-invalid{border-color:rgba(225,29,72,.64);box-shadow:0 0 0 3px rgba(225,29,72,.10);background:rgba(255,241,242,.82)}
+  .admin-error-msg{min-height:16px;color:#be123c;font-size:12px;font-weight:800;line-height:1.35}
+  .admin-form-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px}
+  .admin-form-note{color:var(--admin-muted);font-size:13px}
+  .admin-users-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .admin-user-card{position:relative;overflow:hidden;border-radius:28px;padding:18px;background:rgba(255,255,255,.76)}
+  .admin-user-card::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--role-color,#0ea5e9),transparent)}
+  .admin-user-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .admin-user-id{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.82);border:1px solid rgba(16,32,51,.08);color:var(--role-color,#0ea5e9);font-size:12px;font-weight:1000}
+  .admin-status{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}
+  .admin-status.is-locked{background:rgba(251,113,133,.12);color:#be123c}
+  .admin-user-card h3{margin:18px 0 8px;font-size:22px;line-height:1.1;letter-spacing:-.045em}
+  .admin-user-card p{margin:0;color:var(--admin-muted);font-size:13px;line-height:1.5}
+  .admin-user-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+  .admin-user-meta div{border-radius:16px;padding:10px;background:rgba(255,255,255,.58);border:1px solid rgba(16,32,51,.07)}
+  .admin-user-meta small{display:block;color:var(--admin-muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .admin-user-meta strong{display:block;margin-top:4px;font-size:13px;word-break:break-word}
+  .admin-user-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .admin-empty{border:1px dashed rgba(16,32,51,.16);border-radius:24px;padding:22px;background:rgba(255,255,255,.58);color:var(--admin-muted)}
+  @media(max-width:1080px){.admin-hero{grid-template-columns:1fr}.admin-orbit{min-height:280px}.admin-users-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-field{grid-column:span 6}.admin-filter-row{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-filter-actions{justify-content:flex-start}}
+  @media(max-width:720px){.admin-users{padding:22px 12px 48px}.admin-hero-main,.admin-card{padding:20px;border-radius:26px}.admin-hero h1{font-size:42px}.admin-mini-stats,.admin-users-grid,.admin-filter-row{grid-template-columns:1fr}.admin-field,.admin-field.is-wide{grid-column:1/-1}.admin-orbit{display:none}.admin-section-head{display:block}.admin-filter-actions{display:grid;grid-template-columns:1fr 1fr}.admin-filter-actions .admin-button{width:100%}}
+</style>
 
-  <section class="panel">
-    <div class="section-eyebrow">Danh sach user</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.users.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge"><%= item.trangThai %></span>
-          <h3><%= item.username %></h3>
-          <p><%= item.tenVaiTro || `Role ${item.maVaiTro}` %></p>
-          <p class="muted"><%= item.tenKh || item.tenNv || "Chua lien ket" %></p>
-          <p class="muted"><%= item.emailKh || item.emailNv || "" %> · <%= item.sdtKh || item.sdtNv || "" %></p>
-          <div class="nav-links" style="margin-top:12px">
-            <a class="chip" href="/api/admin/users">API</a>
+<main class="admin-users">
+  <div class="admin-users__wrap">
+    <section class="admin-hero" aria-label="Người dùng và phân quyền">
+      <div class="admin-hero-main">
+        <div class="admin-chip"><span class="admin-pulse"></span> Admin access workspace</div>
+        <h1>Người dùng <span>& phân quyền</span></h1>
+        <p class="admin-lead">Tạo tài khoản, gán vai trò, khóa/mở truy cập và liên kết đúng hồ sơ nhân viên hoặc khách hàng mà không rời khỏi UC Admin.</p>
+        <div class="admin-actions">
+          <a class="admin-button admin-button--primary" href="#userForm">Tạo tài khoản</a>
+          <a class="admin-button" href="/admin/diagnostics">Kiểm tra sức khỏe hệ thống</a>
+          <a class="admin-button" href="/dashboard/admin">Dashboard Admin</a>
+        </div>
+        <div class="admin-mini-stats" aria-label="Tóm tắt tài khoản">
+          <div class="admin-mini-stat"><strong><%= totalCount %></strong><span>Tài khoản</span></div>
+          <div class="admin-mini-stat"><strong><%= activeCount %></strong><span>Đang hoạt động</span></div>
+          <div class="admin-mini-stat"><strong><%= lockedCount %></strong><span>Bị khóa/ngưng</span></div>
+        </div>
+      </div>
+      <aside class="admin-orbit" aria-label="Minh họa phân quyền">
+        <div class="admin-orbit-stage">
+          <span class="admin-orbit-word">Admin</span>
+          <span class="admin-orbit-word">Roles</span>
+          <span class="admin-orbit-word">Staff</span>
+          <span class="admin-orbit-word">Customer</span>
+        </div>
+      </aside>
+    </section>
+
+    <section class="admin-section" aria-label="Tìm kiếm và lọc tài khoản">
+      <div class="admin-section-head">
+        <div>
+          <h2>Tìm kiếm tài khoản</h2>
+          <p>Lọc theo username, họ tên, email, SĐT, CCCD hoặc vai trò để xử lý nhanh đúng người dùng.</p>
+        </div>
+        <button class="admin-button" type="button" id="exportUsersCsv">Xuất CSV</button>
+      </div>
+      <form class="admin-card admin-filter-card" method="get" action="/admin/users">
+        <div class="admin-filter-row">
+          <div class="admin-filter-field">
+            <label for="keyword">Từ khóa</label>
+            <div class="admin-search-box">
+              <span class="admin-search-icon" aria-hidden="true"></span>
+              <input id="keyword" name="keyword" value="<%= filters.keyword || "" %>" placeholder="Username, tên, email, SĐT, CCCD..." autocomplete="off" />
+            </div>
           </div>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+          <div class="admin-filter-field">
+            <label for="filterRole">Vai trò</label>
+            <select id="filterRole" name="vai_tro">
+              <option value="all">Tất cả vai trò</option>
+              <% roles.forEach((role) => { %>
+                <option value="<%= role.id %>" <%= String(filters.vai_tro || "all") === String(role.id) ? "selected" : "" %>><%= role.tenVaiTro %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="admin-filter-field">
+            <label for="filterStatus">Trạng thái</label>
+            <select id="filterStatus" name="trang_thai">
+              <option value="all" <%= (filters.trang_thai || "all") === "all" ? "selected" : "" %>>Tất cả trạng thái</option>
+              <option value="HoatDong" <%= filters.trang_thai === "HoatDong" ? "selected" : "" %>>Hoạt động</option>
+              <option value="Khoa" <%= filters.trang_thai === "Khoa" ? "selected" : "" %>>Khóa</option>
+              <option value="Ngung" <%= filters.trang_thai === "Ngung" ? "selected" : "" %>>Ngưng</option>
+            </select>
+          </div>
+          <div class="admin-filter-field">
+            <label for="filterLink">Liên kết hồ sơ</label>
+            <select id="filterLink" name="lien_ket">
+              <option value="all" <%= (filters.lien_ket || "all") === "all" ? "selected" : "" %>>Tất cả</option>
+              <option value="staff" <%= filters.lien_ket === "staff" ? "selected" : "" %>>Nhân viên</option>
+              <option value="customer" <%= filters.lien_ket === "customer" ? "selected" : "" %>>Khách hàng</option>
+              <option value="orphan" <%= filters.lien_ket === "orphan" ? "selected" : "" %>>Chưa liên kết</option>
+            </select>
+          </div>
+          <div class="admin-filter-actions">
+            <button class="admin-button admin-button--primary" type="submit">Tìm kiếm</button>
+            <a class="admin-button" href="/admin/users">Đặt lại</a>
+          </div>
+        </div>
+        <div class="admin-quick-filters" aria-label="Bộ lọc nhanh">
+          <a class="admin-quick-filter <%= (filters.trang_thai || "all") === "all" && (filters.lien_ket || "all") === "all" && (filters.vai_tro || "all") === "all" && !(filters.keyword || "") ? "is-active" : "" %>" href="/admin/users"><span class="admin-quick-dot"></span>Tất cả <%= totalCount %></a>
+          <a class="admin-quick-filter <%= filters.trang_thai === "HoatDong" ? "is-active" : "" %>" style="--quick-color:#14b8a6" href="/admin/users?trang_thai=HoatDong"><span class="admin-quick-dot"></span>Đang hoạt động <%= activeCount %></a>
+          <a class="admin-quick-filter <%= filters.trang_thai === "Khoa" ? "is-active" : "" %>" style="--quick-color:#fb7185" href="/admin/users?trang_thai=Khoa"><span class="admin-quick-dot"></span>Đang khóa</a>
+          <a class="admin-quick-filter <%= filters.lien_ket === "staff" ? "is-active" : "" %>" style="--quick-color:#8b5cf6" href="/admin/users?lien_ket=staff"><span class="admin-quick-dot"></span>Nhân viên <%= staffCount %></a>
+          <a class="admin-quick-filter <%= filters.lien_ket === "customer" ? "is-active" : "" %>" style="--quick-color:#f59e0b" href="/admin/users?lien_ket=customer"><span class="admin-quick-dot"></span>Khách hàng <%= customerCount %></a>
+        </div>
+      </form>
+    </section>
+
+    <section class="admin-section" aria-label="Form tài khoản">
+      <div class="admin-section-head">
+        <div>
+          <h2>Tạo hoặc sửa tài khoản</h2>
+          <p>Role quyết định dashboard và UC mà người dùng được phép truy cập.</p>
+        </div>
+      </div>
+      <form method="post" action="/admin/users" class="admin-card" id="userForm" novalidate>
+        <input type="hidden" name="user_id" id="user_id" />
+        <div class="admin-grid">
+          <div class="admin-field is-wide">
+            <label for="ho_ten">Họ tên</label>
+            <input id="ho_ten" name="ho_ten" required minlength="2" autocomplete="name" />
+            <div class="admin-error-msg" id="err_ho_ten"></div>
+          </div>
+          <div class="admin-field">
+            <label for="username">Username</label>
+            <input id="username" name="username" required minlength="5" maxlength="30" pattern="[A-Za-z0-9_]+" autocomplete="username" />
+            <div class="admin-error-msg" id="err_username"></div>
+          </div>
+          <div class="admin-field">
+            <label for="password">Mật khẩu</label>
+            <input id="password" name="password" value="Abc@123" minlength="6" autocomplete="new-password" />
+            <div class="admin-error-msg" id="err_password"></div>
+          </div>
+          <div class="admin-field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$" placeholder="user@example.com" autocomplete="email" />
+            <div class="admin-error-msg" id="err_email"></div>
+          </div>
+          <div class="admin-field">
+            <label for="sdt">Số điện thoại</label>
+            <input id="sdt" name="sdt" required pattern="^(0\\d{9}|\\+84\\d{9})$" placeholder="0901234567" inputmode="tel" autocomplete="tel" />
+            <div class="admin-error-msg" id="err_sdt"></div>
+          </div>
+          <div class="admin-field"><label for="vai_tro">Vai trò</label>
+            <select id="vai_tro" name="vai_tro" required>
+              <% roles.forEach((role) => { %>
+                <option value="<%= role.id %>"><%= role.tenVaiTro %></option>
+              <% }) %>
+            </select>
+            <div class="admin-error-msg" id="err_vai_tro"></div>
+          </div>
+          <div class="admin-field"><label for="trang_thai">Trạng thái</label>
+            <select id="trang_thai" name="trang_thai">
+              <option value="HoatDong">Hoạt động</option>
+              <option value="Khoa">Khóa</option>
+              <option value="Ngung">Ngưng</option>
+            </select>
+            <div class="admin-error-msg" id="err_trang_thai"></div>
+          </div>
+          <div class="admin-field">
+            <label for="cccd">CCCD</label>
+            <input id="cccd" name="cccd" placeholder="Bắt buộc khi tạo khách hàng" pattern="^\\d{9,12}$" inputmode="numeric" />
+            <div class="admin-error-msg" id="err_cccd"></div>
+          </div>
+        </div>
+        <div class="admin-form-actions">
+          <span class="admin-form-note" id="formMode">Đang ở chế độ tạo mới.</span>
+          <div class="admin-actions" style="margin-top:0">
+            <button class="admin-button" type="reset" id="resetForm">Làm mới</button>
+            <button class="admin-button admin-button--primary" type="submit">Lưu tài khoản</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="admin-section" aria-label="Danh sách tài khoản">
+      <div class="admin-section-head">
+        <div>
+          <h2>Danh sách tài khoản</h2>
+          <p>Đang hiển thị <%= filteredCount %>/<%= totalCount %> tài khoản. Toàn hệ thống có <%= staffCount %> nhân viên và <%= customerCount %> khách hàng.</p>
+        </div>
+        <a class="admin-button" href="/api/admin/users<%= filterQueryString ? `?${filterQueryString}` : "" %>">JSON</a>
+      </div>
+      <% if (!users.length) { %>
+        <div class="admin-empty">Chưa có tài khoản nào.</div>
+      <% } else { %>
+        <div class="admin-users-grid">
+          <% users.forEach((item) => {
+            const name = item.tenKh || item.tenNv || "";
+            const email = item.emailKh || item.emailNv || "";
+            const sdt = item.sdtKh || item.sdtNv || "";
+            const cccd = item.cccdKh || "";
+            const roleColor = Number(item.maVaiTro) === 1 ? "#0ea5e9" : Number(item.maVaiTro) === 6 ? "#14b8a6" : Number(item.maVaiTro) === 7 ? "#f59e0b" : "#8b5cf6";
+          %>
+            <article
+              class="admin-user-card"
+              style="--role-color:<%= roleColor %>"
+              data-user-id="<%= item.id %>"
+              data-name="<%= name %>"
+              data-username="<%= item.username %>"
+              data-email="<%= email %>"
+              data-sdt="<%= sdt %>"
+              data-cccd="<%= cccd %>"
+              data-role="<%= item.maVaiTro %>"
+              data-status="<%= item.trangThai %>"
+            >
+              <div class="admin-user-top">
+                <span class="admin-user-id">#<%= item.id %> · <%= roleName(item.maVaiTro) %></span>
+                <span class="admin-status <%= item.trangThai === "HoatDong" ? "" : "is-locked" %>"><%= item.trangThai %></span>
+              </div>
+              <h3><%= item.username %></h3>
+              <p><%= name || "Chưa liên kết hồ sơ" %></p>
+              <div class="admin-user-meta">
+                <div><small>Liên kết</small><strong><%= item.maKhachHang ? "Khách hàng" : (item.maNhanVien ? "Nhân viên" : "Chưa có") %></strong></div>
+                <div><small>Role</small><strong><%= roleName(item.maVaiTro) %></strong></div>
+                <div><small>Email</small><strong><%= email || "-" %></strong></div>
+                <div><small>SĐT / CCCD</small><strong><%= sdt || "-" %><%= cccd ? ` · ${cccd}` : "" %></strong></div>
+              </div>
+              <div class="admin-user-actions">
+                <button class="admin-button admin-edit-user" type="button">Sửa</button>
+                <button class="admin-button admin-copy-user" type="button">Copy username</button>
+                <button class="admin-button <%= item.trangThai === "HoatDong" ? "admin-button--danger" : "" %> admin-status-user" type="button" data-next-status="<%= item.trangThai === "HoatDong" ? "Khoa" : "HoatDong" %>">
+                  <%= item.trangThai === "HoatDong" ? "Khóa" : "Mở" %>
+                </button>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
 </main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("userForm");
+  const formMode = document.getElementById("formMode");
+  const fields = {
+    user_id: document.getElementById("user_id"),
+    ho_ten: document.getElementById("ho_ten"),
+    username: document.getElementById("username"),
+    password: document.getElementById("password"),
+    email: document.getElementById("email"),
+    sdt: document.getElementById("sdt"),
+    vai_tro: document.getElementById("vai_tro"),
+    trang_thai: document.getElementById("trang_thai"),
+    cccd: document.getElementById("cccd")
+  };
+  const errors = {
+    ho_ten: document.getElementById("err_ho_ten"),
+    username: document.getElementById("err_username"),
+    password: document.getElementById("err_password"),
+    email: document.getElementById("err_email"),
+    sdt: document.getElementById("err_sdt"),
+    vai_tro: document.getElementById("err_vai_tro"),
+    trang_thai: document.getElementById("err_trang_thai"),
+    cccd: document.getElementById("err_cccd")
+  };
+  const patterns = {
+    username: /^[A-Za-z0-9_]{5,30}$/,
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i,
+    sdt: /^(0\d{9}|\+84\d{9})$/,
+    cccd: /^\d{9,12}$/
+  };
+
+  function setError(name, message) {
+    if (!fields[name]) return;
+    fields[name].classList.toggle("is-invalid", Boolean(message));
+    if (errors[name]) errors[name].textContent = message || "";
+  }
+
+  function validateField(name) {
+    const value = String(fields[name]?.value || "").trim();
+    let message = "";
+
+    if (name === "ho_ten" && value.length < 2) message = "Họ tên phải có ít nhất 2 ký tự.";
+    if (name === "username" && !patterns.username.test(value)) message = "Username 5-30 ký tự, chỉ gồm chữ, số hoặc dấu gạch dưới.";
+    if (name === "password") {
+      const isEditing = Boolean(fields.user_id.value);
+      if (!isEditing && value.length < 6) message = "Mật khẩu tạo mới phải có ít nhất 6 ký tự.";
+      if (isEditing && value && value.length < 6) message = "Mật khẩu mới phải có ít nhất 6 ký tự.";
+    }
+    if (name === "email" && !patterns.email.test(value)) message = "Email phải đúng định dạng, ví dụ user@example.com.";
+    if (name === "sdt" && !patterns.sdt.test(value)) message = "SĐT phải gồm 10 số bắt đầu bằng 0 hoặc +84 kèm 9 số.";
+    if (name === "vai_tro" && !value) message = "Vui lòng chọn vai trò.";
+    if (name === "trang_thai" && !["HoatDong", "Khoa", "Ngung"].includes(value)) message = "Trạng thái không hợp lệ.";
+    if (name === "cccd") {
+      const isCustomer = String(fields.vai_tro.value) === "7";
+      if (value && !patterns.cccd.test(value)) message = "CCCD/CMND phải gồm 9-12 chữ số.";
+      if (isCustomer && !patterns.cccd.test(value)) message = "Tài khoản khách hàng bắt buộc có CCCD/CMND 9-12 chữ số.";
+    }
+
+    setError(name, message);
+    return !message;
+  }
+
+  function validateForm() {
+    const fieldNames = ["ho_ten", "username", "password", "email", "sdt", "vai_tro", "trang_thai", "cccd"];
+    const ok = fieldNames.map(validateField).every(Boolean);
+    if (!ok && formMode) formMode.textContent = "Dữ liệu chưa hợp lệ, vui lòng kiểm tra các dòng màu đỏ.";
+    return ok;
+  }
+
+  Object.keys(errors).forEach((name) => {
+    fields[name]?.addEventListener("input", () => validateField(name));
+    fields[name]?.addEventListener("change", () => {
+      validateField(name);
+      if (name === "vai_tro") validateField("cccd");
+    });
+  });
+
+  function fillForm(card, nextStatus) {
+    fields.user_id.value = card.dataset.userId || "";
+    fields.ho_ten.value = card.dataset.name || "";
+    fields.username.value = card.dataset.username || "";
+    fields.password.value = "";
+    fields.email.value = card.dataset.email || "";
+    fields.sdt.value = card.dataset.sdt || "";
+    fields.vai_tro.value = card.dataset.role || "2";
+    fields.trang_thai.value = nextStatus || card.dataset.status || "HoatDong";
+    fields.cccd.value = card.dataset.cccd || "";
+    Object.keys(errors).forEach((name) => setError(name, ""));
+    if (formMode) formMode.textContent = `Đang sửa tài khoản #${card.dataset.userId}. Để trống mật khẩu nếu không đổi.`;
+    form?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  form?.addEventListener("submit", (event) => {
+    if (!validateForm()) {
+      event.preventDefault();
+      const firstInvalid = form.querySelector(".is-invalid");
+      firstInvalid?.focus();
+      firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+
+  document.querySelectorAll(".admin-edit-user").forEach((button) => {
+    button.addEventListener("click", () => fillForm(button.closest(".admin-user-card")));
+  });
+
+  document.querySelectorAll(".admin-status-user").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const card = button.closest(".admin-user-card");
+      const userId = card?.dataset.userId || "";
+      const nextStatus = button.dataset.nextStatus || "Khoa";
+      if (!userId) return;
+      const originalText = button.textContent;
+      button.textContent = "Đang lưu...";
+      button.disabled = true;
+      try {
+        const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if (!response.ok) throw new Error("Cap nhat trang thai that bai.");
+        window.location.reload();
+      } catch (_error) {
+        button.disabled = false;
+        button.textContent = originalText;
+        fillForm(card, nextStatus);
+        if (formMode) formMode.textContent = "Không gọi được cập nhật nhanh, đã chuyển dữ liệu lên form để bạn lưu thủ công.";
+      }
+    });
+  });
+
+  document.querySelectorAll(".admin-copy-user").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const card = button.closest(".admin-user-card");
+      const value = card?.dataset.username || "";
+      if (!value) return;
+      try {
+        await navigator.clipboard.writeText(value);
+        button.textContent = "Đã copy";
+      } catch (_error) {
+        const temp = document.createElement("input");
+        temp.value = value;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        temp.remove();
+        button.textContent = "Đã copy";
+      }
+      setTimeout(() => { button.textContent = "Copy username"; }, 1200);
+    });
+  });
+
+  document.getElementById("exportUsersCsv")?.addEventListener("click", () => {
+    const cards = Array.from(document.querySelectorAll(".admin-user-card"));
+    const rows = [["ID", "Username", "Ho ten", "Email", "SDT", "CCCD", "Role", "Trang thai"]];
+    cards.forEach((card) => {
+      rows.push([
+        card.dataset.userId || "",
+        card.dataset.username || "",
+        card.dataset.name || "",
+        card.dataset.email || "",
+        card.dataset.sdt || "",
+        card.dataset.cccd || "",
+        card.querySelector(".admin-user-id")?.textContent?.replace(/^#\\d+\\s*·\\s*/, "").trim() || "",
+        card.dataset.status || ""
+      ]);
+    });
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `admin-users-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("resetForm")?.addEventListener("click", () => {
+    setTimeout(() => {
+      fields.user_id.value = "";
+      fields.password.value = "Abc@123";
+      fields.vai_tro.value = "2";
+      fields.trang_thai.value = "HoatDong";
+      Object.keys(errors).forEach((name) => setError(name, ""));
+      if (formMode) formMode.textContent = "Đang ở chế độ tạo mới.";
+    }, 0);
+  });
+});
+</script>
 <%- include("../partials/footer") %>

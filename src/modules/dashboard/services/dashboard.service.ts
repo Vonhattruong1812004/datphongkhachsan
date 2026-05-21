@@ -48,9 +48,10 @@ interface RecentRoomEventRow {
 
 const cardsByScope: Record<string, DashboardCard[]> = {
   admin: [
-    { label: "Control tower", value: "Users + Health", note: "Quan ly tai khoan, readiness va diagnostics" },
-    { label: "Hotels", value: "Multi-site", note: "San sang cho scope theo co so" },
-    { label: "Security", value: "Session", note: "Role-based access + audit expand" }
+    { label: "Tài khoản", value: "Users", note: "Tạo, sửa, khóa/mở tài khoản và gán đúng vai trò truy cập." },
+    { label: "Sức khỏe", value: "Health", note: "Kiểm runtime, database, storage, PWA, AI và readiness hệ thống." },
+    { label: "Sao lưu", value: "Backup", note: "Tạo snapshot SQL, cấu hình auto backup và đọc metadata backup." },
+    { label: "Phục hồi", value: "Restore", note: "Chọn snapshot toàn bộ, xác nhận rủi ro và phục hồi có kiểm soát." }
   ],
   letan: [
     { label: "Đặt tại quầy", value: "Direct V2", note: "Tạo booking trực tiếp theo luồng lễ tân" },
@@ -68,9 +69,9 @@ const cardsByScope: Record<string, DashboardCard[]> = {
     { label: "Room board live", value: "Realtime", note: "Theo dõi snapshot phòng và tín hiệu vận hành realtime của bộ phận dịch vụ." }
   ],
   quanly: [
-    { label: "Khách hàng", value: "CRM live", note: "Theo dõi hồ sơ, lịch sử đặt phòng và tín hiệu trùng lặp khách hàng." },
-    { label: "Phòng & tồn kho", value: "Inventory", note: "Nắm tình trạng phòng, ảnh hiển thị, cơ sở và điểm nghẽn vận hành." },
-    { label: "Quản lý eKYC", value: "Review", note: "Duyệt hồ sơ định danh, xem queue theo trạng thái và đồng bộ trạng thái khách cho vận hành." }
+    { label: "Quản lý khách hàng", value: "CRM live", note: "Theo dõi hồ sơ, lịch sử đặt phòng và tín hiệu trùng lặp khách hàng." },
+    { label: "Quản lý phòng", value: "Inventory", note: "Nắm tình trạng phòng, ảnh hiển thị, cơ sở và điểm nghẽn vận hành." },
+    { label: "Duyệt eKYC", value: "Review", note: "Duyệt hồ sơ định danh, xem queue theo trạng thái và đồng bộ trạng thái khách cho vận hành." }
   ],
   cskh: [
     { label: "Quản lý phản hồi", value: "Feedback", note: "Lọc phản hồi, xem sentiment, trả lời khách và cập nhật trạng thái trong một màn." },
@@ -83,7 +84,7 @@ const cardsByScope: Record<string, DashboardCard[]> = {
 const heroByScope: Record<string, { title: string; description: string }> = {
   admin: {
     title: "Xin chào, Admin!",
-    description: "Quản trị người dùng, sao lưu dữ liệu, chẩn đoán hệ thống và điều phối đa cơ sở từ một nơi tập trung."
+    description: "Bảng điều phối gọn cho quyền hệ thống: quản trị tài khoản, kiểm tra sức khỏe runtime, sao lưu và phục hồi dữ liệu."
   },
   letan: {
     title: "Xin chào, Lễ tân!",
@@ -109,12 +110,10 @@ const heroByScope: Record<string, { title: string; description: string }> = {
 
 const actionsByScope: Record<string, DashboardActionLink[]> = {
   admin: [
-    { label: "Quản lý người dùng", href: "/admin/users", note: "CRUD tài khoản và phân quyền" },
-    { label: "Sao lưu dữ liệu", href: "/admin/backups", note: "Tạo backup và cấu hình tự động" },
-    { label: "Phục hồi hệ thống", href: "/admin/restore", note: "Khôi phục từ file SQL" },
-    { label: "Chẩn đoán runtime", href: "/admin/runtime-health", note: "Kiểm tra tình trạng chạy thật" },
-    { label: "AI diagnostics", href: "/admin/ai-diagnostics", note: "Kiểm tra lớp AI và adapter" },
-    { label: "Đa cơ sở", href: "/admin/multi-hotel-diagnostics", note: "Theo dõi multi-hotel readiness" }
+    { label: "Người dùng & phân quyền", href: "/admin/users", note: "Tạo tài khoản, đổi vai trò và khóa/mở quyền truy cập." },
+    { label: "Kiểm tra sức khỏe hệ thống", href: "/admin/diagnostics", note: "Kiểm runtime, readiness, mobile, AI và multi-hotel từ một cụm." },
+    { label: "Sao lưu dữ liệu", href: "/admin/backups", note: "Tạo backup và cấu hình sao lưu tự động." },
+    { label: "Phục hồi hệ thống", href: "/admin/restore", note: "Khôi phục dữ liệu từ file backup khi cần." }
   ],
   letan: [
     { label: "Đặt phòng tại quầy", href: "/frontdesk/direct-booking", note: "Tạo booking trực tiếp, chọn phòng, gắn khách, dịch vụ, khuyến mãi và tổng tiền." },
@@ -138,9 +137,9 @@ const actionsByScope: Record<string, DashboardActionLink[]> = {
     { label: "Room board live", href: "/service/room-board-live", note: "Theo dõi room feed realtime để nắm phòng đang ở, cần vệ sinh, hư hại hoặc bảo trì." }
   ],
   quanly: [
-    { label: "Khách hàng", href: "/manager/customers", note: "Mở CRM, tra cứu hồ sơ, xem lịch sử giao dịch và kiểm tra dữ liệu trùng." },
-    { label: "Phòng", href: "/manager/rooms", note: "Quản lý danh mục phòng, ảnh, loại phòng, trạng thái và cơ sở đang khai thác." },
-    { label: "Quản lý eKYC", href: "/ekyc/review", note: "Duyệt hồ sơ eKYC, xem queue theo trạng thái, kiểm ảnh giấy tờ/selfie và đồng bộ quyết định review." }
+    { label: "Quản lý khách hàng", href: "/manager/customers", note: "Tra cứu hồ sơ, xem lịch sử giao dịch và kiểm tra dữ liệu trùng." },
+    { label: "Quản lý phòng", href: "/manager/rooms", note: "Cập nhật danh mục phòng, ảnh, loại phòng, trạng thái và cơ sở đang khai thác." },
+    { label: "Duyệt eKYC", href: "/ekyc/review", note: "Xem queue eKYC, kiểm ảnh giấy tờ/selfie và đồng bộ quyết định xác thực." }
   ],
   cskh: [
     { label: "Quản lý phản hồi", href: "/feedback/manage", note: "Gộp toàn bộ xử lý phản hồi: lọc trạng thái/rating, xem sentiment, trả lời khách và đóng tiến độ." },
