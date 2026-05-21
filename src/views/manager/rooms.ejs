@@ -24,6 +24,7 @@
     return fileName ? `/uploads/phong/${encodeURIComponent(fileName)}` : "";
   };
   const editRoomId = Number(roomDraftData.room_id || payload.editRoomId || 0);
+  const focusedRoomId = Number(payload.focusedRoomId || 0);
   const editingRoom = editRoomId ? rooms.find((item) => Number(item.id) === editRoomId) : null;
   const roomForm = {
     room_id: roomDraftData.room_id || editingRoom?.id || "",
@@ -269,6 +270,7 @@
   }
   .room-table td { padding: 14px; border-top: 1px solid rgba(23,32,51,.07); vertical-align: top; }
   .room-table tbody tr:hover { background: #fffdf2; box-shadow: inset 5px 0 0 var(--room-coral); }
+  .room-table tbody tr.is-focused { background: #ecfeff; box-shadow: inset 5px 0 0 var(--room-cyan); }
   .room-thumb {
     width: 84px;
     height: 62px;
@@ -593,6 +595,7 @@
                     data-realtime="<%= item.trangThaiRealtime %>"
                     data-condition="<%= item.tinhTrangPhong %>"
                     data-keyword="<%= [item.soPhong, item.hotelName, item.loaiPhong, item.loaiGiuong, item.viewLabel, item.ghiChu || ''].join(' ').toLowerCase() %>"
+                    class="<%= focusedRoomId === Number(item.id) ? "is-focused" : "" %>"
                   >
                     <td>
                       <% if (item.imageUrl) { %>
@@ -706,6 +709,7 @@
     const imageFallback = document.getElementById("room-image-fallback");
     const roomNumberInput = document.getElementById("so_phong");
     const roomForm = document.querySelector("[data-room-form]");
+    const capacityInput = document.getElementById("so_khach_toi_da");
     const unsafeText = /[<>{}\[\]\\]/;
     const validators = {
       so_phong(value) {
@@ -780,6 +784,10 @@
     });
 
     roomForm?.addEventListener("submit", (event) => {
+      if (capacityInput) {
+        const normalizedCapacity = Math.trunc(Number(capacityInput.value || 0));
+        if (Number.isFinite(normalizedCapacity)) capacityInput.value = String(normalizedCapacity);
+      }
       const fields = Array.from(roomForm.querySelectorAll("input[name], textarea[name]")).filter((field) => validators[field.name]);
       const firstInvalid = fields.find((field) => !validateField(field));
       if (!firstInvalid) return;

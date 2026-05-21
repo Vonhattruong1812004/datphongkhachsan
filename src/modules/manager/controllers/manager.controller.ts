@@ -214,6 +214,7 @@ async function renderRoomsPage(req: Request, res: Response, options: {
 
   const roomDraft = options.roomDraft || null;
   const requestedEditId = getPositiveNumber(roomDraft?.room_id ?? req.query.edit_room);
+  const focusedRoomId = getPositiveNumber(req.query.focus_room ?? req.query.edit_room);
   const normalizedRooms = roomItems.map((room) => ({
     ...room,
     imageUrl: resolveRoomImageUrl(room.hinhAnh),
@@ -250,7 +251,8 @@ async function renderRoomsPage(req: Request, res: Response, options: {
       roomStatusOptions,
       roomConditionOptions,
       roomViewOptions,
-      editRoomId: requestedEditId
+      editRoomId: requestedEditId,
+      focusedRoomId
     },
     query: req.query,
     roomDraft,
@@ -563,7 +565,7 @@ export async function saveRoomAction(req: Request, res: Response) {
   try {
     const savedRoom = await managerService.saveRoom(draft);
     const success = draft.room_id ? "Cập nhật phòng thành công." : "Thêm phòng thành công.";
-    return res.redirect(`/manager/rooms?edit_room=${encodeURIComponent(String(savedRoom.id))}&success=${encodeURIComponent(success)}`);
+    return res.redirect(`/manager/rooms?edit_room=${encodeURIComponent(String(savedRoom.id))}&focus_room=${encodeURIComponent(String(savedRoom.id))}&success=${encodeURIComponent(success)}`);
   } catch (error) {
     return renderRoomsPage(req, res, {
       status: error instanceof ZodError ? 422 : error instanceof HttpError ? error.statusCode : 400,

@@ -79,6 +79,26 @@ async function requestJson(url: string, init?: RequestInit) {
   return { response, json, text };
 }
 
+async function submitRoomForm(baseUrl: string, cookieJar: string, csrfToken: string, room: Record<string, string>) {
+  const form = new FormData();
+  form.set("_csrf", csrfToken);
+  for (const [key, value] of Object.entries(room)) {
+    form.set(key, value);
+  }
+
+  const response = await fetch(`${baseUrl}/manager/rooms`, {
+    method: "POST",
+    headers: {
+      Cookie: cookieJar
+    },
+    redirect: "manual",
+    body: form
+  });
+
+  const text = await response.text();
+  return { response, text };
+}
+
 async function findManagerAccounts() {
   const result = await query<AccountRow>(
     `
@@ -442,6 +462,28 @@ async function main() {
       throw new Error(`Room capacity update should persist as 5, got ${capacityState.rows[0]?.capacity || "empty"}`);
     }
 
+    const formCapacityUpdate = await submitRoomForm(baseUrl, manager.cookieJar, csrfToken, {
+      ...room,
+      room_id: String(createdRoomId),
+      gia: "1350000",
+      so_khach_toi_da: "4",
+      ghi_chu: "Smoke manager room form capacity updated",
+      hinh_anh: "4.png"
+    });
+
+    if (![302, 303].includes(formCapacityUpdate.response.status)) {
+      throw new Error(`Room form capacity update should redirect after success, got ${formCapacityUpdate.response.status} ${formCapacityUpdate.text}`);
+    }
+
+    const formCapacityState = await query<{ capacity: number }>(
+      "SELECT sokhachtoida AS capacity FROM phong WHERE maphong = $1",
+      [createdRoomId]
+    );
+
+    if (Number(formCapacityState.rows[0]?.capacity || 0) !== 4) {
+      throw new Error(`Room form capacity update should persist as 4, got ${formCapacityState.rows[0]?.capacity || "empty"}`);
+    }
+
     const holdCheckin = dateInput(45);
     const holdCheckout = dateInput(47);
     cancelledHoldTransactionId = await insertCancelledHold(createdRoomId, holdCheckin, holdCheckout);
@@ -641,6 +683,7 @@ async function main() {
     console.log(`room_created=${createdRoomId}`);
     console.log("update_same_room_number=ok");
     console.log("capacity_update_persisted=ok");
+    console.log("form_capacity_update_persisted=ok");
     console.log("condition_realtime_sync=ok");
     console.log(`cancelled_hold_does_not_block_availability=${cancelledHoldVisible ? "ok" : "failed"}`);
     console.log("cancelled_stale_manager_room=ok");
