@@ -412,6 +412,36 @@ async function main() {
       throw new Error(`Update same room number should not trigger duplicate error: ${updateResult.response.status} ${updateResult.json?.message || updateResult.text}`);
     }
 
+    const capacityUpdateResult = await requestJson(`${baseUrl}/api/manager/rooms`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Cookie: manager.cookieJar,
+        "x-csrf-token": csrfToken
+      },
+      body: JSON.stringify({
+        ...room,
+        room_id: String(createdRoomId),
+        gia: "1350000",
+        so_khach_toi_da: "5",
+        ghi_chu: "Smoke manager room capacity updated"
+      })
+    });
+
+    if (!capacityUpdateResult.response.ok || !capacityUpdateResult.json?.ok) {
+      throw new Error(`Update room capacity failed: ${capacityUpdateResult.response.status} ${capacityUpdateResult.json?.message || capacityUpdateResult.text}`);
+    }
+
+    const capacityState = await query<{ capacity: number }>(
+      "SELECT sokhachtoida AS capacity FROM phong WHERE maphong = $1",
+      [createdRoomId]
+    );
+
+    if (Number(capacityState.rows[0]?.capacity || 0) !== 5) {
+      throw new Error(`Room capacity update should persist as 5, got ${capacityState.rows[0]?.capacity || "empty"}`);
+    }
+
     const holdCheckin = dateInput(45);
     const holdCheckout = dateInput(47);
     cancelledHoldTransactionId = await insertCancelledHold(createdRoomId, holdCheckin, holdCheckout);
@@ -610,6 +640,7 @@ async function main() {
     console.log(`manager=${manager.username}`);
     console.log(`room_created=${createdRoomId}`);
     console.log("update_same_room_number=ok");
+    console.log("capacity_update_persisted=ok");
     console.log("condition_realtime_sync=ok");
     console.log(`cancelled_hold_does_not_block_availability=${cancelledHoldVisible ? "ok" : "failed"}`);
     console.log("cancelled_stale_manager_room=ok");

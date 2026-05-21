@@ -561,9 +561,9 @@ export async function saveRoomAction(req: Request, res: Response) {
   };
 
   try {
-    await managerService.saveRoom(draft);
+    const savedRoom = await managerService.saveRoom(draft);
     const success = draft.room_id ? "Cập nhật phòng thành công." : "Thêm phòng thành công.";
-    return res.redirect(`/manager/rooms?success=${encodeURIComponent(success)}`);
+    return res.redirect(`/manager/rooms?edit_room=${encodeURIComponent(String(savedRoom.id))}&success=${encodeURIComponent(success)}`);
   } catch (error) {
     return renderRoomsPage(req, res, {
       status: error instanceof ZodError ? 422 : error instanceof HttpError ? error.statusCode : 400,
