@@ -471,12 +471,12 @@
               </div>
               <div class="room-field">
                 <label for="loai_giuong">Loại giường</label>
-                <input id="loai_giuong" name="loai_giuong" list="bed-options" value="<%= roomForm.loai_giuong %>" maxlength="120" required />
-                <datalist id="bed-options">
+                <select id="loai_giuong" name="loai_giuong" required>
+                  <option value="">-- Chọn loại giường --</option>
                   <% (payload.bedOptions || []).forEach((option) => { %>
-                    <option value="<%= option %>"></option>
+                    <option value="<%= option %>" <%= roomForm.loai_giuong === option ? "selected" : "" %>><%= option %></option>
                   <% }) %>
-                </datalist>
+                </select>
                 <p class="room-field-error" id="err_loai_giuong"></p>
               </div>
               <div class="room-field">
@@ -824,17 +824,18 @@
       setCapacityValue(readCapacityValue());
     });
 
-    Array.from(roomForm?.querySelectorAll("input[name], textarea[name]") || []).forEach((field) => {
+    Array.from(roomForm?.querySelectorAll("input[name], select[name], textarea[name]") || []).forEach((field) => {
       if (!validators[field.name]) return;
       field.addEventListener("input", () => validateField(field));
       field.addEventListener("blur", () => validateField(field));
+      field.addEventListener("change", () => validateField(field));
     });
 
     roomForm?.addEventListener("submit", (event) => {
       if (capacityInput) {
         setCapacityValue(readCapacityValue());
       }
-      const fields = Array.from(roomForm.querySelectorAll("input[name], textarea[name]")).filter((field) => validators[field.name]);
+      const fields = Array.from(roomForm.querySelectorAll("input[name], select[name], textarea[name]")).filter((field) => validators[field.name]);
       const firstInvalid = fields.find((field) => !validateField(field));
       if (!firstInvalid) return;
       event.preventDefault();

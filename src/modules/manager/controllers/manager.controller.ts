@@ -234,7 +234,17 @@ async function renderRoomsPage(req: Request, res: Response, options: {
     attention: normalizedRooms.filter((room) => ["Cleaning", "Maintenance"].includes(String(room.trangThaiRealtime || ""))).length
   };
 
-  const bedOptions = Array.from(new Set(normalizedRooms.map((room) => String(room.loaiGiuong || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "vi"));
+  const bedOptions = Array.from(new Set([
+    "Đơn",
+    "Đôi",
+    "Twin",
+    "Queen",
+    "King",
+    "King + Sofa",
+    "Twin + Sofa",
+    "Family",
+    ...normalizedRooms.map((room) => String(room.loaiGiuong || "").trim()).filter(Boolean)
+  ])).sort((a, b) => a.localeCompare(b, "vi"));
   const roomTypeOptions = ["Standard", "Deluxe", "Superior", "Suite", "VIP"];
   const roomStatusOptions = ["Trong", "Booked", "Stayed", "BaoTri"];
   const roomConditionOptions = ["Tot", "CanVeSinh", "HuHaiNhe", "HuHaiNang", "DangBaoTri"];
