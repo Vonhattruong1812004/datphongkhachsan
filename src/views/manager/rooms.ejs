@@ -227,6 +227,27 @@
   .room-field input:focus,
   .room-field select:focus,
   .room-field textarea:focus { border-color: rgba(0,166,214,.55); box-shadow: 0 0 0 4px rgba(0,166,214,.12); }
+  .room-stepper { display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; gap: 8px; align-items: center; }
+  .room-stepper input { text-align: center; font-weight: 900; }
+  .room-step-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid rgba(23,32,51,.12);
+    background: linear-gradient(180deg, #fff, #f8fbff);
+    color: var(--room-ink);
+    font: inherit;
+    font-size: 20px;
+    font-weight: 950;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+  .room-step-button:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(23,32,51,.10); border-color: rgba(0,166,214,.34); }
+  .room-step-button:active { transform: translateY(0); }
   .room-help { margin: 0; color: var(--room-muted); font-size: 12px; line-height: 1.45; }
   .room-field-error { display: none; margin: 0; color: #b42318; font-size: 12px; font-weight: 850; line-height: 1.45; }
   .room-field.is-invalid input,
@@ -474,7 +495,12 @@
               </div>
               <div class="room-field">
                 <label for="so_khach_toi_da">Số khách tối đa</label>
-                <input id="so_khach_toi_da" name="so_khach_toi_da" type="number" min="1" max="20" step="1" value="<%= roomForm.so_khach_toi_da %>" required />
+                <div class="room-stepper" data-capacity-stepper>
+                  <button class="room-step-button" type="button" data-step-capacity="-1" aria-label="Giảm số khách tối đa">-</button>
+                  <input id="so_khach_toi_da" name="so_khach_toi_da" type="text" inputmode="numeric" pattern="[0-9]{1,2}" value="<%= roomForm.so_khach_toi_da %>" required />
+                  <button class="room-step-button" type="button" data-step-capacity="1" aria-label="Tăng số khách tối đa">+</button>
+                </div>
+                <p class="room-help">Dùng nút -/+ hoặc nhập trực tiếp, hệ thống giữ trong khoảng 1-20 khách.</p>
                 <p class="room-field-error" id="err_so_khach_toi_da"></p>
               </div>
               <div class="room-field">
@@ -710,6 +736,7 @@
     const roomNumberInput = document.getElementById("so_phong");
     const roomForm = document.querySelector("[data-room-form]");
     const capacityInput = document.getElementById("so_khach_toi_da");
+    const capacityButtons = Array.from(document.querySelectorAll("[data-step-capacity]"));
     const unsafeText = /[<>{}\[\]\\]/;
     const validators = {
       so_phong(value) {
@@ -735,7 +762,7 @@
         return "";
       },
       so_khach_toi_da(value) {
-        const number = Number(value);
+        const number = Number(String(value || "").replace(/\D+/g, ""));
         if (!Number.isInteger(number) || number < 1 || number > 20) return "Sức chứa phải từ 1 đến 20 khách.";
         return "";
       },
@@ -777,6 +804,26 @@
       reader.readAsDataURL(file);
     });
 
+    capacityButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const delta = Number(button.getAttribute("data-step-capacity") || 0);
+        setCapacityValue(readCapacityValue() + delta);
+        if (capacityInput) {
+          capacityInput.dispatchEvent(new Event("input", { bubbles: true }));
+          capacityInput.focus();
+        }
+      });
+    });
+
+    capacityInput?.addEventListener("input", () => {
+      const digits = String(capacityInput.value || "").replace(/\D+/g, "").slice(0, 2);
+      capacityInput.value = digits;
+    });
+
+    capacityInput?.addEventListener("blur", () => {
+      setCapacityValue(readCapacityValue());
+    });
+
     Array.from(roomForm?.querySelectorAll("input[name], textarea[name]") || []).forEach((field) => {
       if (!validators[field.name]) return;
       field.addEventListener("input", () => validateField(field));
@@ -785,8 +832,7 @@
 
     roomForm?.addEventListener("submit", (event) => {
       if (capacityInput) {
-        const normalizedCapacity = Math.trunc(Number(capacityInput.value || 0));
-        if (Number.isFinite(normalizedCapacity)) capacityInput.value = String(normalizedCapacity);
+        setCapacityValue(readCapacityValue());
       }
       const fields = Array.from(roomForm.querySelectorAll("input[name], textarea[name]")).filter((field) => validators[field.name]);
       const firstInvalid = fields.find((field) => !validateField(field));
@@ -838,6 +884,17 @@
       }
       if (error) error.textContent = message || "";
       return !message;
+    }
+
+    function readCapacityValue() {
+      const number = Number(String(capacityInput?.value || "").replace(/\D+/g, ""));
+      return Number.isFinite(number) ? number : 1;
+    }
+
+    function setCapacityValue(value) {
+      if (!capacityInput) return;
+      const nextValue = Math.min(20, Math.max(1, Math.trunc(Number(value) || 1)));
+      capacityInput.value = String(nextValue);
     }
 
     applyFilters();
