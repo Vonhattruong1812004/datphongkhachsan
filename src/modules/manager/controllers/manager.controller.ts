@@ -389,6 +389,7 @@ function formatCustomerFormError(error: unknown) {
 const customerFieldLabels: Record<string, string> = {
   customer_id: "Mã khách hàng",
   ten_kh: "Họ tên",
+  username: "Tên đăng nhập",
   sdt: "Số điện thoại",
   email: "Email",
   cccd: "CCCD",

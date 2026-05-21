@@ -173,6 +173,7 @@ async function main() {
     const csrfToken = await getManagerCsrf(baseUrl, manager.cookieJar);
     const stamp = Date.now();
     const customer = {
+      username: `manager_smoke_${stamp}`,
       ten_kh: `Smoke Manager ${stamp}`,
       sdt: `091${String(stamp).slice(-7)}`,
       email: `manager_smoke_${stamp}@example.com`,
@@ -260,7 +261,7 @@ async function main() {
 
     const accountStatus = await query<{ trangThai: string }>(
       "SELECT trangthai AS \"trangThai\" FROM taikhoan WHERE lower(username) = lower($1) LIMIT 1",
-      [customer.email]
+      [customer.username]
     );
 
     if (accountStatus.rows[0]?.trangThai !== "Ngung") {

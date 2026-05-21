@@ -10,6 +10,7 @@ const CUSTOMER_PHONE_REGEX = /^(?:0(?:3|5|7|8|9)\d{8}|\+84(?:3|5|7|8|9)\d{8})$/;
 const CUSTOMER_ID_CARD_REGEX = /^(?:\d{9}|\d{12})$/;
 const CUSTOMER_ADDRESS_REGEX = /^[^<>{}[\]\\]{0,255}$/u;
 const CUSTOMER_PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{6,72}$/;
+const CUSTOMER_USERNAME_REGEX = /^[A-Za-z0-9_]{5,30}$/;
 
 const customerSchema = z.object({
   customer_id: z.preprocess((value) => {
@@ -43,11 +44,23 @@ const customerSchema = z.object({
     .regex(CUSTOMER_ADDRESS_REGEX, "Địa chỉ chứa ký tự không an toàn.")
     .optional()
     .default(""),
+  username: z.string()
+    .trim()
+    .regex(CUSTOMER_USERNAME_REGEX, "Tên đăng nhập phải dài 5-30 ký tự và chỉ gồm chữ, số hoặc dấu gạch dưới.")
+    .optional()
+    .default(""),
   loai_khach: z.enum(["CaNhan", "DoanhNghiep", "VIP", "KhachOnline"]).default("CaNhan"),
   password: z.string().trim().optional().default(""),
   force_create: z.coerce.number().int().optional().default(0)
 }).superRefine((input, ctx) => {
   const password = input.password.trim();
+  if (!input.customer_id && !input.username.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["username"],
+      message: "Vui lòng nhập tên đăng nhập để khách có thể đăng nhập hệ thống."
+    });
+  }
   if (!input.customer_id && !CUSTOMER_PASSWORD_REGEX.test(password)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -348,6 +361,7 @@ export class ManagerService {
       query<{
       id: number;
       matk: number | null;
+      username: string | null;
       tenKh: string;
       sdt: string | null;
       email: string | null;
@@ -366,6 +380,7 @@ export class ManagerService {
         SELECT
           kh.makhachhang AS id,
           kh.matk,
+          tk.username,
           kh.tenkh AS "tenKh",
           kh.sdt,
           kh.email,
@@ -380,6 +395,7 @@ export class ManagerService {
           COALESCE(ph_stats."feedbackCount", 0)::int AS "feedbackCount",
           ph_stats."avgRating"
         FROM khachhang kh
+        LEFT JOIN taikhoan tk ON tk.matk = kh.matk OR tk.makhachhang = kh.makhachhang
         LEFT JOIN LATERAL (
           SELECT
             COUNT(*)::int AS "transactionCount",
@@ -395,6 +411,7 @@ export class ManagerService {
           WHERE ph.makhachhang = kh.makhachhang
         ) ph_stats ON TRUE
         WHERE kh.makhachhang = $1
+        ORDER BY tk.matk ASC NULLS LAST
         LIMIT 1
       `,
       [customerId]
@@ -647,6 +664,22 @@ export class ManagerService {
 
     const result = await withTransaction(async (client) => {
       if (input.customer_id) {
+        if (input.username.trim()) {
+          const usernameDuplicate = await client.query(
+            `
+              SELECT 1
+              FROM taikhoan
+              WHERE lower(username) = lower($1)
+                AND COALESCE(makhachhang, 0) <> $2
+              LIMIT 1
+            `,
+            [input.username.trim(), input.customer_id]
+          ) as { rows: Array<{ "?column?": number }> };
+          if (usernameDuplicate.rows[0]) {
+            throw new HttpError(409, "Tên đăng nhập đã tồn tại ở tài khoản khác.");
+          }
+        }
+
         const before = await client.query(
           "SELECT * FROM khachhang WHERE makhachhang = $1 LIMIT 1",
           [input.customer_id]
@@ -672,6 +705,24 @@ export class ManagerService {
         ) as { rows: Array<Record<string, unknown>> };
 
         await this.insertAudit(client, input.customer_id, "UPDATE", before.rows[0], after.rows[0] ?? null, actor, "Cập nhật khách hàng");
+        if (input.username.trim()) {
+          const accountUpdate = await client.query(
+            "UPDATE taikhoan SET username = $1 WHERE makhachhang = $2 OR matk = (SELECT matk FROM khachhang WHERE makhachhang = $2) RETURNING matk",
+            [input.username.trim(), input.customer_id]
+          ) as { rows: Array<{ matk: number }> };
+          if (!accountUpdate.rows[0] && input.password.trim()) {
+            const hashed = await bcrypt.hash(input.password.trim(), 10);
+            const account = await client.query(
+              `
+                INSERT INTO taikhoan (username, password, mavaitro, trangthai, makhachhang, motaquyen)
+                VALUES ($1, $2, 7, 'HoatDong', $3, 'Quan ly tao tai khoan khach hang')
+                RETURNING matk
+              `,
+              [input.username.trim(), hashed, input.customer_id]
+            ) as { rows: Array<{ matk: number }> };
+            await client.query("UPDATE khachhang SET matk = $1 WHERE makhachhang = $2", [account.rows[0].matk, input.customer_id]);
+          }
+        }
         if (input.password.trim()) {
           const hashed = await bcrypt.hash(input.password.trim(), 10);
           await client.query(
@@ -685,10 +736,10 @@ export class ManagerService {
 
       const usernameDuplicate = await client.query(
         "SELECT 1 FROM taikhoan WHERE lower(username) = lower($1) LIMIT 1",
-        [input.email]
+        [input.username]
       ) as { rows: Array<{ "?column?": number }> };
       if (usernameDuplicate.rows[0]) {
-        throw new HttpError(409, "Email da ton tai trong tai khoan dang nhap.");
+        throw new HttpError(409, "Tên đăng nhập đã tồn tại trong tài khoản đăng nhập.");
       }
 
       const inserted = await client.query(
@@ -708,7 +759,7 @@ export class ManagerService {
           VALUES ($1, $2, 7, 'HoatDong', $3, 'Quan ly tao tai khoan khach hang')
           RETURNING matk
         `,
-        [input.email, hashed, inserted.rows[0].id]
+        [input.username.trim(), hashed, inserted.rows[0].id]
       ) as { rows: Array<{ matk: number }> };
 
       await client.query(
@@ -728,7 +779,7 @@ export class ManagerService {
           CCCD: input.cccd,
           DiaChi: input.dia_chi || null,
           LoaiKhach: input.loai_khach,
-          Username: input.email,
+          Username: input.username.trim(),
           MaVaiTro: 7
         },
         actor,

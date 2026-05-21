@@ -17,6 +17,7 @@
     : (detailCustomer?.id || "");
   const formValues = rawForm ? {
     id: formCustomerId,
+    username: rawForm.username || "",
     tenKh: rawForm.ten_kh || "",
     sdt: rawForm.sdt || "",
     email: rawForm.email || "",
@@ -26,6 +27,7 @@
     password: rawForm.password || ""
   } : (detailCustomer || {
     id: "",
+    username: "",
     tenKh: "",
     sdt: "",
     email: "",
@@ -139,7 +141,7 @@
   .cust-mark-line:nth-child(2) span { width: 64%; background: #fff2a8; }
   .cust-mark-line:nth-child(3) span { width: 76%; background: #bbf7d0; }
   .cust-mark-line:nth-child(4) span { width: 50%; background: #fecdd3; }
-  .cust-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+  .cust-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
   .cust-panel { position: relative; overflow: hidden; border-radius: 8px; padding: 20px; background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(249,253,255,.88)); }
   .cust-panel::before { content: ""; position: absolute; inset: 0 0 auto; height: 5px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan)); }
   .cust-panel h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
@@ -149,14 +151,18 @@
   .cust-alert { margin: 14px 0 0; border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(23,32,51,.10); font-size: 14px; font-weight: 800; line-height: 1.5; }
   .cust-alert--error { color: #b42318; background: #fff4f4; border-color: rgba(255,107,107,.30); }
   .cust-alert--success { color: #047857; background: #effcf6; border-color: rgba(25,184,121,.28); }
-  .cust-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 18px; }
-  .cust-field { position: relative; display: grid; gap: 7px; }
+  .cust-section-card { margin-top: 18px; border: 1px solid rgba(23,32,51,.08); border-radius: 8px; padding: 16px; background: rgba(255,255,255,.72); box-shadow: 0 12px 28px rgba(23,32,51,.055); }
+  .cust-section-title { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; color: #172033; font-size: 14px; font-weight: 950; text-transform: uppercase; letter-spacing: 0; }
+  .cust-section-title::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: linear-gradient(135deg, var(--coral), var(--cyan)); box-shadow: 0 0 0 5px rgba(0,166,214,.10); }
+  .cust-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; align-items: start; }
+  .cust-field { position: relative; display: grid; gap: 7px; min-width: 0; }
   .cust-field::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; border-radius: 8px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan)); opacity: 0; transition: opacity .16s ease; }
   .cust-field:focus-within::after { opacity: 1; }
   .cust-field.is-wide { grid-column: 1 / -1; }
   .cust-field label { color: #405066; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
   .cust-field input,
   .cust-field select { width: 100%; min-height: 42px; border-radius: 8px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); padding: 10px 12px; outline: none; font: inherit; }
+  .cust-field input:disabled { color: #667085; background: #f4f7fb; }
   .cust-field input:focus,
   .cust-field select:focus { border-color: rgba(0,166,214,.55); box-shadow: 0 0 0 4px rgba(0,166,214,.12); }
   .cust-help { margin: 0; color: #667085; font-size: 12px; line-height: 1.45; }
@@ -172,12 +178,14 @@
   .cust-status--sun { color: #8a5a00; background: #fff8d7; }
   .cust-status--rose { color: #b42318; background: #fff4f4; }
   .cust-status--slate { color: #475569; background: #f3f5f8; }
+  .cust-login-preview { display: grid; gap: 8px; margin-top: 14px; padding: 14px; border: 1px solid rgba(0,166,214,.14); border-radius: 8px; background: linear-gradient(135deg, rgba(0,166,214,.09), rgba(25,184,121,.08)); }
+  .cust-login-preview strong { font-size: 15px; }
   .cust-list { display: grid; gap: 10px; margin-top: 14px; }
   .cust-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--coral); box-shadow: 0 10px 24px rgba(23,32,51,.06); }
   .cust-money { font-weight: 900; color: #047857; }
   @media (max-width: 1100px) { .cust-hero-mark { display: none; } }
   @media (max-width: 980px) { .cust-layout { grid-template-columns: 1fr; } }
-  @media (max-width: 640px) { .cust-edit { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 38px; } .cust-field-grid { grid-template-columns: 1fr; } .cust-field.is-wide { grid-column: auto; } }
+  @media (max-width: 640px) { .cust-edit { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 38px; } .cust-section-card { padding: 14px; } .cust-field-grid { grid-template-columns: 1fr; } .cust-field.is-wide { grid-column: auto; } }
 </style>
 
 <main class="cust-edit">
@@ -189,7 +197,7 @@
         <p class="cust-muted">
           <%= isEdit
             ? `Đang xử lý hồ sơ #${formValues.id}. Trang riêng giúp sửa dữ liệu, đổi mật khẩu và kiểm tra trùng mềm rõ ràng hơn.`
-            : "Tạo hồ sơ khách và tài khoản đăng nhập tương ứng. Mật khẩu khi thêm mới phải có tối thiểu 6 ký tự." %>
+            : "Tạo hồ sơ khách và tài khoản đăng nhập tương ứng. Khách dùng tên đăng nhập và mật khẩu này để vào hệ thống." %>
         </p>
       </div>
       <div class="cust-actions">
@@ -232,54 +240,61 @@
         <% } %>
         <form method="post" action="/manager/customers" autocomplete="off" novalidate data-customer-form data-mode="<%= isEdit ? "edit" : "create" %>">
           <input type="hidden" name="customer_id" value="<%= formValues.id || "" %>" autocomplete="off" />
-          <div class="cust-field-grid">
-            <div class="cust-field">
-              <label for="customer_id_display">Mã KH</label>
-              <input id="customer_id_display" value="<%= formValues.id || "Tự sinh khi tạo mới" %>" disabled autocomplete="off" />
+          <input type="hidden" name="loai_khach" value="<%= formValues.loaiKhach || "CaNhan" %>" />
+          <div class="cust-section-card">
+            <h3 class="cust-section-title">Tài khoản đăng nhập</h3>
+            <div class="cust-field-grid">
+              <div class="cust-field">
+                <label for="username">Tên đăng nhập</label>
+                <input id="username" name="username" required minlength="5" maxlength="30" pattern="[A-Za-z0-9_]{5,30}" value="<%= formValues.username || "" %>" autocomplete="username" aria-describedby="username_help username_error" />
+                <p class="cust-help" id="username_help">5-30 ký tự, chỉ dùng chữ, số hoặc dấu gạch dưới. Đây là tài khoản khách dùng để đăng nhập.</p>
+                <p class="cust-field-error" id="username_error"></p>
+              </div>
+              <div class="cust-field">
+                <label for="password">Mật khẩu</label>
+                <input id="password" name="password" type="password" minlength="6" maxlength="72" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{6,72}" placeholder="<%= isEdit ? "Để trống nếu không đổi" : "Ví dụ: Abc123" %>" autocomplete="new-password" aria-describedby="password_help password_error" />
+                <p class="cust-help" id="password_help"><%= isEdit ? "Để trống nếu không đổi. Nếu nhập mới: 6-72 ký tự, có ít nhất 1 chữ cái và 1 chữ số." : "Bắt buộc khi tạo mới: 6-72 ký tự, có ít nhất 1 chữ cái và 1 chữ số." %></p>
+                <p class="cust-field-error" id="password_error"></p>
+              </div>
             </div>
-            <div class="cust-field">
-              <label for="ten_kh">Họ tên</label>
-              <input id="ten_kh" name="ten_kh" required minlength="2" maxlength="80" value="<%= formValues.tenKh || "" %>" autocomplete="off" aria-describedby="ten_kh_help ten_kh_error" />
-              <p class="cust-help" id="ten_kh_help">2-80 ký tự, phải có chữ cái; được dùng chữ số, khoảng trắng, dấu nháy, dấu chấm hoặc dấu gạch nối.</p>
-              <p class="cust-field-error" id="ten_kh_error"></p>
-            </div>
-            <div class="cust-field">
-              <label for="sdt">SĐT</label>
-              <input id="sdt" name="sdt" required inputmode="tel" maxlength="13" pattern="(?:0(?:3|5|7|8|9)[0-9]{8}|\+84(?:3|5|7|8|9)[0-9]{8})" value="<%= formValues.sdt || "" %>" autocomplete="off" aria-describedby="sdt_help sdt_error" />
-              <p class="cust-help" id="sdt_help">Ví dụ: 0901234567 hoặc +84901234567. Chỉ nhận đầu số 03/05/07/08/09.</p>
-              <p class="cust-field-error" id="sdt_error"></p>
-            </div>
-            <div class="cust-field">
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" required maxlength="120" value="<%= formValues.email || "" %>" autocomplete="off" aria-describedby="email_help email_error" />
-              <p class="cust-help" id="email_help">Email dùng làm username đăng nhập, không được trùng hồ sơ khác.</p>
-              <p class="cust-field-error" id="email_error"></p>
-            </div>
-            <div class="cust-field">
-              <label for="cccd">CCCD</label>
-              <input id="cccd" name="cccd" required inputmode="numeric" maxlength="12" pattern="(?:[0-9]{9}|[0-9]{12})" value="<%= formValues.cccd || "" %>" autocomplete="off" aria-describedby="cccd_help cccd_error" />
-              <p class="cust-help" id="cccd_help">Nhập đúng 9 số CMND hoặc 12 số CCCD.</p>
-              <p class="cust-field-error" id="cccd_error"></p>
-            </div>
-            <div class="cust-field">
-              <label for="loai_khach">Loại khách</label>
-              <select id="loai_khach" name="loai_khach">
-                <% (payload.customerTypeOptions || []).filter((item) => item.value !== "all").forEach((option) => { %>
-                  <option value="<%= option.value %>" <%= (formValues.loaiKhach || "CaNhan") === option.value ? "selected" : "" %>><%= option.label %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="cust-field">
-              <label for="password">Mật khẩu</label>
-              <input id="password" name="password" type="password" minlength="6" maxlength="72" pattern="(?=.*[A-Za-z])(?=.*[0-9]).{6,72}" placeholder="<%= isEdit ? "Để trống nếu không đổi" : "Ví dụ: Abc123" %>" autocomplete="new-password" aria-describedby="password_help password_error" />
-              <p class="cust-help" id="password_help"><%= isEdit ? "Để trống nếu không đổi. Nếu nhập mới: 6-72 ký tự, có ít nhất 1 chữ cái và 1 chữ số." : "Bắt buộc khi tạo mới: 6-72 ký tự, có ít nhất 1 chữ cái và 1 chữ số." %></p>
-              <p class="cust-field-error" id="password_error"></p>
-            </div>
-            <div class="cust-field is-wide">
-              <label for="dia_chi">Địa chỉ</label>
-              <input id="dia_chi" name="dia_chi" maxlength="255" value="<%= formValues.diaChi || "" %>" autocomplete="off" aria-describedby="dia_chi_help dia_chi_error" />
-              <p class="cust-help" id="dia_chi_help">Tối đa 255 ký tự, không dùng các ký tự nguy hiểm như &lt; &gt; { } [ ] \.</p>
-              <p class="cust-field-error" id="dia_chi_error"></p>
+          </div>
+          <div class="cust-section-card">
+            <h3 class="cust-section-title">Thông tin định danh</h3>
+            <div class="cust-field-grid">
+              <div class="cust-field">
+                <label for="customer_id_display">Mã KH</label>
+                <input id="customer_id_display" value="<%= formValues.id || "Tự sinh khi tạo mới" %>" disabled autocomplete="off" />
+              </div>
+              <div class="cust-field">
+                <label for="ten_kh">Họ tên</label>
+                <input id="ten_kh" name="ten_kh" required minlength="2" maxlength="80" value="<%= formValues.tenKh || "" %>" autocomplete="off" aria-describedby="ten_kh_help ten_kh_error" />
+                <p class="cust-help" id="ten_kh_help">2-80 ký tự, phải có chữ cái; được dùng chữ số, khoảng trắng, dấu nháy, dấu chấm hoặc dấu gạch nối.</p>
+                <p class="cust-field-error" id="ten_kh_error"></p>
+              </div>
+              <div class="cust-field">
+                <label for="sdt">SĐT</label>
+                <input id="sdt" name="sdt" required inputmode="tel" maxlength="13" pattern="(?:0(?:3|5|7|8|9)[0-9]{8}|\+84(?:3|5|7|8|9)[0-9]{8})" value="<%= formValues.sdt || "" %>" autocomplete="off" aria-describedby="sdt_help sdt_error" />
+                <p class="cust-help" id="sdt_help">Ví dụ: 0901234567 hoặc +84901234567. Chỉ nhận đầu số 03/05/07/08/09.</p>
+                <p class="cust-field-error" id="sdt_error"></p>
+              </div>
+              <div class="cust-field">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" required maxlength="120" value="<%= formValues.email || "" %>" autocomplete="off" aria-describedby="email_help email_error" />
+                <p class="cust-help" id="email_help">Email dùng để nhận thông tin đặt phòng, thông báo và đối chiếu hồ sơ.</p>
+                <p class="cust-field-error" id="email_error"></p>
+              </div>
+              <div class="cust-field">
+                <label for="cccd">CCCD</label>
+                <input id="cccd" name="cccd" required inputmode="numeric" maxlength="12" pattern="(?:[0-9]{9}|[0-9]{12})" value="<%= formValues.cccd || "" %>" autocomplete="off" aria-describedby="cccd_help cccd_error" />
+                <p class="cust-help" id="cccd_help">Nhập đúng 9 số CMND hoặc 12 số CCCD.</p>
+                <p class="cust-field-error" id="cccd_error"></p>
+              </div>
+              <div class="cust-field">
+                <label for="dia_chi">Địa chỉ</label>
+                <input id="dia_chi" name="dia_chi" maxlength="255" value="<%= formValues.diaChi || "" %>" autocomplete="off" aria-describedby="dia_chi_help dia_chi_error" />
+                <p class="cust-help" id="dia_chi_help">Tối đa 255 ký tự, không dùng các ký tự nguy hiểm như &lt; &gt; { } [ ] \.</p>
+                <p class="cust-field-error" id="dia_chi_error"></p>
+              </div>
             </div>
           </div>
           <div class="cust-actions">
@@ -301,13 +316,18 @@
             <article class="cust-insight">
               <span class="cust-status cust-status--<%= detailCustomer.ekycMeta.tone %>"><%= detailCustomer.ekycMeta.label %></span>
               <h3 style="margin:10px 0 4px"><%= detailCustomer.tenKh %></h3>
+              <p class="cust-muted">Tên đăng nhập: <strong><%= detailCustomer.username || formValues.username || "Chưa có" %></strong></p>
               <p class="cust-muted"><%= detailCustomer.email || "Chưa email" %> · <%= detailCustomer.sdt || "Chưa SĐT" %> · <%= detailCustomer.cccd || "Chưa CCCD" %></p>
               <strong class="cust-money"><%= detailCustomer.totalSpentFormatted %></strong>
               <p class="cust-muted"><%= detailCustomer.transactionCount %> giao dịch · <%= detailCustomer.feedbackCount %> phản hồi</p>
             </article>
           </div>
         <% } else { %>
-          <p class="cust-muted">Sau khi tạo, hệ thống chuyển sang trang chi tiết để bạn kiểm tra tài khoản, audit log và dữ liệu liên quan.</p>
+          <div class="cust-login-preview">
+            <span class="cust-status cust-status--cyan">Tài khoản khách</span>
+            <strong>Tạo xong là đăng nhập được ngay</strong>
+            <p class="cust-muted">Tên đăng nhập là khóa vào hệ thống. Email chỉ còn là thông tin liên hệ và đối chiếu hồ sơ.</p>
+          </div>
         <% } %>
 
         <% if (duplicateSuggestionsList.length) { %>
@@ -326,6 +346,7 @@
         <% if (duplicateModeValue === "soft_duplicate") { %>
           <form method="post" action="/manager/customers" autocomplete="off">
             <input type="hidden" name="ten_kh" value="<%= formValues.tenKh || "" %>" />
+            <input type="hidden" name="username" value="<%= formValues.username || "" %>" />
             <input type="hidden" name="sdt" value="<%= formValues.sdt || "" %>" />
             <input type="hidden" name="email" value="<%= formValues.email || "" %>" />
             <input type="hidden" name="cccd" value="<%= formValues.cccd || "" %>" />
@@ -356,8 +377,15 @@
     const cccdRegex = /^(?:\d{9}|\d{12})$/;
     const addressRegex = /^[^<>{}\[\]\\]{0,255}$/u;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{6,72}$/;
+    const usernameRegex = /^[A-Za-z0-9_]{5,30}$/;
 
     const validators = {
+      username(value) {
+        const normalized = value.trim();
+        if (!normalized) return "Vui lòng nhập tên đăng nhập cho khách.";
+        if (!usernameRegex.test(normalized)) return "Tên đăng nhập phải dài 5-30 ký tự và chỉ gồm chữ, số hoặc dấu gạch dưới.";
+        return "";
+      },
       ten_kh(value) {
         const normalized = value.trim().replace(/\s+/g, " ");
         if (!normalized) return "Vui lòng nhập họ tên khách hàng.";
@@ -401,10 +429,12 @@
       const cccd = form.elements.cccd;
       const email = form.elements.email;
       const name = form.elements.ten_kh;
+      const username = form.elements.username;
       if (phone) phone.value = phone.value.trim().replace(/[\s.-]/g, "");
       if (cccd) cccd.value = cccd.value.trim().replace(/\s/g, "");
       if (email) email.value = email.value.trim().toLowerCase();
       if (name) name.value = name.value.trim().replace(/\s+/g, " ");
+      if (username) username.value = username.value.trim();
     };
 
     const setFieldState = (input, message) => {
