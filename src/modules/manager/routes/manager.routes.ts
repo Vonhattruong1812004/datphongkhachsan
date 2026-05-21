@@ -48,7 +48,18 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage });
+const allowedRoomImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 3 * 1024 * 1024
+  },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const allowedExt = [".jpg", ".jpeg", ".png", ".webp"].includes(ext);
+    cb(null, allowedExt && allowedRoomImageTypes.has(file.mimetype));
+  }
+});
 
 managerRouter.get("/", requireRole([ROLE.QUAN_LY]), asyncHandler(renderManagerHome));
 managerRouter.get("/customers", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomers));
@@ -63,7 +74,7 @@ managerRouter.post("/customers/:id/delete", requireRole([ROLE.QUAN_LY]), asyncHa
 managerRouter.post("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(savePromotionAction));
 managerRouter.post("/promotions/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(deletePromotionAction));
 managerRouter.post("/rooms", requireRole([ROLE.QUAN_LY]), upload.single("hinh_anh_file"), validateCsrfToken, asyncHandler(saveRoomAction));
-managerRouter.post("/rooms/:id/delete", requireRole([ROLE.QUAN_LY]), asyncHandler(deleteRoomAction));
+managerRouter.post("/rooms/:id/delete", requireRole([ROLE.QUAN_LY]), validateCsrfToken, asyncHandler(deleteRoomAction));
 
 managerApiRouter.get("/customers", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(customersApi));
 managerApiRouter.get("/customers/:id", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(customerDetailApi));
@@ -74,4 +85,4 @@ managerApiRouter.post("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.
 managerApiRouter.post("/promotions/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(deletePromotionApi));
 managerApiRouter.get("/rooms", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(roomsApi));
 managerApiRouter.post("/rooms", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), upload.single("hinh_anh_file"), validateCsrfToken, asyncHandler(saveRoomApi));
-managerApiRouter.post("/rooms/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(deleteRoomApi));
+managerApiRouter.post("/rooms/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), validateCsrfToken, asyncHandler(deleteRoomApi));

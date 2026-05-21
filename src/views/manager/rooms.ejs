@@ -226,6 +226,15 @@
   .room-field input:focus,
   .room-field select:focus,
   .room-field textarea:focus { border-color: rgba(0,166,214,.55); box-shadow: 0 0 0 4px rgba(0,166,214,.12); }
+  .room-help { margin: 0; color: var(--room-muted); font-size: 12px; line-height: 1.45; }
+  .room-field-error { display: none; margin: 0; color: #b42318; font-size: 12px; font-weight: 850; line-height: 1.45; }
+  .room-field.is-invalid input,
+  .room-field.is-invalid select,
+  .room-field.is-invalid textarea { border-color: rgba(255,107,107,.70); background: #fff8f8; box-shadow: 0 0 0 4px rgba(255,107,107,.10); }
+  .room-field.is-invalid .room-field-error { display: block; }
+  .room-field.is-valid input,
+  .room-field.is-valid select,
+  .room-field.is-valid textarea { border-color: rgba(25,184,121,.48); box-shadow: 0 0 0 4px rgba(25,184,121,.09); }
   .room-form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
   .room-filter-grid { display: grid; grid-template-columns: 1.5fr repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
   .room-live-pill {
@@ -362,7 +371,6 @@
           <p class="room-lead">Theo dõi phòng, ảnh, loại phòng, sức chứa, tình trạng thực tế và trạng thái khai thác theo từng cơ sở.</p>
           <div class="room-actions">
             <a class="room-button room-button--primary" href="/dashboard/quanly">Về dashboard</a>
-            <a class="room-button" href="/api/manager/rooms">Rooms API</a>
             <% if (roomForm.room_id) { %>
               <a class="room-button" href="/manager/rooms">Tạo phòng mới</a>
             <% } %>
@@ -393,7 +401,7 @@
         <section class="room-panel">
           <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap">
             <div>
-              <h2>Form quản lý phòng</h2>
+              <h2><%= roomForm.room_id ? "Cập nhật phòng" : "Thêm phòng mới" %></h2>
               <p class="room-muted">Số phòng chỉ cần duy nhất trong cùng một cơ sở, không bắt buộc duy nhất toàn hệ thống.</p>
             </div>
             <span class="room-live-pill"><%= roomForm.room_id ? "Đang sửa phòng hiện có" : "Sẵn sàng thêm phòng mới" %></span>
@@ -404,7 +412,7 @@
             </div>
           <% } %>
 
-          <form method="post" action="/manager/rooms" enctype="multipart/form-data" id="roomForm">
+          <form method="post" action="/manager/rooms" enctype="multipart/form-data" id="roomForm" data-room-form novalidate>
             <input type="hidden" name="room_id" value="<%= roomForm.room_id %>" />
             <input type="hidden" name="hinh_anh" value="<%= roomForm.hinh_anh %>" />
             <div class="room-field-grid">
@@ -421,7 +429,9 @@
               </div>
               <div class="room-field">
                 <label for="so_phong">Số phòng</label>
-                <input id="so_phong" name="so_phong" value="<%= roomForm.so_phong %>" maxlength="32" required />
+                <input id="so_phong" name="so_phong" value="<%= roomForm.so_phong %>" maxlength="32" pattern="[A-Za-z0-9-]{1,32}" required />
+                <p class="room-help">Ví dụ: 2101, A-120. Chỉ gồm chữ, số hoặc dấu gạch ngang.</p>
+                <p class="room-field-error" id="err_so_phong"></p>
               </div>
               <div class="room-field">
                 <label for="loai_phong">Loại phòng</label>
@@ -433,7 +443,8 @@
               </div>
               <div class="room-field">
                 <label for="dien_tich">Diện tích (m²)</label>
-                <input id="dien_tich" name="dien_tich" type="number" min="15" step="1" value="<%= roomForm.dien_tich %>" required />
+                <input id="dien_tich" name="dien_tich" type="number" min="15" max="500" step="1" value="<%= roomForm.dien_tich %>" required />
+                <p class="room-field-error" id="err_dien_tich"></p>
               </div>
               <div class="room-field">
                 <label for="loai_giuong">Loại giường</label>
@@ -443,6 +454,7 @@
                     <option value="<%= option %>"></option>
                   <% }) %>
                 </datalist>
+                <p class="room-field-error" id="err_loai_giuong"></p>
               </div>
               <div class="room-field">
                 <label for="view_phong">View phòng</label>
@@ -454,11 +466,14 @@
               </div>
               <div class="room-field">
                 <label for="gia">Giá niêm yết</label>
-                <input id="gia" name="gia" type="number" min="0" step="1000" value="<%= roomForm.gia %>" required />
+                <input id="gia" name="gia" type="number" min="1000" max="100000000" step="1000" value="<%= roomForm.gia %>" required />
+                <p class="room-help">Giá phòng phải lớn hơn 0 để booking/check-out tính tiền đúng.</p>
+                <p class="room-field-error" id="err_gia"></p>
               </div>
               <div class="room-field">
                 <label for="so_khach_toi_da">Số khách tối đa</label>
-                <input id="so_khach_toi_da" name="so_khach_toi_da" type="number" min="1" step="1" value="<%= roomForm.so_khach_toi_da %>" required />
+                <input id="so_khach_toi_da" name="so_khach_toi_da" type="number" min="1" max="20" step="1" value="<%= roomForm.so_khach_toi_da %>" required />
+                <p class="room-field-error" id="err_so_khach_toi_da"></p>
               </div>
               <div class="room-field">
                 <label for="tinh_trang_phong">Tình trạng thực tế</label>
@@ -470,7 +485,9 @@
               </div>
               <div class="room-field is-wide">
                 <label for="ghi_chu">Ghi chú vận hành</label>
-                <textarea id="ghi_chu" name="ghi_chu" placeholder="Lưu ý setup, bảo trì, mùi sơn, thay drap, thiết bị đang xử lý..."><%= roomForm.ghi_chu %></textarea>
+                <textarea id="ghi_chu" name="ghi_chu" maxlength="500" placeholder="Lưu ý setup, bảo trì, mùi sơn, thay drap, thiết bị đang xử lý..."><%= roomForm.ghi_chu %></textarea>
+                <p class="room-help">Tối đa 500 ký tự, dùng cho vận hành nội bộ.</p>
+                <p class="room-field-error" id="err_ghi_chu"></p>
               </div>
               <div class="room-field is-wide">
                 <label for="hinh_anh_file">Ảnh phòng</label>
@@ -488,7 +505,7 @@
         <section class="room-panel">
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
             <div>
-              <h2>Thanh lọc nhanh</h2>
+              <h2>Bộ lọc phòng</h2>
               <p class="room-muted">Lọc realtime theo số phòng, cơ sở, loại phòng, trạng thái booking và tình trạng thực tế.</p>
             </div>
             <span class="room-live-pill" data-room-live-state>Sẵn sàng lọc realtime</span>
@@ -544,7 +561,6 @@
               <p class="room-muted" data-room-caption>Đang hiển thị <%= rooms.length %>/<%= rooms.length %> phòng trong hệ thống.</p>
             </div>
             <div class="room-actions" style="margin:0">
-              <a class="room-button" href="/api/manager/rooms">JSON</a>
               <a class="room-button" href="/dashboard/quanly">Dashboard</a>
             </div>
           </div>
@@ -689,6 +705,42 @@
     const imagePreview = document.getElementById("room-image-preview");
     const imageFallback = document.getElementById("room-image-fallback");
     const roomNumberInput = document.getElementById("so_phong");
+    const roomForm = document.querySelector("[data-room-form]");
+    const unsafeText = /[<>{}\[\]\\]/;
+    const validators = {
+      so_phong(value) {
+        const raw = value.trim();
+        if (!raw) return "Vui lòng nhập số phòng.";
+        if (!/^[A-Za-z0-9-]{1,32}$/.test(raw)) return "Số phòng chỉ gồm chữ, số hoặc dấu gạch ngang, tối đa 32 ký tự.";
+        return "";
+      },
+      dien_tich(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number) || number < 15 || number > 500) return "Diện tích phải trong khoảng 15-500 m².";
+        return "";
+      },
+      loai_giuong(value) {
+        const raw = value.trim();
+        if (!raw) return "Vui lòng nhập loại giường.";
+        if (raw.length > 120 || unsafeText.test(raw)) return "Loại giường không hợp lệ hoặc chứa ký tự không an toàn.";
+        return "";
+      },
+      gia(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number) || number < 1000 || number > 100000000) return "Giá phòng phải từ 1.000 đến 100.000.000 VND.";
+        return "";
+      },
+      so_khach_toi_da(value) {
+        const number = Number(value);
+        if (!Number.isInteger(number) || number < 1 || number > 20) return "Sức chứa phải từ 1 đến 20 khách.";
+        return "";
+      },
+      ghi_chu(value) {
+        const raw = value.trim();
+        if (raw.length > 500 || unsafeText.test(raw)) return "Ghi chú tối đa 500 ký tự và không chứa ký tự không an toàn.";
+        return "";
+      }
+    };
 
     [keywordInput, hotelFilter, typeFilter, statusFilter, conditionFilter].forEach((element) => {
       if (!element) return;
@@ -705,6 +757,11 @@
     imageInput?.addEventListener("change", () => {
       const [file] = imageInput.files || [];
       if (!file) return;
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 3 * 1024 * 1024) {
+        imageInput.value = "";
+        alert("Ảnh phòng chỉ nhận JPG, PNG, WEBP và tối đa 3MB.");
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         if (imagePreview) {
@@ -714,6 +771,21 @@
         if (imageFallback) imageFallback.style.display = "none";
       };
       reader.readAsDataURL(file);
+    });
+
+    Array.from(roomForm?.querySelectorAll("input[name], textarea[name]") || []).forEach((field) => {
+      if (!validators[field.name]) return;
+      field.addEventListener("input", () => validateField(field));
+      field.addEventListener("blur", () => validateField(field));
+    });
+
+    roomForm?.addEventListener("submit", (event) => {
+      const fields = Array.from(roomForm.querySelectorAll("input[name], textarea[name]")).filter((field) => validators[field.name]);
+      const firstInvalid = fields.find((field) => !validateField(field));
+      if (!firstInvalid) return;
+      event.preventDefault();
+      firstInvalid.focus();
+      firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
     function applyFilters() {
@@ -744,6 +816,20 @@
       if (emptyRow) {
         emptyRow.style.display = visibleCount ? "none" : "";
       }
+    }
+
+    function validateField(field) {
+      const validator = validators[field.name];
+      if (!validator) return true;
+      const message = validator(field.value || "");
+      const wrapper = field.closest(".room-field");
+      const error = wrapper?.querySelector(".room-field-error");
+      if (wrapper) {
+        wrapper.classList.toggle("is-invalid", Boolean(message));
+        wrapper.classList.toggle("is-valid", !message && Boolean(String(field.value || "").trim()));
+      }
+      if (error) error.textContent = message || "";
+      return !message;
     }
 
     applyFilters();

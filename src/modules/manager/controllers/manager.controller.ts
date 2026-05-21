@@ -459,6 +459,7 @@ function formatRoomFormError(error: unknown) {
     return error.issues.map((issue) => {
       const field = String(issue.path[0] || "");
       const label = roomFieldLabels[field] || "Dữ liệu phòng";
+      if (issue.message && issue.message !== "Required" && issue.message !== "Invalid input") return issue.message;
       if (issue.code === "too_small") return `${label} chưa hợp lệ hoặc còn thiếu.`;
       if (String(issue.code) === "invalid_type") return `${label} không đúng kiểu dữ liệu.`;
       if (String(issue.code) === "invalid_enum_value") return `${label} không hợp lệ.`;

@@ -11,6 +11,10 @@ const CUSTOMER_ID_CARD_REGEX = /^(?:\d{9}|\d{12})$/;
 const CUSTOMER_ADDRESS_REGEX = /^[^<>{}[\]\\]{0,255}$/u;
 const CUSTOMER_PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{6,72}$/;
 const CUSTOMER_USERNAME_REGEX = /^[A-Za-z0-9_]{5,30}$/;
+const ROOM_NUMBER_REGEX = /^[A-Za-z0-9-]{1,32}$/;
+const ROOM_TEXT_REGEX = /^[^<>{}[\]\\]{1,120}$/u;
+const ROOM_NOTE_REGEX = /^[^<>{}[\]\\]{0,500}$/u;
+const ROOM_IMAGE_REGEX = /^(?:https?:\/\/[^\s<>"']{1,240}|(?:\/?uploads\/phong\/)?[A-Za-z0-9_.-]{1,180})$/i;
 
 const customerSchema = z.object({
   customer_id: z.preprocess((value) => {
@@ -134,16 +138,37 @@ const promotionSchema = z.object({
 const roomSchema = z.object({
   room_id: z.coerce.number().int().optional(),
   hotel_id: z.coerce.number().int().positive(),
-  so_phong: z.string().trim().min(1),
+  so_phong: z.string()
+    .trim()
+    .regex(ROOM_NUMBER_REGEX, "Số phòng chỉ được gồm chữ, số hoặc dấu gạch ngang, tối đa 32 ký tự."),
   loai_phong: z.enum(["Standard", "Deluxe", "Superior", "Suite", "VIP"]),
-  dien_tich: z.coerce.number().min(15),
-  loai_giuong: z.string().trim().min(1),
+  dien_tich: z.coerce.number().min(15, "Diện tích phòng tối thiểu 15 m².").max(500, "Diện tích phòng không được vượt quá 500 m²."),
+  loai_giuong: z.string()
+    .trim()
+    .regex(ROOM_TEXT_REGEX, "Loại giường không được để trống và không chứa ký tự không an toàn."),
   view_phong: z.enum(["Bien", "Thanh pho", "Vuon", "Biển", "Thành phố", "Vườn"]),
-  gia: z.coerce.number().min(0),
-  so_khach_toi_da: z.coerce.number().int().min(1),
+  gia: z.coerce.number().min(1000, "Giá phòng phải lớn hơn hoặc bằng 1.000 VND.").max(100000000, "Giá phòng vượt quá giới hạn hợp lệ."),
+  so_khach_toi_da: z.coerce.number().int().min(1, "Sức chứa tối thiểu là 1 khách.").max(20, "Sức chứa một phòng không nên vượt quá 20 khách."),
   tinh_trang_phong: z.enum(["Tot", "CanVeSinh", "HuHaiNhe", "HuHaiNang", "DangBaoTri"]).default("Tot"),
-  ghi_chu: z.string().trim().optional().default(""),
-  hinh_anh: z.string().optional().nullable()
+  ghi_chu: z.string()
+    .trim()
+    .max(500, "Ghi chú không được vượt quá 500 ký tự.")
+    .regex(ROOM_NOTE_REGEX, "Ghi chú chứa ký tự không an toàn.")
+    .optional()
+    .default(""),
+  hinh_anh: z.preprocess((value) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) return null;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return raw
+      .replace(/\\/g, "/")
+      .replace(/^\/?public\/uploads\/phong\//i, "")
+      .replace(/^\/?uploads\/phong\//i, "")
+      .replace(/^\/?phong\//i, "")
+      .split("/")
+      .filter(Boolean)
+      .pop() || null;
+  }, z.string().regex(ROOM_IMAGE_REGEX, "Ảnh phòng không hợp lệ. Chỉ nhận URL ảnh hoặc tên file trong uploads/phong.").nullable().optional())
 });
 
 function roomStatusForCondition(condition: string | null | undefined) {
@@ -931,7 +956,16 @@ export class ManagerService {
           p.loaigiuong AS "loaiGiuong",
           p.viewphong AS "viewPhong",
           p.gia,
-          p.trangthai AS "trangThai",
+          CASE
+            WHEN p.trangthai = 'BaoTri'
+              OR COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') IN ('HuHaiNhe', 'HuHaiNang', 'DangBaoTri')
+              THEN 'BaoTri'
+            WHEN active.detail_status = 'CheckedIn'
+              THEN 'Stayed'
+            WHEN active.detail_status = 'Booked'
+              THEN 'Booked'
+            ELSE 'Trong'
+          END AS "trangThai",
           CASE
             WHEN p.trangthai = 'BaoTri'
               OR COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') IN ('HuHaiNhe', 'HuHaiNang', 'DangBaoTri')
