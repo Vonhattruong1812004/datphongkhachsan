@@ -27,7 +27,7 @@ export async function renderCreateFeedback(req: Request, res: Response) {
   const payload = await feedbackService.getCustomerFeedbackPayload(Number(user.maKhachHang), advisoryFormSeed(mode));
 
   return res.render("feedback/new", {
-    title: mode === "advisory" ? "Gửi yêu cầu tư vấn" : "Gửi phản hồi",
+    title: mode === "advisory" ? "Gửi yêu cầu tư vấn" : "Phản hồi và đánh giá",
     payload,
     mode,
     successMessage: req.query.success ? (mode === "advisory" ? "Yêu cầu tư vấn đã được gửi. Bộ phận CSKH sẽ phản hồi sớm nhất." : "Cảm ơn phản hồi của bạn! Bộ phận CSKH sẽ xử lý sớm nhất.") : "",
@@ -64,7 +64,7 @@ export async function createFeedbackAction(req: Request, res: Response) {
     const payload = await feedbackService.getCustomerFeedbackPayload(Number(user.maKhachHang), formInput);
 
     return res.status(422).render("feedback/new", {
-      title: mode === "advisory" ? "Gửi yêu cầu tư vấn" : "Gửi phản hồi",
+      title: mode === "advisory" ? "Gửi yêu cầu tư vấn" : "Phản hồi và đánh giá",
       payload,
       mode,
       successMessage: "",

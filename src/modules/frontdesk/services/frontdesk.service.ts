@@ -21,12 +21,37 @@ import { directBookingHoldStore, type DirectBookingHold, type DirectBookingHoldI
 type PaymentMethod = "TienMat" | "The" | "ChuyenKhoan" | "ViDienTu";
 type RoomCondition = "Tot" | "CanVeSinh" | "HuHaiNhe" | "HuHaiNang" | "DangBaoTri";
 type CancelScope = "all" | "partial";
+type CancelRefundPolicy = {
+  key: string;
+  label: string;
+  rate: number;
+  ratePercent: number;
+  hoursBeforeCheckIn: number | null;
+  daysBeforeCheckIn: number | null;
+  noRefund: boolean;
+  note: string;
+};
+type CancelRefundQuote = {
+  policy: CancelRefundPolicy;
+  paidDeposit: number;
+  alreadyRequested: number;
+  availableDeposit: number;
+  refundableBase: number;
+  retainedDeposit: number;
+  refundAmount: number;
+};
 
 const AI_SERVICE_NOTE_MARKER = "[AI_PRESELECT]";
 const TRANSFER_BANK_CODE = "ICB";
 const TRANSFER_BANK_NAME = "VietinBank";
 const TRANSFER_ACCOUNT_NO = "108875396650";
 const TRANSFER_ACCOUNT_NAME = "VO NHAT TRUONG";
+const CANCEL_POLICY_TIERS = [
+  { minHours: 168, key: "REFUND_100_7D", label: "Hoàn 100%", rate: 1, note: "Hủy trước ngày nhận phòng từ 7 ngày trở lên." },
+  { minHours: 72, key: "REFUND_70_3D", label: "Hoàn 70%", rate: 0.7, note: "Hủy trước ngày nhận phòng từ 3 đến dưới 7 ngày." },
+  { minHours: 24, key: "REFUND_50_24H", label: "Hoàn 50%", rate: 0.5, note: "Hủy trước ngày nhận phòng từ 24 giờ đến dưới 3 ngày." },
+  { minHours: 0, key: "NO_REFUND_24H", label: "Không hoàn cọc", rate: 0, note: "Hủy trong vòng 24 giờ trước giờ nhận phòng hoặc đã qua giờ nhận phòng." }
+];
 
 interface TransactionLookupRow {
   maGiaoDich: number;
@@ -1625,8 +1650,9 @@ export class FrontdeskService {
     const refundAccountNo = String(input.refundAccountNo || "").replace(/\s+/g, "").trim();
     const refundAccountName = String(input.refundAccountName || "").trim();
     const refundNote = String(input.refundNote || "").trim();
+    const refundQuote = await this.calculateCancelRefundQuote(payload, targetRoomIds, paidDeposit);
 
-    if (paidDeposit > 0) {
+    if (refundQuote.refundAmount > 0) {
       if (!refundBankName || !refundAccountNo || !refundAccountName) {
         throw new HttpError(422, "Booking da co tien coc. Vui long nhap ngan hang, so tai khoan va chu tai khoan de tao yeu cau hoan tien.");
       }
@@ -1709,16 +1735,13 @@ export class FrontdeskService {
       const totals = hasRemainingDetails
         ? await this.recalculateTransactionWithPromotion(client, input.transactionId, payload.transaction.maKhuyenMai)
         : { total: 0 };
-      const alreadyRequested = paidDeposit > 0
-        ? await this.getExistingRefundRequestAmount(client, input.transactionId)
-        : 0;
-      const retainedDeposit = hasRemainingDetails
-        ? Math.min(paidDeposit, Math.ceil(Number(totals.total || 0) * 0.5))
-        : 0;
-      const refundAmount = Math.max(0, paidDeposit - retainedDeposit - alreadyRequested);
+      const refundQuoteInTx = await this.calculateCancelRefundQuote(payload, targetRoomIds, paidDeposit, client);
+      const alreadyRequested = refundQuoteInTx.alreadyRequested;
+      const retainedDeposit = refundQuoteInTx.retainedDeposit;
+      const refundAmount = refundQuoteInTx.refundAmount;
       const refundCode = refundAmount > 0 ? `RF-${input.transactionId}-${Date.now().toString(36).toUpperCase()}` : "";
       const refundRequestNote = refundAmount > 0
-        ? `Yeu cau hoan tien ${refundCode}: ${formatMoney(refundAmount)}; STK ${refundBankName} ${refundAccountNo} ${refundAccountName}`
+        ? `Yeu cau hoan tien ${refundCode}: ${formatMoney(refundAmount)}; ${refundQuoteInTx.policy.label}; STK ${refundBankName} ${refundAccountNo} ${refundAccountName}`
         : "";
 
       await client.query(
@@ -1754,11 +1777,17 @@ export class FrontdeskService {
               deposit_paid,
               retained_deposit,
               already_requested,
+              refundable_base,
+              refund_rate,
+              hours_before_checkin,
+              cancellation_policy_key,
+              cancellation_policy_label,
+              cancellation_policy_note,
               amount_requested,
               status,
               created_by_role
             )
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'ChoXuLy','LeTan')
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'ChoQuanLyDuyet','LeTan')
           `,
           [
             input.transactionId,
@@ -1776,6 +1805,12 @@ export class FrontdeskService {
             paidDeposit,
             retainedDeposit,
             alreadyRequested,
+            refundQuoteInTx.refundableBase,
+            refundQuoteInTx.policy.ratePercent,
+            refundQuoteInTx.policy.hoursBeforeCheckIn,
+            refundQuoteInTx.policy.key,
+            refundQuoteInTx.policy.label,
+            refundQuoteInTx.policy.note,
             refundAmount
           ]
         );
@@ -1789,7 +1824,7 @@ export class FrontdeskService {
             END
             WHERE magiaodich = $1
           `,
-          [input.transactionId, `[REFUND_REQUEST code=${refundCode} amount=${refundAmount} status=ChoXuLy]`]
+          [input.transactionId, `[REFUND_REQUEST code=${refundCode} amount=${refundAmount} status=ChoQuanLyDuyet]`]
         );
       }
     });
@@ -2668,22 +2703,25 @@ export class FrontdeskService {
       if (maKhuyenMai) {
         const promotionResult = await client.query(
           `
-            SELECT makhuyenmai AS id, mucuudai AS "mucUuDai", loaiuudai AS "loaiUuDai"
+            SELECT makhuyenmai AS id, mucuudai AS "mucUuDai", loaiuudai AS "loaiUuDai", doituong AS "doiTuong"
             FROM khuyenmai
             WHERE makhuyenmai = $1
               AND trangthai = 'DangApDung'
             LIMIT 1
           `,
           [maKhuyenMai]
-        ) as { rows: Array<{ id: number; mucUuDai: number; loaiUuDai: string }> };
+        ) as { rows: Array<{ id: number; mucUuDai: number; loaiUuDai: string; doiTuong: string | null }> };
 
         const promotion = promotionResult.rows[0];
         if (promotion) {
           const subtotal = tongPhong + tongDichVu;
-          discount = promotion.loaiUuDai === "FIXED"
-            ? Number(promotion.mucUuDai)
-            : subtotal * (Number(promotion.mucUuDai) / 100);
-          discount = Math.min(discount, subtotal);
+          const meta = this.parsePromotionMeta(promotion.doiTuong);
+          if (subtotal >= meta.minAmount && !meta.blackoutDates.includes(this.toInputDate(new Date()))) {
+            discount = promotion.loaiUuDai === "FIXED"
+              ? Number(promotion.mucUuDai)
+              : subtotal * (Number(promotion.mucUuDai) / 100);
+            discount = Math.min(discount, subtotal);
+          }
         }
       }
 
@@ -3162,7 +3200,8 @@ export class FrontdeskService {
         id: null,
         label: "Khong ap dung",
         value: 0,
-        type: "PERCENT"
+        type: "PERCENT",
+        meta: { minAmount: 0, blackoutDates: [] }
       };
     }
 
@@ -3171,13 +3210,15 @@ export class FrontdeskService {
       tenChuongTrinh: string;
       mucUuDai: number;
       loaiUuDai: string;
+      doiTuong: string | null;
     }>(
       `
         SELECT
           makhuyenmai AS id,
           tenchuongtrinh AS "tenChuongTrinh",
           mucuudai AS "mucUuDai",
-          loaiuudai AS "loaiUuDai"
+          loaiuudai AS "loaiUuDai",
+          doituong AS "doiTuong"
         FROM khuyenmai
         WHERE makhuyenmai = $1
         LIMIT 1
@@ -3191,7 +3232,8 @@ export class FrontdeskService {
         id: null,
         label: "Khong ap dung",
         value: 0,
-        type: "PERCENT"
+        type: "PERCENT",
+        meta: { minAmount: 0, blackoutDates: [] }
       };
     }
 
@@ -3203,6 +3245,7 @@ export class FrontdeskService {
       name: promotion.tenChuongTrinh,
       value,
       type,
+      meta: this.parsePromotionMeta(promotion.doiTuong),
       label: `${promotion.tenChuongTrinh} (${value}${suffix})`
     };
   }
@@ -3287,6 +3330,12 @@ export class FrontdeskService {
     if (value <= 0) {
       return 0;
     }
+    if (promotion.meta?.minAmount && totalBeforeDiscount < promotion.meta.minAmount) {
+      return 0;
+    }
+    if (promotion.meta?.blackoutDates?.includes(this.toInputDate(new Date()))) {
+      return 0;
+    }
 
     const type = String(promotion.type || "PERCENT").toUpperCase();
     const discount = type === "FIXED" || value >= 100
@@ -3294,6 +3343,21 @@ export class FrontdeskService {
       : (totalBeforeDiscount * value) / 100;
 
     return Math.min(totalBeforeDiscount, Math.max(0, discount));
+  }
+
+  private parsePromotionMeta(rawValue: string | null | undefined) {
+    try {
+      const parsed = JSON.parse(String(rawValue || ""));
+      return {
+        minAmount: Math.max(0, Number(parsed.minAmount || 0)),
+        blackoutDates: Array.isArray(parsed.blackoutDates) ? parsed.blackoutDates.map((item: unknown) => String(item)) : []
+      };
+    } catch (_error) {
+      return {
+        minAmount: 0,
+        blackoutDates: []
+      };
+    }
   }
 
   private async syncEditServices(
@@ -3849,24 +3913,139 @@ export class FrontdeskService {
     const paidDeposit = sepayMeta?.status === "PAID"
       ? Math.max(0, Math.round(sepayMeta.paidAmount || sepayMeta.depositAmount || 0))
       : 0;
-    const alreadyRequested = paidDeposit > 0
-      ? await this.getExistingRefundRequestAmount(null, snapshot.transaction.maGiaoDich)
-      : 0;
-    const maxRefundable = Math.max(0, paidDeposit - alreadyRequested);
+    const cancelableRoomIds = snapshot.rooms
+      .filter((room) => room.trangThai === "Booked")
+      .map((room) => Number(room.maPhong));
+    const quote = await this.calculateCancelRefundQuote(snapshot, cancelableRoomIds, paidDeposit);
+    const maxRefundable = quote.refundAmount;
 
     return {
       hasPaidDeposit: paidDeposit > 0,
-      needsBankInfo: maxRefundable > 0,
+      needsBankInfo: quote.refundAmount > 0,
       paidDeposit,
-      alreadyRequested,
+      alreadyRequested: quote.alreadyRequested,
+      availableDeposit: quote.availableDeposit,
       maxRefundable,
+      refundableBase: quote.refundableBase,
+      retainedDeposit: quote.retainedDeposit,
+      policy: {
+        ...quote.policy,
+        rateLabel: `${quote.policy.ratePercent}%`,
+        hoursLabel: quote.policy.hoursBeforeCheckIn === null
+          ? "Không xác định"
+          : `${Math.max(0, Math.floor(quote.policy.hoursBeforeCheckIn))} giờ`,
+        daysLabel: quote.policy.daysBeforeCheckIn === null
+          ? "Không xác định"
+          : `${quote.policy.daysBeforeCheckIn} ngày`
+      },
       paidDepositFormatted: formatMoney(paidDeposit),
-      alreadyRequestedFormatted: formatMoney(alreadyRequested),
+      alreadyRequestedFormatted: formatMoney(quote.alreadyRequested),
+      availableDepositFormatted: formatMoney(quote.availableDeposit),
       maxRefundableFormatted: formatMoney(maxRefundable),
+      refundableBaseFormatted: formatMoney(quote.refundableBase),
+      retainedDepositFormatted: formatMoney(quote.retainedDeposit),
       statusText: paidDeposit > 0
-        ? "Co coc SePay, can tao yeu cau hoan tien khi huy."
+        ? (quote.refundAmount > 0 ? "Co coc SePay, se tao yeu cau hoan tien theo chinh sach." : "Co coc SePay nhung booking dang nam trong vung khong hoan tu dong.")
         : "Chua ghi nhan coc SePay."
     };
+  }
+
+  private async calculateCancelRefundQuote(
+    snapshot: Awaited<ReturnType<FrontdeskService["getTransactionSnapshot"]>>,
+    targetRoomIds: number[],
+    paidDeposit: number,
+    client?: any
+  ): Promise<CancelRefundQuote> {
+    const selected = new Set(targetRoomIds.map((roomId) => Number(roomId)));
+    const bookedRooms = snapshot.rooms.filter((room) => room.trangThai === "Booked");
+    const selectedRooms = bookedRooms.filter((room) => selected.has(Number(room.maPhong)));
+    const bookingAmount = this.sumRoomAmounts(snapshot.rooms);
+    const selectedAmount = this.sumRoomAmounts(selectedRooms);
+    const selectedRatio = bookingAmount > 0
+      ? Math.min(1, Math.max(0, selectedAmount / bookingAmount))
+      : (snapshot.rooms.length > 0 ? Math.min(1, selectedRooms.length / snapshot.rooms.length) : 0);
+    const alreadyRequested = paidDeposit > 0
+      ? await this.getExistingRefundRequestAmount(client || null, snapshot.transaction.maGiaoDich)
+      : 0;
+    const availableDeposit = Math.max(0, paidDeposit - alreadyRequested);
+    const refundableBase = Math.min(availableDeposit, Math.round(paidDeposit * selectedRatio));
+    const policy = this.getCancelRefundPolicy(selectedRooms);
+    const refundAmount = Math.min(availableDeposit, Math.max(0, Math.round(refundableBase * policy.rate)));
+    const retainedDeposit = Math.max(0, refundableBase - refundAmount);
+
+    return {
+      policy,
+      paidDeposit,
+      alreadyRequested,
+      availableDeposit,
+      refundableBase,
+      retainedDeposit,
+      refundAmount
+    };
+  }
+
+  private sumRoomAmounts(rooms: Array<Pick<RoomStayRow, "thanhTien" | "donGia">>) {
+    return rooms.reduce((sum, room) => {
+      const amount = Number(room.thanhTien || 0);
+      return sum + (amount > 0 ? amount : Math.max(0, Number(room.donGia || 0)));
+    }, 0);
+  }
+
+  private getCancelRefundPolicy(rooms: Array<Pick<RoomStayRow, "ngayNhanDuKien">>): CancelRefundPolicy {
+    const checkInAt = this.getEarliestPolicyCheckIn(rooms);
+    if (!checkInAt) {
+      return {
+        key: "NO_REFUND_UNKNOWN_DATE",
+        label: "Không hoàn cọc",
+        rate: 0,
+        ratePercent: 0,
+        hoursBeforeCheckIn: null,
+        daysBeforeCheckIn: null,
+        noRefund: true,
+        note: "Không xác định được ngày nhận phòng nên cần xử lý ngoại lệ thủ công."
+      };
+    }
+
+    const diffHours = (checkInAt.getTime() - Date.now()) / (1000 * 60 * 60);
+    const tier = CANCEL_POLICY_TIERS.find((item) => diffHours >= item.minHours) || CANCEL_POLICY_TIERS[CANCEL_POLICY_TIERS.length - 1];
+    const hoursBeforeCheckIn = Math.max(0, Math.round(diffHours * 10) / 10);
+    return {
+      key: tier.key,
+      label: tier.label,
+      rate: tier.rate,
+      ratePercent: Math.round(tier.rate * 100),
+      hoursBeforeCheckIn,
+      daysBeforeCheckIn: Math.max(0, Math.floor(hoursBeforeCheckIn / 24)),
+      noRefund: tier.rate <= 0,
+      note: tier.note
+    };
+  }
+
+  private getEarliestPolicyCheckIn(rooms: Array<Pick<RoomStayRow, "ngayNhanDuKien">>) {
+    const dates = rooms
+      .map((room) => this.parsePolicyCheckInDate(room.ngayNhanDuKien))
+      .filter((date): date is Date => Boolean(date))
+      .sort((a, b) => a.getTime() - b.getTime());
+    return dates[0] || null;
+  }
+
+  private parsePolicyCheckInDate(value: string | null | undefined) {
+    if (!value) {
+      return null;
+    }
+    const raw = String(value).trim();
+    const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnly) {
+      return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 14, 0, 0, 0);
+    }
+    const dateTime = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+    if (dateTime) {
+      const hour = Number(dateTime[4]);
+      const minute = Number(dateTime[5]);
+      return new Date(Number(dateTime[1]), Number(dateTime[2]) - 1, Number(dateTime[3]), hour || 14, minute, 0, 0);
+    }
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private async ensureRefundRequestTable(client?: any) {
@@ -3889,17 +4068,46 @@ export class FrontdeskService {
         deposit_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
         retained_deposit NUMERIC(14,2) NOT NULL DEFAULT 0,
         already_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        refundable_base NUMERIC(14,2) NOT NULL DEFAULT 0,
+        refund_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
+        hours_before_checkin NUMERIC(10,2),
+        cancellation_policy_key TEXT,
+        cancellation_policy_label TEXT,
+        cancellation_policy_note TEXT,
         amount_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
         amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'ChoXuLy',
+        status TEXT NOT NULL DEFAULT 'ChoQuanLyDuyet',
         created_by_role TEXT NOT NULL DEFAULT 'LeTan',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         processed_at TIMESTAMPTZ NULL,
-        accounting_note TEXT
+        accounting_note TEXT,
+        manager_note TEXT,
+        manager_reviewed_at TIMESTAMPTZ NULL,
+        manager_by TEXT,
+        refund_payment_content TEXT,
+        refund_bank_txn_id TEXT,
+        refund_payment_proof TEXT,
+        refund_paid_at TIMESTAMPTZ NULL,
+        refund_paid_by TEXT
       )
     `);
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refundable_base NUMERIC(14,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_rate NUMERIC(5,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS hours_before_checkin NUMERIC(10,2)");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_key TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_label TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_by TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_payment_content TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_bank_txn_id TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_payment_proof TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_paid_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_paid_by TEXT");
     await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_magiaodich ON refund_requests(magiaodich)");
     await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_status ON refund_requests(status)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_bank_txn ON refund_requests(refund_bank_txn_id)");
   }
 
   private async getExistingRefundRequestAmount(client: any | null, transactionId: number) {

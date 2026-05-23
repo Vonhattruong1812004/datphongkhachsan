@@ -102,6 +102,11 @@
     </form>
     <% } %>
 
+    <div class="header-clock" aria-label="Đồng hồ và lịch">
+      <span class="header-clock__date" id="globalHeaderDate">--/--/----</span>
+      <strong class="header-clock__time" id="globalHeaderTime">--:--:--</strong>
+    </div>
+
     <nav class="nav-links">
       <% if (currentUser) { %>
         <% if (dashboardHrefByRole[roleId]) { %>
@@ -119,6 +124,31 @@
   </div>
 </header>
 <script>
+  (() => {
+    const dateEl = document.getElementById("globalHeaderDate");
+    const timeEl = document.getElementById("globalHeaderTime");
+
+    if (!dateEl || !timeEl) return;
+
+    const updateClock = () => {
+      const now = new Date();
+      dateEl.textContent = now.toLocaleDateString("vi-VN", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+      timeEl.textContent = now.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+    };
+
+    updateClock();
+    window.setInterval(updateClock, 1000);
+  })();
+
   (() => {
     const form = document.getElementById("headerSearchForm");
     const shell = document.getElementById("headerSearchShell");

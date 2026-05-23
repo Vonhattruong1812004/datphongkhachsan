@@ -6,6 +6,7 @@
   const items = data.items || [];
   const summary = data.summary || {};
   const serviceTypes = data.serviceTypes || ["Lưu trú", "Nhà hàng", "SPA", "Giặt là", "Dịch vụ khác"];
+  const advisoryTopics = data.advisoryTopics || [];
   const selected = detail && detail.detail ? detail.detail : null;
   const replies = detail && detail.replies ? detail.replies : [];
   const success = typeof successMessage !== "undefined" ? successMessage : "";
@@ -18,7 +19,7 @@
   const totalPages = Number(data.totalPages || 1);
   const avgRating = Number(summary.danh_gia_tb || 0);
   const doneRate = Number(summary.tong || 0) ? Math.round(Number(summary.da_xu_ly || 0) * 100 / Number(summary.tong || 1)) : 0;
-  const filterKeys = ["keyword", "trang_thai", "danh_gia", "loai_dich_vu", "sentiment", "tu_ngay", "den_ngay", "page", "id"];
+  const filterKeys = ["keyword", "trang_thai", "danh_gia", "loai_dich_vu", "tu_van_nhom", "sentiment", "uu_tien", "tu_ngay", "den_ngay", "page", "id"];
   const statuses = [
     { value: "all", label: "Tất cả" },
     { value: "ChuaXuLy", label: "Chưa xử lý" },
@@ -40,6 +41,12 @@
     { value: "Negative", label: "Tiêu cực" },
     { value: "Neutral", label: "Trung lập" },
     { value: "Positive", label: "Tích cực" }
+  ];
+  const priorities = [
+    { value: "all", label: "Tất cả" },
+    { value: "urgent", label: "Khẩn cấp" },
+    { value: "high", label: "Ưu tiên cao" },
+    { value: "overdue", label: "Quá SLA" }
   ];
   const statusOptions = statuses.filter((item) => item.value !== "all");
   const baseManagePath = advisoryMode ? "/feedback/advisory/manage" : "/feedback/manage";
@@ -86,6 +93,7 @@
 
   const activeId = selected ? selected.id : "";
   const returnTo = `${baseManagePath}${buildQuery({ id: activeId })}`;
+  const pageNegativeCount = items.filter((item) => item.sentiment === "Negative").length;
 %>
 
 <style>
@@ -111,26 +119,26 @@
   .fb-radar{min-height:270px;border-radius:32px;overflow:hidden;background:linear-gradient(145deg,rgba(14,38,58,.90),rgba(12,86,110,.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
   .fb-radar-ring{position:absolute;inset:36px;border-radius:999px;border:1px dashed rgba(255,255,255,.26);animation:fb-spin 22s linear infinite}
   .fb-radar-core{position:absolute;left:50%;top:50%;width:138px;height:138px;border-radius:44px;transform:translate(-50%,-50%) rotate(14deg);background:linear-gradient(135deg,rgba(103,232,249,.96),rgba(183,239,74,.86));box-shadow:0 26px 76px rgba(33,207,166,.34);animation:fb-core 4.8s ease-in-out infinite}
-  .fb-radar-word{position:absolute;z-index:2;border-radius:999px;padding:8px 11px;color:#f8fbff;background:rgba(15,23,42,.46);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(16px);font-size:12px;font-weight:1000}
-  .fb-radar-word:nth-child(3){left:28px;top:34px;animation:fb-drift-a 5.5s ease-in-out infinite}
-  .fb-radar-word:nth-child(4){right:28px;top:82px;animation:fb-drift-b 6.2s ease-in-out infinite}
-  .fb-radar-word:nth-child(5){left:38px;bottom:62px;animation:fb-drift-b 5.8s ease-in-out infinite reverse}
-  .fb-radar-word:nth-child(6){right:32px;bottom:38px;animation:fb-drift-a 6.5s ease-in-out infinite reverse}
+  .fb-radar-word{position:absolute;z-index:2;display:inline-flex;align-items:center;white-space:nowrap;line-height:1;border-radius:999px;padding:9px 12px;color:#f8fbff;background:rgba(15,23,42,.56);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(16px);box-shadow:0 14px 34px rgba(2,8,23,.22);font-size:12px;font-weight:1000}
+  .fb-radar-word:nth-child(3){left:24px;top:30px;animation:fb-drift-a 5.5s ease-in-out infinite}
+  .fb-radar-word:nth-child(4){right:24px;top:84px;animation:fb-drift-b 6.2s ease-in-out infinite}
+  .fb-radar-word:nth-child(5){left:34px;bottom:72px;animation:fb-drift-b 5.8s ease-in-out infinite reverse}
+  .fb-radar-word:nth-child(6){right:28px;bottom:32px;animation:fb-drift-a 6.5s ease-in-out infinite reverse}
   .fb-alert{border-radius:22px;padding:14px 16px;margin:0 0 16px;border:1px solid rgba(18,48,71,.10);font-weight:850}
   .fb-alert--success{background:rgba(16,185,129,.13);color:#047857;border-color:rgba(16,185,129,.22)}
   .fb-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.24)}
-  .fb-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin:18px 0}
+  .fb-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:18px 0}
   .fb-stat{border-radius:25px;padding:17px;background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.66));position:relative;overflow:hidden}
   .fb-stat::after{content:"";position:absolute;right:-34px;top:-40px;width:112px;height:112px;border-radius:999px;background:radial-gradient(circle,var(--accent,rgba(24,191,242,.18)),transparent 68%)}
   .fb-stat span{display:block;color:var(--muted);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.07em}
   .fb-stat strong{display:block;margin-top:8px;color:var(--ink);font-size:30px;letter-spacing:-.055em;line-height:1}
   .fb-stat small{display:block;margin-top:8px;color:var(--muted);font-size:12px;font-weight:800}
-  .fb-stat.is-red{--accent:rgba(244,63,94,.25)}.fb-stat.is-blue{--accent:rgba(24,191,242,.25)}.fb-stat.is-green{--accent:rgba(33,207,166,.25)}.fb-stat.is-yellow{--accent:rgba(255,209,102,.32)}.fb-stat.is-violet{--accent:rgba(139,107,255,.22)}
+  .fb-stat.is-red{--accent:rgba(244,63,94,.25)}.fb-stat.is-blue{--accent:rgba(24,191,242,.25)}.fb-stat.is-green{--accent:rgba(33,207,166,.25)}.fb-stat.is-yellow{--accent:rgba(255,209,102,.32)}.fb-stat.is-violet{--accent:rgba(139,107,255,.22)}.fb-stat.is-orange{--accent:rgba(249,115,22,.24)}
   .fb-filter{border-radius:30px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.70));margin-bottom:18px}
   .fb-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:16px}
   .fb-section-head h2{margin:0;color:var(--ink);font-size:26px;letter-spacing:-.05em}
   .fb-section-head p{margin:5px 0 0;color:var(--muted);font-size:13px;line-height:1.55}
-  .fb-filter-grid{display:grid;grid-template-columns:1.4fr repeat(3,minmax(130px,1fr));gap:12px}
+  .fb-filter-grid{display:grid;grid-template-columns:1.35fr repeat(4,minmax(125px,1fr));gap:12px}
   .fb-field{display:grid;gap:7px}
   .fb-field label{font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em;color:#173651}
   .fb-field input,.fb-field select,.fb-field textarea{width:100%;border-radius:18px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);color:var(--ink);padding:12px 13px;font:inherit;outline:none;box-sizing:border-box}
@@ -156,6 +164,9 @@
   .fb-badge.is-positive{background:rgba(34,197,94,.12);color:#047857;border-color:rgba(34,197,94,.16)}
   .fb-badge.is-neutral{background:rgba(148,163,184,.13);color:#475569;border-color:rgba(148,163,184,.16)}
   .fb-badge.is-negative{background:rgba(244,63,94,.13);color:#be123c;border-color:rgba(244,63,94,.18)}
+  .fb-badge.is-blue{background:rgba(24,191,242,.13);color:#0369a1;border-color:rgba(24,191,242,.18)}
+  .fb-badge.is-orange{background:rgba(249,115,22,.13);color:#c2410c;border-color:rgba(249,115,22,.18)}
+  .fb-badge.is-violet{background:rgba(139,107,255,.13);color:#5b21b6;border-color:rgba(139,107,255,.18)}
   .fb-stars{color:#f59e0b;font-size:13px;letter-spacing:.06em;font-weight:1000;white-space:nowrap}
   .fb-reply-preview,.fb-reply-item,.fb-empty,.fb-priority{border-radius:22px;padding:14px;background:rgba(255,255,255,.62);border:1px solid rgba(17,34,51,.08)}
   .fb-reply-preview{margin-top:12px;background:rgba(33,207,166,.10);border-color:rgba(33,207,166,.16)}
@@ -171,6 +182,11 @@
   .fb-reply-item{background:rgba(255,255,255,.70)}
   .fb-empty{text-align:center;color:var(--muted);font-weight:850;border-style:dashed}
   .fb-priority{margin-top:12px;background:rgba(244,63,94,.10);border-color:rgba(244,63,94,.16);color:#9f1239;font-weight:850;line-height:1.55}
+  .fb-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .fb-tag{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;background:rgba(24,191,242,.10);color:#0369a1;border:1px solid rgba(24,191,242,.14);font-size:11px;font-weight:950}
+  .fb-ai-actions{display:grid;gap:9px;margin-top:12px}
+  .fb-suggestion{width:100%;text-align:left;border-radius:18px;border:1px solid rgba(24,191,242,.16);background:rgba(236,254,255,.78);color:#173651;padding:11px 12px;font:inherit;font-size:13px;font-weight:850;line-height:1.5;cursor:pointer}
+  .fb-suggestion:hover{border-color:rgba(24,191,242,.42);box-shadow:0 12px 30px rgba(24,191,242,.12)}
   .fb-pages{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:18px}
   .fb-page{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;border-radius:999px;background:rgba(255,255,255,.72);border:1px solid rgba(17,34,51,.09);color:var(--ink);text-decoration:none;font-weight:950}
   .fb-page.is-active{color:#fff;background:linear-gradient(135deg,#08a5c8,#21cfa6);border-color:transparent}
@@ -189,10 +205,14 @@
   <section class="fb-hero" aria-label="Quản lý phản hồi khách hàng">
     <div class="fb-hero-main">
       <span class="fb-kicker"><span class="fb-dot"></span> <%= advisoryMode ? "Trả lời tư vấn" : "Quản lý phản hồi" %></span>
-      <h1><%= advisoryMode ? "Inbox tư vấn CSKH <span>trả lời nhanh, bám đúng ngữ cảnh.</span>" : "Trung tâm CSKH <span>đọc đúng, xử lý gọn.</span>" %></h1>
+      <% if (advisoryMode) { %>
+        <h1>Trả lời tư vấn <span>nhanh, đúng ngữ cảnh.</span></h1>
+      <% } else { %>
+        <h1>Trung tâm CSKH <span>đọc đúng, xử lý gọn.</span></h1>
+      <% } %>
       <p class="fb-lead">
         <%= advisoryMode
-          ? "Màn này gom riêng các câu hỏi tư vấn và hỏi đáp từ khách hàng: xem nội dung, booking context, phản hồi lại từng case và theo dõi follow-up trong một luồng riêng."
+          ? "Gom riêng câu hỏi của khách về booking, check-in, eKYC, giá, thanh toán và dịch vụ để CSKH trả lời theo từng case."
           : "Lọc phản hồi, xem đánh giá, cập nhật trạng thái, trả lời khách và lưu lịch sử xử lý trong một luồng." %>
       </p>
       <div class="fb-actions">
@@ -204,10 +224,10 @@
     <aside class="fb-radar" aria-label="Minh họa vận hành phản hồi">
       <div class="fb-radar-ring"></div>
       <div class="fb-radar-core"></div>
-      <span class="fb-radar-word"><%= advisoryMode ? "Câu hỏi" : "Sentiment" %></span>
-      <span class="fb-radar-word"><%= advisoryMode ? "Booking context" : "Rating 1-5" %></span>
+      <span class="fb-radar-word"><%= advisoryMode ? "Câu hỏi" : "Cảm xúc" %></span>
+      <span class="fb-radar-word"><%= advisoryMode ? "Booking" : "Rating" %></span>
       <span class="fb-radar-word">Trả lời</span>
-      <span class="fb-radar-word">Đóng xử lý</span>
+      <span class="fb-radar-word">Đóng case</span>
     </aside>
   </section>
 
@@ -216,17 +236,18 @@
 
   <section class="fb-stats" aria-label="Tổng quan phản hồi">
     <article class="fb-stat is-blue"><span><%= advisoryMode ? "Tổng câu hỏi" : "Tổng phản hồi" %></span><strong><%= numberText(summary.tong) %></strong><small>Theo bộ lọc hiện tại</small></article>
-    <article class="fb-stat is-red"><span>Chưa xử lý</span><strong><%= numberText(summary.chua_xu_ly) %></strong><small>Cần ưu tiên tiếp nhận</small></article>
-    <article class="fb-stat is-yellow"><span>Đang xử lý</span><strong><%= numberText(summary.dang_xu_ly) %></strong><small>Đã nhận, chưa đóng</small></article>
+    <article class="fb-stat is-red"><span><%= advisoryMode ? "Chưa trả lời" : "Chưa xử lý" %></span><strong><%= numberText(summary.chua_xu_ly) %></strong><small><%= advisoryMode ? "Cần phản hồi lần đầu" : "Cần ưu tiên tiếp nhận" %></small></article>
+    <article class="fb-stat is-yellow"><span><%= advisoryMode ? "Đang follow-up" : "Đang xử lý" %></span><strong><%= numberText(summary.dang_xu_ly) %></strong><small>Đã nhận, chưa đóng</small></article>
     <article class="fb-stat is-green"><span>Đã xử lý</span><strong><%= numberText(summary.da_xu_ly) %></strong><small><%= doneRate %>% hoàn tất</small></article>
-    <article class="fb-stat is-violet"><span>Đánh giá TB</span><strong><%= avgRating ? avgRating.toFixed(1) : "0.0" %>/5</strong><small><%= numberText(summary.tieu_cuc) %> phản hồi tiêu cực</small></article>
+    <article class="fb-stat is-orange"><span>Khẩn cấp</span><strong><%= numberText(summary.khan_cap) %></strong><small>Tiêu cực hoặc rating thấp</small></article>
+    <article class="fb-stat is-violet"><span>Quá SLA</span><strong><%= numberText(summary.qua_sla) %></strong><small><%= advisoryMode ? "Mốc tư vấn 2h/6h" : `Đánh giá TB ${avgRating ? avgRating.toFixed(1) : "0.0"}/5` %></small></article>
   </section>
 
   <section class="fb-filter" aria-label="Bộ lọc phản hồi">
     <div class="fb-section-head">
       <div>
         <h2>Bộ lọc nghiệp vụ</h2>
-        <p><%= advisoryMode ? "Tìm nhanh theo khách hàng, nội dung câu hỏi, trạng thái, sentiment và khoảng ngày. Loại dịch vụ được khóa ở Tư vấn." : "Tìm nhanh theo khách hàng, nội dung, trạng thái, rating, dịch vụ, cảm xúc và khoảng ngày." %></p>
+        <p><%= advisoryMode ? "Tìm theo khách, nội dung, trạng thái, nhóm câu hỏi và mức ưu tiên." : "Tìm nhanh theo khách hàng, nội dung, trạng thái, rating, dịch vụ, cảm xúc và khoảng ngày." %></p>
       </div>
       <a class="fb-button" href="<%= baseManagePath %>">Xóa lọc</a>
     </div>
@@ -244,19 +265,40 @@
             <% }) %>
           </select>
         </div>
+        <% if (advisoryMode) { %>
+          <input type="hidden" name="danh_gia" value="all" />
+          <input type="hidden" name="sentiment" value="all" />
+          <div class="fb-field">
+            <label>Nhóm câu hỏi</label>
+            <select name="tu_van_nhom">
+              <% advisoryTopics.forEach(function (item) { %>
+                <option value="<%= item.value %>" <%= selectedAttr(filters.tu_van_nhom, item.value) %>><%= item.label %></option>
+              <% }) %>
+            </select>
+          </div>
+        <% } else { %>
+          <div class="fb-field">
+            <label>Đánh giá</label>
+            <select name="danh_gia">
+              <% ratings.forEach(function (item) { %>
+                <option value="<%= item.value %>" <%= selectedAttr(filters.danh_gia, item.value) %>><%= item.label %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="fb-field">
+            <label>Cảm xúc</label>
+            <select name="sentiment">
+              <% sentiments.forEach(function (item) { %>
+                <option value="<%= item.value %>" <%= selectedAttr(filters.sentiment, item.value) %>><%= item.label %></option>
+              <% }) %>
+            </select>
+          </div>
+        <% } %>
         <div class="fb-field">
-          <label>Đánh giá</label>
-          <select name="danh_gia">
-            <% ratings.forEach(function (item) { %>
-              <option value="<%= item.value %>" <%= selectedAttr(filters.danh_gia, item.value) %>><%= item.label %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="fb-field">
-          <label>Cảm xúc</label>
-          <select name="sentiment">
-            <% sentiments.forEach(function (item) { %>
-              <option value="<%= item.value %>" <%= selectedAttr(filters.sentiment, item.value) %>><%= item.label %></option>
+          <label>Ưu tiên</label>
+          <select name="uu_tien">
+            <% priorities.forEach(function (item) { %>
+              <option value="<%= item.value %>" <%= selectedAttr(filters.uu_tien, item.value) %>><%= item.label %></option>
             <% }) %>
           </select>
         </div>
@@ -287,7 +329,7 @@
         </div>
         <div class="fb-field">
           <label>&nbsp;</label>
-          <button class="fb-button fb-button--primary" type="submit">Lọc phản hồi</button>
+          <button class="fb-button fb-button--primary" type="submit"><%= advisoryMode ? "Lọc tư vấn" : "Lọc phản hồi" %></button>
         </div>
       </div>
     </form>
@@ -300,7 +342,7 @@
           <h2><%= advisoryMode ? "Hàng đợi tư vấn" : "Hàng đợi phản hồi" %></h2>
           <p><%= numberText(totalRows) %> <%= advisoryMode ? "câu hỏi" : "phản hồi" %> phù hợp. Chọn một mục để xem chi tiết, đổi trạng thái hoặc trả lời.</p>
         </div>
-        <span class="fb-badge is-negative"><%= numberText(summary.tieu_cuc) %> tiêu cực</span>
+        <span class="fb-badge is-negative"><%= advisoryMode ? `${numberText(summary.qua_sla)} quá SLA` : `${numberText(pageNegativeCount)} tiêu cực trên trang` %></span>
       </div>
 
       <div class="fb-list">
@@ -314,14 +356,31 @@
                 <h3><%= item.tenKh || "Khách chưa xác định" %></h3>
                 <div class="fb-muted"><%= item.loaiDichVu || "Dịch vụ" %> · #<%= item.id %> · <%= item.ngayTaoLabel || "" %></div>
               </div>
-              <div class="fb-stars"><%= item.stars || "" %></div>
+              <% if (advisoryMode) { %>
+                <span class="fb-badge <%= toneClass(item.slaTone) %>"><%= item.slaLabel %></span>
+              <% } else { %>
+                <div class="fb-stars"><%= item.stars || "" %></div>
+              <% } %>
             </div>
             <div class="fb-meta">
               <span class="fb-badge <%= toneClass(item.statusTone || statusTone(item.trangThai)) %>"><%= item.statusLabel || statusLabel(item.trangThai) %></span>
-              <span class="fb-badge <%= toneClass(item.sentimentTone || sentimentTone(item.sentiment)) %>"><%= item.sentimentLabel || sentimentLabel(item.sentiment) %></span>
+              <% if (advisoryMode && item.advisoryIntentLabel) { %>
+                <span class="fb-badge is-blue"><%= item.advisoryIntentLabel %></span>
+              <% } else { %>
+                <span class="fb-badge <%= toneClass(item.sentimentTone || sentimentTone(item.sentiment)) %>"><%= item.sentimentLabel || sentimentLabel(item.sentiment) %></span>
+              <% } %>
+              <span class="fb-badge <%= toneClass(item.priorityTone) %>"><%= item.priorityLabel %></span>
+              <% if (!advisoryMode) { %><span class="fb-badge <%= toneClass(item.slaTone) %>"><%= item.slaLabel %></span><% } %>
+              <span class="fb-badge">Chờ <%= item.ageLabel %></span>
+              <% if (advisoryMode) { %><span class="fb-badge"><%= Number(item.replyCount || 0) %> trả lời</span><% } %>
               <% if (item.sdt) { %><span class="fb-badge"><%= item.sdt %></span><% } %>
               <% if (item.attachmentUrl) { %><span class="fb-badge">Có ảnh</span><% } %>
             </div>
+            <% if (item.topicTags && item.topicTags.length) { %>
+              <div class="fb-tags">
+                <% item.topicTags.forEach(function (tag) { %><span class="fb-tag"><%= tag %></span><% }) %>
+              </div>
+            <% } %>
             <p class="fb-content"><%= item.noiDung || "" %></p>
             <% if (item.noiDungTraLoiMoiNhat) { %>
               <div class="fb-reply-preview">
@@ -352,17 +411,31 @@
             <h2>#<%= selected.id %> · <%= selected.tenKh || "Khách hàng" %></h2>
             <p class="fb-muted" style="margin:7px 0 0;"><%= selected.loaiDichVu || "Dịch vụ" %> · <%= selected.ngayTaoLabel || "" %></p>
           </div>
-          <div class="fb-stars"><%= selected.stars || "" %></div>
+          <% if (advisoryMode) { %>
+            <span class="fb-badge is-blue"><%= selected.advisoryIntentLabel || "Tư vấn" %></span>
+          <% } else { %>
+            <div class="fb-stars"><%= selected.stars || "" %></div>
+          <% } %>
         </div>
 
         <div class="fb-meta">
           <span class="fb-badge <%= toneClass(selected.statusTone || statusTone(selected.trangThai)) %>"><%= selected.statusLabel || statusLabel(selected.trangThai) %></span>
-          <span class="fb-badge <%= toneClass(selected.sentimentTone || sentimentTone(selected.sentiment)) %>"><%= selected.sentimentLabel || sentimentLabel(selected.sentiment) %></span>
-          <span class="fb-badge">Điểm cảm xúc: <%= selected.diemCamXuc ?? 0 %></span>
+          <% if (advisoryMode && selected.advisoryIntentLabel) { %>
+            <span class="fb-badge is-blue"><%= selected.advisoryIntentLabel %></span>
+          <% } else { %>
+            <span class="fb-badge <%= toneClass(selected.sentimentTone || sentimentTone(selected.sentiment)) %>"><%= selected.sentimentLabel || sentimentLabel(selected.sentiment) %></span>
+          <% } %>
+          <span class="fb-badge <%= toneClass(selected.priorityTone) %>"><%= selected.priorityLabel %></span>
+          <span class="fb-badge <%= toneClass(selected.slaTone) %>"><%= selected.slaLabel %></span>
+          <span class="fb-badge"><%= advisoryMode ? `${Number(selected.replyCount || 0)} trả lời` : `Điểm cảm xúc: ${selected.diemCamXuc ?? 0}` %></span>
         </div>
 
-        <% if ((selected.sentiment || "Neutral") === "Negative" || selected.trangThai === "ChuaXuLy") { %>
-          <div class="fb-priority">Ưu tiên xử lý: <%= advisoryMode ? "câu hỏi này" : "phản hồi này" %> đang có tín hiệu cần CSKH theo sát, nên trả lời rõ hướng xử lý hoặc chuyển trạng thái phù hợp.</div>
+        <div class="fb-priority">Ưu tiên xử lý: <%= selected.actionHint || "CSKH nên phản hồi rõ hướng xử lý và cập nhật trạng thái phù hợp." %></div>
+
+        <% if (selected.topicTags && selected.topicTags.length) { %>
+          <div class="fb-tags">
+            <% selected.topicTags.forEach(function (tag) { %><span class="fb-tag"><%= tag %></span><% }) %>
+          </div>
         <% } %>
 
         <div class="fb-detail-grid">
@@ -409,14 +482,21 @@
               <label>Sau khi trả lời</label>
               <select name="status">
                 <% statusOptions.forEach(function (item) { %>
-                  <option value="<%= item.value %>" <%= selectedAttr(item.value, "DaXuLy") %>><%= item.label %></option>
+                  <option value="<%= item.value %>" <%= selectedAttr(item.value, advisoryMode ? "DangXuLy" : "DaXuLy") %>><%= item.label %></option>
                 <% }) %>
               </select>
             </div>
             <div class="fb-field" style="margin-top:10px;">
               <label>Nội dung trả lời</label>
-              <textarea name="reply" required minlength="2" placeholder="Nhập nội dung trả lời rõ hướng xử lý, xin lỗi/cảm ơn nếu cần và cam kết bước tiếp theo..."></textarea>
+              <textarea id="feedbackReplyText" name="reply" required minlength="2" placeholder="<%= advisoryMode ? "Trả lời trực tiếp câu hỏi, xác nhận thông tin còn thiếu và chốt bước tiếp theo..." : "Nhập nội dung trả lời rõ hướng xử lý, xin lỗi/cảm ơn nếu cần và cam kết bước tiếp theo..." %>"></textarea>
             </div>
+            <% if (selected.suggestedReplies && selected.suggestedReplies.length) { %>
+              <div class="fb-ai-actions">
+                <% selected.suggestedReplies.forEach(function (suggestion) { %>
+                  <button class="fb-suggestion" type="button" data-reply-template="<%= suggestion %>"><%= suggestion %></button>
+                <% }) %>
+              </div>
+            <% } %>
             <div class="fb-form-actions">
               <button class="fb-button fb-button--primary" type="submit">Gửi trả lời</button>
             </div>
@@ -447,5 +527,18 @@
     </aside>
   </section>
 </main>
+
+<script>
+  (() => {
+    const reply = document.getElementById("feedbackReplyText");
+    if (!reply) return;
+    document.querySelectorAll("[data-reply-template]").forEach((button) => {
+      button.addEventListener("click", () => {
+        reply.value = button.getAttribute("data-reply-template") || "";
+        reply.focus();
+      });
+    });
+  })();
+</script>
 
 <%- include("../partials/footer") %>

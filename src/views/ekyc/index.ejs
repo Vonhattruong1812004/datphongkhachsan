@@ -17,7 +17,13 @@
     if (result === "DangXuLy") return "is-wait";
     return "is-idle";
   };
-  const currentResult = verification?.result || verification?.ketQuaXacThuc || "ChuaXacThuc";
+  const currentResult = verification?.result || verification?.ketQuaXacThuc || (status === "DaXacThuc" ? "ThanhCong" : status === "DangXuLy" ? "DangXuLy" : status === "ThatBai" ? "ThatBai" : "ChuaXacThuc");
+  const ekycLockedReason = currentResult === "ThanhCong"
+    ? "Hồ sơ eKYC đã được xác thực. Bạn không cần gửi lại; nếu cần đổi giấy tờ định danh, vui lòng liên hệ CSKH hoặc lễ tân để được hỗ trợ."
+    : currentResult === "DangXuLy"
+      ? "Hồ sơ mới nhất đang chờ duyệt. Bạn có thể gửi lại sau khi Quản lý phê duyệt hoặc từ chối hồ sơ này."
+      : "";
+  const canSubmitEkyc = !ekycLockedReason;
 %>
 <style>
   body{background:radial-gradient(circle at 8% 8%,rgba(45,212,191,.28),transparent 28%),radial-gradient(circle at 88% 10%,rgba(14,165,233,.24),transparent 30%),radial-gradient(circle at 54% 100%,rgba(251,191,36,.16),transparent 36%),linear-gradient(135deg,#fffef5 0%,#ebfffb 38%,#eef7ff 72%,#fff4f7 100%);color:#123047}
@@ -64,7 +70,7 @@
   .ekyc-preview img{width:100%;height:100%;object-fit:cover;display:block}
   .ekyc-uploader input{margin-top:12px;width:100%;font-size:12px}
   .ekyc-latest-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
-  .ekyc-latest-img{height:120px;border-radius:18px;overflow:hidden;background:rgba(148,163,184,.15);border:1px solid rgba(18,48,71,.10)}
+  .ekyc-latest-img{height:120px;border-radius:18px;overflow:hidden;background:rgba(148,163,184,.15);border:1px solid rgba(18,48,71,.10);display:grid;place-items:center;text-align:center;color:#64748b;font-size:11px;font-weight:900;line-height:1.35;padding:8px}
   .ekyc-latest-img img{width:100%;height:100%;object-fit:cover;display:block}
   .ekyc-side{position:sticky;top:18px;display:grid;gap:14px}
   .ekyc-card{border-radius:28px;padding:20px}
@@ -77,6 +83,7 @@
   .ekyc-history-card{border-radius:24px;padding:15px}
   .ekyc-history-card h3{margin:8px 0;color:#102033;font-size:18px}
   .ekyc-help{font-size:12px;color:#5f778f;line-height:1.55;margin-top:7px}
+  .ekyc-lock{border-radius:18px;border:1px solid rgba(245,158,11,.22);background:rgba(255,251,235,.82);color:#92400e;padding:12px;margin-top:14px;font-size:13px;font-weight:800;line-height:1.45}
   @keyframes ekyc-orbit{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
   @keyframes ekyc-sun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
   @keyframes ekyc-pulse{0%,100%{transform:rotate(-4deg) scale(1)}50%{transform:rotate(4deg) scale(1.05)}}
@@ -89,7 +96,7 @@
     <div>
       <span class="ekyc-kicker">eKYC khách hàng</span>
       <h1>Xác minh danh tính <span>trước khi đến quầy.</span></h1>
-      <p class="ekyc-muted">Tải giấy tờ và selfie để hệ thống tạo hồ sơ định danh số. Trạng thái này được dùng ở check-in, giúp giảm thời gian đối chiếu tại quầy và giữ lịch sử xác minh rõ ràng.</p>
+      <p class="ekyc-muted">Tải giấy tờ và selfie để hệ thống tạo hồ sơ định danh số. Trang eKYC nay được đồng bộ vào Hồ sơ cá nhân để khách thao tác một nơi.</p>
       <div class="ekyc-actions">
         <a class="ekyc-button ekyc-button--primary" href="/customer/profile">Hồ sơ cá nhân</a>
         <a class="ekyc-button" href="/customer/dashboard">Về dashboard</a>
@@ -117,45 +124,48 @@
     <div>
       <section class="ekyc-panel">
         <h2>Gửi hồ sơ xác minh</h2>
-        <p class="ekyc-muted">Cần loại giấy tờ hợp lệ, số giấy tờ 8-20 ký tự, đủ mặt trước, mặt sau và selfie. Ảnh tối đa 5MB, định dạng JPG/PNG/WEBP.</p>
+        <p class="ekyc-muted">Cần loại giấy tờ hợp lệ, số giấy tờ đúng theo từng loại, đủ mặt trước, mặt sau và selfie. Ảnh tối đa 5MB, định dạng JPG/PNG/WEBP.</p>
+        <% if (ekycLockedReason) { %>
+          <div class="ekyc-lock"><%= ekycLockedReason %></div>
+        <% } %>
         <form method="post" action="/ekyc" enctype="multipart/form-data" id="ekycForm" novalidate>
           <div class="ekyc-form-grid">
             <div class="ekyc-field">
               <label>Loại giấy tờ</label>
-              <select name="document_type" id="documentType" required>
-                <option value="CCCD">CCCD</option>
-                <option value="CMND">CMND</option>
-                <option value="Passport">Passport</option>
+              <select name="document_type" id="documentType" <%= canSubmitEkyc ? "" : "disabled" %> required>
+                <option value="CCCD" <%= (verification?.document_type || "CCCD") === "CCCD" ? "selected" : "" %>>CCCD</option>
+                <option value="CMND" <%= verification?.document_type === "CMND" ? "selected" : "" %>>CMND</option>
+                <option value="Passport" <%= verification?.document_type === "Passport" ? "selected" : "" %>>Passport</option>
               </select>
             </div>
             <div class="ekyc-field">
               <label>Số giấy tờ</label>
-              <input name="document_number" id="documentNumber" required value="<%= customer.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Passport" />
-              <div class="ekyc-help" id="documentHelp">Số giấy tờ gồm chữ/số, dài 8-20 ký tự.</div>
+              <input name="document_number" id="documentNumber" <%= canSubmitEkyc ? "" : "disabled" %> required value="<%= customer.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Passport" />
+              <div class="ekyc-help" id="documentHelp">CCCD 12 số, CMND 9 hoặc 12 số, Passport 6-20 ký tự chữ/số.</div>
             </div>
           </div>
 
           <div class="ekyc-upload-grid">
             <label class="ekyc-uploader">
               <div class="ekyc-preview" data-preview="front">Ảnh mặt trước</div>
-              <input name="front" type="file" accept="image/jpeg,image/png,image/webp" required />
+              <input name="front" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
               <div class="ekyc-help">Mặt trước giấy tờ.</div>
             </label>
             <label class="ekyc-uploader">
               <div class="ekyc-preview" data-preview="back">Ảnh mặt sau</div>
-              <input name="back" type="file" accept="image/jpeg,image/png,image/webp" required />
+              <input name="back" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
               <div class="ekyc-help">Mặt sau giấy tờ.</div>
             </label>
             <label class="ekyc-uploader">
               <div class="ekyc-preview" data-preview="selfie">Ảnh selfie</div>
-              <input name="selfie" type="file" accept="image/jpeg,image/png,image/webp" required />
+              <input name="selfie" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
               <div class="ekyc-help">Ảnh chân dung rõ mặt.</div>
             </label>
           </div>
 
           <div class="ekyc-actions">
-            <button class="ekyc-button ekyc-button--primary" type="submit">Gửi eKYC</button>
-            <button class="ekyc-button" type="reset">Chọn lại ảnh</button>
+            <button class="ekyc-button ekyc-button--primary" type="submit" <%= canSubmitEkyc ? "" : "disabled" %>><%= currentResult === "ThanhCong" ? "Đã xác thực" : "Gửi eKYC" %></button>
+            <button class="ekyc-button" type="reset" <%= canSubmitEkyc ? "" : "disabled" %>>Chọn lại ảnh</button>
           </div>
         </form>
       </section>
@@ -166,12 +176,18 @@
           <p class="ekyc-muted"><%= verification.note || "Hồ sơ đã được ghi nhận trong hệ thống." %></p>
           <div class="ekyc-latest-images">
             <% [
-              ["Mặt trước", verification.images?.front_url],
-              ["Mặt sau", verification.images?.back_url],
-              ["Selfie", verification.images?.selfie_url]
-            ].forEach(([label, url]) => { %>
+              { label: "Mặt trước", url: verification.images?.front_url, exists: verification.images?.front_exists, file: verification.images?.front_file },
+              { label: "Mặt sau", url: verification.images?.back_url, exists: verification.images?.back_exists, file: verification.images?.back_file },
+              { label: "Selfie", url: verification.images?.selfie_url, exists: verification.images?.selfie_exists, file: verification.images?.selfie_file }
+            ].forEach((image) => { %>
               <div class="ekyc-latest-img">
-                <% if (url) { %><a href="<%= url %>" target="_blank" rel="noreferrer"><img src="<%= url %>" alt="<%= label %>" /></a><% } %>
+                <% if (image.url && image.exists !== false) { %>
+                  <a href="<%= image.url %>" target="_blank" rel="noreferrer"><img src="<%= image.url %>" alt="<%= image.label %>" /></a>
+                <% } else if (image.file) { %>
+                  <span><%= image.label %><br>Ảnh cũ không còn trên máy chủ</span>
+                <% } else { %>
+                  <span><%= image.label %><br>Chưa có ảnh</span>
+                <% } %>
               </div>
             <% }) %>
           </div>
@@ -256,12 +272,24 @@
     });
 
     function validateDocument() {
-      const ok = /^[A-Za-z0-9]{8,20}$/.test((docNumber.value || "").trim());
-      docHelp.textContent = ok ? "Số giấy tờ hợp lệ." : "Số giấy tờ gồm chữ/số, dài 8-20 ký tự.";
+      const type = document.getElementById("documentType")?.value || "CCCD";
+      const value = (docNumber.value || "").trim();
+      const ok = type === "CCCD"
+        ? /^\d{12}$/.test(value)
+        : type === "CMND"
+          ? (/^\d{9}$/.test(value) || /^\d{12}$/.test(value))
+          : /^[A-Za-z0-9]{6,20}$/.test(value);
+      const messages = {
+        CCCD: "CCCD phải gồm đúng 12 chữ số.",
+        CMND: "CMND phải gồm 9 hoặc 12 chữ số.",
+        Passport: "Passport gồm 6-20 ký tự chữ/số."
+      };
+      docHelp.textContent = ok ? "Số giấy tờ hợp lệ." : (messages[type] || "Số giấy tờ không hợp lệ.");
       docHelp.style.color = ok ? "#047857" : "#be123c";
       return ok;
     }
 
+    document.getElementById("documentType")?.addEventListener("change", validateDocument);
     docNumber && docNumber.addEventListener("input", validateDocument);
     form && form.addEventListener("submit", function (event) {
       if (!validateDocument()) event.preventDefault();

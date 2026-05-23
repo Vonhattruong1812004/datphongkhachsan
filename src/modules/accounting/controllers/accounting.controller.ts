@@ -31,8 +31,28 @@ function revenueToCsv(payload: any) {
       "Ty le da thu",
       payload.summary?.paidCoverageFormatted || "0%"
     ]),
+    line([
+      "Tien phong",
+      payload.summary?.roomRevenue || 0,
+      "Dich vu",
+      payload.summary?.serviceRevenue || 0,
+      "Phu thu",
+      payload.summary?.surchargeRevenue || 0,
+      "Boi thuong",
+      payload.summary?.damageRevenue || 0
+    ]),
+    line([
+      "ADR",
+      payload.summary?.adr || 0,
+      "RevPAR",
+      payload.summary?.revpar || 0,
+      "Occupancy proxy",
+      payload.summary?.occupancyRateFormatted || "0%",
+      "Room-night",
+      payload.summary?.roomNights || 0
+    ]),
     "",
-    line(["Ma giao dich", "Ngay giao dich", "Khach hang", "So phong", "Co so", "Thanh toan", "Tong tien", "Doanh thu ghi nhan", "Da thu", "Con phai thu", "Trang thai"])
+    line(["Ma giao dich", "Ngay giao dich", "Khach hang", "So phong", "Co so", "Thanh toan", "Tong tien", "Tien phong", "Dich vu", "Phu thu", "Boi thuong", "Doanh thu ghi nhan", "Da thu", "Con phai thu", "Trang thai"])
   ];
 
   for (const row of payload.rows || []) {
@@ -44,6 +64,10 @@ function revenueToCsv(payload: any) {
       row.hotelLabel,
       row.phuongThucThanhToanLabel,
       row.tongTien,
+      row.roomRevenue,
+      row.serviceRevenue,
+      row.surchargeRevenue,
+      row.damageRevenue,
       row.recognizedAmount,
       row.paidAmount,
       row.outstandingAmount,
@@ -72,13 +96,16 @@ function expenseToCsv(payload: any) {
     lines.push("");
   }
 
-  lines.push(line(["Ma phieu", "Ngay chi", "Ten chi phi", "Nhom", "Co so", "Noi dung", "So tien", "Trang thai"]));
+  lines.push(line(["Ma phieu", "Ngay chi", "Ten chi phi", "Nhom", "Nha cung cap", "So chung tu", "Phuong thuc chi", "Co so", "Noi dung", "So tien", "Trang thai"]));
   for (const row of payload.rows || []) {
     lines.push(line([
       `CP-${row.id}`,
       row.ngayChiLabel,
       row.tenChiPhi,
       row.categoryMeta?.label,
+      row.vendorLabel,
+      row.invoiceLabel,
+      row.phuongThucChiLabel,
       row.hotelLabel,
       row.noiDung,
       row.soTien,
@@ -108,7 +135,7 @@ function cashflowToCsv(payload: any) {
     lines.push("");
   }
 
-  lines.push(line(["Loai", "Ma", "Ngay", "Doi tuong", "Nhom", "Co so", "Noi dung", "So tien", "Trang thai"]));
+  lines.push(line(["Loai", "Ma", "Ngay", "Doi tuong", "Nhom", "Co so", "Phuong thuc", "Chung tu", "Rui ro", "Noi dung", "So tien", "Trang thai"]));
   for (const row of payload.rows || []) {
     lines.push(line([
       row.typeMeta?.label || row.loaiDongTien,
@@ -117,8 +144,11 @@ function cashflowToCsv(payload: any) {
       row.doiTuong,
       row.groupMeta?.label || row.nhom,
       row.hotelLabel,
+      row.paymentLabel || row.phuongThuc,
+      row.soChungTu,
+      row.riskMeta?.label || row.riskKey,
       row.noiDung,
-      row.soTien,
+      row.signedAmount ?? row.soTien,
       row.statusMeta?.label || row.trangThai
     ]));
   }
@@ -133,9 +163,9 @@ function debtToCsv(payload: any) {
     line(["CONG NO PHAI THU VA DOI SOAT"]),
     line(["Tu ngay", payload.filters?.tu_ngay, "Den ngay", payload.filters?.den_ngay]),
     line(["Trang thai", payload.filters?.trang_thai, "Pham vi", payload.hotelContext?.label || "Toan bo co so"]),
-    line(["Tong cong no", payload.summary?.tongCongNo || 0, "Chua doi soat", payload.summary?.tongChuaDoiSoat || 0, "Giao dich lech", payload.summary?.soGiaoDichLech || 0]),
+    line(["Tong cong no", payload.summary?.tongCongNo || 0, "Qua han", payload.summary?.overdueAmount || 0, "Sap den han", payload.summary?.dueSoonAmount || 0, "Ho so rui ro", payload.summary?.highRiskCount || 0]),
     "",
-    line(["Ma giao dich", "Ma dat cho", "Ngay giao dich", "Khach/Doan", "Loai doi tuong", "Co so", "Tong tien", "Da thanh toan", "Con lai", "Thanh toan", "Trang thai doi soat"])
+    line(["Ma giao dich", "Ma dat cho", "Ngay giao dich", "Han thanh toan", "Tuoi no", "Qua han", "Khach/Doan", "Loai doi tuong", "Lien he", "Co so", "Tong tien", "Da thanh toan", "Con lai", "Thanh toan", "Aging", "Rui ro", "Trang thai doi soat", "Huong xu ly"])
   ];
 
   for (const row of payload.rows || []) {
@@ -143,14 +173,21 @@ function debtToCsv(payload: any) {
       row.maGiaoDich,
       row.bookingCode,
       row.ngayGiaoDichLabel,
+      row.ngayDenHanLabel,
+      row.ageDays,
+      row.overdueDays,
       row.customerName || row.groupName,
       row.doiTuongType,
+      row.contactLabel,
       row.hotelLabel,
       row.tongTien,
       row.daThanhToan,
       row.conLai,
-      row.phuongThucThanhToan,
-      row.statusMeta?.label || row.trangThaiCongNo
+      row.paymentMeta?.label || row.phuongThucThanhToan,
+      row.agingMeta?.label || row.agingBucket,
+      row.riskMeta?.label || row.riskKey,
+      row.statusMeta?.label || row.trangThaiCongNo,
+      row.collectionAction
     ]));
   }
 
@@ -166,7 +203,7 @@ function refundToCsv(payload: any) {
     line(["Trang thai", payload.filters?.trang_thai]),
     line(["Cho xu ly", payload.summary?.pendingAmount || 0, "Da hoan", payload.summary?.paidAmount || 0, "Tu choi", payload.summary?.rejectedAmount || 0]),
     "",
-    line(["Ma refund", "Giao dich", "Khach", "Ngan hang", "So tai khoan", "Chu tai khoan", "So tien yeu cau", "Da hoan", "Trang thai", "Ngay tao", "Ngay xu ly", "Phieu chi"])
+    line(["Ma refund", "Giao dich", "Khach", "Ngan hang", "So tai khoan", "Chu tai khoan", "Noi dung CK", "Ma GD ngan hang", "Chung tu", "Nguoi xac nhan", "Thoi gian chuyen", "Coc xet hoan", "Ty le policy", "Gio truoc check-in", "Giu lai", "So tien yeu cau", "Da hoan", "Trang thai", "Quan ly duyet luc", "Ghi chu quan ly", "Ngay tao", "Ngay xu ly", "Phieu chi"])
   ];
 
   for (const row of payload.rows || []) {
@@ -177,9 +214,20 @@ function refundToCsv(payload: any) {
       row.bankName,
       row.bankAccountNo,
       row.bankAccountName,
+      row.refundPaymentContent,
+      row.refundBankTxnId,
+      row.refundPaymentProof,
+      row.refundPaidBy,
+      row.refundPaidAtLabel,
+      row.refundableBase,
+      row.refundRateLabel,
+      row.hoursBeforeCheckinLabel,
+      row.retainedDeposit,
       row.amountRequested,
       row.amountPaid,
       row.statusMeta?.label || row.status,
+      row.managerReviewedAtLabel,
+      row.managerNote,
       row.createdAtLabel,
       row.processedAtLabel,
       row.expenseId ? `CP-${row.expenseId}` : ""
@@ -271,7 +319,7 @@ export async function renderAccountingDashboard(_req: Request, res: Response) {
 export async function renderAccountingReports(req: Request, res: Response) {
   const payload = await accountingService.buildReport(req.query);
   return res.render("accounting/reports", {
-    title: "Bao cao ke toan",
+    title: "Thong ke tai chinh",
     payload
   });
 }
@@ -279,7 +327,7 @@ export async function renderAccountingReports(req: Request, res: Response) {
 export async function renderRevenuePage(req: Request, res: Response) {
   const payload = await accountingService.getRevenueList(req.query);
   return res.render("accounting/revenue", {
-    title: "Quan ly doanh thu",
+    title: "Quản lý doanh thu",
     payload
   });
 }
@@ -327,8 +375,11 @@ export async function createExpenseAction(req: Request, res: Response) {
 
 export async function processRefundAction(req: Request, res: Response) {
   try {
-    const payload = await accountingService.processRefund(req.body);
-    const actionLabel = payload.action === "approve" ? "Đã duyệt hoàn tiền" : "Đã từ chối hoàn tiền";
+    const payload = await accountingService.processRefund({
+      ...req.body,
+      actor_username: req.session.user?.username || "ketoan"
+    });
+    const actionLabel = payload.action === "approve" ? "Đã xác nhận hoàn tiền" : "Đã từ chối hoàn tiền";
     return res.redirect(`/accounting/refunds?success=${encodeURIComponent(`${actionLabel} ${payload.refundCode}.`)}`);
   } catch (error: any) {
     return res.redirect(`/accounting/refunds?error=${encodeURIComponent(String(error?.message || "Không thể xử lý hoàn tiền."))}`);
@@ -404,7 +455,12 @@ export async function reportApi(req: Request, res: Response) {
     res.type("text/csv").send(accountingReportToCsv(payload));
     return;
   }
-  return res.json({ ok: true, message: "Tai bao cao ke toan thanh cong.", data: payload });
+  return res.json({ ok: true, message: "Tai thong ke tai chinh thanh cong.", data: payload });
+}
+
+export async function reportAiInsightsApi(req: Request, res: Response) {
+  const payload = await accountingService.buildReportChartInsights(req.query);
+  return res.json({ ok: true, message: "AI da phan tich bieu do tai chinh.", data: payload });
 }
 
 export async function createExpenseApi(req: Request, res: Response) {
@@ -413,6 +469,9 @@ export async function createExpenseApi(req: Request, res: Response) {
 }
 
 export async function processRefundApi(req: Request, res: Response) {
-  const payload = await accountingService.processRefund(req.body);
+  const payload = await accountingService.processRefund({
+    ...req.body,
+    actor_username: req.session.user?.username || "ketoan"
+  });
   return res.json({ ok: true, message: "Xu ly hoan tien thanh cong.", data: payload });
 }

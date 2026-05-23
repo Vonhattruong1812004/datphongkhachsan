@@ -6,6 +6,7 @@
   const summary = preview.summary;
   const transfer = hold.paymentTransfer || {};
   const expiresAt = new Date(hold.expiresAt).getTime();
+  const holdMinutes = Number(transfer.expiresInMinutes || 10);
 %>
 <style>
   body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
@@ -20,14 +21,25 @@
   .pay-content{font-size:20px;font-weight:1000;color:#0f766e;overflow-wrap:anywhere}.pay-count{font-size:36px;color:#e11d48;font-weight:1000}
   .pay-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.pay-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer}.pay-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e)}
   .pay-success{display:none;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.10)}.pay-success.is-show{display:block}.pay-pending.is-hide{display:none}
-  @media(max-width:860px){.pay-grid{grid-template-columns:1fr}}
+  .pay-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+  .pay-flow div{border-radius:18px;border:1px solid rgba(20,184,166,.16);background:rgba(20,184,166,.09);padding:12px}
+  .pay-flow span{display:block;color:#0f766e;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
+  .pay-flow strong{display:block;margin-top:5px;color:#102033;font-size:13px;line-height:1.25}
+  .pay-copy{border-radius:16px;border:1px solid rgba(14,165,233,.14);background:rgba(14,165,233,.08);padding:11px;color:#0c4a6e;font-size:12px;font-weight:800;line-height:1.45}
+  @media(max-width:860px){.pay-grid,.pay-flow{grid-template-columns:1fr}}
 </style>
 
 <main class="pay-shell" data-hold-id="<%= hold.holdId %>" data-expires-at="<%= expiresAt %>">
   <section class="pay-card">
-    <span class="pay-chip">Giữ phòng 10 phút · Cọc 50%</span>
+    <span class="pay-chip">Giữ phòng <%= holdMinutes %> phút · Cọc 50%</span>
     <h1>Thanh toán cọc để tạo booking.</h1>
     <p class="pay-muted">Hệ thống chỉ tạo booking thật sau khi SePay xác nhận tiền cọc. Trong thời gian giữ chỗ, phòng này không hiển thị cho lượt đặt trùng lịch.</p>
+    <div class="pay-flow" aria-label="Quy trình thanh toán cọc">
+      <div><span>01</span><strong>Quét QR đúng số tiền</strong></div>
+      <div><span>02</span><strong>Giữ nguyên nội dung</strong></div>
+      <div><span>03</span><strong>SePay webhook báo về</strong></div>
+      <div><span>04</span><strong>Booking được tạo</strong></div>
+    </div>
   </section>
 
   <section class="pay-card pay-success" id="paySuccess">
@@ -60,6 +72,7 @@
         <div class="pay-muted">Nội dung chuyển khoản</div>
         <div class="pay-content"><%= transfer.content %></div>
       </div>
+      <div class="pay-copy" style="margin-top:12px">Không sửa nội dung chuyển khoản. Webhook dùng mã này để khớp đúng giao dịch giữ phòng.</div>
       <div class="pay-box" style="margin-top:12px">
         <div class="pay-muted">Số tiền</div>
         <div class="pay-content"><%= transfer.amountFormatted %></div>

@@ -10,7 +10,7 @@
     "build:server": "tsc -p tsconfig.json",
     "build:client": "vite build",
     "start": "node dist/server.js",
-    "test": "tsx --test src/**/*.test.ts",
+    "test": "tsx --test $(find src -name '*.test.ts' -print)",
     "verify:db": "tsx src/scripts/verify-db.ts",
     "smoke": "tsx src/scripts/smoke.ts",
     "smoke:auth": "tsx src/scripts/smoke-auth.ts",

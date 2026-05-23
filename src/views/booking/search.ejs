@@ -1,9 +1,15 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
 <%
-  const searchQuery = new URLSearchParams(filters || {}).toString();
+  const pageSummary = summary || {};
+  const staffMode = String((typeof query !== "undefined" && query && query.staff_mode) || "");
+  const isCskhAssist = staffMode === "cskh" || Number(currentUser?.maVaiTro || 0) === 5;
+  const searchQueryParams = new URLSearchParams(filters || {});
+  if (staffMode) searchQueryParams.set("staff_mode", staffMode);
+  const searchQuery = searchQueryParams.toString();
   const roomHref = (room) => {
     const params = new URLSearchParams(filters || {});
+    if (staffMode) params.set("staff_mode", staffMode);
     return `/booking/rooms/${room.id}${params.toString() ? `?${params.toString()}` : ""}`;
   };
 %>
@@ -27,6 +33,14 @@
   .guest-hero h1{position:relative;z-index:1;margin:22px 0 12px;font-size:clamp(42px,6vw,76px);line-height:.92;letter-spacing:-.07em;color:#102033}
   .guest-hero h1 span{color:transparent;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);-webkit-background-clip:text;background-clip:text}
   .guest-hero p{position:relative;z-index:1;max-width:760px;margin:0;color:#5f778f;line-height:1.72}
+  .guest-journey{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:900px;margin-top:24px}
+  .guest-step{border-radius:18px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.66);padding:12px;box-shadow:0 14px 30px rgba(12,39,64,.07)}
+  .guest-step span{display:block;color:#0f766e;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
+  .guest-step strong{display:block;margin-top:5px;color:#102033;font-size:14px;line-height:1.25}
+  .guest-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+  .guest-summary-card{border-radius:20px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.72);padding:14px;box-shadow:0 14px 34px rgba(12,39,64,.08)}
+  .guest-summary-card span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .guest-summary-card strong{display:block;margin-top:7px;color:#102033;font-size:18px}
   .guest-panel{position:relative;border:1px solid rgba(19,48,74,.12);border-radius:30px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.72));box-shadow:0 24px 66px rgba(12,39,64,.12);backdrop-filter:blur(20px);margin-bottom:22px}
   .guest-panel h2{margin:0 0 8px;color:#102033;font-size:28px;letter-spacing:-.045em}
   .guest-muted{color:#5f778f;font-size:13px;line-height:1.6}
@@ -51,6 +65,12 @@
   .room-fresh h3{margin:14px 0 8px;color:#102033;font-size:22px;letter-spacing:-.04em}
   .room-fresh p{margin:0 0 8px;color:#5f778f;font-size:13px;line-height:1.55}
   .room-price{display:block;margin:12px 0;color:#0f766e;font-size:22px;font-weight:1000;letter-spacing:-.04em}
+  .room-money-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+  .room-money{border-radius:16px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.72);padding:11px}
+  .room-money span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .room-money strong{display:block;margin-top:5px;color:#102033;font-size:15px}
+  .room-signal{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .room-signal span{border-radius:999px;border:1px solid rgba(20,184,166,.16);background:rgba(20,184,166,.10);color:#0f766e;padding:5px 9px;font-size:11px;font-weight:900}
   .promo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}
   .promo-card{border-radius:24px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.72);padding:18px;box-shadow:0 18px 44px rgba(12,39,64,.10)}
   .promo-card h3{margin:10px 0;color:#102033}
@@ -58,24 +78,37 @@
   @keyframes guest-booking-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(30px,22px,0) rotate(14deg)}}
   @keyframes guest-booking-sun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
   @keyframes guest-booking-cloud{0%,100%{transform:translateX(0)}50%{transform:translateX(22px)}}
-  @media(max-width:1000px){.guest-form-grid,.room-grid-fresh,.promo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media(max-width:680px){.guest-booking-shell{padding:22px 12px 48px}.guest-hero,.guest-panel{border-radius:26px;padding:22px}.guest-form-grid,.room-grid-fresh,.promo-grid{grid-template-columns:1fr}.guest-hero::before{width:82px;height:82px;right:22px}.guest-hero h1{font-size:42px}}
+  @media(max-width:1000px){.guest-form-grid,.room-grid-fresh,.promo-grid,.guest-journey,.guest-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:680px){.guest-booking-shell{padding:22px 12px 48px}.guest-hero,.guest-panel{border-radius:26px;padding:22px}.guest-form-grid,.room-grid-fresh,.promo-grid,.guest-journey,.guest-summary-grid,.room-money-grid{grid-template-columns:1fr}.guest-hero::before{width:82px;height:82px;right:22px}.guest-hero h1{font-size:42px}}
 </style>
 
 <main class="guest-booking-shell">
   <section class="guest-hero">
-    <div class="guest-kicker">Khách hàng · Đặt phòng online</div>
-    <h1>Tìm phòng nghỉ dưỡng <span>đẹp đúng gu.</span></h1>
-    <p>Lọc phòng theo ngày ở, điểm đến, khách sạn, hạng phòng, view, loại giường và ngân sách. Hệ thống chỉ hiển thị phòng còn trống đúng dữ liệu PostgreSQL hiện tại.</p>
+    <div class="guest-kicker"><%= isCskhAssist ? "CSKH hỗ trợ · Đặt phòng online" : "Khách hàng · Đặt phòng online" %></div>
+    <h1>Tìm phòng nghỉ dưỡng <span>đúng ngày, đúng giá.</span></h1>
+    <p>Lọc phòng theo ngày ở, điểm đến, khách sạn, hạng phòng, view, loại giường và ngân sách. Khi khách xác nhận, hệ thống tạo QR cọc SePay 50%, giữ phòng 10 phút và webhook tự sinh booking sau khi tiền về đúng nội dung.</p>
+    <div class="guest-journey" aria-label="Luồng đặt phòng online">
+      <div class="guest-step"><span>01</span><strong>Tìm phòng trống theo lịch</strong></div>
+      <div class="guest-step"><span>02</span><strong>Kiểm tra giá và khuyến mãi</strong></div>
+      <div class="guest-step"><span>03</span><strong>Tạo QR cọc SePay 50%</strong></div>
+      <div class="guest-step"><span>04</span><strong>Webhook xác nhận booking</strong></div>
+    </div>
   </section>
 
   <section class="guest-panel">
     <h2>Bộ lọc tìm phòng</h2>
     <div class="guest-muted">Chọn ngày nhận/trả để kiểm tra trùng lịch booking. Nếu chưa chọn ngày, hệ thống chỉ hiển thị phòng đang ở trạng thái trống.</div>
+    <div class="guest-summary-grid" aria-label="Tóm tắt tìm kiếm">
+      <div class="guest-summary-card"><span>Thời gian</span><strong><%= pageSummary.checkinLabel || "Chưa chọn" %> → <%= pageSummary.checkoutLabel || "Chưa chọn" %></strong></div>
+      <div class="guest-summary-card"><span>Số đêm</span><strong><%= Number(pageSummary.nights || 0) %> đêm</strong></div>
+      <div class="guest-summary-card"><span>Giá tốt nhất</span><strong><%= pageSummary.bestPriceFormatted || "Chưa có" %></strong></div>
+      <div class="guest-summary-card"><span>Thanh toán</span><strong><%= pageSummary.depositPolicyLabel || "Cọc 50% qua SePay" %></strong></div>
+    </div>
     <% if (typeof errorMessage !== "undefined" && errorMessage) { %>
       <div class="guest-search-alert"><%= errorMessage %></div>
     <% } %>
     <form method="get" action="/booking/search" id="bookingSearchForm" novalidate>
+      <% if (staffMode) { %><input type="hidden" name="staff_mode" value="<%= staffMode %>" /><% } %>
       <div class="guest-form-grid">
         <div class="guest-field"><label>Điểm đến</label><input name="hotel_city" value="<%= filters.hotel_city %>" placeholder="VD: Đà Nẵng" /></div>
         <div class="guest-field"><label>Khách sạn</label><input name="hotel_name" value="<%= filters.hotel_name %>" placeholder="Tên khu nghỉ dưỡng" /></div>
@@ -113,14 +146,20 @@
       </div>
       <div class="guest-actions">
         <button class="guest-button guest-button--primary" type="submit">Tìm phòng phù hợp</button>
-        <a class="guest-button" href="/booking/search">Nhập lại</a>
+        <a class="guest-button" href="/booking/search<%= staffMode ? `?staff_mode=${staffMode}` : "" %>">Nhập lại</a>
       </div>
     </form>
   </section>
 
   <section class="guest-panel">
     <h2><%= rooms.length %> phòng phù hợp</h2>
-    <div class="guest-muted">Chọn một phòng để đi tiếp sang bước nhập thông tin, xem tóm tắt giá rồi mới xác nhận đặt phòng.</div>
+    <div class="guest-muted">
+      Sắp xếp: <%= pageSummary.sortLabel || "Gợi ý thông minh" %>.
+      <% if (Number(pageSummary.heldRoomCount || 0) > 0) { %>
+        Đã loại <%= Number(pageSummary.heldRoomCount || 0) %> phòng đang được giữ cọc trong khung ngày này.
+      <% } %>
+      Chọn một phòng để nhập thông tin, xem tóm tắt giá rồi mới xác nhận tạo QR cọc.
+    </div>
     <% if (!rooms.length) { %>
       <div class="guest-empty" style="margin-top:16px">Không tìm thấy phòng phù hợp. Bạn thử đổi ngày ở, giảm tiêu chí lọc hoặc mở AI chat để được gợi ý nhanh hơn.</div>
     <% } else { %>
@@ -133,9 +172,19 @@
               <h3><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h3>
               <p><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View nội khu" %> · Tối đa <%= room.soKhachToiDa %> khách</p>
               <p><%= room.diaChi || "Địa chỉ đang được cập nhật" %></p>
-              <strong class="room-price"><%= Number(room.gia).toLocaleString("vi-VN") %> đ / đêm</strong>
+              <div class="room-signal">
+                <span><%= room.capacityFitLabel || `Tối đa ${room.soKhachToiDa} khách` %></span>
+                <span>Sẵn sàng kiểm tra cọc</span>
+              </div>
+              <strong class="room-price"><%= room.priceFormatted || `${Number(room.gia).toLocaleString("vi-VN")} đ` %> / đêm</strong>
+              <% if (room.estimatedNights) { %>
+                <div class="room-money-grid">
+                  <div class="room-money"><span>Tổng <%= room.estimatedNights %> đêm</span><strong><%= room.estimatedTotalFormatted %></strong></div>
+                  <div class="room-money"><span>Cọc SePay 50%</span><strong><%= room.estimatedDepositFormatted %></strong></div>
+                </div>
+              <% } %>
               <div class="guest-actions">
-                <a class="guest-button guest-button--primary" href="<%= roomHref(room) %>">Đặt phòng</a>
+                <a class="guest-button guest-button--primary" href="<%= roomHref(room) %>"><%= isCskhAssist ? "Hỗ trợ đặt phòng" : "Đặt phòng" %></a>
               </div>
             </div>
           </article>

@@ -11,6 +11,12 @@
   const groupBreakdown = payload.groupBreakdown || [];
   const statusBreakdown = payload.statusBreakdown || [];
   const dailyTrend = payload.dailyTrend || [];
+  const methodBreakdown = payload.methodBreakdown || [];
+  const hotelBreakdown = payload.hotelBreakdown || [];
+  const riskBreakdown = payload.riskBreakdown || [];
+  const actionItems = payload.actionItems || [];
+  const reviewRows = payload.reviewRows || [];
+  const chartPayload = payload.chartPayload || { trend: [], groups: [], methods: [], hotels: [], risks: [] };
   const hotelOptions = payload.hotelOptions || [];
   const page = Number(payload.currentPage || 1);
   const totalPages = Number(payload.totalPages || 1);
@@ -22,6 +28,7 @@
   const lastPage = Math.min(totalPages, page + 2);
   for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
   const maxTrend = Math.max(...dailyTrend.map((item) => Math.max(Number(item.tongThu || 0), Number(item.tongChi || 0))), 1);
+  const maxHotelNet = Math.max(...hotelBreakdown.map((item) => Math.abs(Number(item.net || 0))), 1);
 %>
 
 <style>
@@ -38,9 +45,9 @@
     --orange: #ff9f7a;
     --pink: #ff6aa2;
     --violet: #8068ff;
-    --shadow: 0 24px 70px rgba(16, 32, 51, .14);
+    --shadow: 0 18px 48px rgba(16, 32, 51, .11);
     min-height: calc(100vh - 84px);
-    padding: 34px 18px 58px;
+    padding: 30px 18px 58px;
     color: var(--ink);
     background:
       linear-gradient(120deg, rgba(32, 214, 163, .20), transparent 32%),
@@ -49,17 +56,23 @@
       linear-gradient(135deg, #fbfffd 0%, #eefcff 44%, #fff8eb 100%);
   }
 
+  .flow-home *,
+  .flow-home *::before,
+  .flow-home *::after {
+    box-sizing: border-box;
+  }
+
   .flow-wrap {
-    max-width: 1260px;
+    max-width: 1200px;
     margin: 0 auto;
   }
 
   .flow-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.14fr) minmax(320px, .86fr);
-    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+    gap: 18px;
     align-items: stretch;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
   .flow-hero-main,
@@ -77,8 +90,9 @@
   .flow-hero-main {
     position: relative;
     overflow: hidden;
-    border-radius: 30px;
-    padding: 30px;
+    min-height: 318px;
+    border-radius: 24px;
+    padding: 28px;
   }
 
   .flow-hero-main::before {
@@ -107,6 +121,7 @@
     align-items: center;
     gap: 8px;
     border-radius: 999px;
+    max-width: 100%;
     white-space: nowrap;
   }
 
@@ -131,7 +146,7 @@
   .flow-hero h1 {
     max-width: 760px;
     margin: 24px 0 12px;
-    font-size: 56px;
+    font-size: clamp(38px, 5vw, 54px);
     line-height: 1;
     letter-spacing: 0;
   }
@@ -179,6 +194,7 @@
 
   .flow-button {
     min-height: 43px;
+    max-width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -190,6 +206,7 @@
     font-size: 14px;
     font-weight: 950;
     text-decoration: none;
+    text-align: center;
     cursor: pointer;
   }
 
@@ -215,13 +232,18 @@
   .flow-kpi-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 1fr;
     gap: 12px;
     height: 100%;
   }
 
   .flow-kpi {
-    min-height: 142px;
-    border-radius: 24px;
+    min-height: 153px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    border-radius: 22px;
     padding: 18px;
     background: var(--strong);
   }
@@ -229,8 +251,9 @@
   .flow-kpi strong {
     display: block;
     margin-top: 12px;
-    font-size: 23px;
+    font-size: clamp(20px, 2vw, 23px);
     line-height: 1.1;
+    overflow-wrap: anywhere;
   }
 
   .flow-kpi span {
@@ -247,22 +270,24 @@
 
   .flow-layout {
     display: grid;
-    grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr);
-    gap: 16px;
+    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+    gap: 18px;
     align-items: start;
   }
 
   .flow-side-stack {
     display: grid;
-    gap: 16px;
+    min-width: 0;
+    gap: 18px;
   }
 
   .flow-filter,
   .flow-panel,
   .flow-table-panel,
   .flow-alert {
-    border-radius: 26px;
-    padding: 20px;
+    min-width: 0;
+    border-radius: 22px;
+    padding: 18px;
   }
 
   .flow-filter h2,
@@ -326,16 +351,149 @@
 
   .flow-breakdown,
   .flow-trend,
-  .flow-groups {
+  .flow-groups,
+  .flow-insights,
+  .flow-review-list,
+  .flow-hotel-list {
     display: grid;
     gap: 10px;
     margin-top: 16px;
   }
 
+  .flow-insight-grid,
+  .flow-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .flow-insight-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 18px 0;
+  }
+
+  .flow-insight,
+  .flow-chart,
+  .flow-review,
+  .flow-hotel-row {
+    border: 1px solid rgba(16, 32, 51, .08);
+    background: rgba(255, 255, 255, .68);
+  }
+
+  .flow-insight {
+    min-height: 126px;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .flow-insight span,
+  .flow-chart span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .flow-insight strong {
+    display: block;
+    margin-top: 10px;
+    font-size: clamp(18px, 1.8vw, 21px);
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .flow-insight p,
+  .flow-review p {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .flow-insight.is-green { border-color: rgba(32, 214, 163, .24); }
+  .flow-insight.is-sun { border-color: rgba(255, 209, 102, .36); }
+  .flow-insight.is-rose { border-color: rgba(255, 106, 162, .28); }
+  .flow-insight.is-cyan { border-color: rgba(18, 191, 243, .25); }
+
+  .flow-chart {
+    min-height: 248px;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .flow-chart.is-wide {
+    grid-column: 1 / -1;
+  }
+
+  .flow-chart-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .flow-chart-head > div {
+    min-width: 0;
+  }
+
+  .flow-chart-head h3 {
+    margin: 4px 0 0;
+    font-size: 16px;
+  }
+
+  .flow-chart canvas {
+    width: 100%;
+    height: 210px;
+    display: block;
+  }
+
+  .flow-review {
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .flow-review-head,
+  .flow-hotel-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .flow-hotel-row {
+    min-width: 0;
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .flow-review-head > *,
+  .flow-hotel-row > *,
+  .flow-group-row > * {
+    min-width: 0;
+  }
+
+  .flow-hotel-meter {
+    width: 110px;
+    height: 8px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(16, 32, 51, .08);
+  }
+
+  .flow-hotel-meter span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--mint), var(--cyan));
+  }
+
   .flow-break-row,
   .flow-trend-row {
     display: grid;
-    grid-template-columns: minmax(96px, .7fr) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(86px, 112px) minmax(0, 1fr) minmax(116px, max-content);
     gap: 10px;
     align-items: center;
   }
@@ -360,11 +518,13 @@
     border: 1px solid rgba(16, 32, 51, .08);
     font-size: 12px;
     font-weight: 950;
+    justify-content: center;
   }
 
   .flow-group-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
     padding: 12px;
     border-radius: 18px;
@@ -396,6 +556,8 @@
   .flow-status--sun { color: #92400e; background: rgba(255, 209, 102, .22); }
   .flow-status--rose { color: #be123c; background: rgba(255, 106, 162, .14); }
   .flow-status--blue { color: #1d4ed8; background: rgba(59, 130, 246, .13); }
+  .flow-status--sky,
+  .flow-group--sky { color: #0369a1; background: rgba(14, 165, 233, .14); }
   .flow-status--violet,
   .flow-group--violet { color: #6d28d9; background: rgba(128, 104, 255, .14); }
   .flow-group--cyan { color: #0369a1; background: rgba(18, 191, 243, .14); }
@@ -421,11 +583,13 @@
 
   .flow-table-wrap {
     overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 4px;
   }
 
   .flow-table {
     width: 100%;
-    min-width: 940px;
+    min-width: 1180px;
     border-collapse: separate;
     border-spacing: 0 9px;
   }
@@ -461,6 +625,7 @@
     display: grid;
     gap: 3px;
     font-weight: 950;
+    overflow-wrap: anywhere;
   }
 
   .flow-money {
@@ -509,6 +674,10 @@
     .flow-layout {
       grid-template-columns: 1fr;
     }
+
+    .flow-insight-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 720px) {
@@ -519,34 +688,88 @@
     .flow-filter,
     .flow-panel,
     .flow-table-panel {
-      border-radius: 24px;
-      padding: 18px;
+      border-radius: 18px;
+      padding: 16px;
     }
+
+    .flow-hero-main {
+      min-height: auto;
+    }
+
     .flow-hero h1 {
-      font-size: 40px;
+      font-size: 38px;
     }
+
+    .flow-actions,
+    .flow-form-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .flow-button {
+      width: 100%;
+    }
+
+    .flow-chip,
+    .flow-tag,
+    .flow-pill,
+    .flow-status,
+    .flow-type,
+    .flow-group {
+      white-space: normal;
+    }
+
     .flow-kpi-grid,
     .flow-field-grid {
       grid-template-columns: 1fr;
     }
+
+    .flow-kpi,
+    .flow-insight {
+      min-height: auto;
+    }
+
     .flow-table-head,
-    .flow-group-row {
+    .flow-group-row,
+    .flow-review-head,
+    .flow-hotel-row {
       display: block;
     }
+
+    .flow-group-row > strong,
+    .flow-hotel-row > strong {
+      display: block;
+      margin-top: 10px;
+    }
+
     .flow-break-row,
     .flow-trend-row {
       grid-template-columns: 1fr;
+    }
+
+    .flow-insight-grid,
+    .flow-chart-grid {
+      grid-template-columns: 1fr;
+      margin-top: 12px;
+    }
+
+    .flow-chart.is-wide {
+      grid-column: auto;
+    }
+
+    .flow-chart canvas {
+      height: 190px;
     }
   }
 </style>
 
 <main class="flow-home">
   <div class="flow-wrap">
-    <section class="flow-hero" aria-label="Thu chi hợp nhất">
+    <section class="flow-hero" aria-label="Đối soát thu chi hợp nhất">
       <div class="flow-hero-main">
         <div class="flow-hero-content">
           <div class="flow-chip"><span class="flow-spark"></span> Unified cashflow</div>
-          <h1>Thu chi <span>hợp nhất</span></h1>
+          <h1>Đối soát <span>thu chi</span></h1>
           <p class="flow-lead">Một timeline duy nhất cho dòng thu từ giao dịch đặt phòng và dòng chi vận hành, hỗ trợ đối chiếu nhanh theo cơ sở, nhóm, trạng thái và kỳ kế toán.</p>
           <div class="flow-tags">
             <span class="flow-tag"><%= payload.rangeLabel %></span>
@@ -557,16 +780,16 @@
           <div class="flow-actions">
             <a class="flow-button flow-button--primary" href="/api/accounting/cashflow?<%= csvQuery %>">Xuất CSV</a>
             <a class="flow-button" href="/api/accounting/cashflow?<%= jsonQuery %>">JSON</a>
-            <a class="flow-button flow-button--hot" href="/accounting/reports?loai_baocao=tonghop&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Báo cáo tổng hợp</a>
+            <a class="flow-button flow-button--hot" href="/accounting/reports?loai_baocao=tonghop&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Xem báo cáo tổng hợp</a>
           </div>
         </div>
       </div>
 
       <aside class="flow-kpi-grid" aria-label="KPI thu chi">
-        <article class="flow-kpi is-green"><span>Tổng thu</span><strong><%= summary.tongThuFormatted %></strong></article>
-        <article class="flow-kpi is-orange"><span>Tổng chi</span><strong><%= summary.tongChiFormatted %></strong></article>
+        <article class="flow-kpi is-green"><span>Thu đã ghi nhận</span><strong><%= summary.tongThuFormatted %></strong></article>
+        <article class="flow-kpi is-orange"><span>Chi có hiệu lực</span><strong><%= summary.tongChiFormatted %></strong></article>
         <article class="flow-kpi is-cyan"><span>Dòng tiền thuần</span><strong><%= summary.dongTienThuanFormatted %></strong></article>
-        <article class="flow-kpi is-violet"><span>Tỷ lệ net / thu</span><strong><%= summary.cashflowRatioFormatted %></strong></article>
+        <article class="flow-kpi is-violet"><span>Coverage đối soát</span><strong><%= summary.reconciledCoverageFormatted %></strong></article>
       </aside>
     </section>
 
@@ -577,6 +800,29 @@
         <% }) %>
       </section>
     <% } %>
+
+    <section class="flow-insight-grid" aria-label="Tín hiệu đối soát">
+      <article class="flow-insight is-green">
+        <span>Thu đã chốt</span>
+        <strong><%= summary.thuDaChotFormatted %></strong>
+        <p><%= summary.soDongThu || 0 %> dòng thu, phần chờ đối soát <%= summary.thuChoDoiSoatFormatted %>.</p>
+      </article>
+      <article class="flow-insight is-sun">
+        <span>Chi chờ duyệt</span>
+        <strong><%= summary.chiChoDuyetFormatted %></strong>
+        <p>Chi đã duyệt <%= summary.chiDaDuyetFormatted %>, cần khóa chứng từ trước khi chốt kỳ.</p>
+      </article>
+      <article class="flow-insight is-rose">
+        <span>Cần rà soát</span>
+        <strong><%= summary.needsReviewCount || 0 %> dòng</strong>
+        <p><%= summary.missingEvidenceCount || 0 %> dòng thiếu chứng từ, <%= summary.negativeNetDays || 0 %> ngày âm dòng tiền.</p>
+      </article>
+      <article class="flow-insight is-cyan">
+        <span>Net / thu</span>
+        <strong><%= summary.cashflowRatioFormatted %></strong>
+        <p>Chỉ số thanh khoản nhanh cho kỳ <%= payload.rangeLabel %>.</p>
+      </article>
+    </section>
 
     <section class="flow-layout">
       <aside class="flow-side-stack">
@@ -668,6 +914,24 @@
         </section>
 
         <section class="flow-panel">
+          <h2>Việc cần xử lý</h2>
+          <div class="flow-review-list">
+            <% if (!actionItems.length) { %>
+              <div class="flow-empty">Không có cảnh báo lớn trong bộ lọc hiện tại.</div>
+            <% } %>
+            <% actionItems.forEach((item) => { %>
+              <article class="flow-review">
+                <div class="flow-review-head">
+                  <strong><%= item.title %></strong>
+                  <span class="flow-status flow-status--<%= item.tone %>">Ưu tiên</span>
+                </div>
+                <p><%= item.note %></p>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="flow-panel">
           <h2>Trạng thái</h2>
           <div class="flow-breakdown">
             <% if (!statusBreakdown.length) { %>
@@ -685,6 +949,40 @@
       </aside>
 
       <section class="flow-side-stack">
+        <section class="flow-panel">
+          <h2>Phân tích trực quan</h2>
+          <div class="flow-chart-grid">
+            <article class="flow-chart is-wide">
+              <div class="flow-chart-head">
+                <div>
+                  <span>Daily cash position</span>
+                  <h3>Thu, chi và net theo ngày</h3>
+                </div>
+                <span class="flow-pill"><%= dailyTrend.length %> ngày</span>
+              </div>
+              <canvas id="cashflowTrendChart" height="210"></canvas>
+            </article>
+            <article class="flow-chart">
+              <div class="flow-chart-head">
+                <div>
+                  <span>Payment mix</span>
+                  <h3>Phương thức thu chi</h3>
+                </div>
+              </div>
+              <canvas id="cashflowMethodChart" height="210"></canvas>
+            </article>
+            <article class="flow-chart">
+              <div class="flow-chart-head">
+                <div>
+                  <span>Exception map</span>
+                  <h3>Cảnh báo đối soát</h3>
+                </div>
+              </div>
+              <canvas id="cashflowRiskChart" height="210"></canvas>
+            </article>
+          </div>
+        </section>
+
         <section class="flow-panel">
           <h2>Nhóm dòng tiền</h2>
           <div class="flow-groups">
@@ -725,6 +1023,48 @@
           <% } %>
         </section>
 
+        <section class="flow-panel">
+          <h2>Net theo cơ sở</h2>
+          <div class="flow-hotel-list">
+            <% if (!hotelBreakdown.length) { %>
+              <div class="flow-empty">Chưa có dữ liệu cơ sở để phân tích.</div>
+            <% } %>
+            <% hotelBreakdown.forEach((item) => {
+              const width = Math.max(6, Math.round((Math.abs(Number(item.net || 0)) / maxHotelNet) * 100));
+            %>
+              <article class="flow-hotel-row">
+                <div>
+                  <strong><%= item.hotelLabel %></strong>
+                  <div class="flow-muted" style="margin-top:5px">Thu <%= item.tongThuFormatted %> · Chi <%= item.tongChiFormatted %></div>
+                  <div class="flow-hotel-meter"><span style="width:<%= width %>%; background:<%= Number(item.net || 0) >= 0 ? 'linear-gradient(90deg, var(--mint), var(--cyan))' : 'linear-gradient(90deg, var(--orange), var(--pink))' %>"></span></div>
+                </div>
+                <strong class="<%= Number(item.net || 0) >= 0 ? 'flow-money is-in' : 'flow-money is-out' %>"><%= item.netFormatted %></strong>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+
+        <section class="flow-panel">
+          <h2>Dòng cần đối soát trước</h2>
+          <div class="flow-review-list">
+            <% if (!reviewRows.length) { %>
+              <div class="flow-empty">Không có dòng rủi ro cao trong bộ lọc hiện tại.</div>
+            <% } %>
+            <% reviewRows.forEach((row) => { %>
+              <article class="flow-review">
+                <div class="flow-review-head">
+                  <div>
+                    <span class="flow-type flow-type--<%= row.typeMeta.tone %>"><%= row.typeMeta.label %></span>
+                    <strong style="display:block;margin-top:8px"><%= row.maThamChieu %> · <%= row.doiTuong %></strong>
+                  </div>
+                  <strong class="<%= row.loaiDongTien === 'thu' ? 'flow-money is-in' : 'flow-money is-out' %>"><%= row.typeMeta.symbol %><%= row.soTienFormatted %></strong>
+                </div>
+                <p><span class="flow-status flow-status--<%= row.riskMeta.tone %>"><%= row.riskMeta.label %></span> <%= row.reconcileAction %></p>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+
         <section class="flow-table-panel">
           <div class="flow-table-head">
             <div>
@@ -747,8 +1087,10 @@
                     <th>Đối tượng</th>
                     <th>Nhóm</th>
                     <th>Cơ sở</th>
+                    <th>Thanh toán</th>
+                    <th>Chứng từ</th>
                     <th>Số tiền</th>
-                    <th>Trạng thái</th>
+                    <th>Đối soát</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -768,10 +1110,20 @@
                       </td>
                       <td><span class="flow-group flow-group--<%= row.groupMeta.tone %>"><%= row.groupMeta.label %></span></td>
                       <td><%= row.hotelLabel %></td>
-                      <td class="<%= row.loaiDongTien === 'thu' ? 'flow-money is-in' : 'flow-money is-out' %>"><%= row.typeMeta.symbol %><%= row.soTienFormatted %></td>
+                      <td><%= row.paymentLabel %></td>
+                      <td>
+                        <strong><%= row.soChungTu %></strong>
+                        <div class="flow-muted" style="margin-top:5px">
+                          <span class="flow-status flow-status--<%= row.evidenceMeta.tone %>"><%= row.evidenceMeta.label %></span>
+                        </div>
+                      </td>
+                      <td class="<%= row.loaiDongTien === 'thu' ? 'flow-money is-in' : 'flow-money is-out' %>"><%= row.signedAmountFormatted %></td>
                       <td>
                         <span class="flow-status flow-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
-                        <div class="flow-muted" style="margin-top:5px"><%= row.statusMeta.hint %></div>
+                        <div class="flow-muted" style="margin-top:5px">
+                          <span class="flow-status flow-status--<%= row.riskMeta.tone %>"><%= row.riskMeta.label %></span>
+                        </div>
+                        <div class="flow-muted" style="margin-top:5px"><%= row.reconcileAction %></div>
                       </td>
                     </tr>
                   <% }) %>
@@ -804,5 +1156,140 @@
     </section>
   </div>
 </main>
+
+<script>
+  (() => {
+    const data = <%- JSON.stringify(chartPayload).replace(/</g, "\\u003c") %>;
+    const palette = ["#12bff3", "#20d6a3", "#ffd166", "#ff6aa2", "#8068ff", "#f97316", "#14b8a6", "#84cc16"];
+    const ink = "#102033";
+    const muted = "#667085";
+
+    const money = (value) => `${Math.round(Number(value || 0)).toLocaleString("vi-VN")} đ`;
+    const setup = (id) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+      canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+      const ctx = canvas.getContext("2d");
+      ctx.scale(ratio, ratio);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.font = "12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      return { canvas, ctx, width: rect.width, height: rect.height };
+    };
+    const empty = (ctx, width, height, label) => {
+      ctx.fillStyle = "rgba(16, 32, 51, .08)";
+      ctx.fillRect(0, height / 2 - 1, width, 2);
+      ctx.fillStyle = muted;
+      ctx.textAlign = "center";
+      ctx.fillText(label, width / 2, height / 2 - 10);
+    };
+
+    const drawTrend = () => {
+      const chart = setup("cashflowTrendChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = (data.trend || []).slice(-14);
+      if (!rows.length) return empty(ctx, width, height, "Chưa có dữ liệu xu hướng");
+      const pad = { top: 16, right: 18, bottom: 30, left: 48 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const values = rows.flatMap((row) => [Number(row.tongThu || 0), Number(row.tongChi || 0), Math.abs(Number(row.dongTienThuan || 0))]);
+      const max = Math.max(...values, 1);
+      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (plotW / (rows.length - 1)) * index);
+      const y = (value) => pad.top + plotH - (Number(value || 0) / max) * plotH;
+
+      ctx.strokeStyle = "rgba(16, 32, 51, .08)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i += 1) {
+        const yy = pad.top + (plotH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yy);
+        ctx.lineTo(width - pad.right, yy);
+        ctx.stroke();
+      }
+
+      const line = (key, color) => {
+        ctx.beginPath();
+        rows.forEach((row, index) => {
+          const xx = x(index);
+          const yy = y(row[key]);
+          if (index === 0) ctx.moveTo(xx, yy);
+          else ctx.lineTo(xx, yy);
+        });
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+        rows.forEach((row, index) => {
+          ctx.beginPath();
+          ctx.arc(x(index), y(row[key]), 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#fff";
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      };
+      line("tongThu", "#20d6a3");
+      line("tongChi", "#ff6aa2");
+
+      ctx.fillStyle = muted;
+      ctx.textAlign = "left";
+      ctx.fillText(money(max), 4, pad.top + 4);
+      ctx.textAlign = "center";
+      rows.forEach((row, index) => {
+        if (index % Math.ceil(rows.length / 5) === 0 || index === rows.length - 1) {
+          ctx.fillText(row.dateLabel || "", x(index), height - 9);
+        }
+      });
+      ctx.textAlign = "left";
+      ctx.fillStyle = ink;
+      ctx.fillText("Thu", pad.left, 12);
+      ctx.fillStyle = "#ff6aa2";
+      ctx.fillText("Chi", pad.left + 42, 12);
+    };
+
+    const drawBars = (id, rows, valueKey, labelKey, emptyLabel) => {
+      const chart = setup(id);
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const source = (rows || []).filter((item) => Number(item[valueKey] || 0) > 0).slice(0, 7);
+      if (!source.length) return empty(ctx, width, height, emptyLabel);
+      const max = Math.max(...source.map((item) => Number(item[valueKey] || 0)), 1);
+      const pad = { top: 10, right: 18, bottom: 16, left: 112 };
+      const rowH = Math.min(24, (height - pad.top - pad.bottom) / source.length - 7);
+      source.forEach((item, index) => {
+        const y = pad.top + index * (rowH + 9);
+        const value = Number(item[valueKey] || 0);
+        const barW = Math.max(8, ((width - pad.left - pad.right) * value) / max);
+        ctx.fillStyle = muted;
+        ctx.textAlign = "right";
+        ctx.fillText(String(item[labelKey] || "Khác").slice(0, 18), pad.left - 10, y + rowH - 6);
+        const gradient = ctx.createLinearGradient(pad.left, 0, pad.left + barW, 0);
+        gradient.addColorStop(0, palette[index % palette.length]);
+        gradient.addColorStop(1, palette[(index + 1) % palette.length]);
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(pad.left, y, barW, rowH, 999);
+        ctx.fill();
+        ctx.fillStyle = ink;
+        ctx.textAlign = "left";
+        ctx.fillText(valueKey === "value" ? money(value) : value.toLocaleString("vi-VN"), pad.left + barW + 8, y + rowH - 6);
+      });
+    };
+
+    drawTrend();
+    drawBars("cashflowMethodChart", data.methods || [], "value", "label", "Chưa có dữ liệu phương thức");
+    drawBars("cashflowRiskChart", data.risks || [], "value", "label", "Không có cảnh báo đối soát");
+    window.addEventListener("resize", () => {
+      drawTrend();
+      drawBars("cashflowMethodChart", data.methods || [], "value", "label", "Chưa có dữ liệu phương thức");
+      drawBars("cashflowRiskChart", data.risks || [], "value", "label", "Không có cảnh báo đối soát");
+    });
+  })();
+</script>
 
 <%- include("../partials/footer") %>

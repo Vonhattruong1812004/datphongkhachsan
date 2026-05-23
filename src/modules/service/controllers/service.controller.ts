@@ -119,7 +119,13 @@ async function renderCatalogState(
   } = {}
 ) {
   const activeHotelId = Number(req.query.hotel_id || req.body?.hotel_id || 0);
-  const payload = await serviceModuleService.buildPagePayload({ hotelId: activeHotelId });
+  const payload = await serviceModuleService.buildPagePayload({
+    hotelId: activeHotelId,
+    keyword: readText(req.query.keyword || req.body?.keyword),
+    status: readText(req.query.status || req.body?.status) as any,
+    category: readText(req.query.category || req.body?.category) as any,
+    attention: readText(req.query.attention || req.body?.attention) as any
+  });
 
   return res.render("service/catalog", {
     title: "Quản lý dịch vụ",
@@ -166,7 +172,7 @@ async function renderRoomBoardState(
   const payload = await serviceModuleService.buildPagePayload();
 
   return res.render("service/room-board-live", {
-    title: "Room board live",
+    title: "Theo dõi Room board live",
     payload,
     notice: {
       success: readText(options.success),

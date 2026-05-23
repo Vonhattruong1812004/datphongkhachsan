@@ -56,6 +56,14 @@ interface ReviewQueueItem {
   note: string;
   ghiChu: string;
   tone: ReviewTone;
+  image_count: number;
+  imageCount: number;
+  is_document_match: boolean;
+  isDocumentMatch: boolean;
+  needs_attention: boolean;
+  needsAttention: boolean;
+  review_priority: "high" | "normal" | "done";
+  reviewPriority: "high" | "normal" | "done";
 }
 
 export class EkycService {
@@ -158,13 +166,21 @@ export class EkycService {
       ]
     );
 
-    const latest = verificationResult.rows[0] ? this.mapVerificationResource(verificationResult.rows[0]) : null;
+    const latest = await this.attachImageAvailability(
+      verificationResult.rows[0] ? this.mapVerificationResource(verificationResult.rows[0]) : null
+    );
+    const persistedCustomerStatus = customer.trangThaiEkyc || "ChuaXacThuc";
+    const effectiveCustomerStatus = latest
+      ? this.customerStatusFromVerificationResult(latest.result)
+      : persistedCustomerStatus;
 
     return {
       customer: {
         ...customer,
-        ekyc_status: customer.trangThaiEkyc || "ChuaXacThuc",
-        ekyc_status_label: this.customerStatusLabel(customer.trangThaiEkyc || "ChuaXacThuc")
+        trangThaiEkyc: effectiveCustomerStatus,
+        persisted_ekyc_status: persistedCustomerStatus,
+        ekyc_status: effectiveCustomerStatus,
+        ekyc_status_label: this.customerStatusLabel(effectiveCustomerStatus)
       },
       verification: latest,
       history: historyResult.rows.map((row) => this.mapHistoryResource(row)),
@@ -194,7 +210,7 @@ export class EkycService {
     }
 
     const documentNumber = input.document_number.trim();
-    if (!/^[A-Za-z0-9]{8,20}$/.test(documentNumber)) {
+    if (!this.isValidDocumentNumber(input.document_type, documentNumber)) {
       throw new HttpError(422, "Số giấy tờ không hợp lệ.");
     }
 
@@ -202,13 +218,29 @@ export class EkycService {
       throw new HttpError(422, "Bắt buộc có ảnh mặt trước, mặt sau và ảnh selfie.");
     }
 
+    const current = await this.getStatusForCustomer(maKhachHang);
+    const currentResult = current.verification?.result || "";
+    const currentCustomerStatus = current.customer?.ekyc_status || current.customer?.trangThaiEkyc || "";
+    if (currentResult === "DangXuLy" || currentCustomerStatus === "DangXuLy") {
+      throw new HttpError(409, "Hồ sơ eKYC đang chờ duyệt. Vui lòng chờ Quản lý xử lý trước khi gửi lại.");
+    }
+    if (currentResult === "ThanhCong" || currentCustomerStatus === "DaXacThuc") {
+      throw new HttpError(409, "Hồ sơ eKYC đã được xác thực. Không cần gửi lại hồ sơ.");
+    }
+
     const front = files.front;
     const selfie = files.selfie;
     const back = files.back;
+    await this.validateImageFiles([front, back, selfie]);
     const analysis = this.analyzeSubmission({
       document_type: input.document_type,
       document_number: documentNumber
     });
+    const initialResult = "DangXuLy";
+    const initialNote = [
+      "Hồ sơ đã nhận và đang chờ Quản lý duyệt thủ công.",
+      analysis.note
+    ].join(" ");
 
     await this.ensureUploadDir();
 
@@ -237,21 +269,16 @@ export class EkycService {
           front.filename,
           back.filename,
           selfie.filename,
-          analysis.result,
+          initialResult,
           analysis.confidence,
-          analysis.verifiedAt,
-          analysis.note
+          null,
+          initialNote
         ]
       );
 
-      const customerStatus = analysis.result === "ThanhCong"
-        ? "DaXacThuc"
-        : analysis.result === "ThatBai"
-          ? "ThatBai"
-          : "ChuaXacThuc";
       await client.query(
         "UPDATE khachhang SET trangthaiekyc = $2 WHERE makhachhang = $1",
-        [maKhachHang, customerStatus]
+        [maKhachHang, "ChuaXacThuc"]
       );
     });
 
@@ -271,63 +298,71 @@ export class EkycService {
 
   async getReviewQueue(rawFilters: unknown) {
     const filters = this.parseReviewFilters(rawFilters);
+    const params: unknown[] = [];
+    const where: string[] = [];
+
+    if (filters.result) {
+      params.push(filters.result);
+      where.push(`latest.ketquaxacthuc::text = $${params.length}`);
+    }
+
+    if (filters.q) {
+      params.push(`%${filters.q.toLowerCase()}%`);
+      where.push(`
+        (
+          LOWER(COALESCE(kh.tenkh, '')) LIKE $${params.length}
+          OR LOWER(COALESCE(kh.email, '')) LIKE $${params.length}
+          OR LOWER(COALESCE(kh.sdt, '')) LIKE $${params.length}
+          OR LOWER(COALESCE(kh.cccd, '')) LIKE $${params.length}
+          OR LOWER(COALESCE(latest.sogiayto, '')) LIKE $${params.length}
+          OR LOWER(COALESCE(latest.loaigiayto::text, '')) LIKE $${params.length}
+        )
+      `);
+    }
+
     const result = await query<ReviewQueueRow>(
       `
+        WITH latest AS (
+          SELECT DISTINCT ON (ev.makhachhang)
+            ev.*
+          FROM ekyc_verification ev
+          ORDER BY ev.makhachhang, ev.maekyc DESC
+        )
         SELECT
-          ev.maekyc AS id,
+          latest.maekyc AS id,
           kh.makhachhang AS "customerId",
           kh.tenkh AS "customerName",
           kh.email AS "customerEmail",
           kh.sdt AS "customerPhone",
           kh.cccd AS "customerCccd",
           kh.trangthaiekyc AS "customerEkycStatus",
-          ev.sogiayto AS "soGiayTo",
-          ev.loaigiayto AS "loaiGiayTo",
-          ev.ketquaxacthuc AS "ketQuaXacThuc",
-          ev.dotincay AS "doTinCay",
-          ev.thoigiangui AS "thoiGianGui",
-          ev.thoigianxacthuc AS "thoiGianXacThuc",
-          ev.ghichu
-        FROM ekyc_verification ev
-        INNER JOIN khachhang kh ON kh.makhachhang = ev.makhachhang
-        ORDER BY ev.maekyc DESC
-        LIMIT 200
+          latest.sogiayto AS "soGiayTo",
+          latest.loaigiayto AS "loaiGiayTo",
+          latest.ketquaxacthuc AS "ketQuaXacThuc",
+          latest.dotincay AS "doTinCay",
+          latest.thoigiangui AS "thoiGianGui",
+          latest.thoigianxacthuc AS "thoiGianXacThuc",
+          latest.ghichu,
+          latest.anhmattruoc AS "anhMatTruoc",
+          latest.anhmatsau AS "anhMatSau",
+          latest.anhselfie AS "anhSelfie"
+        FROM latest
+        INNER JOIN khachhang kh ON kh.makhachhang = latest.makhachhang
+        ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+        ORDER BY
+          CASE latest.ketquaxacthuc
+            WHEN 'DangXuLy' THEN 1
+            WHEN 'ThatBai' THEN 2
+            WHEN 'ChuaXacThuc' THEN 3
+            ELSE 4
+          END,
+          latest.maekyc DESC
+        LIMIT 500
       `,
-      []
+      params
     );
 
-    const items: ReviewQueueItem[] = [];
-    const seenCustomerIds = new Set<number>();
-    const search = filters.q.toLowerCase();
-
-    for (const row of result.rows) {
-      if (!row.customerId || seenCustomerIds.has(row.customerId)) {
-        continue;
-      }
-
-      const item = this.mapReviewQueueItem(row);
-      if (filters.result && item.result !== filters.result) {
-        continue;
-      }
-
-      if (search) {
-        const haystack = [
-          item.customer_name,
-          item.customer_email,
-          item.customer_phone,
-          item.document_number,
-          item.document_type,
-          item.customer_cccd
-        ].join(" ").toLowerCase();
-
-        if (!haystack.includes(search)) {
-          continue;
-        }
-      }
-
-      seenCustomerIds.add(row.customerId);
-      items.push(item);
-    }
+    const items = result.rows.map((row) => this.mapReviewQueueItem(row));
 
     return {
       filters,
@@ -394,9 +429,11 @@ export class EkycService {
       `,
       [row.customerId]
     );
+    const latestId = Number(historyResult.rows[0]?.id || row.id || 0);
+    const isLatestForCustomer = latestId === Number(row.id || 0);
 
     const review = this.mapReviewQueueItem(row);
-    const verification = this.mapVerificationResource(row);
+    const verification = await this.attachImageAvailability(this.mapVerificationResource(row));
     const customer = {
       id: row.customerId,
       name: row.customerName || "",
@@ -419,6 +456,8 @@ export class EkycService {
       customerPhone: customer.phone,
       customerCccd: customer.cccd,
       customerEkycStatus: customer.ekyc_status,
+      latestEkycId: latestId,
+      isLatestForCustomer,
       soGiayTo: verification.document_number,
       loaiGiayTo: verification.document_type,
       ketQuaXacThuc: verification.result,
@@ -443,6 +482,15 @@ export class EkycService {
     }
 
     const detail = await this.getReviewDetail(maEkyc);
+    if (!detail.isLatestForCustomer) {
+      throw new HttpError(409, "Hồ sơ này không phải bản gửi mới nhất của khách. Vui lòng mở hồ sơ mới nhất để duyệt.");
+    }
+
+    const cleanReviewNote = String(reviewNote || "").trim();
+    if (normalizedDecision === "reject" && cleanReviewNote.length < 10) {
+      throw new HttpError(422, "Từ chối hồ sơ cần ghi rõ lý do tối thiểu 10 ký tự.");
+    }
+
     const currentConfidence = Number(detail.verification?.confidence || 0);
     const now = new Date();
     const reviewer = String(reviewerName || "").trim() || "staff";
@@ -471,9 +519,9 @@ export class EkycService {
         ? `Manual review REJECTED by ${reviewer} at ${this.formatStorageDate(now)}.`
         : `Manual review moved back to PENDING by ${reviewer} at ${this.formatStorageDate(now)}.`;
 
-    const combinedNote = [systemNote, String(reviewNote || "").trim()].filter(Boolean).join(" ");
+    const combinedNote = [systemNote, cleanReviewNote].filter(Boolean).join(" ");
     const existingNote = String(detail.verification?.note || "").trim();
-    const storedNote = (existingNote ? `${existingNote} | ${combinedNote}` : combinedNote).slice(0, 255);
+    const storedNote = (existingNote ? `${existingNote} | ${combinedNote}` : combinedNote).slice(0, 1000);
     const verifiedAt = normalizedDecision === "pending" ? null : now;
 
     await withTransaction(async (client) => {
@@ -490,8 +538,16 @@ export class EkycService {
       );
 
       await client.query(
-        "UPDATE khachhang SET trangthaiekyc = $2 WHERE makhachhang = $1",
-        [detail.customerId, customerStatus]
+        `
+          UPDATE khachhang
+          SET trangthaiekyc = $2,
+              cccd = CASE
+                WHEN $2::khachhang_trangthaiekyc = 'DaXacThuc' THEN $3
+                ELSE cccd
+              END
+          WHERE makhachhang = $1
+        `,
+        [detail.customerId, customerStatus, detail.verification?.document_number || detail.customerCccd || null]
       );
     });
 
@@ -515,6 +571,41 @@ export class EkycService {
     await fs.mkdir(dir, { recursive: true });
   }
 
+  private isValidDocumentNumber(documentType: string, documentNumber: string) {
+    if (documentType === "CCCD") return /^\d{12}$/.test(documentNumber);
+    if (documentType === "CMND") return /^\d{9}$|^\d{12}$/.test(documentNumber);
+    if (documentType === "Passport") return /^[A-Za-z0-9]{6,20}$/.test(documentNumber);
+    return false;
+  }
+
+  private async validateImageFiles(files: Express.Multer.File[]) {
+    await Promise.all(files.map(async (file) => {
+      const extension = path.extname(file.filename || file.originalname || "").toLowerCase();
+      const mime = String(file.mimetype || "");
+      const allowed = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+      if (!allowed.has(extension) || !["image/jpeg", "image/png", "image/webp"].includes(mime)) {
+        throw new HttpError(422, "Ảnh eKYC phải là JPG, PNG hoặc WEBP.");
+      }
+
+      const buffer = await fs.readFile(file.path);
+      const isJpeg = mime === "image/jpeg" && buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+      const isPng = mime === "image/png"
+        && buffer.length > 8
+        && buffer[0] === 0x89
+        && buffer[1] === 0x50
+        && buffer[2] === 0x4e
+        && buffer[3] === 0x47;
+      const isWebp = mime === "image/webp"
+        && buffer.length > 12
+        && buffer.toString("ascii", 0, 4) === "RIFF"
+        && buffer.toString("ascii", 8, 12) === "WEBP";
+
+      if (!isJpeg && !isPng && !isWebp) {
+        throw new HttpError(422, "Ảnh eKYC không đúng định dạng thực tế hoặc có dấu hiệu không hợp lệ.");
+      }
+    }));
+  }
+
   private parseReviewFilters(rawFilters: unknown) {
     const filters = rawFilters as Record<string, unknown> | undefined;
     return {
@@ -532,13 +623,14 @@ export class EkycService {
     return items.reduce(
       (overview, item) => {
         overview.total += 1;
+        if (item.needs_attention) overview.needsAttention += 1;
         if (item.result === "ThanhCong") overview.approved += 1;
         else if (item.result === "ThatBai") overview.rejected += 1;
         else if (item.result === "DangXuLy") overview.pending += 1;
         else overview.unverified += 1;
         return overview;
       },
-      { total: 0, pending: 0, approved: 0, rejected: 0, unverified: 0 }
+      { total: 0, pending: 0, approved: 0, rejected: 0, unverified: 0, needsAttention: 0 }
     );
   }
 
@@ -546,6 +638,16 @@ export class EkycService {
     const result = row.ketQuaXacThuc || "ChuaXacThuc";
     const customerStatus = row.customerEkycStatus || "ChuaXacThuc";
     const confidence = Number(row.doTinCay || 0);
+    const imageCount = [row.anhMatTruoc, row.anhMatSau, row.anhSelfie].filter(Boolean).length;
+    const customerCccd = String(row.customerCccd || "").trim();
+    const documentNumber = String(row.soGiayTo || "").trim();
+    const isDocumentMatch = !customerCccd || !documentNumber || customerCccd === documentNumber;
+    const needsAttention = result === "DangXuLy" || result === "ChuaXacThuc" || imageCount < 3 || !isDocumentMatch;
+    const reviewPriority = result === "ThanhCong"
+      ? "done"
+      : needsAttention || result === "ThatBai"
+        ? "high"
+        : "normal";
 
     return {
       id: Number(row.id || 0),
@@ -576,7 +678,15 @@ export class EkycService {
       verified_at: this.formatDateTime(row.thoiGianXacThuc || null),
       note: row.ghiChu || "",
       ghiChu: row.ghiChu || "",
-      tone: this.resultTone(result)
+      tone: this.resultTone(result),
+      image_count: imageCount,
+      imageCount,
+      is_document_match: isDocumentMatch,
+      isDocumentMatch,
+      needs_attention: needsAttention,
+      needsAttention,
+      review_priority: reviewPriority,
+      reviewPriority
     };
   }
 
@@ -625,9 +735,15 @@ export class EkycService {
       note: row.ghiChu || "",
       ghiChu: row.ghiChu || "",
       images: {
+        front_file: row.anhMatTruoc || "",
+        back_file: row.anhMatSau || "",
+        selfie_file: row.anhSelfie || "",
         front_url: this.buildUploadUrl(row.anhMatTruoc || ""),
         back_url: this.buildUploadUrl(row.anhMatSau || ""),
-        selfie_url: this.buildUploadUrl(row.anhSelfie || "")
+        selfie_url: this.buildUploadUrl(row.anhSelfie || ""),
+        front_exists: Boolean(row.anhMatTruoc),
+        back_exists: Boolean(row.anhMatSau),
+        selfie_exists: Boolean(row.anhSelfie)
       },
       anhMatTruoc: row.anhMatTruoc || "",
       anhMatSau: row.anhMatSau || "",
@@ -699,8 +815,55 @@ export class EkycService {
 
   private customerStatusLabel(status: string) {
     if (status === "DaXacThuc") return "Khách đã xác thực";
+    if (status === "DangXuLy") return "Khách đang chờ duyệt";
     if (status === "ThatBai") return "Khách xác thực thất bại";
     return "Khách chưa xác thực";
+  }
+
+  private customerStatusFromVerificationResult(result: string) {
+    if (result === "ThanhCong") return "DaXacThuc";
+    if (result === "DangXuLy") return "DangXuLy";
+    if (result === "ThatBai") return "ThatBai";
+    return "ChuaXacThuc";
+  }
+
+  private async attachImageAvailability<T extends {
+    images?: {
+      front_file?: string;
+      back_file?: string;
+      selfie_file?: string;
+      front_exists?: boolean;
+      back_exists?: boolean;
+      selfie_exists?: boolean;
+    };
+  } | null>(verification: T): Promise<T> {
+    if (!verification?.images) {
+      return verification;
+    }
+
+    const checks = [
+      ["front_file", "front_exists"],
+      ["back_file", "back_exists"],
+      ["selfie_file", "selfie_exists"]
+    ] as const;
+
+    await Promise.all(checks.map(async ([fileKey, existsKey]) => {
+      const fileName = String(verification.images?.[fileKey] || "").trim();
+      verification.images![existsKey] = fileName
+        ? await this.uploadFileExists(fileName)
+        : false;
+    }));
+
+    return verification;
+  }
+
+  private async uploadFileExists(fileName: string) {
+    try {
+      await fs.access(path.resolve(process.cwd(), "uploads/ekyc", fileName));
+      return true;
+    } catch (_error) {
+      return false;
+    }
   }
 
   private percentLabel(value: number) {

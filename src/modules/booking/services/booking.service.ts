@@ -4,7 +4,7 @@ import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 import { directBookingHoldStore } from "../../payment/direct-booking-hold-store";
 import { customerBookingHoldStore, type CustomerBookingHold } from "../../payment/customer-booking-hold-store";
-import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, replaceSepayMetadata } from "../../payment/sepay";
+import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, parseSepayMetadata, replaceSepayMetadata } from "../../payment/sepay";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
 import { calculatePromotionDiscount, isCustomerCancelableBooking, isCustomerEditableBooking } from "./booking-rules";
@@ -26,32 +26,7 @@ const textField = z.preprocess(firstFormValue, z.string().optional().default("")
 const numberField = z.preprocess(firstFormValue, z.coerce.number().optional().default(0));
 const requiredTextField = z.preprocess(firstFormValue, z.string());
 
-export const searchBookingSchema = z.object({
-  loai_phong: textField,
-  loai_giuong: textField,
-  view_phong: textField,
-  hotel_city: textField,
-  hotel_name: textField,
-  so_khach: numberField,
-  gia_goi_y: numberField,
-  ngay_nhan: textField,
-  ngay_tra: textField,
-  sort_by: z.preprocess(firstFormValue, z.enum(["ai", "price_asc", "price_desc", "capacity_fit"]).optional().default("ai"))
-});
-
-export type SearchBookingInput = z.infer<typeof searchBookingSchema>;
-
-export const bookingPreviewSchema = z.object({
-  room_id: z.preprocess(firstFormValue, z.coerce.number().int("Mã phòng không hợp lệ.").positive("Mã phòng không hợp lệ.")),
-  ten_khach: requiredTextField.pipe(z.string().trim().min(2, "Vui lòng nhập họ tên khách.").regex(/^[\p{L}\s'.-]+$/u, "Họ tên không được chứa số hoặc ký tự lạ.")),
-  cccd: requiredTextField.pipe(z.string().trim().regex(/^[0-9]{9,12}$/, "CCCD/CMND phải gồm 9-12 chữ số.")),
-  sdt: requiredTextField.pipe(z.string().trim().regex(/^(0|\+84)\d{8,10}$/, "Số điện thoại không hợp lệ.")),
-  email: requiredTextField.pipe(z.string().trim().email("Email không hợp lệ.")),
-  so_nguoi: z.preprocess(firstFormValue, z.coerce.number().int("Số người phải là số nguyên.").min(1, "Số người phải lớn hơn hoặc bằng 1.")),
-  ngay_nhan: requiredTextField.pipe(z.string().trim().min(10, "Vui lòng chọn ngày nhận phòng.")),
-  ngay_tra: requiredTextField.pipe(z.string().trim().min(10, "Vui lòng chọn ngày trả phòng.")),
-  ma_km: z.preprocess(emptyToNullFirstFormValue, z.coerce.number().int("Khuyến mãi không hợp lệ.").optional().nullable())
-}).superRefine((value, ctx) => {
+function validateBookingDateRange(value: { ngay_nhan: string; ngay_tra: string }, ctx: z.RefinementCtx) {
   const checkin = parseDateOnly(value.ngay_nhan);
   const checkout = parseDateOnly(value.ngay_tra);
   const today = dayjs().startOf("day");
@@ -71,9 +46,65 @@ export const bookingPreviewSchema = z.object({
   if (checkin && checkout && !checkout.isAfter(checkin)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ngay_tra"], message: "Ngày trả phòng phải sau ngày nhận phòng." });
   }
+}
+
+export const searchBookingSchema = z.object({
+  loai_phong: textField,
+  loai_giuong: textField,
+  view_phong: textField,
+  hotel_city: textField,
+  hotel_name: textField,
+  so_khach: numberField,
+  gia_goi_y: numberField,
+  gia_tu: numberField,
+  gia_den: numberField,
+  ngay_nhan: textField,
+  ngay_tra: textField,
+  sort_by: z.preprocess(firstFormValue, z.enum(["ai", "price_asc", "price_desc", "capacity_fit"]).optional().default("ai"))
 });
 
+export type SearchBookingInput = z.infer<typeof searchBookingSchema>;
+
+const bookingPreviewBaseSchema = z.object({
+  room_id: z.preprocess(firstFormValue, z.coerce.number().int("Mã phòng không hợp lệ.").positive("Mã phòng không hợp lệ.")),
+  ten_khach: requiredTextField.pipe(z.string().trim().min(2, "Vui lòng nhập họ tên khách.").regex(/^[\p{L}\s'.-]+$/u, "Họ tên không được chứa số hoặc ký tự lạ.")),
+  cccd: requiredTextField.pipe(z.string().trim().regex(/^[0-9]{9,12}$/, "CCCD/CMND phải gồm 9-12 chữ số.")),
+  sdt: requiredTextField.pipe(z.string().trim().regex(/^(0|\+84)\d{8,10}$/, "Số điện thoại không hợp lệ.")),
+  email: requiredTextField.pipe(z.string().trim().email("Email không hợp lệ.")),
+  so_nguoi: z.preprocess(firstFormValue, z.coerce.number().int("Số người phải là số nguyên.").min(1, "Số người phải lớn hơn hoặc bằng 1.")),
+  ngay_nhan: requiredTextField.pipe(z.string().trim().min(10, "Vui lòng chọn ngày nhận phòng.")),
+  ngay_tra: requiredTextField.pipe(z.string().trim().min(10, "Vui lòng chọn ngày trả phòng.")),
+  ma_km: z.preprocess(emptyToNullFirstFormValue, z.coerce.number().int("Khuyến mãi không hợp lệ.").optional().nullable())
+});
+
+export const bookingPreviewSchema = bookingPreviewBaseSchema.superRefine(validateBookingDateRange);
+
 export type BookingPreviewInput = z.infer<typeof bookingPreviewSchema>;
+
+export const bookingMultiRoomSchema = bookingPreviewBaseSchema.omit({ room_id: true }).extend({
+  room_ids: z.preprocess((value) => {
+    const raw = Array.isArray(value) ? value : (value ? [value] : []);
+    return raw.map((item) => Number(item)).filter((item) => Number.isFinite(item) && item > 0);
+  }, z.array(z.number().int().positive()).min(1, "Vui lòng chọn ít nhất một phòng.")),
+  services: z.preprocess((value) => {
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(value) ? value : [];
+  }, z.array(z.object({
+    service_id: z.coerce.number().int().positive(),
+    room_id: z.coerce.number().int().positive(),
+    quantity: z.coerce.number().int().min(1).default(1),
+    note: z.string().optional().default("")
+  })).optional().default([]))
+}).superRefine(validateBookingDateRange);
+
+export type BookingMultiRoomInput = z.infer<typeof bookingMultiRoomSchema>;
 
 export const customerBookingUpdateSchema = z.object({
   ten_khach: requiredTextField.pipe(z.string().trim().min(2, "Vui lòng nhập họ tên khách.").regex(/^[\p{L}\s'.-]+$/u, "Họ tên không được chứa số hoặc ký tự lạ.")),
@@ -108,6 +139,23 @@ export const customerBookingUpdateSchema = z.object({
 
 export type CustomerBookingUpdateInput = z.infer<typeof customerBookingUpdateSchema>;
 
+const customerBookingCancelSchema = z.object({
+  reason: textField.pipe(z.string().trim().min(6, "Vui lòng nhập lý do hủy booking rõ ràng hơn.")),
+  refund_bank_name: textField,
+  refund_account_no: textField,
+  refund_account_name: textField,
+  refund_note: textField
+});
+
+type CustomerBookingCancelInput = z.infer<typeof customerBookingCancelSchema>;
+
+const CUSTOMER_CANCEL_POLICY_TIERS = [
+  { minHours: 168, key: "REFUND_100_7D", label: "Hoàn 100%", rate: 1, note: "Hủy trước ngày nhận phòng từ 7 ngày trở lên." },
+  { minHours: 72, key: "REFUND_70_3D", label: "Hoàn 70%", rate: 0.7, note: "Hủy trước ngày nhận phòng từ 3 đến dưới 7 ngày." },
+  { minHours: 24, key: "REFUND_50_24H", label: "Hoàn 50%", rate: 0.5, note: "Hủy trước ngày nhận phòng từ 24 giờ đến dưới 3 ngày." },
+  { minHours: 0, key: "NO_REFUND_24H", label: "Không hoàn cọc", rate: 0, note: "Hủy trong vòng 24 giờ trước giờ nhận phòng hoặc đã qua giờ nhận phòng." }
+];
+
 export interface SearchRoomRow {
   id: number;
   soPhong: string;
@@ -132,6 +180,7 @@ interface PromotionRow {
   mucUuDai: number;
   trangThai: string;
   loaiUuDai: string;
+  doiTuong?: string | null;
 }
 
 interface BookingLookupRow {
@@ -187,6 +236,7 @@ interface EditableBookingRow {
   trangThai: string;
   tongTien: number;
   maKhuyenMai: number | null;
+  ghiChu: string | null;
   maCtGd: number;
   maPhong: number;
   soPhong: string;
@@ -245,6 +295,18 @@ function validateSearchFilters(filters: SearchBookingInput) {
 
   if (!Number.isFinite(filters.gia_goi_y) || filters.gia_goi_y < 0) {
     throw new HttpError(422, "Ngân sách gợi ý không được âm.");
+  }
+
+  if (!Number.isFinite(filters.gia_tu) || filters.gia_tu < 0) {
+    throw new HttpError(422, "Giá từ không được âm.");
+  }
+
+  if (!Number.isFinite(filters.gia_den) || filters.gia_den < 0) {
+    throw new HttpError(422, "Giá đến không được âm.");
+  }
+
+  if (filters.gia_tu > 0 && filters.gia_den > 0 && filters.gia_tu > filters.gia_den) {
+    throw new HttpError(422, "Giá từ không được lớn hơn giá đến.");
   }
 
   const hasCheckin = Boolean(filters.ngay_nhan);
@@ -322,6 +384,44 @@ function formatPaymentMethod(method: string | null | undefined) {
   }
 }
 
+function calculateSearchNights(filters: SearchBookingInput) {
+  if (!filters.ngay_nhan || !filters.ngay_tra) return 0;
+  const checkin = parseDateOnly(filters.ngay_nhan);
+  const checkout = parseDateOnly(filters.ngay_tra);
+  if (!checkin || !checkout || !checkout.isAfter(checkin)) return 0;
+  return Math.max(1, checkout.diff(checkin, "day"));
+}
+
+function searchSortLabel(sortBy: SearchBookingInput["sort_by"]) {
+  switch (sortBy) {
+    case "price_asc":
+      return "Giá thấp trước";
+    case "price_desc":
+      return "Giá cao trước";
+    case "capacity_fit":
+      return "Vừa số khách";
+    case "ai":
+    default:
+      return "Gợi ý thông minh";
+  }
+}
+
+function distributeGuests(totalGuests: number, rooms: Array<SearchRoomRow & { amount?: number }>) {
+  const result = new Map<number, number>();
+  let remaining = Math.max(1, Number(totalGuests || 1));
+
+  rooms.forEach((room, index) => {
+    const roomsLeft = rooms.length - index;
+    const minimumForLaterRooms = Math.max(0, roomsLeft - 1);
+    const capacity = Math.max(1, Number(room.soKhachToiDa || 1));
+    const guests = Math.max(1, Math.min(capacity, remaining - minimumForLaterRooms));
+    result.set(Number(room.id), guests);
+    remaining -= guests;
+  });
+
+  return result;
+}
+
 export class BookingService {
   async searchRooms(rawFilters: unknown) {
     const filters = searchBookingSchema.parse(rawFilters ?? {});
@@ -363,7 +463,17 @@ export class BookingService {
       where.push(`p.sokhachtoida >= $${params.length}`);
     }
 
-    if (filters.gia_goi_y > 0) {
+    if (filters.gia_tu > 0) {
+      params.push(filters.gia_tu);
+      where.push(`p.gia >= $${params.length}`);
+    }
+
+    if (filters.gia_den > 0) {
+      params.push(filters.gia_den);
+      where.push(`p.gia <= $${params.length}`);
+    }
+
+    if (filters.gia_tu <= 0 && filters.gia_den <= 0 && filters.gia_goi_y > 0) {
       params.push(Math.max(0, filters.gia_goi_y - Math.max(200000, filters.gia_goi_y * 0.25)));
       where.push(`p.gia >= $${params.length}`);
       params.push(filters.gia_goi_y + Math.max(200000, filters.gia_goi_y * 0.25));
@@ -436,14 +546,37 @@ export class BookingService {
           ...customerBookingHoldStore.getActiveRoomIds(filters.ngay_nhan, filters.ngay_tra)
         ])
       : new Set<number>();
+    const estimatedNights = calculateSearchNights(filters);
     const items = result.rows.filter((room) => !heldRoomIds.has(Number(room.id)));
+    const prices = items.map((room) => Number(room.gia || 0)).filter((price) => price > 0);
+    const bestPrice = prices.length ? Math.min(...prices) : 0;
 
     return {
       filters,
       count: items.length,
+      summary: {
+        hasStayDates: Boolean(filters.ngay_nhan && filters.ngay_tra),
+        checkinLabel: filters.ngay_nhan ? formatDate(filters.ngay_nhan) : "Chưa chọn",
+        checkoutLabel: filters.ngay_tra ? formatDate(filters.ngay_tra) : "Chưa chọn",
+        nights: estimatedNights,
+        heldRoomCount: heldRoomIds.size,
+        sortLabel: searchSortLabel(filters.sort_by),
+        bestPrice,
+        bestPriceFormatted: bestPrice ? formatMoney(bestPrice) : "Chưa có",
+        depositPolicyLabel: "Cọc 50% qua SePay, giữ phòng 10 phút"
+      },
       items: items.map((room) => ({
         ...room,
-        imageUrl: this.resolveRoomImage(room.hinhAnh)
+        imageUrl: this.resolveRoomImage(room.hinhAnh),
+        priceFormatted: formatMoney(room.gia),
+        estimatedNights,
+        estimatedTotal: estimatedNights ? Number(room.gia) * estimatedNights : 0,
+        estimatedTotalFormatted: estimatedNights ? formatMoney(Number(room.gia) * estimatedNights) : "",
+        estimatedDeposit: estimatedNights ? Math.ceil(Number(room.gia) * estimatedNights * 0.5) : 0,
+        estimatedDepositFormatted: estimatedNights ? formatMoney(Math.ceil(Number(room.gia) * estimatedNights * 0.5)) : "",
+        capacityFitLabel: filters.so_khach > 0
+          ? (room.soKhachToiDa === filters.so_khach ? "Vừa đủ số khách" : `Dư ${Math.max(0, room.soKhachToiDa - filters.so_khach)} chỗ`)
+          : `Tối đa ${room.soKhachToiDa} khách`
       }))
     };
   }
@@ -480,6 +613,67 @@ export class BookingService {
       ...result.rows[0],
       imageUrl: this.resolveRoomImage(result.rows[0].hinhAnh)
     };
+  }
+
+  async getRoomsByIds(roomIds: number[]) {
+    const uniqueIds = Array.from(new Set(roomIds.map(Number).filter((id) => Number.isFinite(id) && id > 0)));
+    if (!uniqueIds.length) {
+      return [];
+    }
+
+    const result = await query<SearchRoomRow>(
+      `
+        SELECT
+          p.maphong AS id,
+          p.sophong AS "soPhong",
+          p.loaiphong AS "loaiPhong",
+          p.loaigiuong AS "loaiGiuong",
+          p.viewphong AS "viewPhong",
+          p.gia,
+          p.sokhachtoida AS "soKhachToiDa",
+          p.tinhtrangphong AS "tinhTrangPhong",
+          ks.tenkhachsan AS "khachSan",
+          ks.tinhthanh AS "tinhThanh",
+          ks.diachi AS "diaChi",
+          p.hinhanh AS "hinhAnh"
+        FROM phong p
+        INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+        WHERE p.maphong = ANY($1::int[])
+      `,
+      [uniqueIds]
+    );
+
+    const order = new Map(uniqueIds.map((id, index) => [id, index]));
+    return result.rows
+      .sort((a, b) => (order.get(Number(a.id)) ?? 0) - (order.get(Number(b.id)) ?? 0))
+      .map((room) => ({
+        ...room,
+        imageUrl: this.resolveRoomImage(room.hinhAnh)
+      }));
+  }
+
+  async getActiveServices() {
+    const result = await query<{
+      id: number;
+      tenDichVu: string;
+      giaDichVu: number;
+    }>(
+      `
+        SELECT
+          madichvu AS id,
+          tendichvu AS "tenDichVu",
+          giadichvu AS "giaDichVu"
+        FROM dichvu
+        WHERE trangthai = 'HoatDong'
+        ORDER BY madichvu DESC
+      `
+    );
+
+    return result.rows.map((item) => ({
+      ...item,
+      giaDichVu: Number(item.giaDichVu || 0),
+      giaDichVuFormatted: formatMoney(item.giaDichVu)
+    }));
   }
 
   async previewBooking(rawInput: unknown): Promise<BookingPreviewPayload> {
@@ -531,6 +725,99 @@ export class BookingService {
     };
   }
 
+  async previewMultiRoomBooking(rawInput: unknown) {
+    const booking = bookingMultiRoomSchema.parse(rawInput);
+    const roomIds = Array.from(new Set(booking.room_ids.map(Number)));
+    const rooms = await this.getRoomsByIds(roomIds);
+
+    if (rooms.length !== roomIds.length) {
+      throw new HttpError(404, "Mot hoac nhieu phong khong ton tai.");
+    }
+
+    const totalCapacity = rooms.reduce((sum, room) => sum + Number(room.soKhachToiDa || 0), 0);
+    if (booking.so_nguoi > totalCapacity) {
+      throw new HttpError(422, "So nguoi vuot qua tong suc chua cua cac phong da chon.");
+    }
+
+    for (const room of rooms) {
+      await this.ensureRoomAvailability(room.id, booking.ngay_nhan, booking.ngay_tra);
+    }
+
+    const nights = nightsBetween(booking.ngay_nhan, booking.ngay_tra);
+    const serviceRoomIds = new Set(roomIds);
+    const services = [];
+    let serviceAmount = 0;
+
+    for (const item of booking.services || []) {
+      if (!serviceRoomIds.has(Number(item.room_id))) {
+        throw new HttpError(422, "Dich vu phai gan voi mot phong da chon.");
+      }
+
+      const serviceResult = await query<{
+        id: number;
+        tenDichVu: string;
+        giaDichVu: number;
+      }>(
+        `
+          SELECT madichvu AS id, tendichvu AS "tenDichVu", giadichvu AS "giaDichVu"
+          FROM dichvu
+          WHERE madichvu = $1
+            AND trangthai = 'HoatDong'
+          LIMIT 1
+        `,
+        [Number(item.service_id)]
+      );
+      const service = serviceResult.rows[0];
+      if (!service) {
+        throw new HttpError(422, `Dich vu ${item.service_id} khong hop le.`);
+      }
+
+      const quantity = Math.max(1, Number(item.quantity || 1));
+      const amount = Number(service.giaDichVu || 0) * quantity;
+      serviceAmount += amount;
+      services.push({
+        ...item,
+        name: service.tenDichVu,
+        unitPrice: Number(service.giaDichVu || 0),
+        amount,
+        amountFormatted: formatMoney(amount)
+      });
+    }
+
+    const roomAmount = rooms.reduce((sum, room) => sum + Number(room.gia || 0) * nights, 0);
+    const promotion = booking.ma_km ? await this.getPromotionById(booking.ma_km) : null;
+    const discount = calculatePromotionDiscount(roomAmount + serviceAmount, promotion);
+    const total = Math.max(0, roomAmount + serviceAmount - discount);
+    const depositAmount = Math.ceil(total * 0.5);
+
+    return {
+      booking,
+      rooms: rooms.map((room) => ({
+        ...room,
+        priceFormatted: formatMoney(room.gia),
+        amount: Number(room.gia || 0) * nights,
+        amountFormatted: formatMoney(Number(room.gia || 0) * nights)
+      })),
+      services,
+      promotion,
+      summary: {
+        nights,
+        roomAmount,
+        serviceAmount,
+        discount,
+        total,
+        depositAmount,
+        roomAmountFormatted: formatMoney(roomAmount),
+        serviceAmountFormatted: formatMoney(serviceAmount),
+        discountFormatted: formatMoney(discount),
+        totalFormatted: formatMoney(total),
+        depositAmountFormatted: formatMoney(depositAmount),
+        checkinLabel: formatDate(booking.ngay_nhan),
+        checkoutLabel: formatDate(booking.ngay_tra)
+      }
+    };
+  }
+
   async createCustomerBookingPaymentHold(rawInput: unknown, preferredCustomerId = 0) {
     const preview = await this.previewBooking(rawInput);
     const hold = customerBookingHoldStore.create(preview.booking, preferredCustomerId, {
@@ -545,6 +832,33 @@ export class BookingService {
       status: hold.status,
       content: hold.content,
       roomId: hold.roomId,
+      expiresAt: hold.expiresAt,
+      paymentPending: true,
+      paymentTransfer: buildSepayTransferPayload(hold.id, preview.summary.depositAmount),
+      preview,
+      total: preview.summary.total,
+      depositAmount: preview.summary.depositAmount,
+      totalFormatted: preview.summary.totalFormatted,
+      depositAmountFormatted: preview.summary.depositAmountFormatted,
+      message: "Da tao QR giu phong 10 phut. Thanh toan coc 50% de tao booking."
+    };
+  }
+
+  async createCustomerMultiRoomPaymentHold(rawInput: unknown, preferredCustomerId = 0) {
+    const preview = await this.previewMultiRoomBooking(rawInput);
+    const hold = customerBookingHoldStore.createMulti(preview.booking, preferredCustomerId, {
+      roomAmount: preview.summary.roomAmount,
+      serviceAmount: preview.summary.serviceAmount,
+      discountAmount: preview.summary.discount,
+      total: preview.summary.total,
+      depositAmount: preview.summary.depositAmount
+    });
+
+    return {
+      holdId: hold.id,
+      status: hold.status,
+      content: hold.content,
+      roomIds: hold.roomIds || [],
       expiresAt: hold.expiresAt,
       paymentPending: true,
       paymentTransfer: buildSepayTransferPayload(hold.id, preview.summary.depositAmount),
@@ -615,10 +929,17 @@ export class BookingService {
       replaceSepayMetadata("Booking online tao sau khi khach thanh toan coc SePay.", paidMeta),
       buildSepayPaidNote(paidAmount)
     );
-    const detail = await this.createBooking(hold.input, hold.preferredCustomerId, {
-      paymentMethod: "ChuyenKhoan",
-      note
-    });
+    const isMultiRoomHold = Array.isArray((hold.input as BookingMultiRoomInput).room_ids)
+      && (hold.input as BookingMultiRoomInput).room_ids.length > 0;
+    const detail = isMultiRoomHold
+      ? await this.createMultiRoomBooking(hold.input, hold.preferredCustomerId, {
+          paymentMethod: "ChuyenKhoan",
+          note
+        })
+      : await this.createBooking(hold.input, hold.preferredCustomerId, {
+          paymentMethod: "ChuyenKhoan",
+          note
+        });
 
     customerBookingHoldStore.completeSnapshot(hold, detail.id, detail.bookingCode || "");
 
@@ -824,6 +1145,216 @@ export class BookingService {
     return detail;
   }
 
+  async createMultiRoomBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string } = {}) {
+    const preview = await this.previewMultiRoomBooking(rawInput);
+    const paymentMethod = options.paymentMethod || "ChuaThanhToan";
+    const bookingNote = options.note || "Booking online nhieu phong tao tu Node.js";
+    const guestByRoom = distributeGuests(preview.booking.so_nguoi, preview.rooms);
+
+    const bookingId = await withTransaction(async (client) => {
+      const maKhachHang = await this.resolveCustomer(client, preferredCustomerId, preview.booking);
+      const bookingCode = this.generateBookingCode();
+
+      const giaoDichResult = await client.query(
+        `
+          INSERT INTO giaodich (
+            makhachhang,
+            madatcho,
+            ngaygiaodich,
+            loaigiaodich,
+            nguondat,
+            tongtien,
+            trangthai,
+            phuongthucthanhtoan,
+            ghichu,
+            makhuyenmai
+          )
+          VALUES ($1, $2, NOW(), 'DatPhong', 'Web', $3, 'Booked', $4, $5, $6)
+          RETURNING magiaodich
+        `,
+        [
+          maKhachHang,
+          bookingCode,
+          preview.summary.total,
+          paymentMethod,
+          bookingNote,
+          preview.promotion?.id ?? null
+        ]
+      ) as { rows: Array<{ magiaodich: number }> };
+
+      const maGiaoDich = giaoDichResult.rows[0].magiaodich;
+
+      for (const room of preview.rooms) {
+        const lockedRoom = await client.query(
+          `
+            UPDATE phong
+            SET trangthai = 'Booked',
+                trangthairealtime = 'Booked'
+            WHERE maphong = $1
+              AND trangthai IN ('Trong', 'Booked')
+              AND COALESCE(NULLIF(tinhtrangphong::text, ''), 'Tot') = 'Tot'
+              AND COALESCE(NULLIF(trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
+              AND NOT EXISTS (
+                SELECT 1
+                FROM chitietgiaodich ct
+                INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+                WHERE ct.maphong = phong.maphong
+                  AND ct.trangthai IN ('Booked', 'CheckedIn')
+                  AND gd.trangthai IN ('Booked', 'Stayed')
+                  AND tstzrange(ct.ngaynhandukien, ct.ngaytradukien, '[)')
+                    && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+              )
+            RETURNING maphong
+          `,
+          [room.id, preview.booking.ngay_nhan, preview.booking.ngay_tra]
+        ) as { rowCount: number | null };
+
+        if (!lockedRoom.rowCount) {
+          throw new HttpError(409, `Phong ${room.soPhong} vua duoc dat boi giao dich khac. Vui long chon phong khac.`);
+        }
+
+        const roomGuestCount = guestByRoom.get(Number(room.id)) || 1;
+        await client.query(
+          `
+            INSERT INTO chitietgiaodich (
+              magiaodich,
+              maphong,
+              songuoi,
+              ngaynhandukien,
+              ngaytradukien,
+              dongia,
+              thanhtien,
+              trangthai,
+              tenkhach,
+              cccd,
+              sdt,
+              email,
+              makhuyenmai
+            )
+            VALUES ($1, $2, $3, $4::timestamptz, $5::timestamptz, $6, $7, 'Booked', $8, $9, $10, $11, $12)
+          `,
+          [
+            maGiaoDich,
+            room.id,
+            roomGuestCount,
+            preview.booking.ngay_nhan,
+            preview.booking.ngay_tra,
+            room.gia,
+            room.amount,
+            preview.booking.ten_khach,
+            preview.booking.cccd,
+            preview.booking.sdt,
+            preview.booking.email,
+            preview.promotion?.id ?? null
+          ]
+        );
+
+        await client.query(
+          `
+            INSERT INTO booking_history (
+              makhachhang,
+              maphong,
+              magiaodich,
+              ngaydat,
+              songuoi,
+              dongia,
+              ketqua
+            )
+            VALUES ($1, $2, $3, NOW(), $4, $5, 'Booked')
+          `,
+          [
+            maKhachHang,
+            room.id,
+            maGiaoDich,
+            roomGuestCount,
+            room.gia
+          ]
+        );
+
+        await client.query(
+          `
+            INSERT INTO room_status_log (
+              maphong,
+              trangthaicu,
+              trangthaimoi,
+              nguonthaydoi,
+              magiaodich,
+              thoidiem,
+              ghichu
+            )
+            VALUES ($1, 'Trong', 'Booked', 'API', $2, NOW(), $3)
+          `,
+          [room.id, maGiaoDich, "Booking online nhieu phong duoc tao tu Node.js"]
+        );
+      }
+
+      for (const service of preview.services) {
+        await client.query(
+          `
+            INSERT INTO chitietdichvu (
+              magiaodich,
+              maphong,
+              madichvu,
+              soluong,
+              giaban,
+              thanhtien,
+              ghichu,
+              trangthaidichvu
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'ChuaSuDung')
+          `,
+          [
+            maGiaoDich,
+            service.room_id,
+            service.service_id,
+            service.quantity,
+            service.unitPrice,
+            service.amount,
+            service.note || null
+          ]
+        );
+      }
+
+      return maGiaoDich;
+    });
+
+    const detail = await this.getBookingDetail(bookingId);
+
+    for (const room of preview.rooms) {
+      realtimeHub.publish({
+        type: "room_status_changed",
+        scopes: ["admin", "letan", "dichvu", "quanly"],
+        data: {
+          roomId: room.id,
+          roomNumber: room.soPhong,
+          hotelName: room.khachSan,
+          transactionId: bookingId,
+          transactionCode: detail.bookingCode,
+          fromStatus: "Trong",
+          toStatus: "Booked",
+          source: "booking",
+          note: "Phong vua duoc dat online."
+        }
+      });
+    }
+
+    realtimeHub.publish({
+      type: "booking_created",
+      scopes: ["admin", "letan", "quanly", "cskh"],
+      data: {
+        bookingId,
+        bookingCode: detail.bookingCode,
+        customerName: detail.customer.name,
+        roomCount: preview.rooms.length,
+        serviceCount: preview.services.length,
+        total: detail.total,
+        totalFormatted: detail.totalFormatted
+      }
+    });
+
+    return detail;
+  }
+
   async getBookingDetail(maGiaoDich: number) {
     const result = await query<BookingLookupRow>(
       `
@@ -886,6 +1417,7 @@ export class BookingService {
       statusLabel: formatBookingStatus(first.trangThai),
       cancelable: isCustomerCancelableBooking(first.trangThai),
       editable: isCustomerEditableBooking(first.trangThai, first.ngayNhanDuKien),
+      cancelPreview: this.buildCustomerCancellationPreview(result.rows, first.ghiChu),
       total: Number(first.tongTien),
       totalFormatted: formatMoney(first.tongTien),
       paymentMethod: first.phuongThucThanhToan,
@@ -1077,6 +1609,14 @@ export class BookingService {
       statusLabel: formatBookingStatus(row.trangThai),
       cancelable: isCustomerCancelableBooking(row.trangThai),
       editable: isCustomerEditableBooking(row.trangThai, row.minCheckin),
+      cancelPreview: this.buildCustomerCancellationPreview([
+        {
+          ngayNhanDuKien: row.minCheckin,
+          thanhTienPhong: row.roomTotal,
+          donGia: row.roomTotal,
+          trangThaiPhong: "Booked"
+        }
+      ], row.ghiChu),
       total: Number(row.tongTien),
       totalFormatted: formatMoney(row.tongTien),
       paymentMethod: row.phuongThucThanhToan,
@@ -1113,7 +1653,8 @@ export class BookingService {
           ngayketthuc AS "ngayKetThuc",
           mucuudai AS "mucUuDai",
           trangthai AS "trangThai",
-          loaiuudai AS "loaiUuDai"
+          loaiuudai AS "loaiUuDai",
+          doituong AS "doiTuong"
         FROM khuyenmai
         WHERE trangthai = 'DangApDung'
         ORDER BY makhuyenmai DESC
@@ -1148,7 +1689,8 @@ export class BookingService {
         total: Number(row.tongTien),
         totalFormatted: formatMoney(row.tongTien),
         roomAmountFormatted: formatMoney(row.thanhTienPhong),
-        currentPromotionId: row.maKhuyenMai
+        currentPromotionId: row.maKhuyenMai,
+        cancelPreview: this.buildCustomerCancellationPreview(rows, row.ghiChu)
       },
       room: {
         id: row.maPhong,
@@ -1212,6 +1754,8 @@ export class BookingService {
       }
       const discount = calculatePromotionDiscount(subtotal, promotion);
       const roomTotal = Math.max(0, subtotal - discount);
+      const dateChangeNote = this.buildCustomerEditPolicyNote(current.ngayNhanDuKien, current.ngayTraDuKien, input.ngay_nhan, input.ngay_tra);
+      const updateNote = appendNote("Khách hàng cập nhật booking online.", dateChangeNote);
 
       await client.query(
         `
@@ -1268,8 +1812,8 @@ export class BookingService {
           SET tongtien = COALESCE(total_calc.total, 0),
               makhuyenmai = $2,
               ghichu = CASE
-                WHEN COALESCE(gd.ghichu, '') = '' THEN 'Khách hàng cập nhật booking online.'
-                ELSE CONCAT(gd.ghichu, ' | Khách hàng cập nhật booking online.')
+                WHEN COALESCE(gd.ghichu, '') = '' THEN $3
+                ELSE CONCAT(gd.ghichu, ' | ', $3)
               END
           FROM (
             SELECT
@@ -1289,7 +1833,7 @@ export class BookingService {
           ) total_calc
           WHERE gd.magiaodich = total_calc.magiaodich
         `,
-        [maGiaoDich, input.ma_km ?? null]
+        [maGiaoDich, input.ma_km ?? null, updateNote]
       );
 
       return maGiaoDich;
@@ -1352,7 +1896,10 @@ export class BookingService {
     return result.rows[0] ?? null;
   }
 
-  async cancelBookingForCustomer(maGiaoDich: number, maKhachHang: number, reason = "") {
+  async cancelBookingForCustomer(maGiaoDich: number, maKhachHang: number, rawInput: unknown = {}) {
+    const input = typeof rawInput === "string"
+      ? customerBookingCancelSchema.parse({ reason: rawInput })
+      : customerBookingCancelSchema.parse(rawInput || {});
     const cancellation = await withTransaction(async (client) => {
       const bookingRows = await client.query(
         `
@@ -1361,7 +1908,11 @@ export class BookingService {
             gd.madatcho AS "maDatCho",
             gd.trangthai AS "trangThai",
             gd.tongtien AS "tongTien",
+            gd.ghichu AS "ghiChu",
             gd.makhachhang AS "maKhachHang",
+            kh.tenkh AS "customerName",
+            kh.sdt AS "customerPhone",
+            kh.email AS "customerEmail",
             ct.mactgd AS "maCtGd",
             ct.maphong AS "maPhong",
             ct.songuoi AS "soNguoi",
@@ -1369,9 +1920,11 @@ export class BookingService {
             ct.ngaynhandukien AS "ngayNhanDuKien",
             ct.ngaytradukien AS "ngayTraDuKien",
             ct.dongia AS "donGia",
+            ct.thanhtien AS "thanhTienPhong",
             p.sophong AS "soPhong",
             ks.tenkhachsan AS "khachSan"
           FROM giaodich gd
+          INNER JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
           INNER JOIN chitietgiaodich ct ON ct.magiaodich = gd.magiaodich
           INNER JOIN phong p ON p.maphong = ct.maphong
           INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
@@ -1387,7 +1940,11 @@ export class BookingService {
           maDatCho: string | null;
           trangThai: string;
           tongTien: number;
+          ghiChu: string | null;
           maKhachHang: number;
+          customerName: string | null;
+          customerPhone: string | null;
+          customerEmail: string | null;
           maCtGd: number;
           maPhong: number;
           soNguoi: number;
@@ -1395,6 +1952,7 @@ export class BookingService {
           ngayNhanDuKien: string | null;
           ngayTraDuKien: string | null;
           donGia: number;
+          thanhTienPhong: number;
           soPhong: string;
           khachSan: string;
         }>;
@@ -1414,6 +1972,26 @@ export class BookingService {
         throw new HttpError(409, "Booking nay da co phong dang o/da xu ly, khong the huy online.");
       }
 
+      await this.ensureRefundRequestTable(client);
+      const refundQuote = await this.calculateCustomerCancelRefundQuote(bookingRows.rows, header.ghiChu, header.maGiaoDich, client);
+      const refundBankName = String(input.refund_bank_name || "").trim();
+      const refundAccountNo = String(input.refund_account_no || "").replace(/\s+/g, "").trim();
+      const refundAccountName = String(input.refund_account_name || "").trim();
+      const refundNote = String(input.refund_note || "").trim();
+
+      if (refundQuote.refundAmount > 0) {
+        if (!refundBankName || !refundAccountNo || !refundAccountName) {
+          throw new HttpError(422, "Booking có cọc đủ điều kiện hoàn. Vui lòng nhập ngân hàng, số tài khoản và chủ tài khoản để tạo yêu cầu hoàn tiền.");
+        }
+        if (!/^[0-9]{4,32}$/.test(refundAccountNo)) {
+          throw new HttpError(422, "Số tài khoản hoàn tiền chỉ gồm 4-32 chữ số.");
+        }
+      }
+
+      const reason = input.reason.trim();
+      const cancelNote = `Khách hàng hủy booking online lúc ${formatDate(new Date(), "YYYY-MM-DD HH:mm:ss")}; Lý do: ${reason}`;
+      const refundCode = refundQuote.refundAmount > 0 ? `RF-${header.maGiaoDich}-${Date.now().toString(36).toUpperCase()}` : "";
+
       await client.query(
         `
           UPDATE chitietgiaodich
@@ -1425,20 +2003,30 @@ export class BookingService {
           WHERE magiaodich = $1
             AND trangthai = 'Booked'
         `,
-        [maGiaoDich, reason.trim() || "Khach hang huy booking online."]
+        [maGiaoDich, cancelNote]
+      );
+
+      await client.query(
+        `
+          DELETE FROM chitietdichvu
+          WHERE magiaodich = $1
+            AND trangthaidichvu = 'ChuaSuDung'
+        `,
+        [maGiaoDich]
       );
 
       await client.query(
         `
           UPDATE giaodich
           SET trangthai = 'DaHuy',
+              tongtien = $3,
               ghichu = CASE
                 WHEN COALESCE(ghichu, '') = '' THEN $2
                 ELSE CONCAT(ghichu, ' | ', $2)
               END
           WHERE magiaodich = $1
         `,
-        [maGiaoDich, reason.trim() || "Khach hang huy booking online."]
+        [maGiaoDich, cancelNote, refundQuote.retainedDeposit]
       );
 
       for (const row of bookingRows.rows) {
@@ -1446,16 +2034,14 @@ export class BookingService {
           `
             UPDATE phong
             SET trangthai = CASE
-              WHEN EXISTS (
-                SELECT 1
-                FROM chitietgiaodich active_ct
-                INNER JOIN giaodich active_gd ON active_gd.magiaodich = active_ct.magiaodich
-                WHERE active_ct.maphong = phong.maphong
-                  AND active_ct.trangthai IN ('Booked', 'CheckedIn')
-                  AND active_gd.trangthai IN ('Booked', 'Stayed')
-              ) THEN phong.trangthai
-              ELSE 'Trong'
-            END
+                  WHEN tinhtrangphong IN ('HuHaiNhe', 'HuHaiNang', 'DangBaoTri') THEN 'BaoTri'::phong_trangthai
+                  ELSE 'Trong'::phong_trangthai
+                END,
+                trangthairealtime = CASE
+                  WHEN tinhtrangphong IN ('HuHaiNhe', 'HuHaiNang', 'DangBaoTri') THEN 'Maintenance'::phong_trangthairealtime
+                  WHEN tinhtrangphong = 'CanVeSinh' THEN 'Cleaning'::phong_trangthairealtime
+                  ELSE 'Available'::phong_trangthairealtime
+                END
             WHERE maphong = $1
           `,
           [row.maPhong]
@@ -1474,7 +2060,76 @@ export class BookingService {
             INSERT INTO room_status_log (maphong, trangthaicu, trangthaimoi, nguonthaydoi, magiaodich, thoidiem, ghichu)
             VALUES ($1, 'Booked', 'Trong', 'API', $2, NOW(), $3)
           `,
-          [row.maPhong, maGiaoDich, reason.trim() || "Khach hang huy booking online."]
+          [row.maPhong, maGiaoDich, cancelNote]
+        );
+      }
+
+      if (refundQuote.refundAmount > 0) {
+        await client.query(
+          `
+            INSERT INTO refund_requests (
+              magiaodich,
+              refund_code,
+              scope,
+              room_ids,
+              customer_name,
+              customer_phone,
+              customer_email,
+              bank_name,
+              bank_account_no,
+              bank_account_name,
+              reason,
+              note,
+              deposit_paid,
+              retained_deposit,
+              already_requested,
+              refundable_base,
+              refund_rate,
+              hours_before_checkin,
+              cancellation_policy_key,
+              cancellation_policy_label,
+              cancellation_policy_note,
+              amount_requested,
+              status,
+              created_by_role
+            )
+            VALUES ($1,$2,'all',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,'ChoQuanLyDuyet','KhachHang')
+          `,
+          [
+            header.maGiaoDich,
+            refundCode,
+            bookingRows.rows.map((item) => item.maPhong).join(","),
+            header.customerName || "",
+            header.customerPhone || "",
+            header.customerEmail || "",
+            refundBankName,
+            refundAccountNo,
+            refundAccountName,
+            reason,
+            refundNote || `Yêu cầu hoàn tiền tạo từ UC khách hàng hủy booking. ${refundQuote.policy.label}: ${formatMoney(refundQuote.refundAmount)}.`,
+            refundQuote.paidDeposit,
+            refundQuote.retainedDeposit,
+            refundQuote.alreadyRequested,
+            refundQuote.refundableBase,
+            refundQuote.policy.ratePercent,
+            refundQuote.policy.hoursBeforeCheckIn,
+            refundQuote.policy.key,
+            refundQuote.policy.label,
+            refundQuote.policy.note,
+            refundQuote.refundAmount
+          ]
+        );
+
+        await client.query(
+          `
+            UPDATE giaodich
+            SET ghichu = CASE
+              WHEN COALESCE(ghichu, '') = '' THEN $2
+              ELSE ghichu || ' | ' || $2
+            END
+            WHERE magiaodich = $1
+          `,
+          [header.maGiaoDich, `[REFUND_REQUEST code=${refundCode} amount=${refundQuote.refundAmount} status=ChoQuanLyDuyet source=KhachHang]`]
         );
       }
 
@@ -1482,6 +2137,14 @@ export class BookingService {
         id: header.maGiaoDich,
         bookingCode: header.maDatCho,
         total: Number(header.tongTien || 0),
+        reason,
+        refund: {
+          ...refundQuote,
+          refundCode,
+          refundAmountFormatted: formatMoney(refundQuote.refundAmount),
+          retainedDepositFormatted: formatMoney(refundQuote.retainedDeposit),
+          paidDepositFormatted: formatMoney(refundQuote.paidDeposit)
+        },
         rooms: bookingRows.rows.map((item) => ({
           roomId: item.maPhong,
           roomNumber: item.soPhong,
@@ -1496,7 +2159,9 @@ export class BookingService {
       data: {
         bookingId: cancellation.id,
         bookingCode: cancellation.bookingCode,
-        reason: reason.trim() || "Khach hang huy booking online.",
+        reason: cancellation.reason,
+        refundAmount: cancellation.refund.refundAmount,
+        refundCode: cancellation.refund.refundCode,
         rooms: cancellation.rooms
       }
     });
@@ -1514,15 +2179,229 @@ export class BookingService {
           fromStatus: "Booked",
           toStatus: "Trong",
           source: "customer_cancel",
-          note: reason.trim() || "Khach hang huy booking online."
+          note: cancellation.reason
         }
       });
     });
 
     return {
       ...cancellation,
-      totalFormatted: formatMoney(cancellation.total)
+      totalFormatted: formatMoney(cancellation.total),
+      message: cancellation.refund.refundAmount > 0
+        ? `Đã hủy booking và tạo yêu cầu hoàn tiền ${cancellation.refund.refundAmountFormatted} chờ quản lý duyệt.`
+        : "Đã hủy booking. Booking không phát sinh khoản hoàn tiền tự động theo chính sách hiện tại."
     };
+  }
+
+  private buildCustomerCancellationPreview(
+    rooms: Array<{ ngayNhanDuKien?: string | null; thanhTienPhong?: number | string | null; donGia?: number | string | null; trangThaiPhong?: string | null; trangThaiChiTiet?: string | null }>,
+    note: string | null | undefined,
+    alreadyRequested = 0
+  ) {
+    const sepayMeta = parseSepayMetadata(note);
+    const paidDeposit = sepayMeta?.status === "PAID"
+      ? Math.max(0, Math.round(sepayMeta.paidAmount || sepayMeta.depositAmount || 0))
+      : 0;
+    const policy = this.getCustomerCancelPolicy(rooms, note);
+    const availableDeposit = Math.max(0, paidDeposit - Math.max(0, alreadyRequested));
+    const refundableBase = Math.min(availableDeposit, paidDeposit);
+    const refundAmount = Math.min(availableDeposit, Math.max(0, Math.round(refundableBase * policy.rate)));
+    const retainedDeposit = Math.max(0, refundableBase - refundAmount);
+
+    return {
+      hasPaidDeposit: paidDeposit > 0,
+      needsBankInfo: refundAmount > 0,
+      paidDeposit,
+      alreadyRequested: Math.max(0, alreadyRequested),
+      availableDeposit,
+      refundableBase,
+      retainedDeposit,
+      refundAmount,
+      policy,
+      paidDepositFormatted: formatMoney(paidDeposit),
+      alreadyRequestedFormatted: formatMoney(alreadyRequested),
+      availableDepositFormatted: formatMoney(availableDeposit),
+      refundableBaseFormatted: formatMoney(refundableBase),
+      retainedDepositFormatted: formatMoney(retainedDeposit),
+      refundAmountFormatted: formatMoney(refundAmount),
+      statusText: paidDeposit > 0
+        ? (refundAmount > 0 ? "Có cọc SePay, hủy sẽ tạo yêu cầu hoàn tiền chờ quản lý duyệt." : "Có cọc SePay nhưng không còn khoản hoàn tự động theo chính sách.")
+        : "Chưa ghi nhận cọc SePay nên hủy không tạo yêu cầu hoàn tiền."
+    };
+  }
+
+  private async calculateCustomerCancelRefundQuote(
+    rooms: Array<{ ngayNhanDuKien?: string | null; thanhTienPhong?: number | string | null; donGia?: number | string | null }>,
+    note: string | null | undefined,
+    transactionId: number,
+    client?: any
+  ) {
+    const alreadyRequested = await this.getExistingRefundRequestAmount(client || null, transactionId);
+    return this.buildCustomerCancellationPreview(rooms, note, alreadyRequested);
+  }
+
+  private getCustomerCancelPolicy(
+    rooms: Array<{ ngayNhanDuKien?: string | null }>,
+    note: string | null | undefined
+  ) {
+    const checkInAt = this.getCustomerPolicyCheckIn(rooms, note);
+    if (!checkInAt) {
+      return {
+        key: "NO_REFUND_UNKNOWN_DATE",
+        label: "Không hoàn cọc",
+        rate: 0,
+        ratePercent: 0,
+        hoursBeforeCheckIn: null as number | null,
+        daysBeforeCheckIn: null as number | null,
+        noRefund: true,
+        note: "Không xác định được ngày nhận phòng nên cần CSKH/khách sạn xử lý ngoại lệ."
+      };
+    }
+
+    const diffHours = (checkInAt.getTime() - Date.now()) / (1000 * 60 * 60);
+    const tier = CUSTOMER_CANCEL_POLICY_TIERS.find((item) => diffHours >= item.minHours) || CUSTOMER_CANCEL_POLICY_TIERS[CUSTOMER_CANCEL_POLICY_TIERS.length - 1];
+    const hoursBeforeCheckIn = Math.max(0, Math.round(diffHours * 10) / 10);
+
+    return {
+      key: tier.key,
+      label: tier.label,
+      rate: tier.rate,
+      ratePercent: Math.round(tier.rate * 100),
+      hoursBeforeCheckIn,
+      daysBeforeCheckIn: Math.max(0, Math.floor(hoursBeforeCheckIn / 24)),
+      noRefund: tier.rate <= 0,
+      note: tier.note
+    };
+  }
+
+  private getCustomerPolicyCheckIn(rooms: Array<{ ngayNhanDuKien?: string | null }>, note: string | null | undefined) {
+    const candidates = rooms
+      .map((room) => this.parsePolicyCheckInDate(room.ngayNhanDuKien))
+      .filter((date): date is Date => Boolean(date));
+
+    const rawNote = String(note || "");
+    const oldCheckinRegex = /\[CUSTOMER_EDIT[^\]]*old_checkin=(\d{4}-\d{2}-\d{2})/gi;
+    let match: RegExpExecArray | null;
+    while ((match = oldCheckinRegex.exec(rawNote))) {
+      const parsed = this.parsePolicyCheckInDate(match[1]);
+      if (parsed) {
+        candidates.push(parsed);
+      }
+    }
+
+    return candidates.sort((a, b) => a.getTime() - b.getTime())[0] || null;
+  }
+
+  private parsePolicyCheckInDate(value: string | Date | null | undefined) {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    const raw = String(value).trim();
+    const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnly) {
+      return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 14, 0, 0, 0);
+    }
+    const dateTime = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+    if (dateTime) {
+      const hour = Number(dateTime[4]);
+      const minute = Number(dateTime[5]);
+      return new Date(Number(dateTime[1]), Number(dateTime[2]) - 1, Number(dateTime[3]), hour || 14, minute, 0, 0);
+    }
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private buildCustomerEditPolicyNote(oldCheckin: string | null | undefined, oldCheckout: string | null | undefined, newCheckin: string, newCheckout: string) {
+    const oldIn = oldCheckin ? dayjs(oldCheckin).format("YYYY-MM-DD") : "";
+    const oldOut = oldCheckout ? dayjs(oldCheckout).format("YYYY-MM-DD") : "";
+    if (oldIn === newCheckin && oldOut === newCheckout) {
+      return "";
+    }
+
+    return `[CUSTOMER_EDIT old_checkin=${oldIn || "-"} old_checkout=${oldOut || "-"} new_checkin=${newCheckin} new_checkout=${newCheckout}]`;
+  }
+
+  private async getExistingRefundRequestAmount(client: any | null, transactionId: number) {
+    await this.ensureRefundRequestTable(client || undefined);
+    const db = client || { query };
+    const result = await db.query(
+      `
+        SELECT COALESCE(SUM(amount_requested), 0)::numeric AS total
+        FROM refund_requests
+        WHERE magiaodich = $1
+          AND status <> 'TuChoi'
+      `,
+      [transactionId]
+    ) as { rows: Array<{ total: number | string }> };
+
+    return Math.max(0, Math.round(Number(result.rows[0]?.total || 0)));
+  }
+
+  private async ensureRefundRequestTable(client?: any) {
+    const db = client || { query };
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS refund_requests (
+        id SERIAL PRIMARY KEY,
+        magiaodich INT NOT NULL REFERENCES giaodich(magiaodich) ON DELETE CASCADE,
+        refund_code TEXT NOT NULL UNIQUE,
+        scope TEXT NOT NULL DEFAULT 'all',
+        room_ids TEXT NOT NULL DEFAULT '',
+        customer_name TEXT,
+        customer_phone TEXT,
+        customer_email TEXT,
+        bank_name TEXT NOT NULL,
+        bank_account_no TEXT NOT NULL,
+        bank_account_name TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        note TEXT,
+        deposit_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        retained_deposit NUMERIC(14,2) NOT NULL DEFAULT 0,
+        already_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        refundable_base NUMERIC(14,2) NOT NULL DEFAULT 0,
+        refund_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
+        hours_before_checkin NUMERIC(10,2),
+        cancellation_policy_key TEXT,
+        cancellation_policy_label TEXT,
+        cancellation_policy_note TEXT,
+        amount_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ChoQuanLyDuyet',
+        created_by_role TEXT NOT NULL DEFAULT 'KhachHang',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        processed_at TIMESTAMPTZ NULL,
+        accounting_note TEXT,
+        manager_note TEXT,
+        manager_reviewed_at TIMESTAMPTZ NULL,
+        manager_by TEXT,
+        refund_payment_content TEXT,
+        refund_bank_txn_id TEXT,
+        refund_payment_proof TEXT,
+        refund_paid_at TIMESTAMPTZ NULL,
+        refund_paid_by TEXT
+      )
+    `);
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refundable_base NUMERIC(14,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_rate NUMERIC(5,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS hours_before_checkin NUMERIC(10,2)");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_key TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_label TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_by TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_payment_content TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_bank_txn_id TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_payment_proof TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_paid_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_paid_by TEXT");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_magiaodich ON refund_requests(magiaodich)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_status ON refund_requests(status)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_bank_txn ON refund_requests(refund_bank_txn_id)");
   }
 
   private async getPromotionById(maKhuyenMai: number) {
@@ -1535,7 +2414,8 @@ export class BookingService {
           ngayketthuc AS "ngayKetThuc",
           mucuudai AS "mucUuDai",
           trangthai AS "trangThai",
-          loaiuudai AS "loaiUuDai"
+          loaiuudai AS "loaiUuDai",
+          doituong AS "doiTuong"
         FROM khuyenmai
         WHERE makhuyenmai = $1
         LIMIT 1
@@ -1557,6 +2437,7 @@ export class BookingService {
           gd.trangthai AS "trangThai",
           gd.tongtien AS "tongTien",
           gd.makhuyenmai AS "maKhuyenMai",
+          gd.ghichu AS "ghiChu",
           ct.mactgd AS "maCtGd",
           ct.maphong AS "maPhong",
           p.sophong AS "soPhong",
@@ -1664,7 +2545,7 @@ export class BookingService {
     }
   }
 
-  private async resolveCustomer(client: any, preferredCustomerId: number, booking: BookingPreviewInput) {
+  private async resolveCustomer(client: any, preferredCustomerId: number, booking: BookingPreviewInput | BookingMultiRoomInput) {
     if (preferredCustomerId > 0) {
       await client.query(
         "UPDATE khachhang SET tenkh = $1, sdt = $2, email = $3, cccd = $4 WHERE makhachhang = $5",

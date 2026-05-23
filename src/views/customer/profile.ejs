@@ -1,7 +1,8 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
 <%
-  const statusTone = String(profile.trangThaiEkyc || "ChuaXacThuc");
+  const ekyc = typeof ekycPayload !== "undefined" && ekycPayload ? ekycPayload : {};
+  const statusTone = String(ekyc.customer?.ekyc_status || ekyc.customer?.trangThaiEkyc || profile.trangThaiEkyc || "ChuaXacThuc");
   const completed = [profile.tenKh, profile.email, profile.sdt, profile.cccd, profile.diaChi].filter(Boolean).length;
   const completion = Math.round((completed / 5) * 100);
   const statusLabel = {
@@ -10,6 +11,17 @@
     DangXuLy: "Đang xử lý",
     ChuaXacThuc: "Chưa xác thực"
   }[statusTone] || statusTone;
+  const verification = ekyc.verification || null;
+  const ekycHistory = ekyc.history || [];
+  const effectiveEkycResult = verification?.result || (statusTone === "DaXacThuc" ? "ThanhCong" : statusTone === "ThatBai" ? "ThatBai" : "ChuaXacThuc");
+  const effectiveEkycLabel = verification?.result_label || statusLabel;
+  const ekycLockedReason = effectiveEkycResult === "ThanhCong"
+    ? "Hồ sơ eKYC đã được xác thực. Bạn không cần gửi lại; nếu cần đổi giấy tờ định danh, vui lòng liên hệ CSKH hoặc lễ tân để được hỗ trợ."
+    : effectiveEkycResult === "DangXuLy"
+      ? "Hồ sơ mới nhất đang chờ duyệt. Bạn có thể gửi lại sau khi Quản lý phê duyệt hoặc từ chối hồ sơ này."
+      : "";
+  const canSubmitEkyc = !ekycLockedReason;
+  const ekycToneClass = effectiveEkycResult === "ThanhCong" ? "is-ok" : effectiveEkycResult === "ThatBai" ? "is-bad" : effectiveEkycResult === "DangXuLy" ? "is-warn" : "is-idle";
 %>
 <style>
   body{background:radial-gradient(circle at 7% 8%,rgba(20,184,166,.30),transparent 30%),radial-gradient(circle at 86% 10%,rgba(14,165,233,.24),transparent 32%),radial-gradient(circle at 54% 100%,rgba(163,230,53,.20),transparent 38%),linear-gradient(135deg,#fbfffb 0%,#e9fbf6 42%,#f7fbff 100%);color:#102033}
@@ -34,6 +46,7 @@
   .profile-pill.is-ok{color:#047857;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.2)}
   .profile-pill.is-warn{color:#b45309;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.22)}
   .profile-pill.is-bad{color:#be123c;background:rgba(244,63,94,.10);border-color:rgba(244,63,94,.18)}
+  .profile-pill.is-idle{color:#475569;background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.20)}
   .profile-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
   .profile-stat{border-radius:24px;padding:17px}
   .profile-stat span{display:block;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
@@ -62,11 +75,24 @@
   .profile-check{display:flex;align-items:center;gap:9px;color:#38546b;font-size:13px;font-weight:800}
   .profile-check::before{content:"";width:11px;height:11px;border-radius:999px;background:#cbd5e1}
   .profile-check.is-done::before{background:#14b8a6;box-shadow:0 0 0 5px rgba(20,184,166,.11)}
+  .profile-ekyc{margin-top:18px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+  .profile-ekyc-card{border:1px solid var(--line);border-radius:30px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.70));box-shadow:0 24px 64px rgba(12,39,64,.11);backdrop-filter:blur(20px)}
+  .profile-ekyc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+  .profile-ekyc-head h2,.profile-ekyc-card h3{margin:0;color:var(--ink);letter-spacing:-.05em}.profile-ekyc-head h2{font-size:30px}.profile-ekyc-card h3{font-size:23px}
+  .profile-ekyc-grid{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;margin:16px 0}.profile-ekyc-field{display:grid;gap:7px}
+  .profile-ekyc-field label{font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em;color:#173651}
+  .profile-ekyc-field input,.profile-ekyc-field select{width:100%;min-height:48px;border-radius:17px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);color:#102033;padding:10px 13px;font:inherit;outline:none;box-sizing:border-box}
+  .profile-upload-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.profile-upload{position:relative;overflow:hidden;border-radius:24px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.72);padding:13px}
+  .profile-preview{height:170px;border-radius:18px;border:1px dashed rgba(18,48,71,.18);background:linear-gradient(135deg,rgba(236,253,245,.82),rgba(240,249,255,.72));display:grid;place-items:center;color:#5f778f;text-align:center;font-weight:900;overflow:hidden}.profile-preview img{width:100%;height:100%;object-fit:cover;display:block}
+  .profile-upload input{margin-top:11px;width:100%;font-size:12px}.profile-history{display:grid;gap:10px;margin-top:12px}.profile-history-item{border-radius:18px;border:1px solid rgba(18,48,71,.09);background:rgba(255,255,255,.62);padding:12px}
+  .profile-history-item strong{display:block;color:#102033}.profile-history-item span{display:block;margin-top:4px;color:var(--muted);font-size:12px;line-height:1.45}
+  .profile-ekyc-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.profile-ekyc-img{height:100px;border-radius:16px;overflow:hidden;background:rgba(148,163,184,.15);border:1px solid rgba(18,48,71,.10);display:grid;place-items:center;text-align:center;color:#64748b;font-size:11px;font-weight:900;line-height:1.35;padding:8px}.profile-ekyc-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .profile-lock{border-radius:18px;border:1px solid rgba(245,158,11,.22);background:rgba(255,251,235,.82);color:#92400e;padding:12px;font-size:13px;font-weight:800;line-height:1.45}
   @keyframes profile-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
   @keyframes profile-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
   @keyframes profile-breathe{0%,100%{transform:rotate(18deg) scale(1)}50%{transform:rotate(25deg) scale(1.04)}}
-  @media(max-width:980px){.profile-hero,.profile-layout{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media(max-width:640px){.profile-shell{padding:22px 12px 48px}.profile-hero,.profile-panel,.profile-card{border-radius:26px;padding:20px}.profile-form,.profile-stats{grid-template-columns:1fr}.profile-identity{display:none}}
+  @media(max-width:980px){.profile-hero,.profile-layout,.profile-ekyc{grid-template-columns:1fr}.profile-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:640px){.profile-shell{padding:22px 12px 48px}.profile-hero,.profile-panel,.profile-card,.profile-ekyc-card{border-radius:26px;padding:20px}.profile-form,.profile-stats,.profile-ekyc-grid,.profile-upload-grid,.profile-ekyc-images{grid-template-columns:1fr}.profile-identity{display:none}}
 </style>
 
 <main class="profile-shell">
@@ -74,18 +100,18 @@
     <div>
       <span class="profile-kicker"><span class="profile-dot"></span> Hồ sơ cá nhân</span>
       <h1>Thông tin của bạn <span>luôn sẵn sàng.</span></h1>
-      <p class="profile-muted">Cập nhật email, số điện thoại và địa chỉ để hệ thống gửi thông báo booking, hóa đơn, dịch vụ và hỗ trợ check-in chính xác hơn.</p>
+      <p class="profile-muted">Quản lý thông tin liên hệ, giấy tờ định danh và eKYC trong một luồng để đặt phòng, nhận phòng và hỗ trợ sau lưu trú chính xác hơn.</p>
       <div class="profile-actions">
-        <a class="profile-button profile-button--primary" href="/ekyc">Mở eKYC</a>
+        <a class="profile-button profile-button--primary" href="#ekyc-section">Mở eKYC</a>
         <a class="profile-button" href="/customer/dashboard">Về dashboard</a>
-        <a class="profile-button" href="/customer/bookings">Lịch sử booking</a>
+        <a class="profile-button" href="/customer/bookings">Quản lý đặt phòng</a>
       </div>
     </div>
     <aside class="profile-identity">
       <div class="profile-avatar"><%= (profile.tenKh || "KH").trim().slice(0, 2).toUpperCase() %></div>
       <h3 style="margin:16px 0 6px"><%= profile.tenKh || "Khách hàng" %></h3>
       <div class="profile-muted"><%= profile.email || "Chưa có email" %></div>
-      <span class="profile-pill <%= statusTone === "DaXacThuc" ? "is-ok" : statusTone === "ThatBai" ? "is-bad" : "is-warn" %>">eKYC: <%= statusLabel %></span>
+      <span class="profile-pill <%= ekycToneClass %>">eKYC: <%= effectiveEkycLabel %></span>
     </aside>
   </section>
 
@@ -95,13 +121,13 @@
   <section class="profile-stats">
     <article class="profile-stat"><span>Hoàn thiện hồ sơ</span><strong><%= completion %>%</strong></article>
     <article class="profile-stat"><span>Loại khách</span><strong><%= profile.loaiKhach || "Cá nhân" %></strong></article>
-    <article class="profile-stat"><span>eKYC</span><strong><%= statusLabel %></strong></article>
+    <article class="profile-stat"><span>eKYC</span><strong><%= effectiveEkycLabel %></strong></article>
   </section>
 
   <section class="profile-layout">
     <form class="profile-panel" method="post" action="/customer/profile" id="customerProfileForm" novalidate>
       <h2>Cập nhật liên hệ</h2>
-      <p class="profile-muted">Họ tên và CCCD là thông tin định danh nên không chỉnh trực tiếp tại màn này. Nếu cần đổi CCCD, hãy gửi lại eKYC.</p>
+      <p class="profile-muted">Họ tên và CCCD là thông tin định danh nên không chỉnh trực tiếp tại màn này. Nếu cần đổi CCCD sau khi đã xác thực, vui lòng liên hệ CSKH hoặc lễ tân để hỗ trợ.</p>
       <div class="profile-form">
         <div class="profile-field">
           <label>Họ tên</label>
@@ -152,6 +178,112 @@
       </article>
     </aside>
   </section>
+
+  <section class="profile-ekyc" id="ekyc-section">
+    <form class="profile-ekyc-card" method="post" action="/ekyc" enctype="multipart/form-data" id="ekycForm" novalidate>
+      <div class="profile-ekyc-head">
+        <div>
+          <h2>Hồ sơ eKYC</h2>
+          <p class="profile-muted">Tải giấy tờ và selfie để Quản lý duyệt trước khi đến quầy. Hệ thống kiểm định dạng giấy tờ, đủ ảnh và giữ lịch sử gửi rõ ràng.</p>
+        </div>
+        <span class="profile-pill <%= ekycToneClass %>"><%= effectiveEkycLabel %></span>
+      </div>
+
+      <% if (ekycLockedReason) { %>
+        <div class="profile-lock"><%= ekycLockedReason %></div>
+      <% } %>
+
+      <div class="profile-ekyc-grid">
+        <div class="profile-ekyc-field">
+          <label>Loại giấy tờ</label>
+          <select name="document_type" id="documentType" <%= canSubmitEkyc ? "" : "disabled" %> required>
+            <option value="CCCD" <%= (verification?.document_type || "CCCD") === "CCCD" ? "selected" : "" %>>CCCD</option>
+            <option value="CMND" <%= verification?.document_type === "CMND" ? "selected" : "" %>>CMND</option>
+            <option value="Passport" <%= verification?.document_type === "Passport" ? "selected" : "" %>>Passport</option>
+          </select>
+        </div>
+        <div class="profile-ekyc-field">
+          <label>Số giấy tờ</label>
+          <input name="document_number" id="documentNumber" <%= canSubmitEkyc ? "" : "disabled" %> required value="<%= profile.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Passport" />
+          <div class="profile-note" id="documentHelp">CCCD 12 số, CMND 9 hoặc 12 số, Passport 6-20 ký tự chữ/số.</div>
+        </div>
+      </div>
+
+      <div class="profile-upload-grid">
+        <label class="profile-upload">
+          <div class="profile-preview" data-preview="front">Ảnh mặt trước</div>
+          <input name="front" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
+          <div class="profile-note">Ảnh giấy tờ mặt trước, rõ số và họ tên.</div>
+        </label>
+        <label class="profile-upload">
+          <div class="profile-preview" data-preview="back">Ảnh mặt sau</div>
+          <input name="back" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
+          <div class="profile-note">Ảnh giấy tờ mặt sau, không lóa hoặc mất góc.</div>
+        </label>
+        <label class="profile-upload">
+          <div class="profile-preview" data-preview="selfie">Ảnh selfie</div>
+          <input name="selfie" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
+          <div class="profile-note">Ảnh chân dung rõ mặt, cùng người trên giấy tờ.</div>
+        </label>
+      </div>
+
+      <div class="profile-actions">
+        <button class="profile-button profile-button--primary" type="submit" <%= canSubmitEkyc ? "" : "disabled" %>><%= effectiveEkycResult === "ThanhCong" ? "Đã xác thực" : "Gửi hồ sơ eKYC" %></button>
+        <button class="profile-button" type="reset" <%= canSubmitEkyc ? "" : "disabled" %>>Chọn lại ảnh</button>
+      </div>
+    </form>
+
+    <aside class="profile-side">
+      <article class="profile-ekyc-card">
+        <h3>Hồ sơ gần nhất</h3>
+        <% if (verification) { %>
+          <span class="profile-pill <%= ekycToneClass %>"><%= verification.result_label %></span>
+          <div class="profile-checklist">
+            <div class="profile-check is-done"><%= verification.document_type || "-" %> · <%= verification.document_number || "-" %></div>
+            <div class="profile-check <%= verification.images?.front_url ? "is-done" : "" %>">Ảnh mặt trước</div>
+            <div class="profile-check <%= verification.images?.back_url ? "is-done" : "" %>">Ảnh mặt sau</div>
+            <div class="profile-check <%= verification.images?.selfie_url ? "is-done" : "" %>">Ảnh selfie</div>
+          </div>
+          <p class="profile-muted"><%= verification.note || "Hồ sơ đã được ghi nhận." %></p>
+          <div class="profile-ekyc-images">
+            <% [
+              { label: "Mặt trước", url: verification.images?.front_url, exists: verification.images?.front_exists, file: verification.images?.front_file },
+              { label: "Mặt sau", url: verification.images?.back_url, exists: verification.images?.back_exists, file: verification.images?.back_file },
+              { label: "Selfie", url: verification.images?.selfie_url, exists: verification.images?.selfie_exists, file: verification.images?.selfie_file }
+            ].forEach((image) => { %>
+              <div class="profile-ekyc-img">
+                <% if (image.url && image.exists !== false) { %>
+                  <a href="<%= image.url %>" target="_blank" rel="noreferrer"><img src="<%= image.url %>" alt="<%= image.label %>" /></a>
+                <% } else if (image.file) { %>
+                  <span><%= image.label %><br>Ảnh cũ không còn trên máy chủ</span>
+                <% } else { %>
+                  <span><%= image.label %><br>Chưa có ảnh</span>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p class="profile-muted">Bạn chưa gửi hồ sơ eKYC. Hãy gửi đủ 3 ảnh để tạo hồ sơ xác minh đầu tiên.</p>
+        <% } %>
+      </article>
+
+      <article class="profile-ekyc-card">
+        <h3>Lịch sử eKYC</h3>
+        <div class="profile-history">
+          <% if (ekycHistory.length) { %>
+            <% ekycHistory.slice(0, 5).forEach((item) => { %>
+              <div class="profile-history-item">
+                <strong><%= item.result_label %> · <%= item.document_type || "-" %></strong>
+                <span><%= item.document_number || "-" %> · Gửi <%= item.submitted_at || "-" %> · Tin cậy <%= item.confidence_label %></span>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p class="profile-muted">Chưa có lịch sử xác minh.</p>
+          <% } %>
+        </div>
+      </article>
+    </aside>
+  </section>
 </main>
 
 <script>
@@ -185,6 +317,68 @@
     [email, phone].forEach((field) => field && field.addEventListener("input", validate));
     form && form.addEventListener("submit", function (event) {
       if (!validate()) event.preventDefault();
+    });
+  })();
+</script>
+<script>
+  (function () {
+    const form = document.getElementById("ekycForm");
+    const docType = document.getElementById("documentType");
+    const docNumber = document.getElementById("documentNumber");
+    const docHelp = document.getElementById("documentHelp");
+
+    function validDocumentNumber() {
+      const type = docType ? docType.value : "CCCD";
+      const value = (docNumber?.value || "").trim();
+      if (type === "CCCD") return /^\d{12}$/.test(value);
+      if (type === "CMND") return /^\d{9}$|^\d{12}$/.test(value);
+      return /^[A-Za-z0-9]{6,20}$/.test(value);
+    }
+
+    function renderDocumentHint() {
+      if (!docHelp || !docNumber) return true;
+      const ok = validDocumentNumber();
+      const type = docType ? docType.value : "CCCD";
+      const messages = {
+        CCCD: "CCCD phải gồm đúng 12 chữ số.",
+        CMND: "CMND phải gồm 9 hoặc 12 chữ số.",
+        Passport: "Passport gồm 6-20 ký tự chữ/số."
+      };
+      docHelp.textContent = ok ? "Số giấy tờ hợp lệ." : messages[type] || "Số giấy tờ không hợp lệ.";
+      docHelp.style.color = ok ? "#047857" : "#be123c";
+      return ok;
+    }
+
+    document.querySelectorAll(".profile-upload input[type='file']").forEach((input) => {
+      input.addEventListener("change", function () {
+        const file = input.files && input.files[0];
+        const preview = input.closest(".profile-upload")?.querySelector(".profile-preview");
+        if (!file || !preview) return;
+        if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+          preview.textContent = "Sai định dạng ảnh";
+          input.value = "";
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          preview.textContent = "Ảnh vượt quá 5MB";
+          input.value = "";
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function () {
+          preview.innerHTML = "";
+          const img = document.createElement("img");
+          img.src = String(reader.result || "");
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    docType && docType.addEventListener("change", renderDocumentHint);
+    docNumber && docNumber.addEventListener("input", renderDocumentHint);
+    form && form.addEventListener("submit", function (event) {
+      if (!renderDocumentHint()) event.preventDefault();
     });
   })();
 </script>

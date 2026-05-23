@@ -44,6 +44,18 @@ export async function renderPromotions(req: Request, res: Response) {
   return renderPromotionsPage(req, res);
 }
 
+export async function renderRefundApprovals(req: Request, res: Response) {
+  const payload = await managerService.listRefundApprovals(req.query);
+  return res.render("manager/refunds", {
+    title: "Duyet hoan tien",
+    payload,
+    notice: {
+      success: req.query.success ? String(req.query.success) : "",
+      error: req.query.error ? String(req.query.error) : ""
+    }
+  });
+}
+
 export async function renderCustomerNew(req: Request, res: Response) {
   return renderCustomerFormPage(req, res, { mode: "create" });
 }
@@ -316,7 +328,9 @@ async function renderPromotionsPage(req: Request, res: Response, options: {
     active: normalizedPromotions.filter((item) => item.trangThai === "DangApDung").length,
     paused: normalizedPromotions.filter((item) => item.trangThai === "TamNgung").length,
     expired: normalizedPromotions.filter((item) => item.trangThai === "HetHan" || item.isExpiredByDate).length,
-    inUse: normalizedPromotions.filter((item) => item.totalUsageCount > 0).length
+    inUse: normalizedPromotions.filter((item) => item.totalUsageCount > 0).length,
+    limited: normalizedPromotions.filter((item) => Number(item.usageLimit || 0) > 0).length,
+    attention: normalizedPromotions.filter((item) => ["rose", "amber"].includes(item.health?.tone || "")).length
   };
 
   return res.status(options.status ?? 200).render("manager/promotions", {
@@ -663,6 +677,30 @@ export async function deleteRoomApi(req: Request, res: Response) {
   return res.json({ ok: true, message: "Xoa phong thanh cong.", data: payload });
 }
 
+export async function reviewRefundAction(req: Request, res: Response) {
+  try {
+    const payload = await managerService.reviewRefundApproval(req.body, {
+      username: req.session.user?.username || "quanly"
+    });
+    const label = payload.action === "approve" ? "Đã duyệt" : "Đã từ chối";
+    return res.redirect(`/manager/refunds?success=${encodeURIComponent(`${label} yêu cầu ${payload.refundCode}.`)}`);
+  } catch (error: any) {
+    return res.redirect(`/manager/refunds?error=${encodeURIComponent(String(error?.message || "Không thể duyệt hoàn tiền."))}`);
+  }
+}
+
+export async function refundApprovalsApi(req: Request, res: Response) {
+  const payload = await managerService.listRefundApprovals(req.query);
+  return res.json({ ok: true, message: "Tai danh sach duyet hoan tien thanh cong.", data: payload });
+}
+
+export async function reviewRefundApi(req: Request, res: Response) {
+  const payload = await managerService.reviewRefundApproval(req.body, {
+    username: req.session.user?.username || "quanly"
+  });
+  return res.json({ ok: true, message: "Duyet hoan tien thanh cong.", data: payload });
+}
+
 const roomFieldLabels: Record<string, string> = {
   room_id: "Mã phòng",
   hotel_id: "Cơ sở",
@@ -686,5 +724,12 @@ const promotionFieldLabels: Record<string, string> = {
   muc_uu_dai: "Mức ưu đãi",
   doi_tuong: "Đối tượng",
   trang_thai: "Trạng thái",
-  loai_uu_dai: "Loại ưu đãi"
+  loai_uu_dai: "Loại ưu đãi",
+  kenh_ap_dung: "Kênh áp dụng",
+  so_dem_toi_thieu: "Số đêm tối thiểu",
+  gia_tri_toi_thieu: "Giá trị tối thiểu",
+  gioi_han_luot_dung: "Giới hạn lượt dùng",
+  ngay_chan: "Ngày chặn",
+  chinh_sach_cong_don: "Chính sách cộng dồn",
+  muc_tieu_chien_dich: "Mục tiêu chiến dịch"
 };

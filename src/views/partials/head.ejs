@@ -40,8 +40,43 @@
           return nativeFetch(input, { ...init, headers });
         }
 
-        return nativeFetch(input, init);
+      return nativeFetch(input, init);
       };
+    })();
+
+    (() => {
+      const formatDate = (date) => date.toLocaleDateString("vi-VN", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+      const formatTime = (date) => date.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+
+      window.addEventListener("DOMContentLoaded", () => {
+        if (document.querySelector(".header-clock, .global-floating-clock")) return;
+
+        const clock = document.createElement("div");
+        clock.className = "global-floating-clock";
+        clock.setAttribute("aria-label", "Đồng hồ và lịch");
+        clock.innerHTML = "<span data-global-date>--/--/----</span><strong data-global-time>--:--:--</strong>";
+        document.body.appendChild(clock);
+
+        const dateEl = clock.querySelector("[data-global-date]");
+        const timeEl = clock.querySelector("[data-global-time]");
+        const update = () => {
+          const now = new Date();
+          dateEl.textContent = formatDate(now);
+          timeEl.textContent = formatTime(now);
+        };
+
+        update();
+        window.setInterval(update, 1000);
+      });
     })();
   </script>
 </head>

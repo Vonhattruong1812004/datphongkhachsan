@@ -4,14 +4,28 @@
   const catalog = payload.catalog || [];
   const serviceHotelScopeSupported = Boolean(payload.serviceHotelScopeSupported);
   const hotelOptions = payload.hotelOptions || [];
-  const activeHotelId = Number(payload.activeHotelId || query?.hotel_id || 0);
+  const filters = payload.filters || {};
+  const activeHotelId = Number(payload.activeHotelId || filters.hotelId || query?.hotel_id || 0);
   const catalogStats = payload.catalogStats || {
     total: catalog.length,
     active: catalog.filter((item) => item.trangThai === "HoatDong").length,
     maintenance: catalog.filter((item) => item.trangThai === "BaoTri").length,
     stopped: catalog.filter((item) => item.trangThai === "NgungBan").length,
-    linked: catalog.filter((item) => Number(item.orderCount || 0) > 0).length
+    linked: catalog.filter((item) => Number(item.orderCount || 0) > 0).length,
+    missingImage: catalog.filter((item) => !item.imageUrl).length,
+    openOrders: catalog.reduce((sum, item) => sum + Number(item.openOrderCount || 0), 0),
+    orders30Days: catalog.reduce((sum, item) => sum + Number(item.orderCount30Days || 0), 0),
+    revenue30DaysFormatted: "0 đ"
   };
+  const categoryOptions = payload.categoryOptions || [
+    { key: "all", label: "Tất cả nhóm" },
+    { key: "wellness", label: "Wellness" },
+    { key: "transport", label: "Di chuyển" },
+    { key: "room", label: "Tiện nghi phòng" },
+    { key: "dining", label: "Ẩm thực" },
+    { key: "other", label: "Trải nghiệm khác" }
+  ];
+  const categorySummary = payload.categorySummary || [];
   const catalogDraftData = (typeof catalogDraft !== "undefined" && catalogDraft) ? catalogDraft : {};
   const editServiceId = Number(catalogDraftData.service_id || query?.edit_service || 0);
   const editingService = editServiceId ? catalog.find((item) => Number(item.id) === editServiceId) : null;
@@ -24,75 +38,112 @@
     mo_ta: catalogDraftData.mo_ta || editingService?.moTa || "",
     hinh_anh: catalogDraftData.hinh_anh || editingService?.hinhAnh || ""
   };
-  const serviceStatusLabel = (status) => ({
-    HoatDong: "Hoạt động",
-    NgungBan: "Ngưng bán",
-    BaoTri: "Bảo trì"
-  }[status] || status || "Không rõ");
-  const serviceStatusClass = (status) => status === "HoatDong" ? "" : (status === "BaoTri" ? "catalog-badge--amber" : "catalog-badge--danger");
+  const selectedAttr = (value, expected) => String(value || "all") === String(expected) ? "selected" : "";
+  const checkedFilter = (key) => String(filters.attention || "all") === key ? "selected" : "";
+  const statusClass = (status) => status === "HoatDong" ? "is-active" : (status === "BaoTri" ? "is-maintenance" : "is-stopped");
+  const baseQuery = new URLSearchParams();
+  if (filters.keyword) baseQuery.set("keyword", filters.keyword);
+  if (filters.status && filters.status !== "all") baseQuery.set("status", filters.status);
+  if (filters.category && filters.category !== "all") baseQuery.set("category", filters.category);
+  if (filters.attention && filters.attention !== "all") baseQuery.set("attention", filters.attention);
+  if (activeHotelId) baseQuery.set("hotel_id", String(activeHotelId));
+  const withEditQuery = (id) => {
+    const params = new URLSearchParams(baseQuery.toString());
+    params.set("edit_service", String(id));
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  };
+  const resetUrl = activeHotelId ? `/service/catalog/manage?hotel_id=${activeHotelId}` : "/service/catalog/manage";
 %>
 
 <style>
   .catalog-shell{
     --ink:#102033;
-    --muted:#667085;
+    --muted:#64748b;
     --line:rgba(16,32,51,.10);
-    --card:rgba(255,255,255,.82);
+    --card:rgba(255,255,255,.86);
     --teal:#14b8a6;
     --blue:#0ea5e9;
+    --lime:#84cc16;
     --rose:#fb7185;
     --amber:#f59e0b;
-    --shadow:0 26px 76px rgba(15,23,42,.16);
+    --violet:#8b5cf6;
+    --shadow:0 22px 64px rgba(15,23,42,.14);
     min-height:calc(100vh - 84px);
-    padding:34px 18px 56px;
+    padding:30px 18px 54px;
     color:var(--ink);
     background:
-      radial-gradient(circle at 6% 8%,rgba(20,184,166,.28),transparent 31%),
-      radial-gradient(circle at 86% 12%,rgba(14,165,233,.24),transparent 34%),
-      linear-gradient(135deg,#fbfffb 0%,#e9fbf6 42%,#f7fbff 100%);
+      radial-gradient(circle at 8% 10%,rgba(20,184,166,.24),transparent 30%),
+      radial-gradient(circle at 86% 14%,rgba(14,165,233,.20),transparent 32%),
+      radial-gradient(circle at 50% 102%,rgba(132,204,22,.16),transparent 42%),
+      linear-gradient(135deg,#fbfffb 0%,#ecfdf5 44%,#f8fbff 100%);
   }
-  .catalog-wrap{max-width:1220px;margin:0 auto}
-  .catalog-hero,.catalog-card{border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
-  .catalog-hero{position:relative;overflow:hidden;border-radius:34px;padding:34px;margin-bottom:18px}
+  .catalog-wrap{max-width:1240px;margin:0 auto}
+  .catalog-panel,.catalog-hero,.catalog-card,.catalog-stat,.catalog-service-card,.catalog-alert{border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
+  .catalog-hero{position:relative;overflow:hidden;border-radius:28px;padding:28px;margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(240,253,250,.76))}
+  .catalog-hero::before{content:"";position:absolute;inset:auto -80px -120px auto;width:420px;height:260px;background:linear-gradient(135deg,rgba(14,165,233,.18),rgba(20,184,166,.22),rgba(132,204,22,.18));transform:rotate(-8deg);border-radius:42px;pointer-events:none}
   .catalog-chip{display:inline-flex;align-items:center;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.22);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
-  .catalog-hero h1{max-width:760px;margin:22px 0 12px;font-size:clamp(38px,5.8vw,68px);line-height:.92;letter-spacing:-.07em}
+  .catalog-hero h1{position:relative;max-width:760px;margin:18px 0 10px;font-size:clamp(36px,5vw,62px);line-height:.95;letter-spacing:-.06em}
   .catalog-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 48%,#65a30d);-webkit-background-clip:text;background-clip:text}
-  .catalog-lead{max-width:760px;margin:0;color:var(--muted);font-size:16px;line-height:1.7}
-  .catalog-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
-  .catalog-button,.catalog-mini-button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;text-decoration:none;font-weight:950;cursor:pointer}
-  .catalog-button{min-height:44px;padding:10px 17px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.76);color:var(--ink)}
-  .catalog-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 18px 38px rgba(20,184,166,.22)}
-  .catalog-card{border-radius:30px;padding:22px;margin-bottom:18px}
-  .catalog-card h2{margin:0 0 8px;font-size:24px;letter-spacing:-.04em}
-  .catalog-muted{color:var(--muted);font-size:13px;line-height:1.55}
-  .catalog-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent}
+  .catalog-lead{position:relative;max-width:790px;margin:0;color:var(--muted);font-size:15px;line-height:1.68}
+  .catalog-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .catalog-button,.catalog-mini-button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;text-decoration:none;font-weight:950;cursor:pointer;white-space:nowrap}
+  .catalog-button{min-height:42px;padding:10px 16px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.78);color:var(--ink)}
+  .catalog-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 16px 34px rgba(20,184,166,.22)}
+  .catalog-button--ghost{background:rgba(255,255,255,.46)}
+  .catalog-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px}
   .catalog-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}
   .catalog-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
-  .catalog-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
-  .catalog-stat{border-radius:22px;padding:16px;background:rgba(255,255,255,.58);border:1px solid rgba(16,32,51,.08)}
-  .catalog-stat strong{display:block;font-size:28px;line-height:1;letter-spacing:-.05em}
-  .catalog-stat span{display:block;margin-top:8px;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
-  .catalog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .catalog-grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:16px;align-items:start}
+  .catalog-card{border-radius:26px;padding:20px;margin-bottom:16px}
+  .catalog-card h2{margin:0 0 7px;font-size:22px;letter-spacing:-.035em}
+  .catalog-muted{color:var(--muted);font-size:13px;line-height:1.55}
+  .catalog-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
   .catalog-field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-  .catalog-field label{font-size:13px;font-weight:900;color:#344054}
-  .catalog-field input,.catalog-field select,.catalog-field textarea{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:16px;padding:12px 14px;background:rgba(255,255,255,.76);color:var(--ink);font:inherit;outline:none}
-  .catalog-field textarea{min-height:78px;resize:vertical}
-  .catalog-field input:focus,.catalog-field select:focus,.catalog-field textarea:focus{border-color:rgba(14,165,233,.50);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
-  .catalog-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:22px;background:rgba(255,255,255,.58);margin-top:16px}
-  .catalog-table{width:100%;border-collapse:collapse;min-width:980px;font-size:14px}
-  .catalog-table th,.catalog-table td{padding:13px;border-bottom:1px solid rgba(16,32,51,.08);text-align:left;vertical-align:top}
-  .catalog-table th{background:rgba(255,255,255,.68);color:#344054;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-  .catalog-badge{display:inline-flex;border-radius:999px;padding:5px 9px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;letter-spacing:.04em}
+  .catalog-field--full{grid-column:1/-1}
+  .catalog-field label{font-size:12px;font-weight:950;color:#344054}
+  .catalog-field input,.catalog-field select,.catalog-field textarea{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.78);color:var(--ink);font:inherit;outline:none}
+  .catalog-field textarea{min-height:86px;resize:vertical}
+  .catalog-field input:focus,.catalog-field select:focus,.catalog-field textarea:focus{border-color:rgba(14,165,233,.52);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
+  .catalog-filter{display:grid;grid-template-columns:1.1fr .74fr .78fr .78fr .86fr;gap:10px;align-items:end}
+  .catalog-filter .catalog-field{margin-top:0}
+  .catalog-filter-actions{display:flex;gap:8px}
+  .catalog-filter-actions .catalog-button{width:100%}
+  .catalog-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
+  .catalog-stat{border-radius:20px;padding:15px;background:rgba(255,255,255,.68)}
+  .catalog-stat strong{display:block;font-size:26px;line-height:1;letter-spacing:-.045em}
+  .catalog-stat span{display:block;margin-top:8px;color:var(--muted);font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}
+  .catalog-img{width:78px;height:78px;border-radius:18px;object-fit:cover;border:1px solid rgba(16,32,51,.10);background:rgba(255,255,255,.72)}
+  .catalog-img--lg{width:100%;height:170px;max-width:none}
+  .catalog-img-fallback{display:grid;place-items:center;width:78px;height:78px;border-radius:18px;border:1px solid rgba(16,32,51,.10);background:linear-gradient(135deg,rgba(20,184,166,.18),rgba(14,165,233,.18),rgba(250,204,21,.16));color:#0f766e;font-weight:1000}
+  .catalog-img-fallback--lg{width:100%;height:170px;max-width:none}
+  .catalog-category-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .catalog-badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;letter-spacing:.03em}
   .catalog-badge--blue{background:rgba(14,165,233,.12);color:#0369a1}
   .catalog-badge--amber{background:rgba(245,158,11,.13);color:#b45309}
   .catalog-badge--danger{background:rgba(251,113,133,.14);color:#be123c}
-  .catalog-img{width:72px;height:72px;border-radius:20px;object-fit:cover;border:1px solid rgba(16,32,51,.10);background:rgba(255,255,255,.72)}
-  .catalog-img--lg{width:100%;max-width:240px;height:150px}
-  .catalog-inline-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .catalog-mini-button{min-height:36px;padding:8px 12px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.75);color:var(--ink)}
-  .catalog-mini-button--danger{color:#be123c;border-color:rgba(251,113,133,.28);background:rgba(255,241,242,.72)}
-  .catalog-empty{border:1px dashed rgba(16,32,51,.14);border-radius:22px;padding:22px;background:rgba(255,255,255,.58);color:var(--muted)}
-  @media(max-width:760px){.catalog-shell{padding:20px 12px 42px}.catalog-hero{padding:24px}.catalog-row,.catalog-summary{grid-template-columns:1fr}}
+  .catalog-badge--violet{background:rgba(139,92,246,.12);color:#6d28d9}
+  .catalog-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .catalog-service-card{position:relative;overflow:hidden;border-radius:24px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.72))}
+  .catalog-service-card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--teal),var(--blue),var(--lime))}
+  .catalog-service-card.is-maintenance::before{background:linear-gradient(90deg,var(--amber),#f97316)}
+  .catalog-service-card.is-stopped::before{background:linear-gradient(90deg,var(--rose),var(--violet))}
+  .catalog-service-head{display:grid;grid-template-columns:78px minmax(0,1fr);gap:13px;align-items:start}
+  .catalog-service-title{margin:0;color:var(--ink);font-size:18px;line-height:1.15;letter-spacing:-.025em}
+  .catalog-service-meta{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+  .catalog-price{display:block;margin-top:10px;color:#0f766e;font-size:20px;font-weight:1000;letter-spacing:-.035em}
+  .catalog-rec{margin:12px 0 0;padding:11px 12px;border-radius:16px;background:rgba(248,250,252,.88);border:1px solid rgba(16,32,51,.08);color:#475569;font-size:12px;line-height:1.5}
+  .catalog-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+  .catalog-metric{border-radius:15px;padding:10px;background:rgba(255,255,255,.62);border:1px solid rgba(16,32,51,.08)}
+  .catalog-metric strong{display:block;font-size:17px;color:var(--ink);letter-spacing:-.03em}
+  .catalog-metric span{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}
+  .catalog-inline-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:13px}
+  .catalog-mini-button{min-height:34px;padding:8px 12px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.78);color:var(--ink);font-size:13px}
+  .catalog-mini-button--danger{color:#be123c;border-color:rgba(251,113,133,.28);background:rgba(255,241,242,.74)}
+  .catalog-mini-button[disabled]{opacity:.55;cursor:not-allowed}
+  .catalog-empty{border:1px dashed rgba(16,32,51,.16);border-radius:20px;padding:22px;background:rgba(255,255,255,.60);color:var(--muted)}
+  @media(max-width:1120px){.catalog-grid{grid-template-columns:1fr}.catalog-filter{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-list{grid-template-columns:1fr}}
+  @media(max-width:760px){.catalog-shell{padding:20px 12px 42px}.catalog-hero{padding:22px}.catalog-hero h1{font-size:38px}.catalog-summary,.catalog-form-grid,.catalog-filter,.catalog-metrics{grid-template-columns:1fr}.catalog-filter-actions{flex-direction:column}.catalog-service-head{grid-template-columns:64px 1fr}.catalog-img,.catalog-img-fallback{width:64px;height:64px}}
 </style>
 
 <main class="catalog-shell">
@@ -101,168 +152,225 @@
     <% if (notice?.success) { %><div class="catalog-alert catalog-alert--success"><%= notice.success %></div><% } %>
 
     <section class="catalog-hero" aria-label="Quản lý dịch vụ">
-      <span class="catalog-chip">Quản lý dịch vụ</span>
-      <h1>Quản lý dịch vụ <span>riêng biệt.</span></h1>
-      <p class="catalog-lead">
-        Trang này chỉ xử lý danh mục dịch vụ: thêm mới, chỉnh sửa, cập nhật giá, mô tả, hình ảnh,
-        trạng thái và xóa an toàn khi chưa phát sinh giao dịch.
-      </p>
+      <span class="catalog-chip">Service catalog</span>
+      <h1>Quản lý <span>dịch vụ resort.</span></h1>
+      <p class="catalog-lead">Quản lý dịch vụ bán thêm: cơ sở, giá, ảnh, trạng thái và lượt dùng.</p>
       <div class="catalog-actions">
         <a class="catalog-button catalog-button--primary" href="/dashboard/dichvu">Quay lại dashboard</a>
-        <a class="catalog-button" href="/api/service/catalog">Catalog API</a>
+        <a class="catalog-button" href="/service">Dịch vụ</a>
       </div>
+    </section>
+
+    <section class="catalog-summary" aria-label="Tổng quan danh mục dịch vụ">
+      <div class="catalog-stat"><strong><%= catalogStats.total %></strong><span>Dịch vụ theo lọc</span></div>
+      <div class="catalog-stat"><strong><%= catalogStats.active %></strong><span>Đang phục vụ</span></div>
+      <div class="catalog-stat"><strong><%= catalogStats.orders30Days %></strong><span>Lượt dùng 30 ngày</span></div>
+      <div class="catalog-stat"><strong><%= catalogStats.revenue30DaysFormatted %></strong><span>Doanh thu dịch vụ 30 ngày</span></div>
     </section>
 
     <section class="catalog-card">
-      <h2><%= catalogForm.service_id ? "Chỉnh sửa dịch vụ" : "Tạo dịch vụ mới" %></h2>
-      <p class="catalog-muted">Dịch vụ đã phát sinh trong giao dịch sẽ bị khóa xóa để bảo toàn lịch sử checkout; khi không phục vụ nữa hãy chuyển sang Ngưng bán hoặc Bảo trì.</p>
-
-      <% if (serviceHotelScopeSupported) { %>
-        <form method="get" action="/service/catalog/manage" class="catalog-card" style="box-shadow:none;background:rgba(255,255,255,.50);margin:16px 0">
-          <h2 style="font-size:18px">Lọc theo cơ sở</h2>
-          <div class="catalog-row" style="grid-template-columns:2fr 1fr">
-            <div class="catalog-field">
-              <label for="hotel_id_filter">Khách sạn / cơ sở</label>
-              <select id="hotel_id_filter" name="hotel_id">
-                <option value="0">Toàn hệ thống</option>
-                <% hotelOptions.forEach((hotel) => { %>
-                  <option value="<%= hotel.id %>" <%= Number(activeHotelId) === Number(hotel.id) ? "selected" : "" %>>
-                    <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
-                  </option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="catalog-field" style="justify-content:flex-end">
-              <button class="catalog-button catalog-button--primary" type="submit">Áp dụng lọc</button>
-            </div>
-          </div>
-        </form>
-      <% } else { %>
-        <div class="catalog-alert catalog-alert--success">
-          Bảng <strong>dichvu</strong> chưa có cột <strong>makhachsan</strong>, nên danh mục dịch vụ đang dùng chung toàn hệ thống.
+      <h2>Lọc danh mục</h2>
+      <p class="catalog-muted">Lọc danh sách và thống kê.</p>
+      <form method="get" action="/service/catalog/manage" class="catalog-filter">
+        <div class="catalog-field">
+          <label for="filter_keyword">Tìm kiếm</label>
+          <input id="filter_keyword" name="keyword" value="<%= filters.keyword || "" %>" placeholder="Tên dịch vụ, mô tả..." />
         </div>
-      <% } %>
-
-      <div class="catalog-summary">
-        <div class="catalog-stat"><strong><%= catalogStats.total %></strong><span>Tổng dịch vụ</span></div>
-        <div class="catalog-stat"><strong><%= catalogStats.active %></strong><span>Đang hoạt động</span></div>
-        <div class="catalog-stat"><strong><%= catalogStats.maintenance + catalogStats.stopped %></strong><span>Bảo trì / ngưng</span></div>
-        <div class="catalog-stat"><strong><%= catalogStats.linked %></strong><span>Đã phát sinh</span></div>
-      </div>
-
-      <form method="post" action="/service/catalog" enctype="multipart/form-data" id="catalogForm">
-        <input type="hidden" name="service_id" value="<%= catalogForm.service_id %>" />
-        <input type="hidden" name="hinh_anh" value="<%= catalogForm.hinh_anh %>" />
-        <div class="catalog-row">
-          <% if (serviceHotelScopeSupported) { %>
-            <div class="catalog-field">
-              <label for="catalog_hotel">Cơ sở <span style="color:#be123c">*</span></label>
-              <select id="catalog_hotel" name="hotel_id" required>
-                <option value="">-- Chọn cơ sở --</option>
-                <% hotelOptions.forEach((hotel) => { %>
-                  <option value="<%= hotel.id %>" <%= Number(catalogForm.hotel_id) === Number(hotel.id) ? "selected" : "" %>>
-                    <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
-                  </option>
-                <% }) %>
-              </select>
-            </div>
-          <% } else { %>
-            <input type="hidden" name="hotel_id" value="0" />
-          <% } %>
+        <% if (serviceHotelScopeSupported) { %>
           <div class="catalog-field">
-            <label for="catalog_name">Tên dịch vụ <span style="color:#be123c">*</span></label>
-            <input id="catalog_name" name="ten_dich_vu" value="<%= catalogForm.ten_dich_vu %>" required maxlength="160" />
-          </div>
-          <div class="catalog-field">
-            <label for="catalog_price">Giá dịch vụ <span style="color:#be123c">*</span></label>
-            <input id="catalog_price" name="gia_dich_vu" type="number" min="0" step="1000" value="<%= catalogForm.gia_dich_vu %>" required />
-          </div>
-          <div class="catalog-field">
-            <label for="catalog_status">Trạng thái <span style="color:#be123c">*</span></label>
-            <select id="catalog_status" name="trang_thai" required>
-              <option value="HoatDong" <%= catalogForm.trang_thai === "HoatDong" ? "selected" : "" %>>Hoạt động</option>
-              <option value="NgungBan" <%= catalogForm.trang_thai === "NgungBan" ? "selected" : "" %>>Ngưng bán</option>
-              <option value="BaoTri" <%= catalogForm.trang_thai === "BaoTri" ? "selected" : "" %>>Bảo trì</option>
+            <label for="filter_hotel">Cơ sở</label>
+            <select id="filter_hotel" name="hotel_id">
+              <option value="0">Toàn hệ thống</option>
+              <% hotelOptions.forEach((hotel) => { %>
+                <option value="<%= hotel.id %>" <%= Number(activeHotelId) === Number(hotel.id) ? "selected" : "" %>>
+                  <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                </option>
+              <% }) %>
             </select>
           </div>
-          <div class="catalog-field" style="grid-column:span 2">
-            <label for="catalog_desc">Mô tả</label>
-            <textarea id="catalog_desc" name="mo_ta" placeholder="Mô tả ngắn về dịch vụ, điều kiện phục vụ hoặc lưu ý nội bộ..."><%= catalogForm.mo_ta %></textarea>
-          </div>
-          <div class="catalog-field">
-            <label for="catalog_image">Hình ảnh dịch vụ</label>
-            <% if (editingService?.imageUrl) { %>
-              <img class="catalog-img catalog-img--lg" src="<%= editingService.imageUrl %>" alt="Ảnh dịch vụ đang chỉnh sửa" onerror="this.style.display='none'" />
-            <% } %>
-            <input id="catalog_image" name="hinh_anh_file" type="file" accept="image/jpeg,image/png,image/webp" />
-            <div class="catalog-muted">Chấp nhận JPG, PNG, WEBP. Nếu bỏ trống khi sửa, hệ thống giữ ảnh hiện tại.</div>
-          </div>
+        <% } %>
+        <div class="catalog-field">
+          <label for="filter_status">Trạng thái</label>
+          <select id="filter_status" name="status">
+            <option value="all" <%= selectedAttr(filters.status, "all") %>>Tất cả</option>
+            <option value="HoatDong" <%= selectedAttr(filters.status, "HoatDong") %>>Đang phục vụ</option>
+            <option value="BaoTri" <%= selectedAttr(filters.status, "BaoTri") %>>Bảo trì</option>
+            <option value="NgungBan" <%= selectedAttr(filters.status, "NgungBan") %>>Ngưng bán</option>
+          </select>
         </div>
-        <div class="catalog-actions">
-          <button class="catalog-button catalog-button--primary" type="submit"><%= catalogForm.service_id ? "Lưu thay đổi" : "Tạo dịch vụ" %></button>
-          <% if (catalogForm.service_id) { %>
-            <a class="catalog-button" href="/service/catalog/manage<%= activeHotelId ? `?hotel_id=${activeHotelId}` : "" %>">Tạo mới</a>
-          <% } %>
+        <div class="catalog-field">
+          <label for="filter_category">Nhóm dịch vụ</label>
+          <select id="filter_category" name="category">
+            <% categoryOptions.forEach((item) => { %>
+              <option value="<%= item.key %>" <%= selectedAttr(filters.category, item.key) %>><%= item.label %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="catalog-field">
+          <label for="filter_attention">Cần chú ý</label>
+          <select id="filter_attention" name="attention">
+            <option value="all" <%= checkedFilter("all") %>>Tất cả</option>
+            <option value="missing_image" <%= checkedFilter("missing_image") %>>Thiếu ảnh</option>
+            <option value="inactive" <%= checkedFilter("inactive") %>>Bảo trì / ngưng</option>
+            <option value="open_orders" <%= checkedFilter("open_orders") %>>Còn order mở</option>
+            <option value="ordered" <%= checkedFilter("ordered") %>>Đã phát sinh</option>
+            <option value="no_usage" <%= checkedFilter("no_usage") %>>Chưa có lượt dùng</option>
+          </select>
+        </div>
+        <div class="catalog-filter-actions">
+          <button class="catalog-button catalog-button--primary" type="submit">Áp dụng</button>
+          <a class="catalog-button" href="<%= resetUrl %>">Đặt lại</a>
         </div>
       </form>
-
-      <div class="catalog-table-wrap">
-        <table class="catalog-table">
-          <thead>
-            <tr>
-              <th>Ảnh</th>
-              <th>Dịch vụ</th>
-              <% if (serviceHotelScopeSupported) { %><th>Cơ sở</th><% } %>
-              <th>Giá</th>
-              <th>Trạng thái</th>
-              <th>Mô tả</th>
-              <th>Đã phát sinh</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (!catalog.length) { %>
-              <tr><td colspan="<%= serviceHotelScopeSupported ? 8 : 7 %>"><div class="catalog-empty">Hiện chưa có dịch vụ nào trong hệ thống.</div></td></tr>
-            <% } %>
-            <% catalog.forEach((item) => { %>
-              <tr>
-                <td><img class="catalog-img" src="<%= item.imageUrl %>" alt="Ảnh <%= item.tenDichVu %>" onerror="this.src='/uploads/dichvu/default.jpg'" /></td>
-                <td>
-                  <strong><%= item.tenDichVu %></strong>
-                  <div class="catalog-muted">Mã DV: #<%= item.id %></div>
-                </td>
-                <% if (serviceHotelScopeSupported) { %><td><%= item.hotelLabel %></td><% } %>
-                <td><strong><%= item.giaDichVuFormatted %></strong></td>
-                <td><span class="catalog-badge <%= serviceStatusClass(item.trangThai) %>"><%= serviceStatusLabel(item.trangThai) %></span></td>
-                <td style="max-width:280px"><%= item.moTa || "Chưa có mô tả." %></td>
-                <td><span class="catalog-badge <%= Number(item.orderCount || 0) > 0 ? "catalog-badge--blue" : "" %>"><%= item.orderCount || 0 %> dòng</span></td>
-                <td>
-                  <div class="catalog-inline-actions">
-                    <a class="catalog-mini-button" href="/service/catalog/manage?edit_service=<%= item.id %><%= activeHotelId ? `&hotel_id=${activeHotelId}` : "" %>">Sửa</a>
-                    <% if (Number(item.orderCount || 0) > 0 && item.trangThai !== "NgungBan") { %>
-                      <form method="post" action="/service/catalog">
-                        <input type="hidden" name="service_id" value="<%= item.id %>" />
-                        <input type="hidden" name="hotel_id" value="<%= item.hotelId || 0 %>" />
-                        <input type="hidden" name="ten_dich_vu" value="<%= item.tenDichVu %>" />
-                        <input type="hidden" name="gia_dich_vu" value="<%= item.giaDichVu %>" />
-                        <input type="hidden" name="mo_ta" value="<%= item.moTa || "" %>" />
-                        <input type="hidden" name="hinh_anh" value="<%= item.hinhAnh || "" %>" />
-                        <input type="hidden" name="trang_thai" value="NgungBan" />
-                        <button class="catalog-mini-button" type="submit">Ngưng bán</button>
-                      </form>
-                    <% } %>
-                    <form method="post" action="/service/catalog/<%= item.id %>/delete" onsubmit="return confirm('Xóa dịch vụ này? Chỉ dịch vụ chưa phát sinh giao dịch mới được xóa.');">
-                      <input type="hidden" name="hotel_id" value="<%= activeHotelId || item.hotelId || 0 %>" />
-                      <button class="catalog-mini-button catalog-mini-button--danger" type="submit" <%= Number(item.orderCount || 0) > 0 ? "disabled title='Dịch vụ đã phát sinh, hãy ngưng bán thay vì xóa.'" : "" %>>Xóa</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
+      <% if (categorySummary.length) { %>
+        <div class="catalog-category-row">
+          <% categorySummary.forEach((item) => { %>
+            <span class="catalog-badge catalog-badge--blue"><%= item.label %>: <%= item.total %></span>
+          <% }) %>
+          <% if (catalogStats.missingImage) { %><span class="catalog-badge catalog-badge--amber">Thiếu ảnh: <%= catalogStats.missingImage %></span><% } %>
+          <% if (catalogStats.openOrders) { %><span class="catalog-badge catalog-badge--violet">Order mở: <%= catalogStats.openOrders %></span><% } %>
+        </div>
+      <% } %>
     </section>
+
+    <% if (!serviceHotelScopeSupported) { %>
+      <div class="catalog-alert catalog-alert--success">
+        Bảng <strong>dichvu</strong> chưa có cột <strong>makhachsan</strong>, nên danh mục dịch vụ đang dùng chung toàn hệ thống.
+      </div>
+    <% } %>
+
+    <div class="catalog-grid">
+      <aside class="catalog-card">
+        <h2><%= catalogForm.service_id ? "Chỉnh sửa dịch vụ" : "Tạo dịch vụ mới" %></h2>
+        <p class="catalog-muted">Dịch vụ đã phát sinh giao dịch không thể xóa.</p>
+
+        <form method="post" action="/service/catalog" enctype="multipart/form-data" id="catalogForm">
+          <input type="hidden" name="service_id" value="<%= catalogForm.service_id %>" />
+          <input type="hidden" name="hinh_anh" value="<%= catalogForm.hinh_anh %>" />
+          <input type="hidden" name="keyword" value="<%= filters.keyword || "" %>" />
+          <input type="hidden" name="status" value="<%= filters.status || "all" %>" />
+          <input type="hidden" name="category" value="<%= filters.category || "all" %>" />
+          <input type="hidden" name="attention" value="<%= filters.attention || "all" %>" />
+
+          <div class="catalog-form-grid">
+            <% if (serviceHotelScopeSupported) { %>
+              <div class="catalog-field catalog-field--full">
+                <label for="catalog_hotel">Cơ sở <span style="color:#be123c">*</span></label>
+                <select id="catalog_hotel" name="hotel_id" required>
+                  <option value="">-- Chọn cơ sở --</option>
+                  <% hotelOptions.forEach((hotel) => { %>
+                    <option value="<%= hotel.id %>" <%= Number(catalogForm.hotel_id) === Number(hotel.id) ? "selected" : "" %>>
+                      <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                    </option>
+                  <% }) %>
+                </select>
+              </div>
+            <% } else { %>
+              <input type="hidden" name="hotel_id" value="0" />
+            <% } %>
+            <div class="catalog-field catalog-field--full">
+              <label for="catalog_name">Tên dịch vụ <span style="color:#be123c">*</span></label>
+              <input id="catalog_name" name="ten_dich_vu" value="<%= catalogForm.ten_dich_vu %>" required maxlength="160" placeholder="VD: Massage đá nóng, đưa đón sân bay..." />
+            </div>
+            <div class="catalog-field">
+              <label for="catalog_price">Giá dịch vụ <span style="color:#be123c">*</span></label>
+              <input id="catalog_price" name="gia_dich_vu" type="number" min="0" step="1000" value="<%= catalogForm.gia_dich_vu %>" required />
+            </div>
+            <div class="catalog-field">
+              <label for="catalog_status">Trạng thái</label>
+              <select id="catalog_status" name="trang_thai" required>
+                <option value="HoatDong" <%= catalogForm.trang_thai === "HoatDong" ? "selected" : "" %>>Đang phục vụ</option>
+                <option value="NgungBan" <%= catalogForm.trang_thai === "NgungBan" ? "selected" : "" %>>Ngưng bán</option>
+                <option value="BaoTri" <%= catalogForm.trang_thai === "BaoTri" ? "selected" : "" %>>Bảo trì</option>
+              </select>
+            </div>
+            <div class="catalog-field catalog-field--full">
+              <label for="catalog_desc">Mô tả / điều kiện phục vụ</label>
+              <textarea id="catalog_desc" name="mo_ta" placeholder="Mô tả ngắn, thời gian chuẩn bị, điều kiện áp dụng hoặc lưu ý nội bộ..."><%= catalogForm.mo_ta %></textarea>
+            </div>
+            <div class="catalog-field catalog-field--full">
+              <label for="catalog_image">Hình ảnh dịch vụ</label>
+              <% if (editingService?.imageUrl) { %>
+                <img class="catalog-img catalog-img--lg" src="<%= editingService.imageUrl %>" alt="Ảnh dịch vụ đang chỉnh sửa" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'catalog-img-fallback catalog-img-fallback--lg', textContent: 'DV' }))" />
+              <% } else { %>
+                <div class="catalog-img-fallback catalog-img-fallback--lg" aria-hidden="true">DV</div>
+              <% } %>
+              <input id="catalog_image" name="hinh_anh_file" type="file" accept="image/jpeg,image/png,image/webp" />
+              <div class="catalog-muted">JPG, PNG, WEBP. Khi sửa mà bỏ trống, hệ thống giữ ảnh hiện tại.</div>
+            </div>
+          </div>
+
+          <div class="catalog-actions">
+            <button class="catalog-button catalog-button--primary" type="submit"><%= catalogForm.service_id ? "Lưu thay đổi" : "Tạo dịch vụ" %></button>
+            <% if (catalogForm.service_id) { %>
+              <a class="catalog-button" href="/service/catalog/manage<%= baseQuery.toString() ? `?${baseQuery.toString()}` : "" %>">Tạo mới</a>
+            <% } %>
+          </div>
+        </form>
+      </aside>
+
+      <section class="catalog-card">
+        <h2>Danh sách dịch vụ</h2>
+        <p class="catalog-muted">Hiển thị <strong><%= catalog.length %></strong> dịch vụ phù hợp bộ lọc. Mỗi card cho thấy trạng thái, lượt phát sinh, doanh thu 30 ngày và hướng xử lý.</p>
+
+        <% if (!catalog.length) { %>
+          <div class="catalog-empty">Không có dịch vụ nào khớp bộ lọc hiện tại.</div>
+        <% } else { %>
+          <div class="catalog-list">
+            <% catalog.forEach((item) => { %>
+              <article class="catalog-service-card <%= statusClass(item.trangThai) %>">
+                <div class="catalog-service-head">
+                  <% if (item.imageUrl) { %>
+                    <img class="catalog-img" src="<%= item.imageUrl %>" alt="Ảnh <%= item.tenDichVu %>" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'catalog-img-fallback', textContent: 'DV' }))" />
+                  <% } else { %>
+                    <div class="catalog-img-fallback" aria-hidden="true">DV</div>
+                  <% } %>
+                  <div>
+                    <h3 class="catalog-service-title"><%= item.tenDichVu %></h3>
+                    <div class="catalog-service-meta">
+                      <span class="catalog-badge <%= item.trangThai === "HoatDong" ? "" : (item.trangThai === "BaoTri" ? "catalog-badge--amber" : "catalog-badge--danger") %>"><%= item.statusLabel %></span>
+                      <span class="catalog-badge catalog-badge--blue"><%= item.category?.label || "Trải nghiệm khác" %></span>
+                      <% if (serviceHotelScopeSupported) { %><span class="catalog-badge catalog-badge--violet"><%= item.hotelLabel %></span><% } %>
+                    </div>
+                    <strong class="catalog-price"><%= item.giaDichVuFormatted %></strong>
+                  </div>
+                </div>
+
+                <p class="catalog-rec"><%= item.recommendation %></p>
+                <div class="catalog-metrics">
+                  <div class="catalog-metric"><strong><%= item.orderCount || 0 %></strong><span>Tổng lượt</span></div>
+                  <div class="catalog-metric"><strong><%= item.orderCount30Days || 0 %></strong><span>30 ngày</span></div>
+                  <div class="catalog-metric"><strong><%= item.revenue30DaysFormatted %></strong><span>Doanh thu 30 ngày</span></div>
+                </div>
+                <div class="catalog-muted" style="margin-top:10px">
+                  <%= item.moTa || "Chưa có mô tả. Nên bổ sung để lễ tân/khách hiểu rõ điều kiện phục vụ." %>
+                </div>
+
+                <div class="catalog-inline-actions">
+                  <a class="catalog-mini-button" href="/service/catalog/manage<%= withEditQuery(item.id) %>">Sửa</a>
+                  <% if (Number(item.orderCount || 0) > 0 && item.trangThai !== "NgungBan") { %>
+                    <form method="post" action="/service/catalog">
+                      <input type="hidden" name="service_id" value="<%= item.id %>" />
+                      <input type="hidden" name="hotel_id" value="<%= item.hotelId || 0 %>" />
+                      <input type="hidden" name="ten_dich_vu" value="<%= item.tenDichVu %>" />
+                      <input type="hidden" name="gia_dich_vu" value="<%= item.giaDichVu %>" />
+                      <input type="hidden" name="mo_ta" value="<%= item.moTa || "" %>" />
+                      <input type="hidden" name="hinh_anh" value="<%= item.hinhAnh || "" %>" />
+                      <input type="hidden" name="trang_thai" value="NgungBan" />
+                      <button class="catalog-mini-button" type="submit">Ngưng bán</button>
+                    </form>
+                  <% } %>
+                  <form method="post" action="/service/catalog/<%= item.id %>/delete" onsubmit="return confirm('Xóa dịch vụ này? Chỉ dịch vụ chưa phát sinh giao dịch mới được xóa.');">
+                    <input type="hidden" name="hotel_id" value="<%= activeHotelId || item.hotelId || 0 %>" />
+                    <button class="catalog-mini-button catalog-mini-button--danger" type="submit" <%= Number(item.orderCount || 0) > 0 ? "disabled title='Dịch vụ đã phát sinh, hãy ngưng bán thay vì xóa.'" : "" %>>Xóa</button>
+                  </form>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
+    </div>
   </div>
 </main>
 

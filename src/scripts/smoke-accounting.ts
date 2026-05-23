@@ -137,13 +137,13 @@ async function debtRowFor(transactionId: number) {
   return payload.rows.find((row: any) => Number(row.maGiaoDich) === transactionId) || null;
 }
 
-async function cashflowFor(transactionId: number) {
+async function cashflowFor(searchTerm: string) {
   const today = dateInput(0);
   return new AccountingService().getCashflowList({
     tu_ngay: today,
     den_ngay: today,
     loai_dong_tien: "thu",
-    search: String(transactionId),
+    search: searchTerm,
     page: 1,
     limit: 20
   });
@@ -265,7 +265,7 @@ async function main() {
       throw new Error(`Paid checkout debt state is wrong: ${JSON.stringify(paidDebt)}`);
     }
 
-    const partialCashflow = await cashflowFor(partialId);
+    const partialCashflow = await cashflowFor(`${batchCode}-PART`);
     if (partialCashflow.rows.some((row: any) => String(row.maSo) === String(partialId))) {
       throw new Error(`Partial checkout should not appear as real cash-in: ${JSON.stringify(partialCashflow.rows)}`);
     }
@@ -273,7 +273,7 @@ async function main() {
       throw new Error(`Partial checkout cashflow total should be 0, got ${partialCashflow.summary?.tongThu}`);
     }
 
-    const paidCashflow = await cashflowFor(paidId);
+    const paidCashflow = await cashflowFor(`${batchCode}-PAID`);
     const paidCashflowRow = paidCashflow.rows.find((row: any) => String(row.maSo) === String(paidId));
     if (!paidCashflowRow) {
       throw new Error("Paid checkout did not appear in cashflow income.");
@@ -335,10 +335,26 @@ async function main() {
     if (!refundBeforeRow || refundBeforeRow.status !== "ChoXuLy" || Number(refundBeforeRow.amountRequested || 0) !== refundAmount) {
       throw new Error(`Refund request did not appear before processing: ${JSON.stringify(refundBefore.rows)}`);
     }
+    let missingReferenceBlocked = false;
+    try {
+      await new AccountingService().processRefund({
+        refund_id: refundId,
+        action: "approve",
+        accounting_note: "Smoke thieu ma giao dich ngan hang"
+      });
+    } catch (error: any) {
+      missingReferenceBlocked = String(error?.message || "").includes("ma giao dich ngan hang");
+    }
+    if (!missingReferenceBlocked) {
+      throw new Error("Refund processing should require a bank transaction reference.");
+    }
     const processedRefund = await new AccountingService().processRefund({
       refund_id: refundId,
       action: "approve",
-      accounting_note: "Smoke da chuyen khoan hoan coc"
+      accounting_note: "Smoke da chuyen khoan hoan coc",
+      payment_reference: `SMKBNK${Date.now()}`,
+      payment_proof: "Smoke bien lai hoan tien",
+      actor_username: "smoke_ketoan"
     });
     expenseIds.push(Number((processedRefund as any).expenseId || 0));
     if ((processedRefund as any).action !== "approve" || Number((processedRefund as any).amount || 0) !== refundAmount || !Number((processedRefund as any).expenseId || 0)) {
@@ -346,7 +362,7 @@ async function main() {
     }
     const refundAfter = await new AccountingService().getRefundList({ search: refundCode, page: 1, limit: 5 });
     const refundAfterRow = refundAfter.rows.find((row: any) => row.refundCode === refundCode);
-    if (!refundAfterRow || refundAfterRow.status !== "DaHoan" || Number(refundAfterRow.amountPaid || 0) !== refundAmount || Number(refundAfterRow.expenseId || 0) !== Number((processedRefund as any).expenseId || 0)) {
+    if (!refundAfterRow || refundAfterRow.status !== "DaHoan" || Number(refundAfterRow.amountPaid || 0) !== refundAmount || Number(refundAfterRow.expenseId || 0) !== Number((processedRefund as any).expenseId || 0) || !refundAfterRow.refundBankTxnId) {
       throw new Error(`Refund request did not close after processing: ${JSON.stringify(refundAfter.rows)}`);
     }
     const refundCashflow = await new AccountingService().getCashflowList({
@@ -375,6 +391,7 @@ async function main() {
     console.log("report_revenue_split=ok");
     console.log("report_daily_realization=ok");
     console.log("refund_request=ok");
+    console.log("refund_reference_required=ok");
     console.log("refund_cashflow_sync=ok");
   } finally {
     await cleanup(transactionIds, expenseIds).catch((error) => {

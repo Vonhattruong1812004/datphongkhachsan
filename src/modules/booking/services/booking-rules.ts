@@ -8,6 +8,7 @@ export interface PromotionLike {
   mucUuDai: number;
   trangThai: string;
   loaiUuDai: string;
+  doiTuong?: string | null;
 }
 
 export function calculatePromotionDiscount(
@@ -26,11 +27,34 @@ export function calculatePromotionDiscount(
     return 0;
   }
 
+  const meta = parsePromotionMeta(promotion.doiTuong);
+  if (meta.minAmount > 0 && subtotal < meta.minAmount) {
+    return 0;
+  }
+  if (meta.blackoutDates.includes(referenceDate.format("YYYY-MM-DD"))) {
+    return 0;
+  }
+
   if (String(promotion.loaiUuDai).toUpperCase() === "PERCENT") {
     return Math.max(0, Math.min(subtotal, subtotal * Number(promotion.mucUuDai) / 100));
   }
 
   return Math.max(0, Math.min(subtotal, Number(promotion.mucUuDai)));
+}
+
+function parsePromotionMeta(rawValue: string | null | undefined) {
+  try {
+    const parsed = JSON.parse(String(rawValue || ""));
+    return {
+      minAmount: Math.max(0, Number(parsed.minAmount || 0)),
+      blackoutDates: Array.isArray(parsed.blackoutDates) ? parsed.blackoutDates.map((item: unknown) => String(item)) : []
+    };
+  } catch (_error) {
+    return {
+      minAmount: 0,
+      blackoutDates: []
+    };
+  }
 }
 
 export function isCustomerCancelableBooking(status: string) {

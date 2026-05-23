@@ -3,42 +3,12 @@
 <%
   const staffName = (typeof currentUser !== "undefined" && currentUser ? (currentUser.displayName || currentUser.username) : "") || "Nhân viên dịch vụ";
   const primaryActions = actions || [];
-  const focusCards = cards || [];
   const todayLabel = new Date().toLocaleDateString("vi-VN", {
     weekday: "long",
     day: "2-digit",
     month: "2-digit",
     year: "numeric"
   });
-  const shiftCards = [
-    {
-      badge: "Đầu ca",
-      title: "Mở Room board live",
-      line1: "Xem nhanh các phòng đang ở, cần vệ sinh, hư hại hoặc bảo trì.",
-      line2: "Ưu tiên phòng có tín hiệu cần xử lý trước khi chuyển ca.",
-      strong: "Room board live",
-      href: "/service/room-board-live",
-      action: "Xem feed"
-    },
-    {
-      badge: "Trong ca",
-      title: "Quản lý dịch vụ",
-      line1: "Rà soát tên, giá, mô tả, hình ảnh và trạng thái của từng dịch vụ.",
-      line2: "Dịch vụ không sẵn sàng cần chuyển ngưng bán hoặc bảo trì.",
-      strong: "Catalog rõ ràng",
-      href: "/service/catalog/manage",
-      action: "Quản lý"
-    },
-    {
-      badge: "Cuối ca",
-      title: "Kiểm tra tình trạng phòng",
-      line1: "Chọn phòng đang ở hoặc cần kiểm tra và cập nhật tình trạng thực tế.",
-      line2: "Ghi nhận phòng tốt, hư hại hoặc cần bảo trì để bộ phận liên quan tiếp tục xử lý.",
-      strong: "Room check rõ ràng",
-      href: "/service/room-inspection",
-      action: "Cập nhật"
-    }
-  ];
 %>
 
 <style>
@@ -112,9 +82,7 @@
 
   .svc-hero-card,
   .svc-live-card,
-  .svc-uc-card,
-  .svc-focus-card,
-  .svc-shift-card {
+  .svc-uc-card {
     border: 1px solid var(--svc-line);
     background: var(--svc-card);
     box-shadow: var(--svc-shadow);
@@ -122,7 +90,7 @@
   }
 
   .svc-hero-card {
-    min-height: 360px;
+    min-height: 310px;
     border-radius: 38px;
     padding: 36px;
     position: relative;
@@ -170,7 +138,7 @@
     position: relative;
     z-index: 1;
     max-width: 760px;
-    margin: 26px 0 14px;
+    margin: 26px 0 0;
     color: var(--svc-ink);
     font-size: clamp(42px, 6.4vw, 78px);
     line-height: .90;
@@ -204,7 +172,7 @@
   }
 
   .svc-tags {
-    margin-top: 22px;
+    margin-top: 18px;
   }
 
   .svc-tag {
@@ -226,7 +194,7 @@
   }
 
   .svc-hero-actions {
-    margin-top: 28px;
+    margin-top: 24px;
   }
 
   .svc-button {
@@ -256,40 +224,6 @@
     border-color: transparent;
     background: linear-gradient(135deg, #0891b2, #14b8a6);
     box-shadow: 0 18px 42px rgba(20, 184, 166, .24);
-  }
-
-  .svc-mini-stats {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 34px;
-  }
-
-  .svc-mini-stat {
-    border-radius: 23px;
-    padding: 16px;
-    background: rgba(255, 255, 255, .58);
-    border: 1px solid rgba(17, 34, 51, .08);
-  }
-
-  .svc-mini-stat strong {
-    display: block;
-    color: var(--svc-ink);
-    font-size: 30px;
-    line-height: 1;
-    letter-spacing: -.055em;
-  }
-
-  .svc-mini-stat span {
-    display: block;
-    margin-top: 8px;
-    color: var(--svc-muted);
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: .06em;
-    text-transform: uppercase;
   }
 
   .svc-live-card {
@@ -351,50 +285,6 @@
   .svc-live-word:nth-child(5) { right: 30px; top: 98px; animation: svc-drift-b 6.2s ease-in-out infinite; }
   .svc-live-word:nth-child(6) { left: 44px; bottom: 78px; animation: svc-drift-b 5.8s ease-in-out infinite reverse; }
   .svc-live-word:nth-child(7) { right: 42px; bottom: 44px; animation: svc-drift-a 6.5s ease-in-out infinite reverse; }
-
-  .svc-focus-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 16px;
-    align-items: center;
-    border-radius: 30px;
-    padding: 18px 20px;
-    margin-bottom: 18px;
-    background: rgba(255, 255, 255, .66);
-  }
-
-  .svc-focus-card strong {
-    display: block;
-    color: var(--svc-ink);
-    font-size: 18px;
-    letter-spacing: -.02em;
-  }
-
-  .svc-focus-card span {
-    display: block;
-    margin-top: 4px;
-    color: var(--svc-muted);
-    font-size: 13px;
-  }
-
-  .svc-flow {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .svc-flow a {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 8px 11px;
-    color: #0f766e;
-    background: rgba(20, 184, 166, .11);
-    border: 1px solid rgba(20, 184, 166, .18);
-    text-decoration: none;
-    font-size: 12px;
-    font-weight: 950;
-  }
 
   .svc-section {
     margin-top: 20px;
@@ -558,51 +448,6 @@
   .svc-uc-card:nth-child(2) { --accent: var(--svc-blue); --accent-soft: rgba(14,165,233,.22); }
   .svc-uc-card:nth-child(3) { --accent: var(--svc-violet); --accent-soft: rgba(139,92,246,.20); }
 
-  .svc-shift-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  .svc-shift-card {
-    border-radius: 28px;
-    padding: 20px;
-    background: rgba(255, 255, 255, .70);
-  }
-
-  .svc-shift-card h3 {
-    margin: 12px 0 8px;
-    color: var(--svc-ink);
-    font-size: 21px;
-    line-height: 1.1;
-    letter-spacing: -.04em;
-  }
-
-  .svc-shift-card p {
-    margin: 0 0 6px;
-    color: var(--svc-muted);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .svc-shift-card strong {
-    display: block;
-    margin-top: 10px;
-    color: var(--svc-ink);
-    font-size: 21px;
-  }
-
-  .svc-badge {
-    display: inline-flex;
-    border-radius: 999px;
-    padding: 5px 9px;
-    background: rgba(20, 184, 166, .12);
-    color: #0f766e;
-    font-size: 11px;
-    font-weight: 1000;
-    letter-spacing: .04em;
-  }
-
   @keyframes svc-blob {
     0% { transform: translate3d(0, 0, 0) rotate(0deg); border-radius: 48% 52% 42% 58%; }
     100% { transform: translate3d(26px, 30px, 0) rotate(18deg); border-radius: 56% 44% 60% 40%; }
@@ -645,16 +490,12 @@
     .svc-uc-card,
     .svc-uc-card:nth-child(1),
     .svc-uc-card:nth-child(2) { grid-column: span 6; }
-    .svc-shift-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
   @media (max-width: 760px) {
     .svc-home { padding: 20px 12px 42px; }
     .svc-hero-card { min-height: auto; padding: 24px; border-radius: 30px; }
     .svc-hero h1 { font-size: 44px; }
-    .svc-mini-stats,
-    .svc-focus-card,
-    .svc-shift-grid { grid-template-columns: 1fr; }
     .svc-live-card { min-height: 280px; }
     .svc-uc-card,
     .svc-uc-card:nth-child(1),
@@ -688,27 +529,16 @@
       <div class="svc-hero-card">
         <div class="svc-chip"><span class="svc-pulse"></span> Service operations center</div>
         <h1>Xin chào <span><%= staffName %></span></h1>
-        <p class="svc-lead">
-          Dashboard cho ca dịch vụ: quản lý dịch vụ, kiểm tra tình trạng phòng
-          và theo dõi Room board live đúng phạm vi actor Nhân viên dịch vụ.
-        </p>
 
         <div class="svc-tags" aria-label="Thông tin nhanh">
           <span class="svc-tag svc-tag--live">Ca dịch vụ: sẵn sàng</span>
           <span class="svc-tag"><%= todayLabel %></span>
-          <span class="svc-tag">3 nghiệp vụ chính</span>
         </div>
 
         <div class="svc-hero-actions">
           <% if (primaryActions[0]) { %><a class="svc-button svc-button--primary" href="<%= primaryActions[0].href %>"><%= primaryActions[0].label %></a><% } %>
           <% if (primaryActions[1]) { %><a class="svc-button" href="<%= primaryActions[1].href %>"><%= primaryActions[1].label %></a><% } %>
           <% if (primaryActions[2]) { %><a class="svc-button" href="<%= primaryActions[2].href %>"><%= primaryActions[2].label %></a><% } %>
-        </div>
-
-        <div class="svc-mini-stats" aria-label="Tóm tắt dịch vụ">
-          <div class="svc-mini-stat"><strong>03</strong><span>Nghiệp vụ chính</span></div>
-          <div class="svc-mini-stat"><strong>Live</strong><span>Room feed</span></div>
-          <div class="svc-mini-stat"><strong>Room</strong><span>Inspection</span></div>
         </div>
       </div>
 
@@ -722,23 +552,10 @@
       </aside>
     </section>
 
-    <section class="svc-focus-card">
-      <div>
-        <strong>Luồng ưu tiên trong một ca dịch vụ</strong>
-        <span>Mở room board live, rà soát danh mục dịch vụ và cập nhật tình trạng phòng sau kiểm tra.</span>
-      </div>
-      <div class="svc-flow" aria-label="Luồng nghiệp vụ dịch vụ">
-        <a href="/service/catalog/manage">Quản lý dịch vụ</a>
-        <a href="/service/room-inspection">Kiểm tra phòng</a>
-        <a href="/service/room-board-live">Room board live</a>
-      </div>
-    </section>
-
     <section class="svc-section" aria-label="Nghiệp vụ nhân viên dịch vụ">
       <div class="svc-section-head">
         <div>
           <h2>Tác vụ chính</h2>
-          <p>Ba màn dùng nhiều nhất của nhân viên dịch vụ.</p>
         </div>
       </div>
 
@@ -750,53 +567,8 @@
               <span class="svc-uc-orb"></span>
             </div>
             <h3><%= item.label %></h3>
-            <p><%= item.note %></p>
             <span class="svc-open">Mở</span>
           </a>
-        <% }) %>
-      </div>
-    </section>
-
-    <section class="svc-section" aria-label="Ca dịch vụ hôm nay">
-      <div class="svc-section-head">
-        <div>
-          <h2>Ca dịch vụ hôm nay</h2>
-          <p>Các điểm vận hành quan trọng xoay quanh catalog dịch vụ, kiểm tra phòng và room board live.</p>
-        </div>
-        <a class="svc-button" href="/service">Vào màn dịch vụ</a>
-      </div>
-
-      <div class="svc-shift-grid">
-        <% shiftCards.forEach((card) => { %>
-          <article class="svc-shift-card">
-            <span class="svc-badge"><%= card.badge %></span>
-            <h3><%= card.title %></h3>
-            <p><%= card.line1 %></p>
-            <p><%= card.line2 %></p>
-            <strong><%= card.strong %></strong>
-            <div class="svc-hero-actions" style="margin-top:14px">
-              <a class="svc-button" href="<%= card.href %>"><%= card.action %></a>
-            </div>
-          </article>
-        <% }) %>
-      </div>
-    </section>
-
-    <section class="svc-section" aria-label="Nền vận hành">
-      <div class="svc-section-head">
-        <div>
-          <h2>Nền vận hành đang có</h2>
-          <p>Ba nhóm khả năng đúng phạm vi actor Dịch vụ, dùng làm nền để phát triển tiếp mà không lệch nghiệp vụ.</p>
-        </div>
-      </div>
-
-      <div class="svc-shift-grid">
-        <% focusCards.forEach((card) => { %>
-          <article class="svc-shift-card">
-            <span class="svc-badge"><%= card.label %></span>
-            <h3><%= card.value %></h3>
-            <p><%= card.note %></p>
-          </article>
         <% }) %>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import fs from "node:fs/promises";
 import { EkycService } from "../services/ekyc.service";
 
 const ekycService = new EkycService();
@@ -28,14 +29,20 @@ export async function ekycStatusApi(req: Request, res: Response) {
 
 export async function ekycSubmitApi(req: Request, res: Response) {
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
-  const payload = await ekycService.submitVerification(
-    maKhachHang,
-    {
-      document_type: String(req.body.document_type || ""),
-      document_number: String(req.body.document_number || "")
-    },
-    getUploadedEkycFiles(req)
-  );
+  let payload: Awaited<ReturnType<EkycService["submitVerification"]>>;
+  try {
+    payload = await ekycService.submitVerification(
+      maKhachHang,
+      {
+        document_type: String(req.body.document_type || ""),
+        document_number: String(req.body.document_number || "")
+      },
+      getUploadedEkycFiles(req)
+    );
+  } catch (error) {
+    await cleanupUploadedEkycFiles(req);
+    throw error;
+  }
 
   syncSessionEkyc(req, payload);
 
@@ -60,15 +67,10 @@ export async function ekycSubmitAction(req: Request, res: Response) {
     );
 
     syncSessionEkyc(req, payload);
-    return res.redirect(`/ekyc?success=${encodeURIComponent("Đã gửi hồ sơ eKYC thành công.")}`);
+    return res.redirect(`/customer/profile?success=${encodeURIComponent("Đã gửi hồ sơ eKYC thành công. Hồ sơ đang chờ quản lý duyệt.")}#ekyc-section`);
   } catch (error) {
-    const payload = await ekycService.getStatusForCustomer(maKhachHang);
-    return res.status(422).render("ekyc/index", {
-      title: "eKYC",
-      payload,
-      successMessage: "",
-      errorMessage: error instanceof Error ? error.message : "Không thể gửi hồ sơ eKYC lúc này."
-    });
+    await cleanupUploadedEkycFiles(req);
+    return res.redirect(`/customer/profile?error=${encodeURIComponent(error instanceof Error ? error.message : "Không thể gửi hồ sơ eKYC lúc này.")}#ekyc-section`);
   }
 }
 
@@ -162,6 +164,13 @@ function getUploadedEkycFiles(req: Request) {
     back: files?.back?.[0],
     selfie: files?.selfie?.[0]
   };
+}
+
+async function cleanupUploadedEkycFiles(req: Request) {
+  const uploaded = getUploadedEkycFiles(req);
+  await Promise.all(Object.values(uploaded)
+    .filter((file): file is Express.Multer.File => Boolean(file?.path))
+    .map((file) => fs.unlink(file.path).catch(() => undefined)));
 }
 
 function syncSessionEkyc(req: Request, payload: any) {

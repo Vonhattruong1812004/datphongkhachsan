@@ -14,8 +14,11 @@
   const isCskh = scope === "cskh";
   const isAdmin = scope === "admin";
   const isQuanly = scope === "quanly";
-  const isCommandCenter = isLetan || isAdmin;
+  const isKetoan = scope === "ketoan";
+  const isManagerLayout = isQuanly || isKetoan;
+  const isCommandCenter = isLetan || isAdmin || isKetoan;
   const primaryActions = actions;
+  const showActionSection = !isCskh;
   const showLiveSections = !isCskh;
 %>
 
@@ -67,11 +70,21 @@
       radial-gradient(circle at 24% 80%, rgba(251,191,36,.16), transparent 26%),
       linear-gradient(135deg, #f8fcff 0%, #eef8ff 38%, #f3fff9 72%, #fffaf0 100%);
   }
+  .role-dash.is-ketoan{
+    background:
+      radial-gradient(circle at 8% 10%, rgba(245,158,11,.26), transparent 28%),
+      radial-gradient(circle at 86% 12%, rgba(20,184,166,.22), transparent 30%),
+      radial-gradient(circle at 52% 100%, rgba(14,165,233,.18), transparent 36%),
+      radial-gradient(circle at 24% 80%, rgba(251,113,133,.16), transparent 25%),
+      linear-gradient(135deg, #fffdf7 0%, #f6fff8 38%, #eefaff 72%, #fff7ed 100%);
+  }
   .role-dash::before,.role-dash::after{content:"";position:absolute;width:520px;height:520px;border-radius:999px;pointer-events:none;z-index:-1;opacity:.44;animation:dash-float 12s ease-in-out infinite alternate}
   .role-dash::before{top:-240px;right:-140px;background:conic-gradient(from 160deg,rgba(14,165,233,.42),rgba(20,184,166,.32),rgba(163,230,53,.34),rgba(139,92,246,.28),rgba(14,165,233,.42))}
   .role-dash::after{left:-220px;bottom:-260px;background:conic-gradient(from 20deg,rgba(251,113,133,.30),rgba(245,158,11,.28),rgba(20,184,166,.30),rgba(14,165,233,.24),rgba(251,113,133,.30));animation-delay:-4s}
   .role-dash.is-letan::before{opacity:.58;background:conic-gradient(from 130deg,rgba(14,165,233,.56),rgba(20,184,166,.38),rgba(250,204,21,.34),rgba(251,113,133,.32),rgba(14,165,233,.56))}
   .role-dash.is-letan::after{opacity:.52;background:conic-gradient(from 18deg,rgba(251,113,133,.34),rgba(245,158,11,.30),rgba(45,212,191,.30),rgba(59,130,246,.26),rgba(251,113,133,.34))}
+  .role-dash.is-ketoan::before{opacity:.48;background:conic-gradient(from 140deg,rgba(245,158,11,.42),rgba(20,184,166,.30),rgba(14,165,233,.24),rgba(251,113,133,.22),rgba(245,158,11,.42))}
+  .role-dash.is-ketoan::after{opacity:.44;background:conic-gradient(from 22deg,rgba(20,184,166,.28),rgba(14,165,233,.22),rgba(245,158,11,.26),rgba(251,113,133,.22),rgba(20,184,166,.28))}
   .dash-shell{max-width:1220px;margin:0 auto;position:relative}
   .dash-fantasy-scene{
     position:absolute;
@@ -272,6 +285,11 @@
       linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.74)),
       radial-gradient(circle at 88% 20%, rgba(14,165,233,.18), transparent 22%);
   }
+  .role-dash.is-ketoan .dash-hero-main.is-compact{
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.76)),
+      radial-gradient(circle at 88% 20%, rgba(245,158,11,.18), transparent 22%);
+  }
   .dash-hero-main::before{content:"";position:absolute;inset:-1px;background:linear-gradient(120deg,rgba(255,255,255,.66),transparent 28%),radial-gradient(circle at 88% 18%,var(--dash-soft),transparent 31%);pointer-events:none}
   .dash-eyebrow{display:inline-flex;align-items:center;gap:8px;position:relative;z-index:1;border-radius:999px;padding:7px 12px;background:var(--dash-soft);border:1px solid rgba(16,32,51,.08);color:var(--dash-accent);font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
   .dash-dot{width:8px;height:8px;border-radius:999px;background:var(--dash-accent);box-shadow:0 0 0 7px var(--dash-soft);animation:dash-pulse 1.8s ease-in-out infinite}
@@ -298,6 +316,11 @@
   .role-dash.is-admin .dash-orbit.is-compact{
     background:
       linear-gradient(160deg, rgba(255,255,255,.90), rgba(239,246,255,.76)),
+      radial-gradient(circle at 28% 18%, rgba(20,184,166,.14), transparent 24%);
+  }
+  .role-dash.is-ketoan .dash-orbit.is-compact{
+    background:
+      linear-gradient(160deg, rgba(255,255,255,.90), rgba(255,247,237,.76)),
       radial-gradient(circle at 28% 18%, rgba(20,184,166,.14), transparent 24%);
   }
   .dash-orbit-stage{position:absolute;inset:24px;border-radius:32px;background:linear-gradient(145deg,rgba(15,23,42,.86),rgba(12,74,110,.72));overflow:hidden}
@@ -348,12 +371,14 @@
     box-shadow:0 26px 74px rgba(15,23,42,.14);
   }
   .role-dash.is-letan .dash-grid.is-compact,
-  .role-dash.is-admin .dash-grid.is-compact{
+  .role-dash.is-admin .dash-grid.is-compact,
+  .role-dash.is-ketoan .dash-grid.is-compact{
     grid-auto-rows:minmax(210px,auto);
     gap:18px;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action,
-  .role-dash.is-admin .dash-grid.is-compact .dash-action{
+  .role-dash.is-admin .dash-grid.is-compact .dash-action,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action{
     min-height:210px;
     padding:22px;
     border-color:rgba(17,34,51,.13);
@@ -371,33 +396,46 @@
   .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(1),
   .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(2),
   .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4),
-  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(5){
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(5),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(1),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(4),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(5){
     grid-column:span 4;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1),
   .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6),
   .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(1),
-  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(6){
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(6),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(1),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(6){
     grid-column:span 5;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
   .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
   .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(2),
-  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(5){
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(5),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(5){
     grid-column:span 3;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
   .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
   .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(3),
-  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4){
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(3),
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:nth-child(4){
     grid-column:span 4;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action:hover,
-  .role-dash.is-admin .dash-grid.is-compact .dash-action:hover{
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:hover,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action:hover{
     box-shadow:0 36px 96px rgba(18,38,63,.25);
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action::before,
-  .role-dash.is-admin .dash-grid.is-compact .dash-action::before{
+  .role-dash.is-admin .dash-grid.is-compact .dash-action::before,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action::before{
     width:56px;
     height:56px;
     right:28px;
@@ -408,7 +446,8 @@
     box-shadow:0 18px 42px var(--card-glow);
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action::after,
-  .role-dash.is-admin .dash-grid.is-compact .dash-action::after{
+  .role-dash.is-admin .dash-grid.is-compact .dash-action::after,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action::after{
     left:22px;
     right:22px;
     bottom:18px;
@@ -416,17 +455,20 @@
     opacity:.82;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-code,
-  .role-dash.is-admin .dash-grid.is-compact .dash-code{
+  .role-dash.is-admin .dash-grid.is-compact .dash-code,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-code{
     background:rgba(255,255,255,.88);
     border-color:rgba(17,34,51,.11);
     box-shadow:0 10px 26px rgba(18,38,63,.07);
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-code::after,
-  .role-dash.is-admin .dash-grid.is-compact .dash-code::after{
+  .role-dash.is-admin .dash-grid.is-compact .dash-code::after,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-code::after{
     display:none;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action h3,
-  .role-dash.is-admin .dash-grid.is-compact .dash-action h3{
+  .role-dash.is-admin .dash-grid.is-compact .dash-action h3,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action h3{
     margin:54px 0 10px;
     color:#102033;
     font-size:27px;
@@ -434,7 +476,8 @@
     letter-spacing:-.055em;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-action p,
-  .role-dash.is-admin .dash-grid.is-compact .dash-action p{
+  .role-dash.is-admin .dash-grid.is-compact .dash-action p,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-action p{
     max-width:520px;
     color:#5f6b7d;
     font-size:14px;
@@ -442,7 +485,8 @@
     font-weight:720;
   }
   .role-dash.is-letan .dash-grid.is-compact .dash-open,
-  .role-dash.is-admin .dash-grid.is-compact .dash-open{
+  .role-dash.is-admin .dash-grid.is-compact .dash-open,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-open{
     right:22px;
     bottom:28px;
     font-size:13px;
@@ -494,7 +538,8 @@
   }
   .dash-stat{grid-column:span 4;border-radius:26px;padding:20px;background:rgba(255,255,255,.70)}
   .role-dash.is-letan .dash-grid.is-compact .dash-stat,
-  .role-dash.is-admin .dash-grid.is-compact .dash-stat{
+  .role-dash.is-admin .dash-grid.is-compact .dash-stat,
+  .role-dash.is-ketoan .dash-grid.is-compact .dash-stat{
     background:
       linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.72)),
       radial-gradient(circle at 100% 0%, rgba(20,184,166,.12), transparent 36%);
@@ -540,6 +585,21 @@
       radial-gradient(circle at 18% 82%, rgba(251,113,133,.18), transparent 27%),
       linear-gradient(135deg,#fbfffb 0%,#e9fbff 42%,#fff8ed 100%);
   }
+  .manager-dash.is-ketoan{
+    --mgr-cyan:#0ea5e9;
+    --mgr-mint:#10b981;
+    --mgr-lime:#bef264;
+    --mgr-sun:#f59e0b;
+    --mgr-orange:#fb923c;
+    --mgr-pink:#ec4899;
+    --mgr-violet:#7c3aed;
+    background:
+      radial-gradient(circle at 8% 12%, rgba(245,158,11,.26), transparent 27%),
+      radial-gradient(circle at 82% 8%, rgba(14,165,233,.24), transparent 30%),
+      radial-gradient(circle at 48% 104%, rgba(16,185,129,.22), transparent 39%),
+      radial-gradient(circle at 18% 82%, rgba(236,72,153,.16), transparent 27%),
+      linear-gradient(135deg,#fffdf7 0%,#effaff 42%,#f5fff7 100%);
+  }
   .manager-dash::before,
   .manager-dash::after{content:"";position:absolute;pointer-events:none;z-index:-1}
   .manager-dash::before{
@@ -551,6 +611,12 @@
     width:520px;height:520px;left:-240px;bottom:-270px;border-radius:999px;
     opacity:.36;background:conic-gradient(from 20deg,rgba(251,146,60,.38),rgba(163,230,53,.30),rgba(6,182,212,.28),rgba(139,92,246,.22),rgba(251,146,60,.38));
     animation:mgr-orbit 14s ease-in-out infinite alternate;
+  }
+  .manager-dash.is-ketoan::before{
+    background:conic-gradient(from 140deg,rgba(245,158,11,.42),rgba(14,165,233,.32),rgba(16,185,129,.30),rgba(236,72,153,.22),rgba(245,158,11,.42));
+  }
+  .manager-dash.is-ketoan::after{
+    background:conic-gradient(from 20deg,rgba(14,165,233,.30),rgba(16,185,129,.28),rgba(245,158,11,.26),rgba(124,58,237,.20),rgba(14,165,233,.30));
   }
   .manager-shell{max-width:1240px;margin:0 auto;position:relative}
   .manager-hero{display:grid;grid-template-columns:minmax(0,1.05fr) 360px;gap:22px;align-items:stretch;margin-bottom:20px}
@@ -568,15 +634,25 @@
       radial-gradient(circle at 86% 18%,rgba(6,182,212,.24),transparent 30%),
       radial-gradient(circle at 18% 88%,rgba(163,230,53,.22),transparent 28%);
   }
+  .manager-dash.is-ketoan .manager-hero-main::before{
+    background:
+      linear-gradient(120deg,rgba(255,255,255,.74),transparent 28%),
+      radial-gradient(circle at 86% 18%,rgba(245,158,11,.22),transparent 30%),
+      radial-gradient(circle at 18% 88%,rgba(14,165,233,.18),transparent 28%);
+  }
   .manager-chip{position:relative;z-index:1;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;border:1px solid rgba(6,182,212,.22);background:rgba(6,182,212,.12);color:#087a92;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
+  .manager-dash.is-ketoan .manager-chip{border-color:rgba(245,158,11,.24);background:rgba(245,158,11,.12);color:#92400e}
   .manager-dot{width:8px;height:8px;border-radius:999px;background:var(--mgr-mint);box-shadow:0 0 0 7px rgba(34,197,94,.15);animation:dash-pulse 1.8s ease-in-out infinite}
+  .manager-dash.is-ketoan .manager-dot{background:var(--mgr-sun);box-shadow:0 0 0 7px rgba(245,158,11,.16)}
   .manager-hero h1{position:relative;z-index:1;max-width:760px;margin:26px 0 14px;color:var(--mgr-ink);font-size:clamp(42px,6.2vw,76px);line-height:.90;letter-spacing:-.075em}
   .manager-hero h1 span{color:transparent;background:linear-gradient(96deg,#0891b2 0%,#22c55e 42%,#f59e0b 74%,#ec4899 100%);-webkit-background-clip:text;background-clip:text}
+  .manager-dash.is-ketoan .manager-hero h1 span{background:linear-gradient(96deg,#0ea5e9 0%,#10b981 38%,#f59e0b 70%,#ec4899 100%);-webkit-background-clip:text;background-clip:text}
   .manager-lead{position:relative;z-index:1;max-width:690px;margin:0;color:var(--mgr-muted);font-size:16px;line-height:1.72}
   .manager-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
   .manager-button{display:inline-flex;align-items:center;justify-content:center;min-height:45px;border-radius:999px;padding:10px 18px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.76);color:var(--mgr-ink);text-decoration:none;font-size:14px;font-weight:950;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
   .manager-button:hover{transform:translateY(-2px);border-color:rgba(6,182,212,.36);box-shadow:0 18px 44px rgba(6,182,212,.16)}
   .manager-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#22c55e);box-shadow:0 18px 42px rgba(34,197,94,.24)}
+  .manager-dash.is-ketoan .manager-button--primary{background:linear-gradient(135deg,#0ea5e9,#10b981 52%,#f59e0b);box-shadow:0 18px 42px rgba(14,165,233,.20)}
   .manager-mini-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:34px}
   .manager-mini{border-radius:23px;padding:16px;background:rgba(255,255,255,.60);border:1px solid rgba(16,32,51,.08)}
   .manager-mini strong{display:block;color:var(--mgr-ink);font-size:30px;line-height:1;letter-spacing:-.055em}
@@ -592,10 +668,13 @@
   .manager-radar-word:nth-child(4){right:42px;bottom:42px;animation:dash-drift-a 6.4s ease-in-out infinite reverse}
   .manager-visual-card{position:relative;overflow:hidden;border-radius:36px;min-height:300px;background:linear-gradient(160deg,rgba(255,255,255,.90),rgba(236,253,245,.68))}
   .manager-visual-scene{position:absolute;inset:24px;border-radius:32px;overflow:hidden;background:linear-gradient(145deg,rgba(8,47,73,.90),rgba(5,150,105,.74))}
+  .manager-dash.is-ketoan .manager-visual-scene{background:linear-gradient(145deg,rgba(8,47,73,.90),rgba(120,53,15,.72))}
   .manager-visual-scene::before{content:"";position:absolute;inset:24px;border:1px dashed rgba(226,232,240,.26);border-radius:999px;animation:dash-spin 22s linear infinite}
   .manager-visual-core{position:absolute;width:150px;height:150px;left:calc(50% - 75px);top:calc(50% - 75px);border-radius:42px;background:linear-gradient(135deg,#06b6d4,#22c55e 52%,#facc15);box-shadow:0 24px 70px rgba(6,182,212,.28);transform:rotate(14deg);animation:dash-breathe 4.5s ease-in-out infinite}
+  .manager-dash.is-ketoan .manager-visual-core{background:linear-gradient(135deg,#0ea5e9,#10b981 48%,#f59e0b);box-shadow:0 24px 70px rgba(245,158,11,.24)}
   .manager-visual-chip{position:absolute;z-index:2;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:9px 12px;color:#eff6ff;background:rgba(15,23,42,.50);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(14px);font-size:12px;font-weight:1000}
   .manager-visual-chip::before{content:"";width:8px;height:8px;border-radius:999px;background:#a3e635;box-shadow:0 0 0 6px rgba(163,230,53,.14)}
+  .manager-dash.is-ketoan .manager-visual-chip::before{background:#facc15;box-shadow:0 0 0 6px rgba(250,204,21,.14)}
   .manager-visual-chip:nth-child(2){left:26px;top:34px;animation:dash-drift-a 5.8s ease-in-out infinite}
   .manager-visual-chip:nth-child(3){right:28px;top:82px;animation:dash-drift-b 6.2s ease-in-out infinite}
   .manager-visual-chip:nth-child(4){left:40px;bottom:54px;animation:dash-drift-b 5.8s ease-in-out infinite reverse}
@@ -616,6 +695,15 @@
   .manager-action:nth-child(2){--mgr-action:#22c55e;--mgr-glow:rgba(34,197,94,.24);grid-column:span 4}
   .manager-action:nth-child(3){--mgr-action:#f59e0b;--mgr-glow:rgba(245,158,11,.24);grid-column:span 4}
   .manager-action:nth-child(4){--mgr-action:#fb7185;--mgr-glow:rgba(251,113,133,.24);grid-column:span 4}
+  .manager-dash.is-ketoan .manager-action,
+  .manager-dash.is-ketoan .manager-action:nth-child(1),
+  .manager-dash.is-ketoan .manager-action:nth-child(2),
+  .manager-dash.is-ketoan .manager-action:nth-child(3),
+  .manager-dash.is-ketoan .manager-action:nth-child(4){grid-column:span 3}
+  .manager-dash.is-ketoan .manager-action:nth-child(1){--mgr-action:#0ea5e9;--mgr-glow:rgba(14,165,233,.24)}
+  .manager-dash.is-ketoan .manager-action:nth-child(2){--mgr-action:#10b981;--mgr-glow:rgba(16,185,129,.24)}
+  .manager-dash.is-ketoan .manager-action:nth-child(3){--mgr-action:#f59e0b;--mgr-glow:rgba(245,158,11,.24)}
+  .manager-dash.is-ketoan .manager-action:nth-child(4){--mgr-action:#ec4899;--mgr-glow:rgba(236,72,153,.22)}
   .manager-action:hover{transform:translateY(-6px);border-color:var(--mgr-action);box-shadow:0 34px 90px rgba(15,23,42,.22)}
   .manager-action::before{content:"";position:absolute;width:56px;height:56px;right:26px;top:24px;border-radius:20px;background:linear-gradient(135deg,var(--mgr-action),rgba(255,255,255,.34));box-shadow:0 18px 42px var(--mgr-glow)}
   .manager-action::after{content:"";position:absolute;left:22px;right:22px;bottom:18px;height:5px;border-radius:999px;background:linear-gradient(90deg,var(--mgr-action),transparent);opacity:.80}
@@ -631,6 +719,22 @@
   .manager-room-panel{border-radius:30px;padding:20px;background:rgba(255,255,255,.72)}
   .manager-room-panel .dash-stat{grid-column:span 2;background:rgba(255,255,255,.74);box-shadow:0 16px 40px rgba(15,23,42,.08)}
   .manager-room-panel .dash-room{grid-column:span 3;background:rgba(255,255,255,.72);box-shadow:0 16px 40px rgba(15,23,42,.08)}
+  .manager-chart-grid{display:grid;grid-template-columns:minmax(0,1.42fr) minmax(320px,.58fr);gap:16px}
+  .manager-chart-stack{display:grid;gap:16px}
+  .manager-chart-card{border:1px solid var(--mgr-line);border-radius:30px;padding:20px;background:rgba(255,255,255,.76);box-shadow:var(--mgr-shadow);backdrop-filter:blur(26px)}
+  .manager-chart-card h3{margin:0;color:var(--mgr-ink);font-size:20px;letter-spacing:-.02em}
+  .manager-chart-card p{margin:6px 0 0;color:var(--mgr-muted);font-size:13px;line-height:1.55}
+  .manager-chart-box{position:relative;min-height:300px;margin-top:16px}
+  .manager-chart-box.is-compact{min-height:220px}
+  .manager-chart-box canvas{display:block;width:100%;height:100%;min-height:inherit}
+  .manager-chart-legend{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .manager-legend-item{display:inline-flex;align-items:center;gap:7px;border:1px solid rgba(16,32,51,.08);border-radius:999px;padding:7px 10px;background:rgba(255,255,255,.72);color:var(--mgr-muted);font-size:12px;font-weight:900}
+  .manager-legend-dot{width:9px;height:9px;border-radius:999px;background:var(--legend,#0ea5e9)}
+  .manager-chart-note{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .manager-chart-note span{border-radius:14px;padding:9px 11px;background:rgba(255,255,255,.72);color:var(--mgr-muted);font-size:12px;font-weight:900}
+  .manager-chart-actions{display:flex;flex-wrap:wrap;gap:9px;align-items:center;justify-content:flex-end}
+  .manager-chart-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border-radius:999px;padding:8px 12px;border:1px solid rgba(16,32,51,.10);background:rgba(255,255,255,.74);color:var(--mgr-ink);text-decoration:none;font-size:12px;font-weight:1000}
+  .manager-chart-actions a:first-child{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0ea5e9,#10b981)}
   @keyframes mgr-blob{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(-24px,28px,0) rotate(16deg)}}
   @keyframes mgr-orbit{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(32px,-18px,0) scale(1.04)}}
   @keyframes dash-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(32px,24px,0) rotate(16deg)}}
@@ -647,34 +751,41 @@
   @keyframes dash-leaf-sway{0%,100%{transform:rotate(var(--leaf-rot,0deg)) translate3d(0,0,0)}50%{transform:rotate(calc(var(--leaf-rot,0deg) + 8deg)) translate3d(2px,-8px,0)}}
   @keyframes dash-petal-float{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-10px,0) scale(1.08)}}
   @keyframes dash-fall{0%{transform:translate3d(0,0,0) rotate(0);opacity:0}10%{opacity:.72}100%{transform:translate3d(24px,340px,0) rotate(320deg);opacity:0}}
-  @media(max-width:1080px){.manager-hero,.manager-live-grid{grid-template-columns:1fr}.manager-radar,.manager-visual-card{min-height:320px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4){grid-column:span 6}.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:span 4}}
-  @media(max-width:720px){.manager-dash{padding:20px 12px 42px}.manager-hero-main{min-height:auto;padding:24px;border-radius:28px}.manager-hero h1{font-size:42px}.manager-mini-grid,.manager-command{grid-template-columns:1fr}.manager-section-head{display:block}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4),.manager-live-panel .dash-stat,.manager-live-panel .dash-event,.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:1/-1}.manager-radar,.manager-visual-card{display:none}}
+  @media(max-width:1080px){.manager-hero,.manager-live-grid,.manager-chart-grid{grid-template-columns:1fr}.manager-radar,.manager-visual-card{min-height:320px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4){grid-column:span 6}.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:span 4}}
+  @media(max-width:720px){.manager-dash{padding:20px 12px 42px}.manager-hero-main{min-height:auto;padding:24px;border-radius:28px}.manager-hero h1{font-size:42px}.manager-mini-grid,.manager-command{grid-template-columns:1fr}.manager-chart-box{min-height:250px}.manager-section-head{display:block}.manager-chart-actions{justify-content:flex-start;margin-top:10px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4),.manager-live-panel .dash-stat,.manager-live-panel .dash-event,.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:1/-1}.manager-radar,.manager-visual-card{display:none}}
   @media(max-width:1080px){.dash-hero{grid-template-columns:1fr}.dash-orbit{min-height:320px}.admin-watch{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-action,.dash-action:nth-child(1),.dash-action:nth-child(2),.dash-action:nth-child(4),.dash-action:nth-child(5),.dash-stat,.dash-event,.dash-room{grid-column:span 6}}
   @media(max-width:720px){.role-dash{padding:20px 12px 42px}.dash-hero-main{min-height:auto;padding:24px;border-radius:28px}.dash-hero h1{font-size:42px}.dash-pulse-grid,.dash-strip,.admin-watch{grid-template-columns:1fr}.dash-action,.dash-stat,.dash-event,.dash-room{grid-column:1/-1}.dash-section-head{display:block}.dash-sun{right:24px;top:34px;width:84px;height:84px}.dash-rainbow{right:10px;top:112px;width:156px;height:84px}.dash-cloud--two,.dash-leaf--three,.dash-leaf--four,.dash-flower--two{display:none}}
   @media(prefers-reduced-motion:reduce){.role-dash::before,.role-dash::after,.dash-dot,.dash-orbit-stage::before,.dash-orbit-stage::after,.dash-orbit-word,.dash-action,.dash-sun,.dash-cloud,.dash-wave,.dash-leaf,.dash-flower,.dash-petal{animation:none}.dash-action{transform:none;opacity:1}}
 </style>
 
-<% if (isQuanly) { %>
-<main class="manager-dash">
+<% if (isManagerLayout) { %>
+<main class="manager-dash <%= isKetoan ? 'is-ketoan' : '' %>">
   <div class="manager-shell">
-    <section class="manager-hero" aria-label="Dashboard quản lý">
+    <section class="manager-hero" aria-label="Dashboard <%= meta.label %>">
       <div class="manager-hero-main">
         <div class="manager-chip"><span class="manager-dot"></span> <%= meta.label %> command center</div>
-        <h1>Quản lý vận hành <span>realtime.</span></h1>
-        <p class="manager-lead"><%= hero.description %></p>
+        <h1><%= isKetoan ? "Kế toán vận hành" : "Quản lý vận hành" %> <span><%= isKetoan ? "đối soát." : "realtime." %></span></h1>
+        <p class="manager-lead"><%= isKetoan ? "Theo dõi thống kê, doanh thu, chi phí và hoàn tiền trong một màn điều hướng gọn." : hero.description %></p>
         <div class="manager-actions">
           <% if (actions[0]) { %><a class="manager-button manager-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
           <% if (actions[1]) { %><a class="manager-button" href="<%= actions[1].href %>"><%= actions[1].label %></a><% } %>
           <% if (actions[2]) { %><a class="manager-button" href="<%= actions[2].href %>"><%= actions[2].label %></a><% } %>
         </div>
       </div>
-      <aside class="manager-visual-card" aria-label="Minh họa dashboard quản lý">
+      <aside class="manager-visual-card" aria-label="Minh họa dashboard <%= meta.label %>">
         <div class="manager-visual-scene">
           <div class="manager-visual-core"></div>
-          <span class="manager-visual-chip">Quản lý khách</span>
-          <span class="manager-visual-chip">Quản lý phòng</span>
-          <span class="manager-visual-chip">Duyệt eKYC</span>
-          <span class="manager-visual-chip">Live</span>
+          <% if (isKetoan) { %>
+            <span class="manager-visual-chip">Thống kê tài chính</span>
+            <span class="manager-visual-chip">Quản lý doanh thu</span>
+            <span class="manager-visual-chip">Quản lý chi phí</span>
+            <span class="manager-visual-chip">Xử lý hoàn tiền</span>
+          <% } else { %>
+            <span class="manager-visual-chip">Quản lý khách</span>
+            <span class="manager-visual-chip">Quản lý phòng</span>
+            <span class="manager-visual-chip">Duyệt eKYC</span>
+            <span class="manager-visual-chip">Duyệt hoàn tiền</span>
+          <% } %>
           <div class="manager-visual-wave"></div>
         </div>
       </aside>
@@ -683,8 +794,8 @@
     <section class="manager-section">
       <div class="manager-section-head">
         <div>
-          <h2>UC chính của Quản lý</h2>
-          <p>Chỉ giữ các chức năng đúng actor: quản lý khách hàng, quản lý phòng và duyệt eKYC.</p>
+          <h2>UC chính của <%= meta.label %></h2>
+          <% if (!isKetoan) { %><p>Quản lý khách hàng, phòng, eKYC và hoàn tiền.</p><% } %>
         </div>
       </div>
       <div class="manager-action-grid">
@@ -702,12 +813,12 @@
     <section class="manager-section">
       <div class="manager-section-head">
         <div>
-          <h2>Tổng quan vận hành</h2>
-          <p>Một cụm KPI đủ để phát hiện vấn đề, không kéo dài thành báo cáo chi tiết.</p>
+          <h2><%= isKetoan ? "Tổng quan tài chính" : "Tổng quan vận hành" %></h2>
+          <% if (!isKetoan) { %><p>KPI vận hành trong ngày.</p><% } %>
         </div>
       </div>
       <div class="manager-live-grid">
-        <section class="manager-live-panel" aria-label="KPI quản lý">
+        <section class="manager-live-panel" aria-label="KPI <%= meta.label %>">
           <div class="dash-grid" id="live-overview">
             <article class="dash-stat"><strong>...</strong><h3>Đang tải KPI</h3><p>Đang đọc dashboard stats từ database.</p></article>
           </div>
@@ -715,11 +826,12 @@
       </div>
     </section>
 
+    <% if (isQuanly) { %>
     <section class="manager-section">
       <div class="manager-section-head">
         <div>
           <h2>Tình trạng phòng</h2>
-          <p>Chỉ giữ số liệu tổng hợp. Chi tiết phòng xử lý trong UC Quản lý phòng.</p>
+          <p>Số liệu phòng tổng hợp.</p>
         </div>
       </div>
       <section class="manager-room-panel" aria-label="Room board quản lý">
@@ -728,10 +840,11 @@
         </div>
       </section>
     </section>
+    <% } %>
   </div>
 </main>
 <% } else { %>
-<main class="role-dash <%= isLetan ? 'is-letan' : '' %> <%= isAdmin ? 'is-admin' : '' %> <%= isCskh ? 'is-cskh' : '' %>">
+<main class="role-dash <%= isLetan ? 'is-letan' : '' %> <%= isAdmin ? 'is-admin' : '' %> <%= isCskh ? 'is-cskh' : '' %> <%= isKetoan ? 'is-ketoan' : '' %>">
   <div class="dash-shell">
     <% if (isLetan) { %>
     <div class="dash-fantasy-scene" aria-hidden="true">
@@ -755,13 +868,15 @@
     <section class="dash-hero <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-hero-main <%= isCommandCenter ? 'is-compact' : '' %>">
         <div class="dash-eyebrow"><span class="dash-dot"></span> <%= meta.label %> command center</div>
-        <h1><%= hero.title %> <span><%= isLetan ? "Gọn hơn." : (isAdmin ? "Điều phối." : "Sạch hơn.") %></span></h1>
+        <h1><%= hero.title %> <span><%= isLetan ? "Gọn hơn." : (isAdmin ? "Điều phối." : (isKetoan ? "Đối soát." : "Sạch hơn.")) %></span></h1>
         <p class="dash-lead <%= isCommandCenter ? 'is-compact' : '' %>">
           <%= isLetan
             ? "Dashboard lễ tân đã được gom lại để tập trung vào các tác vụ cần dùng liên tục trong ca trực: đặt phòng trực tiếp, check-in, check-out, sửa hoặc hủy booking và xử lý dịch vụ theo phòng."
             : isAdmin
               ? "Quản trị tài khoản, kiểm tra hệ thống, sao lưu và phục hồi dữ liệu trong một màn gọn."
-            : hero.description %>
+              : isKetoan
+                ? "Theo dõi thống kê, doanh thu, chi phí và hoàn tiền."
+                : hero.description %>
         </p>
         <div class="dash-hero-actions">
           <% if (actions[0]) { %><a class="dash-button dash-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
@@ -770,8 +885,8 @@
         </div>
         <div class="dash-pulse-grid <%= isCommandCenter ? 'is-compact' : '' %>">
           <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào nhanh</span></div>
-          <div class="dash-pulse"><strong><%= isLetan ? "Core" : (isAdmin ? "Admin" : cards.length) %></strong><span><%= isLetan ? "Màn hình gọn" : (isAdmin ? "Quyền hệ thống" : "Trọng tâm") %></span></div>
-          <% if (!isLetan && !isAdmin) { %>
+          <div class="dash-pulse"><strong><%= isLetan ? "Core" : (isAdmin ? "Admin" : (isKetoan ? "Finance" : cards.length)) %></strong><span><%= isLetan ? "Màn hình gọn" : (isAdmin ? "Quyền hệ thống" : (isKetoan ? "Nghiệp vụ" : "Trọng tâm")) %></span></div>
+          <% if (!isLetan && !isAdmin && !isKetoan) { %>
           <div class="dash-pulse"><strong><%= isAdmin ? "Control" : (enableRoomBoard ? "Live" : "Focus") %></strong><span>Chế độ</span></div>
           <% } %>
         </div>
@@ -783,7 +898,7 @@
       </aside>
     </section>
 
-    <% if (!isLetan && !isAdmin) { %>
+    <% if (!isLetan && !isAdmin && !isKetoan) { %>
     <section class="dash-strip">
       <div>
         <strong>Không gian làm việc của <%= meta.label %></strong>
@@ -797,7 +912,7 @@
     </section>
     <% } %>
 
-    <% if (!isLetan && !isAdmin) { %>
+    <% if (!isLetan && !isAdmin && !isKetoan) { %>
     <section class="dash-section">
       <div class="dash-section-head">
         <div>
@@ -818,12 +933,12 @@
     </section>
     <% } %>
 
-    <% if (showLiveSections) { %>
+    <% if (showActionSection) { %>
     <section class="dash-section <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-section-head">
         <div>
-          <h2><%= (isLetan || isCskh || isAdmin) ? "Tác vụ chính" : "Lối vào nhanh" %></h2>
-          <p><%= isLetan ? "Các thao tác lễ tân dùng nhiều nhất." : (isCskh ? "Mở nhanh phản hồi, tư vấn và eKYC." : (isAdmin ? "Các UC Admin cần dùng, không trộn nghiệp vụ chi tiết của actor khác." : "Nhấn thẳng vào tác vụ cần xử lý.")) %></p>
+          <h2><%= (isLetan || isCskh || isAdmin || isKetoan) ? "Tác vụ chính" : "Lối vào nhanh" %></h2>
+          <p><%= isLetan ? "Các thao tác lễ tân dùng nhiều nhất." : (isCskh ? "Mở nhanh phản hồi, tư vấn và eKYC." : (isAdmin ? "Các UC Admin cần dùng, không trộn nghiệp vụ chi tiết của actor khác." : (isKetoan ? "Mở đúng UC kế toán cần xử lý; số liệu chi tiết nằm trong màn nghiệp vụ tương ứng." : "Nhấn thẳng vào tác vụ cần xử lý."))) %></p>
         </div>
       </div>
       <div class="dash-grid <%= isCommandCenter ? 'is-compact' : '' %>">
@@ -839,12 +954,12 @@
     </section>
     <% } %>
 
-    <% if (!isAdmin) { %>
+    <% if (!isAdmin && showLiveSections) { %>
     <section class="dash-section <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-section-head">
         <div>
           <h2><%= isLetan ? "Realtime vận hành" : (isAdmin ? "KPI cần theo dõi" : "Live KPI") %></h2>
-          <p><%= isLetan ? "Gộp các chỉ số điều phối chính vào một cụm duy nhất để nhìn nhanh tình trạng phòng và lưu trú." : (isAdmin ? "Chỉ giữ các chỉ số vận hành đủ để Admin phát hiện bất thường nhanh." : "Dữ liệu đọc trực tiếp từ hệ thống và tự làm mới khi có sự kiện realtime.") %></p>
+          <p><%= isLetan ? "Tình trạng phòng và lưu trú trong ca." : (isAdmin ? "Chỉ số vận hành hệ thống." : "Dữ liệu realtime từ hệ thống.") %></p>
         </div>
       </div>
       <div class="dash-grid <%= isCommandCenter ? 'is-compact' : '' %>" id="live-overview">
@@ -858,7 +973,7 @@
         <div class="dash-section-head">
           <div>
             <h2><%= isLetan ? "Phòng cần chú ý" : "Room Board" %></h2>
-            <p><%= isLetan ? "Chỉ giữ danh sách phòng gần nhất cần theo dõi, không lặp lại cụm số liệu ở trên." : "Trạng thái phòng realtime cho các actor cần điều phối vận hành." %></p>
+            <p><%= isLetan ? "Danh sách phòng cần theo dõi." : "Trạng thái phòng realtime." %></p>
           </div>
         </div>
         <% if (!isLetan) { %>
@@ -906,9 +1021,204 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+    const chartColors = ["#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#7c3aed", "#65a30d", "#14b8a6"];
+    let latestFinanceCharts = null;
+    const moneyShort = (value) => {
+      const amount = Number(value || 0);
+      if (Math.abs(amount) >= 1000000000) return `${(amount / 1000000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
+      if (Math.abs(amount) >= 1000000) return `${(amount / 1000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr`;
+      if (Math.abs(amount) >= 1000) return `${(amount / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}k`;
+      return amount.toLocaleString("vi-VN");
+    };
+    const chartSetup = (id) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      const width = Math.max(parent.clientWidth, 280);
+      const height = Math.max(parent.clientHeight, 220);
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { ctx, width, height };
+    };
+    const drawText = (ctx, value, x, y, size = 12, color = "#64748b", weight = 800, align = "left") => {
+      ctx.fillStyle = color;
+      ctx.font = `${weight} ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(value), x, y);
+    };
+    const roundRect = (ctx, x, y, width, height, radius) => {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    };
+    const drawEmptyChart = (ctx, width, height) => {
+      ctx.fillStyle = "rgba(255,255,255,.62)";
+      ctx.strokeStyle = "rgba(16,32,51,.13)";
+      roundRect(ctx, 18, 18, width - 36, height - 36, 20);
+      ctx.fill();
+      ctx.stroke();
+      drawText(ctx, "Chưa có dữ liệu biểu đồ", width / 2, height / 2, 13, "#64748b", 900, "center");
+    };
+    const drawLineChart = (payload) => {
+      const chart = chartSetup("ketoanTrendChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = payload?.trend || [];
+      if (!rows.length) return drawEmptyChart(ctx, width, height);
+      const pad = { left: 62, right: 36, top: 22, bottom: 50 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const maxMoney = Math.max(1, ...rows.flatMap((row) => [row.total, row.paid, row.outstanding, row.expense]));
+      const maxRooms = Math.max(1, ...rows.map((row) => row.roomNights));
+      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
+      const yMoney = (value) => pad.top + plotH - (Number(value || 0) / maxMoney) * plotH;
+      const yRooms = (value) => pad.top + plotH - (Number(value || 0) / maxRooms) * plotH;
+
+      ctx.strokeStyle = "rgba(16,32,51,.10)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i += 1) {
+        const y = pad.top + (plotH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        drawText(ctx, moneyShort(maxMoney - (maxMoney / 4) * i), 8, y, 11);
+      }
+      rows.forEach((row, index) => {
+        if (index % Math.ceil(rows.length / 7) === 0 || index === rows.length - 1) {
+          drawText(ctx, row.label, x(index), height - 24, 11, "#64748b", 800, "center");
+        }
+      });
+      const drawSeries = (key, color, yFn, lineWidth = 3) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        rows.forEach((row, index) => {
+          const px = x(index);
+          const py = yFn(row[key]);
+          if (index === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+      };
+      drawSeries("total", "#0ea5e9", yMoney, 4);
+      drawSeries("paid", "#10b981", yMoney, 3);
+      drawSeries("outstanding", "#ec4899", yMoney, 3);
+      drawSeries("expense", "#f59e0b", yMoney, 3);
+      drawSeries("roomNights", "#7c3aed", yRooms, 2);
+    };
+    const drawDonutChart = (id, rows, centerLabel) => {
+      const chart = chartSetup(id);
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const values = (rows || []).filter((row) => Number(row.value || 0) > 0);
+      if (!values.length) return drawEmptyChart(ctx, width, height);
+      const total = values.reduce((sum, row) => sum + Number(row.value || 0), 0);
+      const cx = Math.min(width * .35, 145);
+      const cy = height / 2;
+      const radius = Math.min(width * .23, height * .34, 86);
+      let start = -Math.PI / 2;
+      values.forEach((row, index) => {
+        const end = start + (Number(row.value || 0) / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = chartColors[index % chartColors.length];
+        ctx.fill();
+        start = end;
+      });
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * .58, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = "source-over";
+      drawText(ctx, centerLabel, cx, cy - 8, 12, "#64748b", 900, "center");
+      drawText(ctx, moneyShort(total), cx, cy + 12, 15, "#102033", 1000, "center");
+      const legendX = Math.min(width * .62, cx + radius + 26);
+      values.slice(0, 5).forEach((row, index) => {
+        const y = 40 + index * 29;
+        ctx.fillStyle = chartColors[index % chartColors.length];
+        ctx.beginPath();
+        ctx.arc(legendX, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        drawText(ctx, row.label, legendX + 13, y - 5, 12, "#102033", 900);
+        drawText(ctx, `${Math.round((row.value / total) * 100)}% · ${moneyShort(row.value)}`, legendX + 13, y + 10, 11);
+      });
+    };
+    const drawBarChart = (id, rows, key = "value", includeZero = false) => {
+      const chart = chartSetup(id);
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const values = (rows || []).filter((row) => includeZero || Number(row[key] || 0) > 0).slice(0, 7);
+      if (!values.length) return drawEmptyChart(ctx, width, height);
+      const pad = { left: 112, right: 28, top: 24, bottom: 22 };
+      const max = Math.max(1, ...values.map((row) => Number(row[key] || 0)));
+      const rowH = Math.min(42, (height - pad.top - pad.bottom) / values.length);
+      values.forEach((row, index) => {
+        const y = pad.top + index * rowH + 6;
+        const barW = ((width - pad.left - pad.right) * Number(row[key] || 0)) / max;
+        drawText(ctx, row.label, 12, y + rowH / 2 - 2, 12, "#102033", 900);
+        roundRect(ctx, pad.left, y, width - pad.left - pad.right, Math.max(16, rowH - 14), 999);
+        ctx.fillStyle = "rgba(16,32,51,.07)";
+        ctx.fill();
+        if (barW > 0) {
+          roundRect(ctx, pad.left, y, Math.max(10, barW), Math.max(16, rowH - 14), 999);
+          const gradient = ctx.createLinearGradient(pad.left, 0, width - pad.right, 0);
+          gradient.addColorStop(0, chartColors[index % chartColors.length]);
+          gradient.addColorStop(1, chartColors[(index + 1) % chartColors.length]);
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
+        drawText(ctx, moneyShort(row[key]), width - pad.right, y + rowH / 2 - 2, 12, "#102033", 1000, "right");
+      });
+    };
+    const renderFinanceCharts = (charts) => {
+      if (scope !== "ketoan" || !charts) return;
+      latestFinanceCharts = charts;
+      drawLineChart(charts);
+      drawDonutChart("ketoanMixChart", charts.revenueMix || [], "Doanh thu");
+      drawDonutChart("ketoanPaymentChart", charts.payments || [], "Đã thu");
+      drawBarChart("ketoanSourceChart", charts.sources || [], "value");
+      drawBarChart("ketoanWeekdayChart", charts.weekdays || [], "value", true);
+      const note = document.getElementById("ketoanChartNotes");
+      if (note) {
+        const topSource = (charts.sources || []).slice().sort((a, b) => Number(b.value || 0) - Number(a.value || 0))[0];
+        const topWeekday = (charts.weekdays || []).slice().sort((a, b) => Number(b.value || 0) - Number(a.value || 0))[0];
+        note.innerHTML = [
+          topSource ? `<span>Nguồn mạnh: ${escapeHtml(topSource.label)} · ${escapeHtml(moneyShort(topSource.value))}</span>` : "",
+          topWeekday ? `<span>Ngày mạnh: ${escapeHtml(topWeekday.label)} · ${escapeHtml(moneyShort(topWeekday.value))}</span>` : "",
+          `<span>Chu kỳ: tháng hiện tại và 14 ngày gần nhất</span>`
+        ].filter(Boolean).join("");
+      }
+    };
 
     const renderOverview = (data) => {
-      const overviewItems = scope === "quanly"
+      const money = (value) => new Intl.NumberFormat("vi-VN").format(value || 0);
+      const overviewItems = scope === "ketoan"
+        ? [
+            { label: "Doanh thu ghi nhận", value: money(data.overview.recognizedMonthlyRevenue), note: "Booked, Stayed và Paid trong tháng" },
+            { label: "Đã thu tháng", value: money(data.overview.monthlyRevenue), note: "Giao dịch đã chốt Paid" },
+            { label: "Còn phải thu", value: money(data.overview.outstandingMonthlyRevenue), note: "Booking/lưu trú chưa chốt thanh toán" },
+            { label: "Giao dịch đã thu", value: data.overview.paidTransactions, note: "Số giao dịch Paid toàn hệ thống" },
+            { label: "Tổng giao dịch", value: data.overview.totalTransactions, note: "Nguồn để mở UC Quản lý doanh thu khi cần chi tiết" },
+            { label: "Khách hàng", value: data.overview.totalCustomers, note: "Đối tượng liên quan tới thu, công nợ và hoàn tiền" }
+          ]
+        : scope === "quanly"
         ? [
             { label: "Khách hàng", value: data.overview.totalCustomers, note: "Hồ sơ đang quản lý" },
             { label: "Giao dịch", value: data.overview.totalTransactions, note: "Booking và thanh toán" },
@@ -923,8 +1233,8 @@
             { label: "Đã đặt", value: data.overview.bookedRooms, note: "Booking đang mở" },
             { label: "Đang ở", value: data.overview.stayedRooms, note: "Khách đang lưu trú" },
             { label: "Cần xử lý phòng", value: Number(data.overview.cleaningRooms || 0) + Number(data.overview.maintenanceRooms || 0), note: "Dọn phòng + bảo trì" },
-            { label: "Doanh thu tháng", value: new Intl.NumberFormat("vi-VN").format(data.overview.monthlyRevenue || 0), note: "Giao dịch đã chốt Paid" },
-            { label: "Còn phải thu", value: new Intl.NumberFormat("vi-VN").format(data.overview.outstandingMonthlyRevenue || 0), note: "Booking/lưu trú chưa chốt" }
+            { label: "Doanh thu tháng", value: money(data.overview.monthlyRevenue), note: "Giao dịch đã chốt Paid" },
+            { label: "Còn phải thu", value: money(data.overview.outstandingMonthlyRevenue), note: "Booking/lưu trú chưa chốt" }
             ]
         : scope === "letan"
           ? [
@@ -939,8 +1249,8 @@
             { label: "Đang ở", value: data.overview.stayedRooms, note: "Khách đang lưu trú" },
             { label: "Cần dọn", value: data.overview.cleaningRooms, note: "Đang chờ vệ sinh" },
             { label: "Bảo trì", value: data.overview.maintenanceRooms, note: "Không thể mở bán" },
-            { label: "Đã thu tháng", value: new Intl.NumberFormat("vi-VN").format(data.overview.monthlyRevenue || 0), note: "Chỉ tính giao dịch Paid" },
-            { label: "Còn phải thu", value: new Intl.NumberFormat("vi-VN").format(data.overview.outstandingMonthlyRevenue || 0), note: "Booking/lưu trú chưa thanh toán" }
+            { label: "Đã thu tháng", value: money(data.overview.monthlyRevenue), note: "Chỉ tính giao dịch Paid" },
+            { label: "Còn phải thu", value: money(data.overview.outstandingMonthlyRevenue), note: "Booking/lưu trú chưa thanh toán" }
           ];
 
       overview.innerHTML = overviewItems.map((item) => `

@@ -61,7 +61,7 @@
   .refund-break strong{display:block;font-size:19px}.refund-break span{font-size:12px;color:var(--muted);font-weight:900}
   .refund-alert{margin-bottom:14px}.refund-alert--ok{background:rgba(32,214,163,.12);color:#065f46}.refund-alert--err{background:rgba(244,63,94,.12);color:#9f1239}
   .refund-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.58)}
-  .refund-table{width:100%;border-collapse:collapse;min-width:980px;font-size:13px}
+  .refund-table{width:100%;border-collapse:collapse;min-width:1180px;font-size:13px}
   .refund-table th,.refund-table td{padding:13px;border-bottom:1px solid rgba(19,32,51,.08);text-align:left;vertical-align:top}
   .refund-table th{background:rgba(255,255,255,.82);font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:0;font-weight:1000}
   .refund-table tr:last-child td{border-bottom:0}
@@ -71,11 +71,21 @@
   .refund-status--green{background:rgba(32,214,163,.14);color:#047857;border-color:rgba(32,214,163,.26)}
   .refund-status--rose{background:rgba(244,63,94,.12);color:#be123c;border-color:rgba(244,63,94,.24)}
   .refund-empty{border:1px dashed rgba(19,32,51,.16);border-radius:24px;padding:24px;color:var(--muted);background:rgba(255,255,255,.58)}
+  .refund-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+  .refund-flow__step{border:1px solid var(--line);border-radius:18px;padding:12px;background:rgba(255,255,255,.62);min-height:90px}
+  .refund-flow__step b{display:block;color:var(--ink);font-size:14px}.refund-flow__step span{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.45;font-weight:800}
+  .refund-paybox{display:grid;gap:10px;min-width:280px;max-width:330px}
+  .refund-qr{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:center;border:1px solid rgba(18,191,243,.20);border-radius:18px;padding:10px;background:linear-gradient(135deg,rgba(255,255,255,.78),rgba(236,253,245,.70))}
+  .refund-qr img{width:96px;height:96px;border-radius:14px;border:1px solid rgba(19,32,51,.10);background:#fff;padding:4px}
+  .refund-qr__meta{display:grid;gap:6px;min-width:0}
+  .refund-copy{border-radius:12px;padding:7px 9px;background:rgba(255,255,255,.78);border:1px solid rgba(19,32,51,.08);font-size:12px;font-weight:950;word-break:break-word}
+  .refund-warning{border-radius:14px;padding:9px 10px;background:rgba(255,209,102,.18);border:1px solid rgba(255,209,102,.32);color:#92400e;font-size:12px;font-weight:850;line-height:1.45}
+  .refund-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .refund-pages{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:14px}
   .refund-page{min-width:38px;min-height:38px;border-radius:14px;border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--ink);background:rgba(255,255,255,.72);font-size:13px;font-weight:950}
   .refund-page.is-active{background:linear-gradient(135deg,#12bff3,#20d6a3);color:white;border-color:transparent}
-  @media(max-width:980px){.refund-hero,.refund-layout{grid-template-columns:1fr}.refund-hero h1{font-size:42px}}
-  @media(max-width:640px){.refund-home{padding:22px 12px 42px}.refund-kpis{grid-template-columns:1fr}.refund-table-panel{padding:12px}}
+  @media(max-width:980px){.refund-hero,.refund-layout{grid-template-columns:1fr}.refund-hero h1{font-size:42px}.refund-flow{grid-template-columns:1fr}}
+  @media(max-width:640px){.refund-home{padding:22px 12px 42px}.refund-kpis{grid-template-columns:1fr}.refund-table-panel{padding:12px}.refund-qr,.refund-mini-grid{grid-template-columns:1fr}}
 </style>
 
 <main class="refund-home">
@@ -83,20 +93,27 @@
     <section class="refund-hero">
       <div>
         <div class="refund-chip">Refund control</div>
-        <h1>Quản lý <span>hoàn tiền</span></h1>
-        <p class="refund-lead">Duyệt yêu cầu hoàn cọc từ lễ tân. Khi xác nhận đã chuyển khoản, hệ thống tự ghi phiếu chi đã duyệt để thu chi, chi phí và báo cáo kế toán đồng bộ.</p>
+        <h1>Xử lý <span>hoàn tiền</span></h1>
+        <p class="refund-lead">Quản lý hoàn tiền của Kế toán nằm ở bước cuối workflow: Lễ tân tạo yêu cầu sau khi hủy đặt phòng, Quản lý duyệt thông tin, hệ thống sinh QR hoàn tiền và Kế toán xác nhận mã giao dịch ngân hàng trước khi đóng phiếu chi.</p>
         <div class="refund-tags">
-          <span class="refund-tag">Chờ xử lý: <%= summary.pendingCount || 0 %></span>
+          <span class="refund-tag">Chờ quản lý: <%= summary.managerPendingCount || 0 %></span>
+          <span class="refund-tag">Chờ kế toán: <%= summary.pendingCount || 0 %></span>
           <span class="refund-tag">Đã hoàn: <%= summary.paidCount || 0 %></span>
           <span class="refund-tag">Kỳ lọc: <%= payload.rangeLabel %></span>
         </div>
         <div class="refund-actions">
-          <a class="refund-button refund-button--primary" href="/accounting/cashflow?nhom=hoantien">Xem dòng chi hoàn</a>
-          <a class="refund-button" href="/accounting/expenses?search=Hoan%20coc">Chi phí hoàn cọc</a>
+          <a class="refund-button refund-button--primary" href="/accounting/expenses?search=Hoan%20coc">Đối chiếu phiếu chi hoàn</a>
+          <a class="refund-button" href="/accounting/reports?loai_baocao=chiphi">Xem báo cáo chi phí</a>
           <a class="refund-button" href="/dashboard/ketoan">Dashboard</a>
+        </div>
+        <div class="refund-flow">
+          <div class="refund-flow__step"><b>01 · Lễ tân</b><span>Hủy đặt phòng, tính policy và tạo yêu cầu hoàn cọc.</span></div>
+          <div class="refund-flow__step"><b>02 · Quản lý</b><span>Duyệt thông tin khách, tài khoản nhận và tỷ lệ hoàn.</span></div>
+          <div class="refund-flow__step"><b>03 · Kế toán</b><span>Quét QR, chuyển đúng nội dung, nhập mã giao dịch/chứng từ rồi hệ thống mới ghi nhận đã hoàn.</span></div>
         </div>
       </div>
       <div class="refund-kpis">
+        <div class="refund-kpi"><strong><%= summary.managerPendingAmountFormatted || "0 đ" %></strong><span>Chờ quản lý duyệt</span></div>
         <div class="refund-kpi"><strong><%= summary.pendingAmountFormatted || "0 đ" %></strong><span>Đang chờ chi</span></div>
         <div class="refund-kpi"><strong><%= summary.paidAmountFormatted || "0 đ" %></strong><span>Đã hoàn</span></div>
         <div class="refund-kpi"><strong><%= summary.rejectedAmountFormatted || "0 đ" %></strong><span>Từ chối</span></div>
@@ -195,37 +212,86 @@
                       <div class="refund-main"><%= row.bankName %></div>
                       <div class="refund-sub"><%= row.bankAccountNo %></div>
                       <div class="refund-sub"><%= row.bankAccountName %></div>
+                      <% if (row.paymentQrBankCode) { %><div class="refund-sub">Mã VietQR: <%= row.paymentQrBankCode %></div><% } %>
                     </td>
                     <td>
                       <div class="refund-main"><%= row.amountRequestedFormatted %></div>
-                      <div class="refund-sub">Cọc: <%= row.depositPaidFormatted %></div>
+                      <div class="refund-sub">Policy: <%= row.cancellationPolicyLabel || row.refundRateLabel %> · <%= row.hoursBeforeCheckinLabel %></div>
+                      <div class="refund-sub">Cọc xét hoàn: <%= row.refundableBaseFormatted %></div>
+                      <div class="refund-sub">Cọc đã thu: <%= row.depositPaidFormatted %></div>
                       <div class="refund-sub">Giữ lại: <%= row.retainedDepositFormatted %></div>
                       <% if (row.amountPaid > 0) { %><div class="refund-sub">Đã chi: <%= row.amountPaidFormatted %></div><% } %>
                     </td>
                     <td>
                       <span class="refund-status refund-status--<%= row.statusMeta?.tone || "slate" %>"><%= row.statusMeta?.label || row.status %></span>
+                      <% if (row.managerReviewedAtLabel) { %><div class="refund-sub">QL duyệt: <%= row.managerReviewedAtLabel %></div><% } %>
                       <% if (row.expenseId) { %><div class="refund-sub">Phiếu chi CP-<%= row.expenseId %></div><% } %>
+                      <% if (row.refundBankTxnId) { %><div class="refund-sub">Mã GD NH: <%= row.refundBankTxnId %></div><% } %>
+                      <% if (row.refundPaidAtLabel) { %><div class="refund-sub">Đã chuyển: <%= row.refundPaidAtLabel %></div><% } %>
                       <% if (row.processedAtLabel) { %><div class="refund-sub"><%= row.processedAtLabel %></div><% } %>
                     </td>
                     <td>
                       <div class="refund-sub"><strong>Lý do:</strong> <%= row.reason || "Không có" %></div>
+                      <% if (row.cancellationPolicyNote) { %><div class="refund-sub"><strong>Policy:</strong> <%= row.cancellationPolicyNote %></div><% } %>
                       <% if (row.note) { %><div class="refund-sub"><strong>Lễ tân:</strong> <%= row.note %></div><% } %>
+                      <% if (row.managerNote) { %><div class="refund-sub"><strong>Quản lý:</strong> <%= row.managerNote %><%= row.managerBy ? ` · ${row.managerBy}` : "" %></div><% } %>
                       <% if (row.accountingNote) { %><div class="refund-sub"><strong>Kế toán:</strong> <%= row.accountingNote %></div><% } %>
                     </td>
                     <td>
-                      <% if (row.status === "ChoXuLy") { %>
-                        <form method="post" action="/accounting/refunds/process" style="display:grid;gap:8px;min-width:210px">
-                          <input type="hidden" name="refund_id" value="<%= row.id %>" />
-                          <div class="refund-field" style="margin:0">
-                            <textarea name="accounting_note" placeholder="Ghi chú xử lý..."></textarea>
-                          </div>
-                          <div class="refund-card-actions">
-                            <button class="refund-button refund-button--primary" type="submit" name="action" value="approve" onclick="return confirm('Xác nhận đã chuyển khoản hoàn tiền cho khách?');">Duyệt hoàn</button>
-                            <button class="refund-button refund-button--danger" type="submit" name="action" value="reject" onclick="return confirm('Từ chối yêu cầu hoàn tiền này?');">Từ chối</button>
-                          </div>
-                        </form>
+                      <% if (row.canAccountingProcess) { %>
+                        <div class="refund-paybox">
+                          <% if (row.paymentQrReady) { %>
+                            <div class="refund-qr">
+                              <img src="<%= row.paymentQrImageUrl %>" alt="QR hoàn tiền <%= row.refundCode %>" />
+                              <div class="refund-qr__meta">
+                                <div class="refund-copy">Số tiền: <%= row.amountRequestedFormatted %></div>
+                                <div class="refund-copy">Nội dung: <%= row.refundPaymentContent %></div>
+                                <div class="refund-sub">QR chỉ hỗ trợ chuyển khoản, hệ thống chỉ đóng yêu cầu sau khi nhập mã giao dịch ngân hàng.</div>
+                              </div>
+                            </div>
+                          <% } else { %>
+                            <div class="refund-warning"><%= row.paymentQrWarning || "Chưa thể sinh QR, kế toán kiểm tra thông tin và chuyển thủ công." %></div>
+                            <div class="refund-copy">Nội dung CK: <%= row.refundPaymentContent %></div>
+                          <% } %>
+                          <form method="post" action="/accounting/refunds/process" style="display:grid;gap:8px">
+                            <input type="hidden" name="refund_id" value="<%= row.id %>" />
+                            <input type="hidden" name="action" value="approve" />
+                            <div class="refund-mini-grid">
+                              <div class="refund-field" style="margin:0">
+                                <label>Mã giao dịch NH</label>
+                                <input name="payment_reference" placeholder="VD: FT2412345678" required minlength="4" />
+                              </div>
+                              <div class="refund-field" style="margin:0">
+                                <label>Thời gian chuyển</label>
+                                <input name="paid_at" type="datetime-local" />
+                              </div>
+                            </div>
+                            <div class="refund-field" style="margin:0">
+                              <label>Chứng từ / biên lai</label>
+                              <input name="payment_proof" placeholder="Số biên lai hoặc đường dẫn ảnh chứng từ..." />
+                            </div>
+                            <div class="refund-field" style="margin:0">
+                              <textarea name="accounting_note" placeholder="Ghi chú kế toán..."></textarea>
+                            </div>
+                            <button class="refund-button refund-button--primary" type="submit" onclick="return confirm('Xác nhận đã chuyển khoản đúng STK, số tiền và nội dung hoàn tiền?');">Xác nhận đã chuyển khoản</button>
+                          </form>
+                          <form method="post" action="/accounting/refunds/process" style="display:grid;gap:8px">
+                            <input type="hidden" name="refund_id" value="<%= row.id %>" />
+                            <input type="hidden" name="action" value="reject" />
+                            <div class="refund-field" style="margin:0">
+                              <textarea name="accounting_note" placeholder="Lý do từ chối chi hoàn..."></textarea>
+                            </div>
+                            <button class="refund-button refund-button--danger" type="submit" onclick="return confirm('Từ chối yêu cầu hoàn tiền này?');">Từ chối</button>
+                          </form>
+                        </div>
                       <% } else { %>
-                        <a class="refund-button refund-button--muted" href="/accounting/cashflow?search=<%= encodeURIComponent(row.expenseId ? `CP-${row.expenseId}` : row.refundCode) %>">Đối chiếu</a>
+                        <% if (row.status === "ChoQuanLyDuyet") { %>
+                          <span class="refund-sub">Đang chờ Quản lý duyệt, Kế toán chưa được chi.</span>
+                        <% } else { %>
+                          <% if (row.refundPaymentContent) { %><div class="refund-copy" style="margin-bottom:8px">Nội dung CK: <%= row.refundPaymentContent %></div><% } %>
+                          <% if (row.refundPaymentProof) { %><div class="refund-sub" style="margin-bottom:8px"><strong>Chứng từ:</strong> <%= row.refundPaymentProof %></div><% } %>
+                          <a class="refund-button refund-button--muted" href="/accounting/cashflow?search=<%= encodeURIComponent(row.expenseId ? `CP-${row.expenseId}` : row.refundCode) %>">Đối chiếu</a>
+                        <% } %>
                       <% } %>
                     </td>
                   </tr>

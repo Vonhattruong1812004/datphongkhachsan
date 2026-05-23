@@ -3,12 +3,17 @@
 <%
   const filters = payload?.filters || { result: "", q: "" };
   const items = payload?.items || [];
-  const overview = payload?.overview || { total: items.length, pending: 0, approved: 0, rejected: 0, unverified: 0 };
+  const overview = payload?.overview || { total: items.length, pending: 0, approved: 0, rejected: 0, unverified: 0, needsAttention: 0 };
   const customer = selected?.customer || null;
   const verification = selected?.verification || null;
   const review = selected?.review || null;
   const history = selected?.history || [];
   const activeId = Number(selectedId || verification?.id || selected?.id || 0);
+  const isLatest = selected?.isLatestForCustomer !== false;
+  const roleId = Number(currentUser?.maVaiTro || 0);
+  const dashboardHref = roleId === 2 ? "/dashboard/letan" : roleId === 1 ? "/dashboard/admin" : "/dashboard/quanly";
+  const secondaryHref = roleId === 2 ? "/frontdesk/checkin" : "/manager/customers";
+  const secondaryLabel = roleId === 2 ? "Check-in" : "CRM khách hàng";
   const badgeClass = (tone) => ({
     emerald: "ekyc-badge--ok",
     rose: "ekyc-badge--bad",
@@ -25,444 +30,448 @@
 %>
 <style>
   :root {
-    --ekyc-ink: #102034;
-    --ekyc-muted: #64748b;
-    --ekyc-card: rgba(255, 255, 255, .78);
-    --ekyc-card-strong: rgba(255, 255, 255, .92);
-    --ekyc-border: rgba(15, 23, 42, .1);
+    --ekyc-bg: #f4fbff;
+    --ekyc-ink: #123247;
+    --ekyc-strong: #0d2638;
+    --ekyc-muted: #607789;
+    --ekyc-soft: #f3f9fc;
+    --ekyc-chip: #edf8ff;
+    --ekyc-line: rgba(22, 78, 99, .16);
+    --ekyc-table-line: rgba(22, 78, 99, .11);
+    --ekyc-blue: #0284c7;
     --ekyc-sky: #38bdf8;
-    --ekyc-blue: #2563eb;
+    --ekyc-teal: #0f766e;
     --ekyc-mint: #34d399;
-    --ekyc-rose: #fb7185;
-    --ekyc-amber: #f59e0b;
+    --ekyc-coral: #fb7185;
     --ekyc-violet: #8b5cf6;
-    --ekyc-shadow: 0 28px 90px rgba(37, 99, 235, .18);
+    --ekyc-green: #059669;
+    --ekyc-red: #dc2626;
+    --ekyc-amber: #d97706;
+    --ekyc-yellow: #f59e0b;
+    --ekyc-shadow: 0 22px 54px rgba(15, 82, 112, .11);
+    --ekyc-card-shadow: 0 12px 30px rgba(15, 82, 112, .075);
   }
 
   body {
     background:
-      radial-gradient(circle at 8% 12%, rgba(56, 189, 248, .28), transparent 32%),
-      radial-gradient(circle at 90% 8%, rgba(251, 113, 133, .18), transparent 30%),
-      linear-gradient(135deg, #f8fbff 0%, #eef8ff 42%, #fff7ed 100%);
+      linear-gradient(115deg, rgba(56, 189, 248, .20) 0%, rgba(255, 255, 255, 0) 30%),
+      linear-gradient(245deg, rgba(52, 211, 153, .18) 0%, rgba(255, 255, 255, 0) 34%),
+      linear-gradient(35deg, rgba(251, 113, 133, .10) 0%, rgba(255, 255, 255, 0) 28%),
+      linear-gradient(180deg, #f8fdff 0%, #eefaff 42%, #f7fff7 72%, #fff9ed 100%),
+      var(--ekyc-bg);
     color: var(--ekyc-ink);
   }
 
-  .ekyc-shell {
-    position: relative;
-    overflow: hidden;
-    padding: 28px 0 48px;
-  }
+  .ekyc-shell { max-width: 1320px; padding: 24px 18px 48px; }
 
-  .ekyc-shell::before,
-  .ekyc-shell::after {
-    content: "";
-    position: fixed;
-    z-index: -1;
-    border-radius: 999px;
-    filter: blur(2px);
-    opacity: .7;
-    animation: ekycFloat 8s ease-in-out infinite alternate;
-  }
-
-  .ekyc-shell::before {
-    width: 320px;
-    height: 320px;
-    left: -120px;
-    bottom: 8%;
-    background: radial-gradient(circle, rgba(52, 211, 153, .24), transparent 68%);
-  }
-
-  .ekyc-shell::after {
-    width: 260px;
-    height: 260px;
-    right: -86px;
-    top: 24%;
-    background: radial-gradient(circle, rgba(139, 92, 246, .2), transparent 70%);
-    animation-delay: -2s;
-  }
-
-  @keyframes ekycFloat {
-    from { transform: translate3d(0, 0, 0) scale(1); }
-    to { transform: translate3d(18px, -18px, 0) scale(1.06); }
-  }
-
-  .ekyc-hero,
-  .ekyc-card,
-  .ekyc-metric {
-    border: 1px solid var(--ekyc-border);
-    background: var(--ekyc-card);
-    box-shadow: var(--ekyc-shadow);
-    backdrop-filter: blur(22px);
-  }
-
-  .ekyc-hero {
-    position: relative;
+  .ekyc-topbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 300px;
-    gap: 26px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
     align-items: center;
-    border-radius: 34px;
-    padding: 28px;
-    overflow: hidden;
+    margin-bottom: 16px;
+    padding: 20px;
+    border: 1px solid rgba(14, 165, 233, .18);
+    border-radius: 8px;
+    background:
+      linear-gradient(120deg, rgba(2, 132, 199, .92), rgba(15, 118, 110, .82) 42%, rgba(245, 158, 11, .72)),
+      linear-gradient(315deg, rgba(251, 113, 133, .45), rgba(255, 255, 255, 0) 46%),
+      rgba(255, 255, 255, .94);
+    box-shadow: var(--ekyc-shadow);
   }
 
-  .ekyc-hero::after {
-    content: "";
-    position: absolute;
-    inset: auto -80px -130px auto;
-    width: 280px;
-    height: 280px;
-    border-radius: 50%;
-    background: conic-gradient(from 180deg, rgba(56,189,248,.35), rgba(52,211,153,.2), rgba(251,113,133,.25), rgba(56,189,248,.35));
-  }
+  .ekyc-title-block { min-width: 0; }
 
-  .ekyc-kicker {
+  .ekyc-title-block::before {
+    content: "QUẢN LÝ ĐỊNH DANH";
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 13px;
+    min-height: 28px;
+    padding: 0 10px;
+    margin-bottom: 10px;
     border-radius: 999px;
-    background: rgba(37, 99, 235, .08);
-    color: #1d4ed8;
-    font-weight: 800;
-    letter-spacing: .12em;
-    text-transform: uppercase;
+    border: 1px solid rgba(14, 165, 233, .22);
+    background: rgba(255, 255, 255, .76);
+    color: #075985;
     font-size: 11px;
-  }
-
-  .ekyc-hero h1 {
-    margin: 14px 0 10px;
-    max-width: 720px;
-    font-size: clamp(34px, 5vw, 62px);
-    line-height: .95;
-    letter-spacing: -.06em;
-  }
-
-  .ekyc-hero p {
-    max-width: 760px;
-    margin: 0;
-    color: var(--ekyc-muted);
-    font-size: 16px;
-    line-height: 1.7;
-  }
-
-  .ekyc-orbit {
-    position: relative;
-    z-index: 1;
-    min-height: 230px;
-    border-radius: 32px;
-    background: linear-gradient(135deg, rgba(255,255,255,.52), rgba(255,255,255,.2));
-    border: 1px solid rgba(255,255,255,.68);
-    display: grid;
-    place-items: center;
-  }
-
-  .ekyc-orbit span {
-    position: absolute;
-    padding: 9px 13px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.78);
-    border: 1px solid rgba(15,23,42,.08);
-    font-size: 12px;
-    font-weight: 800;
-    color: #2563eb;
-  }
-
-  .ekyc-orbit span:nth-child(1) { top: 20px; left: 22px; }
-  .ekyc-orbit span:nth-child(2) { right: 18px; top: 78px; color: #059669; }
-  .ekyc-orbit span:nth-child(3) { left: 46px; bottom: 22px; color: #e11d48; }
-
-  .ekyc-core {
-    width: 106px;
-    height: 106px;
-    border-radius: 34px;
-    background: linear-gradient(135deg, var(--ekyc-blue), var(--ekyc-sky));
-    color: white;
-    display: grid;
-    place-items: center;
-    font-size: 42px;
     font-weight: 900;
-    box-shadow: 0 24px 54px rgba(37,99,235,.34);
-    animation: ekycPulse 2.8s ease-in-out infinite;
+    letter-spacing: .08em;
   }
 
-  @keyframes ekycPulse {
-    0%, 100% { transform: rotate(-4deg) scale(1); }
-    50% { transform: rotate(3deg) scale(1.05); }
+  .ekyc-title-block h1 {
+    margin: 0 0 6px;
+    font-size: clamp(25px, 2.7vw, 36px);
+    line-height: 1.08;
+    letter-spacing: 0;
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(12, 74, 110, .18);
   }
+
+  .ekyc-title-block p { max-width: 760px; margin: 0; color: rgba(255, 255, 255, .88); line-height: 1.55; }
+
+  .ekyc-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+
+  .ekyc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border: 1px solid var(--ekyc-line);
+    border-radius: 8px;
+    padding: 9px 14px;
+    background: rgba(255, 255, 255, .96);
+    color: var(--ekyc-ink);
+    text-decoration: none;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(15, 82, 112, .055);
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+
+  .ekyc-btn:hover { transform: translateY(-1px); }
+
+  .ekyc-btn:hover, .ekyc-btn:focus-visible {
+    border-color: rgba(2, 132, 199, .45);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, .13), 0 12px 24px rgba(15, 82, 112, .09);
+    outline: none;
+  }
+
+  .ekyc-btn--primary {
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6 56%, #22c55e);
+    border-color: rgba(2, 132, 199, .34);
+    color: #fff;
+    box-shadow: 0 14px 28px rgba(2, 132, 199, .2);
+  }
+  .ekyc-btn--ok {
+    background: linear-gradient(135deg, #22c55e, #10b981, #059669);
+    border-color: rgba(5, 150, 105, .34);
+    color: #fff;
+  }
+  .ekyc-btn--bad {
+    background: linear-gradient(135deg, #fb7185, #ef4444, #b91c1c);
+    border-color: rgba(220, 38, 38, .34);
+    color: #fff;
+  }
+  .ekyc-btn--wait {
+    background: linear-gradient(135deg, #fff7ed, #fffbeb);
+    border-color: #fbbf24;
+    color: #9a3412;
+  }
+  .ekyc-btn[disabled] { opacity: .58; cursor: not-allowed; box-shadow: none; }
 
   .ekyc-metrics {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    margin: 18px 0;
+    grid-template-columns: minmax(170px, 1.2fr) repeat(4, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .ekyc-metric, .ekyc-panel, .ekyc-queue-item, .ekyc-image-box, .ekyc-info-box {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(255, 255, 255, .90)),
+      #fff;
+    border: 1px solid var(--ekyc-line);
+    border-radius: 8px;
+    box-shadow: var(--ekyc-card-shadow);
   }
 
   .ekyc-metric {
-    border-radius: 24px;
-    padding: 18px;
+    position: relative;
+    min-height: 90px;
+    padding: 16px;
+    overflow: hidden;
   }
 
-  .ekyc-metric small {
+  .ekyc-metric::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--ekyc-blue), var(--ekyc-sky), var(--ekyc-mint), var(--ekyc-yellow));
+  }
+
+  .ekyc-metric:nth-child(1) { background: linear-gradient(135deg, rgba(224, 242, 254, .92), rgba(255, 255, 255, .96)); }
+  .ekyc-metric:nth-child(2) { background: linear-gradient(135deg, rgba(255, 247, 237, .96), rgba(255, 255, 255, .96)); }
+  .ekyc-metric:nth-child(3) { background: linear-gradient(135deg, rgba(254, 243, 199, .90), rgba(255, 255, 255, .96)); }
+  .ekyc-metric:nth-child(4) { background: linear-gradient(135deg, rgba(220, 252, 231, .92), rgba(255, 255, 255, .96)); }
+  .ekyc-metric:nth-child(5) { background: linear-gradient(135deg, rgba(255, 228, 230, .92), rgba(255, 255, 255, .96)); }
+
+  .ekyc-metric span {
     display: block;
     color: var(--ekyc-muted);
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: .1em;
+    font-size: 12px;
+    font-weight: 800;
     text-transform: uppercase;
   }
-
-  .ekyc-metric strong {
-    display: block;
-    margin-top: 8px;
-    font-size: 32px;
-    line-height: 1;
-  }
+  .ekyc-metric strong { display: block; margin-top: 6px; font-size: 28px; line-height: 1; }
 
   .ekyc-layout {
     display: grid;
-    grid-template-columns: 390px minmax(0, 1fr);
-    gap: 18px;
+    grid-template-columns: minmax(340px, 395px) minmax(0, 1fr);
+    gap: 16px;
     align-items: start;
   }
 
-  .ekyc-card {
-    border-radius: 30px;
-    padding: 22px;
+  .ekyc-panel { padding: 16px; }
+  .ekyc-panel--queue {
+    position: sticky;
+    top: 14px;
+    background:
+      linear-gradient(180deg, rgba(224, 242, 254, .92), rgba(236, 253, 245, .70) 38%, rgba(255, 255, 255, .96)),
+      #fff;
+  }
+
+  .ekyc-panel:not(.ekyc-panel--queue) {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(240, 253, 250, .56)),
+      #fff;
   }
 
   .ekyc-toolbar {
     display: grid;
-    gap: 12px;
-    margin-bottom: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 14px;
   }
-
   .ekyc-field label {
     display: block;
-    margin-bottom: 7px;
+    margin-bottom: 6px;
     color: var(--ekyc-muted);
     font-size: 12px;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .08em;
+    letter-spacing: .02em;
+  }
+  .ekyc-field input, .ekyc-field select, .ekyc-field textarea {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid var(--ekyc-line);
+    border-radius: 8px;
+    padding: 9px 11px;
+    background: rgba(255, 255, 255, .98);
+    color: var(--ekyc-ink);
+    font: inherit;
+    box-sizing: border-box;
   }
 
-  .ekyc-field input,
-  .ekyc-field select,
-  .ekyc-field textarea {
-    width: 100%;
-    border: 1px solid rgba(15, 23, 42, .12);
-    border-radius: 18px;
-    padding: 12px 14px;
-    background: rgba(255,255,255,.84);
-    color: var(--ekyc-ink);
+  .ekyc-field textarea { min-height: 112px; resize: vertical; }
+
+  .ekyc-field input:focus, .ekyc-field select:focus, .ekyc-field textarea:focus {
+    border-color: rgba(2, 132, 199, .55);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, .13);
     outline: none;
   }
 
-  .ekyc-field textarea { min-height: 118px; resize: vertical; }
-
-  .ekyc-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .ekyc-btn {
-    border: 0;
-    border-radius: 999px;
-    padding: 11px 17px;
-    background: rgba(255,255,255,.84);
-    color: var(--ekyc-ink);
-    text-decoration: none;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 0 14px 36px rgba(15,23,42,.08);
-  }
-
-  .ekyc-btn--primary { background: linear-gradient(135deg, var(--ekyc-blue), var(--ekyc-sky)); color: white; }
-  .ekyc-btn--ok { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
-  .ekyc-btn--bad { background: linear-gradient(135deg, #e11d48, #fb7185); color: white; }
-  .ekyc-btn--wait { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #422006; }
-
-  .ekyc-queue {
-    display: grid;
-    gap: 12px;
-    max-height: 760px;
-    overflow: auto;
-    padding-right: 4px;
-  }
+  .ekyc-queue { display: grid; gap: 9px; max-height: calc(100vh - 330px); min-height: 360px; overflow: auto; padding-right: 3px; }
 
   .ekyc-queue-item {
     display: block;
-    text-decoration: none;
+    padding: 13px;
     color: inherit;
-    border: 1px solid rgba(15, 23, 42, .08);
-    background: rgba(255,255,255,.64);
-    border-radius: 24px;
-    padding: 16px;
-    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    text-decoration: none;
   }
 
-  .ekyc-queue-item:hover,
+  .ekyc-queue-item:hover, .ekyc-queue-item:focus-visible, .ekyc-queue-item.is-active {
+    border-color: rgba(2, 132, 199, .5);
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, .11), 0 12px 28px rgba(15, 82, 112, .09);
+    outline: none;
+  }
+
   .ekyc-queue-item.is-active {
-    transform: translateY(-2px);
-    border-color: rgba(37,99,235,.34);
-    box-shadow: 0 18px 46px rgba(37,99,235,.14);
+    background:
+      linear-gradient(135deg, rgba(14, 165, 233, .18), rgba(52, 211, 153, .13) 58%, rgba(245, 158, 11, .12)),
+      #fff;
   }
 
-  .ekyc-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: flex-start;
+  .ekyc-queue-item:nth-child(3n + 1):not(.is-active) {
+    background: linear-gradient(135deg, rgba(240, 249, 255, .88), rgba(255, 255, 255, .96));
   }
 
+  .ekyc-queue-item:nth-child(3n + 2):not(.is-active) {
+    background: linear-gradient(135deg, rgba(240, 253, 244, .88), rgba(255, 255, 255, .96));
+  }
+
+  .ekyc-queue-item:nth-child(3n):not(.is-active) {
+    background: linear-gradient(135deg, rgba(255, 251, 235, .82), rgba(255, 255, 255, .96));
+  }
+
+  .ekyc-row { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
   .ekyc-muted { color: var(--ekyc-muted); }
-  .ekyc-title { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+  .ekyc-name { margin: 0; font-size: 16px; color: var(--ekyc-strong); }
 
   .ekyc-badge {
     display: inline-flex;
     align-items: center;
     border-radius: 999px;
-    padding: 6px 10px;
+    padding: 5px 9px;
     font-size: 12px;
     font-weight: 900;
     white-space: nowrap;
   }
 
-  .ekyc-badge--ok { background: rgba(16,185,129,.14); color: #047857; }
-  .ekyc-badge--bad { background: rgba(251,113,133,.16); color: #be123c; }
-  .ekyc-badge--wait { background: rgba(245,158,11,.18); color: #b45309; }
-  .ekyc-badge--idle { background: rgba(100,116,139,.13); color: #475569; }
+  .ekyc-badge--ok { background: linear-gradient(135deg, #bbf7d0, #dcfce7); color: #047857; border: 1px solid #86efac; }
+  .ekyc-badge--bad { background: linear-gradient(135deg, #fecdd3, #fee2e2); color: #b91c1c; border: 1px solid #fda4af; }
+  .ekyc-badge--wait { background: linear-gradient(135deg, #fde68a, #fef3c7); color: #92400e; border: 1px solid #fbbf24; }
+  .ekyc-badge--idle { background: linear-gradient(135deg, #bae6fd, #e0f2fe); color: #0369a1; border: 1px solid #7dd3fc; }
+
+  .ekyc-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+
+  .ekyc-chip {
+    border-radius: 999px;
+    padding: 4px 8px;
+    background: linear-gradient(135deg, #e0f2fe, #ecfeff);
+    border: 1px solid rgba(14, 165, 233, .14);
+    color: #336072;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ekyc-chip--warn {
+    background: linear-gradient(135deg, #ffedd5, #fef3c7);
+    border-color: #fdba74;
+    color: #9a3412;
+  }
 
   .ekyc-detail-head {
     display: flex;
     justify-content: space-between;
-    gap: 16px;
+    gap: 18px;
     flex-wrap: wrap;
     align-items: flex-start;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    background:
+      linear-gradient(120deg, rgba(224, 242, 254, .96), rgba(204, 251, 241, .86) 48%, rgba(254, 243, 199, .84)),
+      var(--ekyc-soft);
+    border: 1px solid var(--ekyc-line);
   }
 
-  .ekyc-detail-head h2 {
-    margin: 8px 0 6px;
-    font-size: clamp(28px, 4vw, 42px);
-    line-height: 1;
-    letter-spacing: -.04em;
+  .ekyc-detail-head h2 { margin: 0 0 6px; font-size: 26px; letter-spacing: 0; color: var(--ekyc-strong); }
+  .ekyc-status-stack { min-width: 190px; text-align: right; }
+  .ekyc-image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .ekyc-image-box, .ekyc-info-box { padding: 14px; }
+  .ekyc-image-box strong, .ekyc-info-box > strong { color: var(--ekyc-strong); }
+
+  .ekyc-image-box:nth-child(1) {
+    background: linear-gradient(135deg, rgba(224, 242, 254, .98), rgba(255, 255, 255, .96));
   }
 
-  .ekyc-image-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+  .ekyc-image-box:nth-child(2) {
+    background: linear-gradient(135deg, rgba(236, 253, 245, .98), rgba(255, 255, 255, .96));
   }
 
-  .ekyc-image-box,
-  .ekyc-info-box {
-    border: 1px solid rgba(15,23,42,.08);
-    background: rgba(255,255,255,.64);
-    border-radius: 24px;
-    padding: 13px;
+  .ekyc-image-box:nth-child(3) {
+    background: linear-gradient(135deg, rgba(255, 247, 237, .98), rgba(255, 255, 255, .96));
   }
 
   .ekyc-image-box img {
     width: 100%;
-    height: 230px;
+    aspect-ratio: 4 / 3;
     object-fit: cover;
-    border-radius: 18px;
+    border-radius: 8px;
+    border: 1px solid var(--ekyc-line);
     display: block;
-    background: #e2e8f0;
+    background: linear-gradient(135deg, #e0f2fe, #dcfce7);
   }
 
   .ekyc-empty-img {
-    min-height: 230px;
-    border-radius: 18px;
+    aspect-ratio: 4 / 3;
+    border-radius: 8px;
     display: grid;
     place-items: center;
-    border: 1px dashed rgba(100,116,139,.38);
+    border: 1px dashed #cbd5e1;
     color: var(--ekyc-muted);
+    background: linear-gradient(135deg, #e0f2fe, #ecfeff 48%, #fffbeb);
   }
 
   .ekyc-info-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
-    margin: 12px 0;
+    margin-top: 12px;
   }
-
   .ekyc-kv {
     display: grid;
-    grid-template-columns: 145px minmax(0, 1fr);
-    gap: 8px 12px;
+    grid-template-columns: 138px minmax(0, 1fr);
+    gap: 8px 10px;
     font-size: 14px;
   }
 
-  .ekyc-kv strong {
-    color: var(--ekyc-muted);
-  }
-
-  .ekyc-history {
-    display: grid;
-    gap: 10px;
+  .ekyc-kv strong { color: var(--ekyc-muted); }
+  .ekyc-history { display: grid; gap: 8px; margin-top: 10px; }
+  .ekyc-history-item { border-top: 1px solid var(--ekyc-line); padding-top: 10px; }
+  .ekyc-review-box {
     margin-top: 12px;
   }
+  .ekyc-review-box form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 14px;
+    align-items: end;
+  }
+  .ekyc-review-actions {
+    display: grid;
+    gap: 8px;
+  }
 
-  .ekyc-history-item {
-    border: 1px solid rgba(15,23,42,.08);
-    background: rgba(255,255,255,.62);
-    border-radius: 20px;
-    padding: 13px;
+  .ekyc-review-actions .ekyc-btn {
+    justify-content: center;
+    width: 100%;
   }
 
   .ekyc-flash {
-    margin: 16px 0;
-    padding: 14px 16px;
-    border-radius: 20px;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-weight: 800;
+  }
+  .ekyc-flash--success { background: linear-gradient(135deg, #dcfce7, #ecfeff); color: #047857; border: 1px solid #86efac; }
+  .ekyc-flash--error { background: linear-gradient(135deg, #ffe4e6, #fff1f2); color: #b91c1c; border: 1px solid #fda4af; }
+  .ekyc-warning {
+    margin: 10px 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #fff7ed, #fef3c7);
+    border: 1px solid #fdba74;
+    color: #9a3412;
     font-weight: 800;
   }
 
-  .ekyc-flash--success { background: rgba(16,185,129,.14); color: #047857; }
-  .ekyc-flash--error { background: rgba(251,113,133,.16); color: #be123c; }
-
   @media (max-width: 1080px) {
-    .ekyc-hero,
-    .ekyc-layout {
-      grid-template-columns: 1fr;
-    }
-    .ekyc-orbit { display: none; }
+    .ekyc-topbar, .ekyc-layout { grid-template-columns: 1fr; }
+    .ekyc-topbar { align-items: flex-start; }
+    .ekyc-toolbar { grid-template-columns: 1fr; }
+    .ekyc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ekyc-panel--queue { position: static; }
+    .ekyc-queue { max-height: 520px; }
+    .ekyc-review-box form { grid-template-columns: 1fr; align-items: stretch; }
+    .ekyc-review-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
 
   @media (max-width: 760px) {
-    .ekyc-metrics,
-    .ekyc-image-grid,
-    .ekyc-info-grid {
-      grid-template-columns: 1fr;
-    }
+    .ekyc-shell { padding-left: 12px; padding-right: 12px; }
+    .ekyc-image-grid, .ekyc-info-grid, .ekyc-metrics { grid-template-columns: 1fr; }
     .ekyc-kv { grid-template-columns: 1fr; }
-    .ekyc-card, .ekyc-hero { border-radius: 24px; padding: 18px; }
+    .ekyc-topbar { display: grid; }
+    .ekyc-status-stack { width: 100%; text-align: left; }
+    .ekyc-actions { justify-content: flex-start; }
+    .ekyc-review-actions { grid-template-columns: 1fr; }
   }
 </style>
 
 <main class="container ekyc-shell">
-  <section class="ekyc-hero">
-    <div>
-      <span class="ekyc-kicker">eKYC Operations Console</span>
-      <h1>Review định danh nhanh, rõ và an toàn.</h1>
-      <p>
-        Duyệt hồ sơ mới nhất theo từng khách, xem ảnh giấy tờ/selfie và cập nhật trạng thái để check-in xử lý nhanh tại quầy.
-      </p>
-      <div class="ekyc-actions" style="margin-top:18px">
-        <a class="ekyc-btn ekyc-btn--primary" href="/frontdesk/checkin">Mở check-in</a>
-        <a class="ekyc-btn" href="/dashboard/letan">Dashboard lễ tân</a>
-        <a class="ekyc-btn" href="/api/ekyc/review-queue">JSON queue</a>
-      </div>
+  <section class="ekyc-topbar">
+    <div class="ekyc-title-block">
+      <h1>Duyệt eKYC</h1>
+      <p>Queue hồ sơ mới nhất theo từng khách hàng, đồng bộ trực tiếp về trạng thái định danh dùng cho check-in.</p>
     </div>
-    <div class="ekyc-orbit" aria-hidden="true">
-      <span>CCCD</span>
-      <span>Selfie</span>
-      <span>Manual review</span>
-      <div class="ekyc-core">ID</div>
+    <div class="ekyc-actions">
+      <a class="ekyc-btn" href="<%= dashboardHref %>">Dashboard</a>
+      <a class="ekyc-btn" href="<%= secondaryHref %>"><%= secondaryLabel %></a>
+      <a class="ekyc-btn ekyc-btn--primary" href="/api/ekyc/review-queue">JSON</a>
     </div>
   </section>
 
@@ -470,23 +479,24 @@
     <div class="ekyc-flash ekyc-flash--<%= flash.type === "error" ? "error" : "success" %>"><%= flash.message %></div>
   <% } %>
 
-  <section class="ekyc-metrics">
-    <article class="ekyc-metric"><small>Tổng hồ sơ latest</small><strong><%= overview.total || 0 %></strong></article>
-    <article class="ekyc-metric"><small>Đang xử lý</small><strong style="color:var(--ekyc-amber)"><%= overview.pending || 0 %></strong></article>
-    <article class="ekyc-metric"><small>Đã xác thực</small><strong style="color:#059669"><%= overview.approved || 0 %></strong></article>
-    <article class="ekyc-metric"><small>Thất bại</small><strong style="color:#e11d48"><%= overview.rejected || 0 %></strong></article>
+  <section class="ekyc-metrics" aria-label="Tổng quan eKYC">
+    <article class="ekyc-metric"><span>Tổng latest</span><strong><%= overview.total || 0 %></strong></article>
+    <article class="ekyc-metric"><span>Cần xử lý</span><strong style="color:var(--ekyc-amber)"><%= overview.needsAttention || 0 %></strong></article>
+    <article class="ekyc-metric"><span>Đang chờ</span><strong style="color:var(--ekyc-amber)"><%= overview.pending || 0 %></strong></article>
+    <article class="ekyc-metric"><span>Đã xác thực</span><strong style="color:var(--ekyc-green)"><%= overview.approved || 0 %></strong></article>
+    <article class="ekyc-metric"><span>Thất bại</span><strong style="color:var(--ekyc-red)"><%= overview.rejected || 0 %></strong></article>
   </section>
 
   <section class="ekyc-layout">
-    <aside class="ekyc-card">
+    <aside class="ekyc-panel ekyc-panel--queue">
       <form class="ekyc-toolbar" method="get" action="/ekyc/review">
         <div class="ekyc-field">
-          <label>Tìm khách / CCCD / giấy tờ</label>
-          <input name="q" value="<%= filters.q || "" %>" placeholder="Tên khách, email, SĐT, CCCD..." />
+          <label for="q">Tìm kiếm</label>
+          <input id="q" name="q" value="<%= filters.q || "" %>" placeholder="Tên, email, SĐT, CCCD..." />
         </div>
         <div class="ekyc-field">
-          <label>Trạng thái hồ sơ</label>
-          <select name="result">
+          <label for="result">Trạng thái</label>
+          <select id="result" name="result">
             <option value="">Tất cả</option>
             <option value="DangXuLy" <%= filters.result === "DangXuLy" ? "selected" : "" %>>Đang xử lý</option>
             <option value="ThanhCong" <%= filters.result === "ThanhCong" ? "selected" : "" %>>Đã xác thực</option>
@@ -495,14 +505,14 @@
           </select>
         </div>
         <div class="ekyc-actions">
-          <button class="ekyc-btn ekyc-btn--primary" type="submit">Lọc hồ sơ</button>
+          <button class="ekyc-btn ekyc-btn--primary" type="submit">Lọc</button>
           <a class="ekyc-btn" href="/ekyc/review">Reset</a>
         </div>
       </form>
 
-      <div class="ekyc-row" style="margin-bottom:12px">
-        <strong>Review queue</strong>
-        <span class="ekyc-muted"><%= items.length %> hồ sơ</span>
+      <div class="ekyc-row" style="margin:2px 0 10px">
+        <strong>Danh sách hồ sơ</strong>
+        <span class="ekyc-muted"><%= items.length %> dòng</span>
       </div>
 
       <div class="ekyc-queue">
@@ -511,35 +521,42 @@
             <a class="ekyc-queue-item <%= Number(item.id) === activeId ? "is-active" : "" %>" href="/ekyc/review?<%= keepParams(item.id) %>">
               <div class="ekyc-row">
                 <div>
-                  <h3 class="ekyc-title"><%= item.customer_name %></h3>
-                  <div class="ekyc-muted" style="margin-top:5px"><%= item.document_type || "-" %> · <%= item.document_number || "-" %></div>
+                  <h3 class="ekyc-name"><%= item.customer_name %></h3>
+                  <div class="ekyc-muted" style="margin-top:4px"><%= item.document_type || "-" %> · <%= item.document_number || "-" %></div>
                 </div>
                 <span class="ekyc-badge <%= badgeClass(item.tone) %>"><%= item.result_label %></span>
               </div>
-              <div class="ekyc-muted" style="margin-top:12px;font-size:13px">
+              <div class="ekyc-muted" style="margin-top:8px;font-size:13px">
                 <div><%= item.customer_phone || item.customer_email || "Chưa có liên hệ" %></div>
                 <div><%= item.submitted_at || "Chưa rõ thời gian" %> · Tin cậy <%= item.confidence_label %></div>
+              </div>
+              <div class="ekyc-chip-row">
+                <span class="ekyc-chip <%= item.image_count < 3 ? "ekyc-chip--warn" : "" %>">Ảnh <%= item.image_count %>/3</span>
+                <% if (!item.is_document_match) { %><span class="ekyc-chip ekyc-chip--warn">Lệch CCCD</span><% } %>
+                <% if (item.needs_attention) { %><span class="ekyc-chip ekyc-chip--warn">Cần xử lý</span><% } %>
               </div>
             </a>
           <% }) %>
         <% } else { %>
-          <div class="ekyc-info-box ekyc-muted">Không có hồ sơ eKYC nào khớp bộ lọc hiện tại.</div>
+          <div class="ekyc-info-box ekyc-muted">Không có hồ sơ khớp bộ lọc.</div>
         <% } %>
       </div>
     </aside>
 
-    <section class="ekyc-card">
+    <section class="ekyc-panel">
       <% if (selected && verification) { %>
         <div class="ekyc-detail-head">
           <div>
-            <span class="ekyc-kicker">Hồ sơ đang xem</span>
             <h2><%= customer?.name || "Khách hàng" %></h2>
             <div class="ekyc-muted"><%= customer?.email || "-" %> · <%= customer?.phone || "-" %></div>
+            <% if (!isLatest) { %>
+              <div class="ekyc-warning">Đây là hồ sơ cũ. Hồ sơ mới nhất là #<%= selected.latestEkycId %>.</div>
+            <% } %>
           </div>
-          <div style="text-align:right">
+          <div class="ekyc-status-stack">
             <span class="ekyc-badge <%= badgeClass(review?.tone) %>"><%= review?.result_label || "Chưa xác thực" %></span>
-            <div class="ekyc-muted" style="margin-top:8px">Khách: <%= customer?.ekyc_status_label || "Khách chưa xác thực" %></div>
-            <div class="ekyc-muted">Độ tin cậy: <%= verification.confidence_label || "0%" %></div>
+            <div class="ekyc-muted" style="margin-top:7px">Khách: <%= customer?.ekyc_status_label || "Khách chưa xác thực" %></div>
+            <div class="ekyc-muted">Tin cậy: <%= verification.confidence_label || "0%" %></div>
           </div>
         </div>
 
@@ -550,9 +567,10 @@
             ["Selfie", verification.images?.selfie_url]
           ].forEach(([label, url]) => { %>
             <article class="ekyc-image-box">
-              <div class="ekyc-muted" style="font-weight:900;margin-bottom:9px"><%= label %></div>
+              <strong><%= label %></strong>
+              <div style="height:8px"></div>
               <% if (url) { %>
-                <a href="<%= url %>" target="_blank" rel="noreferrer"><img src="<%= url %>" alt="<%= label %> eKYC" /></a>
+                <a href="<%= url %>" target="_blank" rel="noreferrer"><img src="<%= url %>" alt="<%= label %> eKYC của <%= customer?.name || "khách hàng" %>" /></a>
               <% } else { %>
                 <div class="ekyc-empty-img">Chưa có ảnh</div>
               <% } %>
@@ -562,25 +580,28 @@
 
         <div class="ekyc-info-grid">
           <article class="ekyc-info-box">
-            <strong>Thông tin giấy tờ</strong>
-            <div class="ekyc-kv" style="margin-top:12px">
+            <strong>Đối chiếu giấy tờ</strong>
+            <div class="ekyc-kv" style="margin-top:10px">
               <strong>Loại giấy tờ</strong><div><%= verification.document_type || "-" %></div>
               <strong>Số giấy tờ</strong><div><%= verification.document_number || "-" %></div>
+              <strong>CCCD hồ sơ khách</strong><div><%= customer?.cccd || "-" %></div>
               <strong>Ngày gửi</strong><div><%= verification.submitted_at || "-" %></div>
               <strong>Ngày xác thực</strong><div><%= verification.verified_at || "-" %></div>
-              <strong>CCCD khách</strong><div><%= customer?.cccd || "-" %></div>
             </div>
+            <% if (review && !review.is_document_match) { %>
+              <div class="ekyc-warning">Số giấy tờ gửi lên khác CCCD đang lưu. Nếu duyệt, hệ thống sẽ đồng bộ CCCD theo hồ sơ này.</div>
+            <% } %>
           </article>
           <article class="ekyc-info-box">
-            <strong>Ghi chú hệ thống</strong>
-            <p class="ekyc-muted" style="line-height:1.8;margin-bottom:0"><%= verification.note || "Chưa có ghi chú." %></p>
+            <strong>Ghi chú</strong>
+            <p class="ekyc-muted" style="line-height:1.7;margin-bottom:0"><%= verification.note || "Chưa có ghi chú." %></p>
           </article>
         </div>
 
-        <article class="ekyc-info-box">
+        <article class="ekyc-info-box" style="margin-top:10px">
           <div class="ekyc-row">
-            <strong>Lịch sử hồ sơ cùng khách</strong>
-            <span class="ekyc-muted"><%= history.length %> lần gửi gần nhất</span>
+            <strong>Lịch sử cùng khách</strong>
+            <span class="ekyc-muted"><%= history.length %> lần gửi</span>
           </div>
           <div class="ekyc-history">
             <% if (history.length) { %>
@@ -588,50 +609,39 @@
                 <div class="ekyc-history-item">
                   <div class="ekyc-row">
                     <div>
-                      <strong><%= item.document_type || "-" %> · <%= item.document_number || "-" %></strong>
-                      <div class="ekyc-muted" style="font-size:13px;margin-top:5px">Gửi: <%= item.submitted_at || "-" %> · Xác thực: <%= item.verified_at || "-" %></div>
+                      <strong>#<%= item.id %> · <%= item.document_type || "-" %> · <%= item.document_number || "-" %></strong>
+                      <div class="ekyc-muted" style="font-size:13px;margin-top:4px">Gửi: <%= item.submitted_at || "-" %> · Xác thực: <%= item.verified_at || "-" %></div>
                     </div>
                     <span class="ekyc-badge <%= badgeClass(item.tone) %>"><%= item.result_label %></span>
                   </div>
-                  <% if (item.note) { %>
-                    <div class="ekyc-muted" style="font-size:13px;margin-top:8px;line-height:1.7"><%= item.note %></div>
-                  <% } %>
                 </div>
               <% }) %>
             <% } else { %>
-              <div class="ekyc-muted">Chưa có lịch sử hồ sơ nào.</div>
+              <div class="ekyc-muted">Chưa có lịch sử hồ sơ.</div>
             <% } %>
           </div>
         </article>
 
-        <article class="ekyc-info-box" style="margin-top:12px">
-          <div class="ekyc-row">
-            <div>
-              <strong>Manual review</strong>
-              <div class="ekyc-muted" style="margin-top:5px">Duyệt hồ sơ này để check-in đọc đúng trạng thái eKYC, hạn chế phải override tại quầy.</div>
-            </div>
-            <a class="ekyc-btn" href="/frontdesk/checkin">Mở check-in</a>
-          </div>
-          <form method="post" action="/ekyc/review" style="margin-top:16px">
+        <article class="ekyc-info-box ekyc-review-box">
+          <form method="post" action="/ekyc/review">
             <input type="hidden" name="ma_ekyc" value="<%= verification.id %>" />
             <input type="hidden" name="result_filter" value="<%= filters.result || "" %>" />
             <input type="hidden" name="q_filter" value="<%= filters.q || "" %>" />
             <div class="ekyc-field">
-              <label>Ghi chú review</label>
-              <textarea name="review_note" placeholder="Ví dụ: Đã đối chiếu giấy tờ gốc tại quầy, thông tin khớp với booking."></textarea>
+              <label for="review_note">Ghi chú duyệt</label>
+              <textarea id="review_note" name="review_note" placeholder="Ghi nhận đối chiếu giấy tờ, lý do từ chối hoặc yêu cầu khách gửi lại."></textarea>
             </div>
-            <div class="ekyc-actions" style="margin-top:14px">
-              <button class="ekyc-btn ekyc-btn--ok" type="submit" name="decision" value="approve">Duyệt xác thực</button>
-              <button class="ekyc-btn ekyc-btn--bad" type="submit" name="decision" value="reject">Từ chối hồ sơ</button>
-              <button class="ekyc-btn ekyc-btn--wait" type="submit" name="decision" value="pending">Chuyển về chờ xử lý</button>
+            <div class="ekyc-review-actions">
+              <button class="ekyc-btn ekyc-btn--ok" type="submit" name="decision" value="approve" <%= !isLatest ? "disabled" : "" %>>Duyệt xác thực</button>
+              <button class="ekyc-btn ekyc-btn--bad" type="submit" name="decision" value="reject" <%= !isLatest ? "disabled" : "" %>>Từ chối</button>
+              <button class="ekyc-btn ekyc-btn--wait" type="submit" name="decision" value="pending" <%= !isLatest ? "disabled" : "" %>>Chờ xử lý</button>
             </div>
           </form>
         </article>
       <% } else { %>
-        <div class="ekyc-info-box" style="min-height:420px;display:grid;place-items:center;text-align:center">
+        <div class="ekyc-info-box" style="min-height:360px;display:grid;place-items:center;text-align:center">
           <div>
-            <div class="ekyc-core" style="margin:0 auto 18px">ID</div>
-            <h2>Chọn một hồ sơ eKYC để review</h2>
+            <h2>Chưa chọn hồ sơ</h2>
             <p class="ekyc-muted">Danh sách bên trái đang hiển thị hồ sơ mới nhất theo từng khách.</p>
           </div>
         </div>

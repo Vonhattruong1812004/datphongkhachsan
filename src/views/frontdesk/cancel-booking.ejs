@@ -22,11 +22,12 @@
     --ux-shadow:0 22px 60px rgba(0,0,0,.32);
     max-width:1180px;margin:0 auto;padding:24px 18px 48px;color:var(--ux-text)
   }
+  .cancel-shell *{box-sizing:border-box}
   .cancel-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
   .cancel-title h1{margin:4px 0 6px;font-size:28px;color:var(--ux-heading)}
   .cancel-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:rgba(251,113,133,.12);border:1px solid rgba(251,113,133,.28);color:#fecdd3;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
   .cancel-muted{color:var(--ux-muted);font-size:13px;line-height:1.55}
-  .cancel-shell .button{background:rgba(15,23,42,.88);border-color:var(--ux-border);color:var(--ux-text)}
+  .cancel-shell .button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;background:rgba(15,23,42,.88);border-color:var(--ux-border);color:var(--ux-text);white-space:nowrap}
   .cancel-shell .button:hover{border-color:var(--ux-border-strong);transform:translateY(-1px)}
   .cancel-shell .button--primary{background:linear-gradient(135deg,rgba(14,165,233,.92),rgba(37,99,235,.78));border-color:rgba(103,200,255,.55);color:#f8fafc;box-shadow:0 14px 34px rgba(14,165,233,.22)}
   .cancel-shell .button--danger{background:linear-gradient(135deg,rgba(244,63,94,.94),rgba(190,18,60,.84));border-color:rgba(251,113,133,.55);color:#fff;box-shadow:0 14px 34px rgba(244,63,94,.22)}
@@ -35,9 +36,15 @@
   .cancel-card h2{margin:0 0 8px;font-size:20px;color:var(--ux-heading)}
   .cancel-tag{display:inline-flex;margin-left:8px;padding:3px 9px;border-radius:999px;background:rgba(103,200,255,.12);border:1px solid rgba(103,200,255,.24);color:#bae6fd;font-size:12px;font-weight:800}
   .cancel-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .cancel-row + .cancel-row{margin-top:14px}
+  .cancel-row--single{grid-template-columns:1fr;margin-top:14px}
+  .cancel-row.cancel-row--compact{margin-top:10px}
+  .cancel-search-grid{grid-template-columns:minmax(0,1fr) auto;align-items:end}
+  .cancel-search-actions{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-width:244px;padding-bottom:16px}
   .cancel-field{display:flex;flex-direction:column;gap:6px}
   .cancel-field label{font-size:13px;font-weight:800;color:#cbd5e1}
   .cancel-field input,.cancel-field textarea{width:100%;border:1px solid rgba(148,163,184,.28);border-radius:16px;padding:12px 14px;background:rgba(2,6,23,.72);color:var(--ux-heading);font:inherit;outline:none;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+  .cancel-field input{height:46px}
   .cancel-field textarea{min-height:96px;resize:vertical}
   .cancel-field input:focus,.cancel-field textarea:focus{border-color:rgba(103,200,255,.62);box-shadow:0 0 0 3px rgba(103,200,255,.12);background:rgba(2,6,23,.9)}
   .cancel-field input[disabled]{background:rgba(15,23,42,.72);color:#cbd5e1}
@@ -48,14 +55,15 @@
   .cancel-alert--success{background:rgba(81,208,177,.14);color:#bbf7d0;border:1px solid rgba(81,208,177,.36)}
   .cancel-alert--warning{background:rgba(244,196,108,.13);color:#fde68a;border:1px solid rgba(244,196,108,.34)}
   .cancel-actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}
-  .cancel-actions__right{display:flex;gap:10px;flex-wrap:wrap}
+  .cancel-actions__right{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
   .cancel-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
-  .cancel-stat{border:1px solid var(--ux-border);border-radius:18px;background:rgba(2,6,23,.46);padding:12px}
+  .cancel-stat{border:1px solid var(--ux-border);border-radius:18px;background:rgba(2,6,23,.46);padding:12px;min-height:76px;display:flex;flex-direction:column;justify-content:center}
   .cancel-stat strong{display:block;font-size:22px;color:var(--ux-heading);line-height:1}
   .cancel-stat span{display:block;margin-top:6px;font-size:12px;color:var(--ux-muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
   .cancel-table-wrap{overflow:auto;border:1px solid var(--ux-border);border-radius:18px;margin-top:12px;background:rgba(2,6,23,.42)}
   .cancel-table{width:100%;border-collapse:collapse;font-size:14px;min-width:900px;background:transparent;color:var(--ux-text)}
-  .cancel-table th,.cancel-table td{padding:12px;border-bottom:1px solid rgba(148,163,184,.16);text-align:left;white-space:nowrap}
+  .cancel-table th,.cancel-table td{padding:12px;border-bottom:1px solid rgba(148,163,184,.16);text-align:left;white-space:nowrap;vertical-align:middle}
+  .cancel-table .cancel-cell-center{text-align:center}
   .cancel-table th{background:rgba(15,23,42,.92);color:#cbd5e1;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
   .cancel-table tr:last-child td{border-bottom:0}
   .cancel-table tbody tr:hover{background:rgba(103,200,255,.06)}
@@ -65,17 +73,30 @@
   .cancel-badge--amber{background:rgba(244,196,108,.14);color:#fde68a;border-color:rgba(244,196,108,.34)}
   .cancel-badge--slate{background:rgba(148,163,184,.16);color:#e2e8f0;border-color:rgba(148,163,184,.26)}
   .cancel-scope{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
-  .cancel-scope label{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--ux-border);border-radius:16px;padding:12px;background:rgba(2,6,23,.46);color:var(--ux-text);cursor:pointer}
+  .cancel-scope label{display:flex;align-items:flex-start;gap:10px;min-height:78px;border:1px solid var(--ux-border);border-radius:16px;padding:12px;background:rgba(2,6,23,.46);color:var(--ux-text);cursor:pointer}
+  .cancel-scope input{margin-top:3px}
   .cancel-scope label:has(input:checked){border-color:rgba(251,113,133,.45);background:rgba(244,63,94,.12)}
   .cancel-refund{margin-top:14px;border:1px solid rgba(16,185,129,.26);border-radius:18px;padding:14px;background:rgba(16,185,129,.08)}
   .cancel-refund__head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
   .cancel-refund__head strong{color:var(--ux-heading);font-size:16px}
-  .cancel-refund__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
-  .cancel-refund__metric{border:1px solid var(--ux-border);border-radius:14px;padding:10px;background:rgba(255,255,255,.58)}
+  .cancel-refund__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:10px;margin-bottom:12px}
+  .cancel-refund__metric{border:1px solid var(--ux-border);border-radius:14px;padding:10px;background:rgba(255,255,255,.58);min-height:76px;display:flex;flex-direction:column;justify-content:center}
   .cancel-refund__metric span{display:block;font-size:11px;text-transform:uppercase;font-weight:900;color:var(--ux-muted);letter-spacing:.06em}
   .cancel-refund__metric b{display:block;margin-top:4px;color:var(--ux-heading);font-size:18px}
+  .cancel-policy{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(0,1.1fr);align-items:stretch;gap:12px;margin:12px 0}
+  .cancel-policy__hero{border:1px solid rgba(14,165,233,.18);border-radius:18px;padding:14px;background:linear-gradient(135deg,rgba(14,165,233,.14),rgba(16,185,129,.10));min-height:148px}
+  .cancel-policy__hero span{display:block;font-size:11px;text-transform:uppercase;font-weight:900;color:var(--ux-muted);letter-spacing:.06em}
+  .cancel-policy__hero strong{display:block;margin-top:4px;font-size:34px;line-height:1;color:var(--ux-heading)}
+  .cancel-policy__hero p{margin:8px 0 0;color:var(--ux-muted);font-size:13px;line-height:1.45}
+  .cancel-policy__steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:1fr;gap:8px}
+  .cancel-policy__step{border:1px solid var(--ux-border);border-radius:16px;padding:10px;background:rgba(255,255,255,.56);min-height:148px;display:flex;flex-direction:column;justify-content:center}
+  .cancel-policy__step.is-active{border-color:rgba(14,165,233,.32);background:rgba(14,165,233,.10);box-shadow:0 12px 26px rgba(14,165,233,.10)}
+  .cancel-policy__step b{display:block;font-size:15px;color:var(--ux-heading)}
+  .cancel-policy__step span{display:block;margin-top:4px;font-size:11px;color:var(--ux-muted);font-weight:800;line-height:1.35}
+  .cancel-refund__notice{border-radius:16px;padding:11px 12px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.20);color:#92400e;font-size:13px;font-weight:800;line-height:1.45}
   .cancel-empty{border:1px dashed rgba(148,163,184,.32);border-radius:18px;padding:18px;background:rgba(2,6,23,.34);color:var(--ux-muted)}
-  @media (max-width:900px){.cancel-title,.cancel-actions{flex-direction:column}.cancel-row,.cancel-summary,.cancel-scope,.cancel-refund__grid{grid-template-columns:1fr}.cancel-card{padding:16px}}
+  @media (max-width:900px){.cancel-title,.cancel-actions{flex-direction:column}.cancel-row,.cancel-summary,.cancel-scope,.cancel-refund__grid,.cancel-policy,.cancel-search-grid{grid-template-columns:1fr}.cancel-card{padding:16px}.cancel-search-actions{min-width:0;padding-bottom:0}.cancel-policy__steps{grid-template-columns:repeat(2,minmax(0,1fr))}.cancel-actions__right{justify-content:flex-start}}
+  @media (max-width:520px){.cancel-policy__steps{grid-template-columns:1fr}.cancel-policy__hero strong{font-size:28px}}
 </style>
 <style>
   body{
@@ -110,9 +131,7 @@
       linear-gradient(135deg,#fbfffb 0%,#ecfff8 36%,#eef8ff 68%,#fff6eb 100%);
     border-radius:34px;
   }
-  .cancel-shell::before,.cancel-shell::after{content:"";position:absolute;width:420px;height:420px;border-radius:999px;pointer-events:none;opacity:.44;z-index:0;animation:cancel-float 12s ease-in-out infinite alternate}
-  .cancel-shell::before{top:-210px;right:-120px;background:conic-gradient(from 130deg,rgba(14,165,233,.42),rgba(20,184,166,.32),rgba(250,204,21,.26),rgba(251,113,133,.26),rgba(14,165,233,.42))}
-  .cancel-shell::after{left:-180px;bottom:-220px;background:conic-gradient(from 20deg,rgba(251,113,133,.28),rgba(245,158,11,.22),rgba(45,212,191,.24),rgba(59,130,246,.22),rgba(251,113,133,.28));animation-delay:-4s}
+  .cancel-shell::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;background:linear-gradient(120deg,rgba(14,165,233,.12),transparent 36%),linear-gradient(250deg,rgba(251,113,133,.10),transparent 42%)}
   .cancel-title,.cancel-card,.cancel-alert{position:relative;z-index:1}
   .cancel-title h1{color:var(--ux-heading);font-size:34px;letter-spacing:-.05em}
   .cancel-chip{background:rgba(239,71,111,.1);border-color:rgba(239,71,111,.16);color:#be123c}
@@ -142,7 +161,6 @@
   .cancel-badge--slate{background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.18);color:#475569}
   .cancel-scope label:has(input:checked){border-color:rgba(239,71,111,.24);background:rgba(239,71,111,.06)}
   .cancel-empty{background:rgba(255,255,255,.72);border-color:rgba(19,48,74,.14);color:var(--ux-muted)}
-  @keyframes cancel-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
 </style>
 
 <main class="cancel-shell">
@@ -169,17 +187,15 @@
   <form method="post" action="/frontdesk/cancel-booking" id="formSearch" class="cancel-card">
     <h2>Tìm kiếm giao dịch <span class="cancel-tag">Bước 1</span></h2>
     <p class="cancel-muted">Nhập mã giao dịch hoặc CMND/CCCD trưởng đoàn.</p>
-    <div class="cancel-row" style="grid-template-columns:2fr 1fr">
+    <div class="cancel-row cancel-search-grid">
       <div class="cancel-field">
         <label for="search_keyword">Mã giao dịch / CMND/CCCD</label>
         <input id="search_keyword" name="search_keyword" value="<%= keyword || "" %>" placeholder="VD: 12 hoặc 22653661123" />
         <div class="cancel-error-msg" id="err_search"></div>
       </div>
-      <div class="cancel-field" style="justify-content:flex-end">
-        <div class="cancel-actions" style="margin-top:0;justify-content:flex-start">
-          <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
-          <button class="button" type="submit" name="btn_action" value="back">Quay lại</button>
-        </div>
+      <div class="cancel-search-actions">
+        <button class="button button--primary" type="submit" name="btn_action" value="search">Tìm giao dịch</button>
+        <button class="button" type="submit" name="btn_action" value="back">Quay lại</button>
       </div>
     </div>
   </form>
@@ -245,7 +261,7 @@
               <th>Ngày kết thúc</th>
               <th>Số người</th>
               <th>Trạng thái</th>
-              <th style="text-align:center">Hủy</th>
+              <th class="cancel-cell-center">Hủy</th>
             </tr>
           </thead>
           <tbody>
@@ -262,7 +278,7 @@
                 <td><%= room.ngayTraLabel %></td>
                 <td><%= room.soNguoi || 0 %></td>
                 <td><span class="cancel-badge <%= statusClass %>"><%= room.trangThai %></span></td>
-                <td style="text-align:center">
+                <td class="cancel-cell-center">
                   <% if (room.trangThai === "Booked") { %>
                     <input class="chk-room" type="checkbox" name="phong_cancel" value="<%= room.maPhong %>" checked />
                   <% } else { %>
@@ -286,7 +302,7 @@
         </label>
       </div>
 
-      <div class="cancel-row" style="grid-template-columns:1fr;margin-top:14px">
+      <div class="cancel-row cancel-row--single">
         <div class="cancel-field">
           <label for="ly_do_huy">Lý do hủy <span style="color:#fda4af">*</span></label>
           <textarea id="ly_do_huy" name="ly_do_huy" placeholder="VD: Khách đổi lịch, đặt nhầm ngày, yêu cầu hủy..."></textarea>
@@ -305,10 +321,29 @@
             <%= refund?.hasPaidDeposit ? "Có cọc SePay" : "Không có cọc" %>
           </span>
         </div>
+
+        <div class="cancel-policy">
+          <div class="cancel-policy__hero">
+            <span>Policy hiện tại</span>
+            <strong><%= refund?.policy?.rateLabel || "0%" %></strong>
+            <p><%= refund?.policy?.label || "Không hoàn cọc" %> · còn <%= refund?.policy?.hoursLabel || "không xác định" %> tới giờ nhận phòng.</p>
+            <p><%= refund?.policy?.note || "Chưa đủ dữ liệu policy." %></p>
+          </div>
+          <div class="cancel-policy__steps">
+            <div class="cancel-policy__step <%= refund?.policy?.key === "REFUND_100_7D" ? "is-active" : "" %>"><b>100%</b><span>Từ 7 ngày trước check-in</span></div>
+            <div class="cancel-policy__step <%= refund?.policy?.key === "REFUND_70_3D" ? "is-active" : "" %>"><b>70%</b><span>Từ 3 đến dưới 7 ngày</span></div>
+            <div class="cancel-policy__step <%= refund?.policy?.key === "REFUND_50_24H" ? "is-active" : "" %>"><b>50%</b><span>Từ 24 giờ đến dưới 3 ngày</span></div>
+            <div class="cancel-policy__step <%= refund?.policy?.noRefund ? "is-active" : "" %>"><b>0%</b><span>Trong 24 giờ hoặc quá giờ nhận</span></div>
+          </div>
+        </div>
+
         <div class="cancel-refund__grid">
           <div class="cancel-refund__metric"><span>Cọc đã thu</span><b><%= refund?.paidDepositFormatted || "0 đ" %></b></div>
+          <div class="cancel-refund__metric"><span>Cọc xét theo phòng hủy</span><b><%= refund?.refundableBaseFormatted || "0 đ" %></b></div>
+          <div class="cancel-refund__metric"><span>Dự kiến hoàn</span><b><%= refund?.maxRefundableFormatted || "0 đ" %></b></div>
+          <div class="cancel-refund__metric"><span>Giữ lại theo policy</span><b><%= refund?.retainedDepositFormatted || "0 đ" %></b></div>
           <div class="cancel-refund__metric"><span>Đã tạo yêu cầu</span><b><%= refund?.alreadyRequestedFormatted || "0 đ" %></b></div>
-          <div class="cancel-refund__metric"><span>Còn có thể hoàn</span><b><%= refund?.maxRefundableFormatted || "0 đ" %></b></div>
+          <div class="cancel-refund__metric"><span>Cọc còn khả dụng</span><b><%= refund?.availableDepositFormatted || "0 đ" %></b></div>
         </div>
 
         <% if (refund?.needsBankInfo) { %>
@@ -329,15 +364,17 @@
               <div class="cancel-error-msg" id="err_refund_account_name"></div>
             </div>
           </div>
-          <div class="cancel-row" style="grid-template-columns:1fr;margin-top:10px">
+          <div class="cancel-row cancel-row--single cancel-row--compact">
             <div class="cancel-field">
               <label for="refund_note">Ghi chú hoàn tiền</label>
               <input id="refund_note" name="refund_note" placeholder="VD: Hoàn về tài khoản trưởng đoàn" />
             </div>
           </div>
-          <p class="cancel-muted" style="margin:10px 0 0">Lễ tân tạo yêu cầu, kế toán sẽ duyệt và chi hoàn ở bước sau.</p>
+          <p class="cancel-muted" style="margin:10px 0 0">Yêu cầu hoàn tiền sẽ đi sang Kế toán kèm tỷ lệ policy, số tiền giữ lại và lý do hủy để đối soát trước khi chi.</p>
         <% } else { %>
-          <p class="cancel-muted" style="margin:0">Giao dịch này chưa cần nhập tài khoản hoàn tiền.</p>
+          <div class="cancel-refund__notice">
+            <%= refund?.statusText || "Giao dịch này chưa cần nhập tài khoản hoàn tiền." %>
+          </div>
         <% } %>
       </div>
 

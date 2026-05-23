@@ -13,7 +13,8 @@ type BroadcastAudience =
   | "booking_confirmation"
   | "winback";
 
-const FEEDBACK_SERVICE_TYPES = ["Lưu trú", "Nhà hàng", "SPA", "Giặt là", "Dịch vụ khác", "Tư vấn"] as const;
+const FEEDBACK_SERVICE_TYPES = ["Lưu trú", "Phòng", "Check-in/out", "Nhà hàng", "SPA", "Giặt là", "Hồ bơi", "Thanh toán", "Dịch vụ khác", "Tư vấn"] as const;
+const FEEDBACK_ISSUE_TAGS = ["Sạch sẽ", "Thái độ nhân viên", "Tốc độ phục vụ", "Tiếng ồn", "Tiện nghi phòng", "Ăn uống", "Thanh toán", "Dịch vụ bổ sung", "Khác"] as const;
 const BROADCAST_CHANNELS = ["Email", "SMS", "Zalo", "Mixed"] as const;
 const BROADCAST_AUDIENCES = [
   "upcoming_checkin",
@@ -22,6 +23,7 @@ const BROADCAST_AUDIENCES = [
   "booking_confirmation",
   "winback"
 ] as const;
+const ADVISORY_TOPICS = ["all", "booking", "checkin", "ekyc", "pricing", "payment", "service", "room", "policy", "other"] as const;
 
 const feedbackCreateSchema = z.object({
   loai_dich_vu: z.string().min(2, "Vui lòng chọn loại dịch vụ.").refine((value) => FEEDBACK_SERVICE_TYPES.includes(value as typeof FEEDBACK_SERVICE_TYPES[number]), {
@@ -29,6 +31,9 @@ const feedbackCreateSchema = z.object({
   }),
   muc_do_hai_long: z.coerce.number().int("Mức độ hài lòng không hợp lệ.").min(1, "Mức độ hài lòng phải từ 1 đến 5.").max(5, "Mức độ hài lòng phải từ 1 đến 5."),
   noi_dung: z.string().trim().min(10, "Nội dung phản hồi cần ít nhất 10 ký tự.").max(1000, "Nội dung phản hồi tối đa 1000 ký tự."),
+  booking_key: z.string().trim().max(60).optional().default(""),
+  issue_tags: z.array(z.string().trim()).optional().default([]),
+  mong_muon_xu_ly: z.string().trim().max(240, "Mong muốn xử lý tối đa 240 ký tự.").optional().default(""),
   tepdinhkem: z.string().optional().default("")
 });
 
@@ -50,7 +55,10 @@ const broadcastCampaignSchema = z.object({
   title: z.string().trim().min(6, "Tiêu đề chiến dịch cần ít nhất 6 ký tự.").max(140, "Tiêu đề chiến dịch tối đa 140 ký tự."),
   message: z.string().trim().min(20, "Nội dung tin nhắn cần ít nhất 20 ký tự.").max(1200, "Nội dung tin nhắn tối đa 1200 ký tự."),
   promo_id: z.union([z.coerce.number().int().positive(), z.literal(""), z.null(), z.undefined()]).optional(),
-  send_timing: z.enum(["now", "shift"]).default("now")
+  send_timing: z.enum(["now", "shift"]).default("now"),
+  dedupe_days: z.coerce.number().int().min(0).max(30).default(7),
+  campaign_goal: z.string().trim().max(180, "Mục tiêu chiến dịch tối đa 180 ký tự.").optional().default(""),
+  internal_note: z.string().trim().max(500, "Ghi chú nội bộ tối đa 500 ký tự.").optional().default("")
 });
 
 interface FeedbackListRow {
@@ -71,6 +79,8 @@ interface FeedbackListRow {
   nguoiTraLoiMoiNhat: string | null;
   sentiment: string | null;
   diemCamXuc: number | null;
+  ageHours: number | string;
+  replyCount: number | string;
 }
 
 interface FeedbackReplyRow {
@@ -88,12 +98,24 @@ interface CustomerSnapshot {
   phone?: string | null;
 }
 
+interface FeedbackBookingContext {
+  key: string;
+  transactionId: number;
+  bookingCode: string;
+  status: string;
+  statusLabel: string;
+  hotelNames: string;
+  roomNumbers: string;
+  checkinLabel: string;
+  checkoutLabel: string;
+}
+
 interface BroadcastCampaignRow {
   id: number;
   title: string;
   channel: BroadcastChannel;
-  audienceKey: BroadcastAudience;
-  templateKey: BroadcastAudience;
+  audienceKey: BroadcastAudience | "promotion_auto" | string;
+  templateKey: BroadcastAudience | "promotion_auto" | string;
   message: string;
   status: string;
   recipientCount: number | null;
@@ -124,20 +146,47 @@ interface BroadcastStatsRow {
   withPhone: number;
 }
 
+interface BroadcastDraft {
+  template_key: BroadcastAudience;
+  audience_key: BroadcastAudience;
+  channel: BroadcastChannel;
+  title: string;
+  message: string;
+  send_timing: "now" | "shift";
+  dedupe_days: number;
+  campaign_goal: string;
+  internal_note: string;
+}
+
+type AdvisoryTopic = typeof ADVISORY_TOPICS[number];
+
 export class FeedbackService {
   readonly serviceTypes = [...FEEDBACK_SERVICE_TYPES];
 
   analyzeSentiment(noiDung: string, mucDoHaiLong = 0) {
-    const text = noiDung.trim().toLocaleLowerCase("vi-VN");
+    const text = this.normalizeForMatching(noiDung);
+    const hasTerm = (term: string) => {
+      const normalizedTerm = this.normalizeForMatching(term);
+      if (!normalizedTerm) return false;
+      if (normalizedTerm.includes(" ")) return text.includes(normalizedTerm);
+      return new RegExp(`(^|[^a-z0-9])${this.escapeRegExp(normalizedTerm)}([^a-z0-9]|$)`, "i").test(text);
+    };
     const positiveWords = [
       "tốt",
       "rất tốt",
       "tuyệt",
       "tuyệt vời",
+      "rất tuyệt vời",
       "hài lòng",
       "ưng",
       "ok",
       "ổn",
+      "ngon",
+      "rất ngon",
+      "quá ngon",
+      "qua ngon",
+      "quá đã",
+      "qua da",
       "đẹp",
       "sạch",
       "nhanh",
@@ -149,8 +198,11 @@ export class FeedbackService {
       "rất thích",
       "tot",
       "tuyet",
+      "rat tuyet voi",
+      "rat la tuyet voi",
       "hai long",
       "on",
+      "ngon",
       "sach",
       "dep",
       "than thien",
@@ -180,7 +232,7 @@ export class FeedbackService {
       "kem",
       "ban",
       "cham",
-      "on",
+      "on ao",
       "kho chiu",
       "that vong",
       "khong hai long",
@@ -191,25 +243,25 @@ export class FeedbackService {
 
     let score = 0;
     for (const word of positiveWords) {
-      if (text.includes(word)) score += 1;
+      if (hasTerm(word)) score += 1;
     }
     for (const word of negativeWords) {
-      if (text.includes(word)) score -= 1;
+      if (hasTerm(word)) score -= 1;
     }
 
     if (mucDoHaiLong >= 5) score += 2;
-    else if (mucDoHaiLong === 4) score += 1;
-    else if (mucDoHaiLong === 2) score -= 1;
-    else if (mucDoHaiLong <= 1) score -= 2;
+    else if (mucDoHaiLong === 4) score += 1.25;
+    else if (mucDoHaiLong === 2) score -= 1.25;
+    else if (mucDoHaiLong <= 1) score -= 2.5;
 
     return {
-      sentiment: score > 0.5 ? "Positive" : score < -0.5 ? "Negative" : "Neutral",
+      sentiment: score > 0.75 ? "Positive" : score < -0.75 ? "Negative" : "Neutral",
       score: Number(score.toFixed(2))
     };
   }
 
   async getCustomerFeedbackPayload(maKhachHang: number, formValues: Record<string, unknown> = {}) {
-    const [customerResult, recentFeedbackResult, summaryResult] = await Promise.all([
+    const [customerResult, recentFeedbackResult, summaryResult, bookingOptions] = await Promise.all([
       query<{
         id: number;
         tenKh: string | null;
@@ -253,7 +305,8 @@ export class FeedbackService {
           WHERE makhachhang = $1
         `,
         [maKhachHang]
-      )
+      ),
+      this.getFeedbackBookingOptions(maKhachHang)
     ]);
 
     const customer = customerResult.rows[0] ?? {
@@ -267,6 +320,8 @@ export class FeedbackService {
     return {
       customer,
       serviceTypes: this.serviceTypes,
+      issueTags: [...FEEDBACK_ISSUE_TAGS],
+      bookingOptions,
       recentFeedbacks: recentFeedbackResult,
       summary: summaryResult.rows[0] ?? {
         total: 0,
@@ -277,6 +332,9 @@ export class FeedbackService {
       form: {
         loai_dich_vu: "",
         muc_do_hai_long: "5",
+        booking_key: "",
+        issue_tags: [],
+        mong_muon_xu_ly: "",
         noi_dung: "",
         ...formValues
       }
@@ -323,9 +381,19 @@ export class FeedbackService {
       where.push(`ph.loaidichvu = $${params.length}`);
     }
 
+    if (filters.loai_dich_vu === "Tư vấn" && filters.tu_van_nhom !== "all") {
+      const topicSql = this.advisoryTopicWhere(filters.tu_van_nhom);
+      if (topicSql) where.push(topicSql);
+    }
+
     if (filters.sentiment !== "all") {
       params.push(filters.sentiment);
       where.push(`COALESCE(ph.sentiment, 'Neutral') = $${params.length}`);
+    }
+
+    if (filters.uu_tien !== "all") {
+      const prioritySql = this.feedbackPriorityWhere(filters.uu_tien);
+      if (prioritySql) where.push(prioritySql);
     }
 
     if (filters.tu_ngay) {
@@ -364,6 +432,8 @@ export class FeedbackService {
             last_reply.noidungtraloi AS "noiDungTraLoiMoiNhat",
             last_reply.ngaytraloi AS "ngayTraLoiMoiNhat",
             nv.tennv AS "nguoiTraLoiMoiNhat"
+            ,EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 AS "ageHours"
+            ,COALESCE(reply_stats.reply_count, 0)::int AS "replyCount"
           FROM phanhoi ph
           LEFT JOIN khachhang kh ON kh.makhachhang = ph.makhachhang
           LEFT JOIN LATERAL (
@@ -373,9 +443,27 @@ export class FeedbackService {
             ORDER BY mactphanhoi DESC
             LIMIT 1
           ) last_reply ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT COUNT(*)::int AS reply_count
+            FROM chitietphanhoi
+            WHERE maphanhoi = ph.maph
+          ) reply_stats ON TRUE
           LEFT JOIN nhanvien nv ON nv.manhanvien = last_reply.manhanvien
           ${whereSql}
-          ORDER BY ph.ngayphanhoi DESC, ph.maph DESC
+          ORDER BY
+            CASE WHEN ph.tinhtrang = 'DaXuLy' THEN 1 ELSE 0 END ASC,
+            CASE
+              WHEN ph.tinhtrang <> 'DaXuLy'
+                AND (
+                  COALESCE(ph.sentiment, 'Neutral') = 'Negative'
+                  OR COALESCE(ph.mucdohailong, 0) <= 2
+                ) THEN 1
+              WHEN ph.tinhtrang <> 'DaXuLy'
+                AND (COALESCE(ph.mucdohailong, 0) <= 3 OR ph.loaidichvu = 'Tư vấn') THEN 2
+              ELSE 3
+            END ASC,
+            ph.ngayphanhoi DESC,
+            ph.maph DESC
           LIMIT ${limit} OFFSET ${offset}
         `,
         params
@@ -397,6 +485,8 @@ export class FeedbackService {
         tich_cuc: number;
         trung_lap: number;
         tieu_cuc: number;
+        khan_cap: number;
+        qua_sla: number;
         danh_gia_tb: number | null;
       }>(
         `
@@ -408,6 +498,28 @@ export class FeedbackService {
             COUNT(*) FILTER (WHERE COALESCE(ph.sentiment, 'Neutral') = 'Positive')::int AS tich_cuc,
             COUNT(*) FILTER (WHERE COALESCE(ph.sentiment, 'Neutral') = 'Neutral')::int AS trung_lap,
             COUNT(*) FILTER (WHERE COALESCE(ph.sentiment, 'Neutral') = 'Negative')::int AS tieu_cuc,
+            COUNT(*) FILTER (
+              WHERE ph.tinhtrang <> 'DaXuLy'
+                AND (
+                  COALESCE(ph.sentiment, 'Neutral') = 'Negative'
+                  OR COALESCE(ph.mucdohailong, 0) <= 2
+                  OR ph.loaidichvu = 'Tư vấn'
+                )
+            )::int AS khan_cap,
+            COUNT(*) FILTER (
+              WHERE ph.tinhtrang <> 'DaXuLy'
+                AND (
+                  CASE
+                    WHEN COALESCE(ph.sentiment, 'Neutral') = 'Negative' OR COALESCE(ph.mucdohailong, 0) <= 2
+                      THEN EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 > 2
+                    WHEN ph.loaidichvu = 'Tư vấn'
+                      THEN EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 > 6
+                    WHEN COALESCE(ph.mucdohailong, 0) <= 3
+                      THEN EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 > 12
+                    ELSE FALSE
+                  END
+                )
+            )::int AS qua_sla,
             AVG(ph.mucdohailong)::numeric(10,2) AS danh_gia_tb
           FROM phanhoi ph
           LEFT JOIN khachhang kh ON kh.makhachhang = ph.makhachhang
@@ -431,9 +543,12 @@ export class FeedbackService {
         tich_cuc: 0,
         trung_lap: 0,
         tieu_cuc: 0,
+        khan_cap: 0,
+        qua_sla: 0,
         danh_gia_tb: 0
       },
       serviceTypes: this.serviceTypes,
+      advisoryTopics: this.getAdvisoryTopics(),
       items: list.rows.map((item) => this.mapFeedbackListItem(item))
     };
   }
@@ -456,11 +571,18 @@ export class FeedbackService {
           kh.cccd,
           ph.sentiment,
           ph.diemcamxuc AS "diemCamXuc",
+          EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 AS "ageHours",
+          COALESCE(reply_stats.reply_count, 0)::int AS "replyCount",
           NULL::text AS "noiDungTraLoiMoiNhat",
           NULL::timestamptz AS "ngayTraLoiMoiNhat",
           NULL::text AS "nguoiTraLoiMoiNhat"
         FROM phanhoi ph
         LEFT JOIN khachhang kh ON kh.makhachhang = ph.makhachhang
+        LEFT JOIN LATERAL (
+          SELECT COUNT(*)::int AS reply_count
+          FROM chitietphanhoi
+          WHERE maphanhoi = ph.maph
+        ) reply_stats ON TRUE
         WHERE ph.maph = $1
         LIMIT 1
       `,
@@ -495,6 +617,8 @@ export class FeedbackService {
 
   async createFeedback(rawInput: unknown, customer: CustomerSnapshot, attachmentFileName = "") {
     const input = feedbackCreateSchema.parse(this.normalizeCreateInput(rawInput));
+    const bookingContext = input.booking_key ? await this.getFeedbackBookingContext(customer.maKhachHang, input.booking_key) : null;
+    const enrichedContent = this.composeFeedbackContent(input, bookingContext);
     const sentiment = this.analyzeSentiment(input.noi_dung, input.muc_do_hai_long);
     const attachment = attachmentFileName || input.tepdinhkem || null;
     const snapshot = await this.getCustomerSnapshot(customer);
@@ -526,7 +650,7 @@ export class FeedbackService {
         snapshot.name,
         snapshot.email ?? null,
         snapshot.phone ?? null,
-        input.noi_dung,
+        enrichedContent,
         sentiment.sentiment,
         sentiment.score
       ]
@@ -538,7 +662,8 @@ export class FeedbackService {
       data: {
         feedbackId: result.rows[0].id,
         customerName: snapshot.name,
-        sentiment: sentiment.sentiment
+        sentiment: sentiment.sentiment,
+        bookingCode: bookingContext?.bookingCode || ""
       }
     });
 
@@ -565,17 +690,24 @@ export class FeedbackService {
           ph.diemcamxuc AS "diemCamXuc",
           last_reply.noidungtraloi AS "noiDungTraLoiMoiNhat",
           last_reply.ngaytraloi AS "ngayTraLoiMoiNhat",
-          nv.tennv AS "nguoiTraLoiMoiNhat"
-        FROM phanhoi ph
-        LEFT JOIN khachhang kh ON kh.makhachhang = ph.makhachhang
+            nv.tennv AS "nguoiTraLoiMoiNhat"
+            ,EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 AS "ageHours"
+            ,COALESCE(reply_stats.reply_count, 0)::int AS "replyCount"
+          FROM phanhoi ph
+          LEFT JOIN khachhang kh ON kh.makhachhang = ph.makhachhang
         LEFT JOIN LATERAL (
           SELECT maphanhoi, manhanvien, noidungtraloi, ngaytraloi
           FROM chitietphanhoi
           WHERE maphanhoi = ph.maph
           ORDER BY mactphanhoi DESC
           LIMIT 1
-        ) last_reply ON TRUE
-        LEFT JOIN nhanvien nv ON nv.manhanvien = last_reply.manhanvien
+          ) last_reply ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT COUNT(*)::int AS reply_count
+            FROM chitietphanhoi
+            WHERE maphanhoi = ph.maph
+          ) reply_stats ON TRUE
+          LEFT JOIN nhanvien nv ON nv.manhanvien = last_reply.manhanvien
         WHERE ph.makhachhang = $1
         ORDER BY ph.ngayphanhoi DESC, ph.maph DESC
         LIMIT $2
@@ -584,6 +716,123 @@ export class FeedbackService {
     );
 
     return result.rows.map((item) => this.mapFeedbackListItem(item));
+  }
+
+  private async getFeedbackBookingOptions(maKhachHang: number) {
+    const result = await query<{
+      transactionId: number;
+      bookingCode: string | null;
+      status: string;
+      hotelNames: string | null;
+      roomNumbers: string | null;
+      checkinAt: string | null;
+      checkoutAt: string | null;
+      createdAt: string | null;
+    }>(
+      `
+        SELECT
+          gd.magiaodich AS "transactionId",
+          gd.madatcho AS "bookingCode",
+          gd.trangthai AS status,
+          string_agg(DISTINCT ks.tenkhachsan, ', ') AS "hotelNames",
+          string_agg(DISTINCT p.sophong::text, ', ' ORDER BY p.sophong::text) AS "roomNumbers",
+          MIN(ct.ngaynhandukien) AS "checkinAt",
+          MAX(ct.ngaytradukien) AS "checkoutAt",
+          gd.ngaygiaodich AS "createdAt"
+        FROM giaodich gd
+        LEFT JOIN chitietgiaodich ct ON ct.magiaodich = gd.magiaodich
+        LEFT JOIN phong p ON p.maphong = ct.maphong
+        LEFT JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+        WHERE gd.makhachhang = $1
+        GROUP BY gd.magiaodich, gd.madatcho, gd.trangthai, gd.ngaygiaodich
+        ORDER BY
+          CASE WHEN gd.trangthai IN ('Stayed', 'Booked') THEN 0 ELSE 1 END,
+          gd.ngaygiaodich DESC
+        LIMIT 8
+      `,
+      [maKhachHang]
+    );
+
+    return result.rows.map((row) => this.mapFeedbackBookingContext({
+      key: String(row.transactionId),
+      transactionId: row.transactionId,
+      bookingCode: row.bookingCode || `GD-${row.transactionId}`,
+      status: row.status,
+      statusLabel: this.bookingStatusLabel(row.status),
+      hotelNames: row.hotelNames || "Chưa có tên cơ sở",
+      roomNumbers: row.roomNumbers || "",
+      checkinLabel: row.checkinAt ? formatDate(row.checkinAt) : "",
+      checkoutLabel: row.checkoutAt ? formatDate(row.checkoutAt) : ""
+    }));
+  }
+
+  private async getFeedbackBookingContext(maKhachHang: number, bookingKey: string) {
+    const transactionId = Number(String(bookingKey || "").replace(/^gd-/i, ""));
+    if (!Number.isInteger(transactionId) || transactionId <= 0) {
+      throw new HttpError(422, "Booking được chọn không hợp lệ.");
+    }
+
+    const options = await this.getFeedbackBookingOptions(maKhachHang);
+    const match = options.find((item) => Number(item.transactionId) === transactionId);
+    if (!match) {
+      throw new HttpError(422, "Booking được chọn không thuộc tài khoản hiện tại hoặc đã quá cũ.");
+    }
+
+    return match;
+  }
+
+  private mapFeedbackBookingContext(context: FeedbackBookingContext) {
+    return {
+      ...context,
+      label: `${context.bookingCode} · ${context.hotelNames}`,
+      stayLabel: [context.checkinLabel, context.checkoutLabel].filter(Boolean).join(" → "),
+      roomLabel: context.roomNumbers ? `Phòng ${context.roomNumbers}` : "Chưa rõ phòng"
+    };
+  }
+
+  private composeFeedbackContent(
+    input: z.infer<typeof feedbackCreateSchema>,
+    bookingContext: ReturnType<FeedbackService["mapFeedbackBookingContext"]> | null
+  ) {
+    const metaParts = [
+      bookingContext ? `Đặt phòng: ${bookingContext.bookingCode}` : "",
+      bookingContext?.hotelNames ? `Cơ sở: ${bookingContext.hotelNames}` : "",
+      bookingContext?.roomNumbers ? `Phòng: ${bookingContext.roomNumbers}` : "",
+      bookingContext?.stayLabel ? `Kỳ lưu trú: ${bookingContext.stayLabel}` : "",
+      input.issue_tags.length ? `Vấn đề: ${input.issue_tags.join(", ")}` : "",
+      input.mong_muon_xu_ly ? `Mong muốn xử lý: ${input.mong_muon_xu_ly}` : ""
+    ].filter(Boolean);
+
+    return metaParts.length
+      ? `[Ngữ cảnh phản hồi] ${metaParts.join(" | ")}\n\n${input.noi_dung}`
+      : input.noi_dung;
+  }
+
+  private parseFeedbackContext(content: string) {
+    const raw = String(content || "");
+    const marker = raw.match(/^\[Ngữ cảnh phản hồi\]\s*([^\n]+)\n\n([\s\S]*)$/);
+    if (!marker) {
+      return { displayContent: raw, contextLine: "", contextItems: [] as string[] };
+    }
+
+    const contextLine = marker[1].trim();
+    return {
+      displayContent: marker[2].trim(),
+      contextLine,
+      contextItems: contextLine.split("|").map((item) => item.trim()).filter(Boolean)
+    };
+  }
+
+  private bookingStatusLabel(status: string | null) {
+    return {
+      Booked: "Đã đặt",
+      Stayed: "Đang ở",
+      CheckedIn: "Đang ở",
+      CheckedOut: "Đã trả phòng",
+      Paid: "Đã thanh toán",
+      DaHuy: "Đã hủy",
+      Cancelled: "Đã hủy"
+    }[String(status || "")] || String(status || "Không rõ");
   }
 
   async replyFeedback(rawInput: unknown, employeeId: number | null) {
@@ -650,14 +899,16 @@ export class FeedbackService {
   async getBroadcastCenterPayload(formValues: Record<string, unknown> = {}, selectedCampaignId = 0) {
     await this.ensureBroadcastTables();
 
-    const baseDraft = this.resolveBroadcastDraft(formValues);
-    const [stats, recentCampaigns, preview] = await Promise.all([
+    const requestedDraft = this.resolveBroadcastDraft(formValues);
+    const [stats, recentCampaigns] = await Promise.all([
       this.getBroadcastStats(),
-      this.listBroadcastCampaigns(8),
-      this.getBroadcastPreview(baseDraft.audience_key)
+      this.listBroadcastCampaigns(8)
     ]);
+    const draft = this.resolveBroadcastDraft(this.hasBroadcastSelection(formValues)
+      ? formValues
+      : { ...requestedDraft, template_key: this.bestDefaultBroadcastAudience(stats), audience_key: this.bestDefaultBroadcastAudience(stats) });
+    const preview = await this.getBroadcastPreview(draft);
 
-    const draft = this.resolveBroadcastDraft(formValues);
     const selectedCampaign = selectedCampaignId
       ? recentCampaigns.find((item) => item.id === selectedCampaignId) ?? null
       : recentCampaigns[0] ?? null;
@@ -686,18 +937,33 @@ export class FeedbackService {
 
     const draft = this.resolveBroadcastDraft((rawInput ?? {}) as Record<string, unknown>);
     const input = broadcastCampaignSchema.parse(draft);
-    const recipients = await this.fetchAudienceRecipients(input.audience_key);
+    const audienceRecipients = await this.fetchAudienceRecipients(input.audience_key, 2000);
+    const channelRecipients = this.filterRecipientsByChannel(audienceRecipients, input.channel);
+    const recipients = await this.filterRecentBroadcastRecipients(channelRecipients, input.audience_key, input.template_key, input.dedupe_days);
 
-    if (!recipients.length) {
+    if (!audienceRecipients.length) {
       throw new HttpError(422, "Không có khách hàng phù hợp với tệp nhận tin đã chọn.");
+    }
+    if (!channelRecipients.length) {
+      throw new HttpError(422, `Tệp khách này chưa có người nhận phù hợp với kênh ${this.broadcastChannelLabel(input.channel)}.`);
+    }
+    if (!recipients.length) {
+      throw new HttpError(422, "Toàn bộ người nhận đã được gửi chiến dịch cùng loại trong khoảng chống trùng hiện tại.");
     }
 
     const emailCount = recipients.filter((item) => item.email).length;
     const phoneCount = recipients.filter((item) => item.phone).length;
     const summary = {
       sendTiming: input.send_timing,
+      sendTimingLabel: input.send_timing === "shift" ? "Ca CSKH xử lý" : "Đưa vào queue ngay",
       audienceLabel: this.broadcastAudienceLabel(input.audience_key),
-      channelLabel: this.broadcastChannelLabel(input.channel)
+      channelLabel: this.broadcastChannelLabel(input.channel),
+      channelRequirement: this.broadcastChannelRequirement(input.channel),
+      dedupeDays: input.dedupe_days,
+      skippedByChannel: audienceRecipients.length - channelRecipients.length,
+      skippedByDedupe: channelRecipients.length - recipients.length,
+      campaignGoal: input.campaign_goal,
+      internalNote: input.internal_note
     };
 
     const result = await withTransaction(async (client) => {
@@ -831,7 +1097,7 @@ export class FeedbackService {
     await query("CREATE INDEX IF NOT EXISTS cskh_broadcast_recipient_campaign_idx ON cskh_broadcast_recipient (campaign_id)");
   }
 
-  private resolveBroadcastDraft(formValues: Record<string, unknown>) {
+  private resolveBroadcastDraft(formValues: Record<string, unknown>): BroadcastDraft {
     const templateKey = this.normalizeBroadcastAudience(this.readString(formValues.template_key) || "upcoming_checkin");
     const audienceKey = this.normalizeBroadcastAudience(this.readString(formValues.audience_key) || templateKey);
     const template = this.getBroadcastTemplates().find((item) => item.key === templateKey) ?? this.getBroadcastTemplates()[0];
@@ -842,7 +1108,10 @@ export class FeedbackService {
       channel: this.normalizeBroadcastChannel(this.readString(formValues.channel) || template.channel),
       title: this.readString(formValues.title) || template.title,
       message: this.readString(formValues.message) || template.message,
-      send_timing: this.readString(formValues.send_timing) === "shift" ? "shift" : "now"
+      send_timing: this.readString(formValues.send_timing) === "shift" ? "shift" : "now",
+      dedupe_days: this.normalizeDedupeDays(formValues.dedupe_days),
+      campaign_goal: this.readString(formValues.campaign_goal),
+      internal_note: this.readString(formValues.internal_note)
     };
   }
 
@@ -853,35 +1122,35 @@ export class FeedbackService {
         label: "Nhắc check-in",
         channel: "Email" as BroadcastChannel,
         title: "Nhắc khách chuẩn bị check-in",
-        message: "ABC Resort xin nhắc bạn về booking sắp tới. Vui lòng kiểm tra giờ nhận phòng, chuẩn bị giấy tờ eKYC/CCCD và liên hệ CSKH nếu cần hỗ trợ thêm trước ngày check-in."
+        message: "ABC Resort xin chào {{ten_kh}}. Booking {{ma_giao_dich}} của anh/chị sắp đến ngày nhận phòng. Vui lòng kiểm tra giờ check-in, chuẩn bị CCCD/eKYC và phản hồi CSKH nếu cần hỗ trợ trước chuyến đi."
       },
       {
         key: "today_checkout" as BroadcastAudience,
         label: "Nhắc check-out",
         channel: "SMS" as BroadcastChannel,
         title: "Nhắc lịch check-out hôm nay",
-        message: "ABC Resort xin nhắc bạn về lịch check-out hôm nay. Nếu cần hỗ trợ gia hạn giờ trả phòng, xác nhận dịch vụ phát sinh hoặc hỗ trợ hành lý, vui lòng phản hồi CSKH sớm để được hỗ trợ."
+        message: "ABC Resort xin nhắc anh/chị {{ten_kh}} về lịch check-out hôm nay. Nếu cần hỗ trợ hành lý, gia hạn giờ trả phòng hoặc kiểm tra dịch vụ phát sinh, vui lòng phản hồi CSKH sớm."
       },
       {
         key: "thank_you" as BroadcastAudience,
         label: "Lời cảm ơn",
         channel: "Email" as BroadcastChannel,
         title: "Cảm ơn bạn đã lưu trú tại ABC Resort",
-        message: "ABC Resort cảm ơn bạn đã sử dụng hệ thống và dịch vụ trong kỳ lưu trú vừa qua. CSKH rất mong tiếp tục đồng hành trong chuyến đi tiếp theo và luôn sẵn sàng ghi nhận mọi góp ý để trải nghiệm của bạn ngày càng tốt hơn."
+        message: "ABC Resort cảm ơn anh/chị {{ten_kh}} đã lưu trú cùng chúng tôi. CSKH rất mong được ghi nhận góp ý sau chuyến đi và hy vọng tiếp tục đồng hành trong kỳ nghỉ tiếp theo."
       },
       {
         key: "booking_confirmation" as BroadcastAudience,
         label: "Xác nhận đặt phòng",
         channel: "Email" as BroadcastChannel,
         title: "Xác nhận đặt phòng thành công",
-        message: "ABC Resort xác nhận booking của bạn đã được tạo thành công trên hệ thống. Nếu cần kiểm tra lại thông tin phòng, thêm dịch vụ, đổi lịch hoặc hỏi thủ tục trước chuyến đi, CSKH sẽ hỗ trợ ngay khi bạn cần."
+        message: "ABC Resort xác nhận booking {{ma_giao_dich}} của anh/chị {{ten_kh}} đã được tạo thành công. CSKH sẵn sàng hỗ trợ kiểm tra thông tin phòng, thêm dịch vụ, đổi lịch hoặc hướng dẫn thủ tục trước chuyến đi."
       },
       {
         key: "winback" as BroadcastAudience,
         label: "Giữ chân khách cũ",
         channel: "Mixed" as BroadcastChannel,
         title: "ABC Resort nhớ bạn và có lời mời quay lại",
-        message: "Đã một thời gian bạn chưa quay lại ABC Resort. CSKH muốn gửi lời chào cùng một số gợi ý ưu đãi phù hợp để bạn dễ dàng lên kế hoạch cho kỳ nghỉ tiếp theo với trải nghiệm thuận tiện hơn trước."
+        message: "Đã một thời gian anh/chị {{ten_kh}} chưa quay lại ABC Resort. CSKH gửi lời chào cùng gợi ý ưu đãi phù hợp để anh/chị dễ lên kế hoạch cho kỳ nghỉ tiếp theo."
       }
     ];
   }
@@ -918,16 +1187,27 @@ export class FeedbackService {
     };
   }
 
-  private async getBroadcastPreview(audienceKey: BroadcastAudience) {
-    const [total, items] = await Promise.all([
-      this.fetchAudienceCount(audienceKey),
-      this.fetchAudienceRecipients(audienceKey, 8)
+  private async getBroadcastPreview(draft: BroadcastDraft) {
+    const [total, audienceRecipients] = await Promise.all([
+      this.fetchAudienceCount(draft.audience_key),
+      this.fetchAudienceRecipients(draft.audience_key, 2000)
     ]);
+    const channelRecipients = this.filterRecipientsByChannel(audienceRecipients, draft.channel);
+    const recipients = await this.filterRecentBroadcastRecipients(channelRecipients, draft.audience_key, draft.template_key, draft.dedupe_days);
+    const items = recipients.slice(0, 8);
 
     return {
-      audienceKey,
-      audienceLabel: this.broadcastAudienceLabel(audienceKey),
+      audienceKey: draft.audience_key,
+      audienceLabel: this.broadcastAudienceLabel(draft.audience_key),
+      channel: draft.channel,
+      channelLabel: this.broadcastChannelLabel(draft.channel),
+      channelRequirement: this.broadcastChannelRequirement(draft.channel),
       total,
+      channelReadyTotal: channelRecipients.length,
+      sendableTotal: recipients.length,
+      blockedByChannel: Math.max(0, audienceRecipients.length - channelRecipients.length),
+      dedupedCount: Math.max(0, channelRecipients.length - recipients.length),
+      dedupeDays: draft.dedupe_days,
       items: items.map((item) => this.mapBroadcastRecipient(item))
     };
   }
@@ -953,6 +1233,10 @@ export class FeedbackService {
           c.metadata
         FROM cskh_broadcast_campaign c
         LEFT JOIN nhanvien nv ON nv.manhanvien = c.created_by
+        WHERE NOT (
+          c.title ILIKE 'Thông báo khuyến mãi mới: Smoke Promo %'
+          OR COALESCE(c.metadata->>'promotionName', '') ILIKE 'Smoke Promo %'
+        )
         ORDER BY c.created_at DESC, c.id DESC
         LIMIT $1
       `,
@@ -965,7 +1249,10 @@ export class FeedbackService {
       channelLabel: this.broadcastChannelLabel(item.channel),
       audienceLabel: this.broadcastAudienceLabel(item.audienceKey),
       statusLabel: item.status === "Queued" ? "Đã đưa vào hàng đợi" : item.status,
-      recipientSummary: `${Number(item.recipientCount || 0).toLocaleString("vi-VN")} khách`
+      recipientSummary: `${Number(item.recipientCount || 0).toLocaleString("vi-VN")} khách`,
+      goalLabel: this.broadcastCampaignGoalLabel(item),
+      sendTimingLabel: typeof item.metadata?.sendTimingLabel === "string" ? item.metadata.sendTimingLabel : "Queue CSKH",
+      skippedSummary: this.broadcastSkippedSummary(item.metadata)
     }));
   }
 
@@ -986,6 +1273,83 @@ export class FeedbackService {
     );
 
     return queryResult.rows;
+  }
+
+  private hasBroadcastSelection(formValues: Record<string, unknown>) {
+    return Boolean(
+      this.readString(formValues.template_key)
+      || this.readString(formValues.audience_key)
+      || this.readString(formValues.channel)
+      || this.readString(formValues.title)
+      || this.readString(formValues.message)
+    );
+  }
+
+  private bestDefaultBroadcastAudience(stats: Record<string, unknown>): BroadcastAudience {
+    if (Number(stats.upcomingCheckinCount || 0) > 0) return "upcoming_checkin";
+    if (Number(stats.todayCheckoutCount || 0) > 0) return "today_checkout";
+    if (Number(stats.winbackCount || 0) > 0) return "winback";
+    return "upcoming_checkin";
+  }
+
+  private broadcastCampaignGoalLabel(item: BroadcastCampaignRow) {
+    if (typeof item.metadata?.campaignGoal === "string" && item.metadata.campaignGoal) {
+      return item.metadata.campaignGoal;
+    }
+    if (item.audienceKey === "promotion_auto" || item.metadata?.source === "promotion_auto_create") {
+      return "Thông báo khuyến mãi tự động";
+    }
+    return "Chăm sóc theo tệp khách";
+  }
+
+  private broadcastSkippedSummary(metadata: Record<string, unknown> | null) {
+    const skippedByChannel = Number(metadata?.skippedByChannel || 0);
+    const skippedByDedupe = Number(metadata?.skippedByDedupe || 0);
+    if (!skippedByChannel && !skippedByDedupe) return "";
+    return `${skippedByChannel.toLocaleString("vi-VN")} lệch kênh · ${skippedByDedupe.toLocaleString("vi-VN")} chống trùng`;
+  }
+
+  private filterRecipientsByChannel(recipients: BroadcastRecipientRow[], channel: BroadcastChannel) {
+    return recipients.filter((item) => {
+      if (channel === "Email") return Boolean(item.email);
+      if (channel === "SMS" || channel === "Zalo") return Boolean(item.phone);
+      return Boolean(item.email || item.phone);
+    });
+  }
+
+  private async filterRecentBroadcastRecipients(
+    recipients: BroadcastRecipientRow[],
+    audienceKey: BroadcastAudience,
+    templateKey: BroadcastAudience,
+    dedupeDays: number
+  ) {
+    if (!recipients.length || dedupeDays <= 0) {
+      return recipients;
+    }
+
+    const ids = recipients
+      .map((item) => Number(item.customerId || 0))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (!ids.length) {
+      return recipients;
+    }
+
+    const result = await query<{ customerId: number }>(
+      `
+        SELECT DISTINCT r.customer_id AS "customerId"
+        FROM cskh_broadcast_recipient r
+        INNER JOIN cskh_broadcast_campaign c ON c.id = r.campaign_id
+        WHERE r.customer_id = ANY($1::int[])
+          AND c.audience_key = $2
+          AND c.template_key = $3
+          AND c.created_at >= NOW() - ($4::int * INTERVAL '1 day')
+      `,
+      [ids, audienceKey, templateKey, dedupeDays]
+    );
+    const recentIds = new Set(result.rows.map((item) => Number(item.customerId)));
+
+    return recipients.filter((item) => !item.customerId || !recentIds.has(Number(item.customerId)));
   }
 
   private broadcastAudienceSql(audienceKey: BroadcastAudience) {
@@ -1147,6 +1511,12 @@ export class FeedbackService {
     return aliases[value] ?? "upcoming_checkin";
   }
 
+  private normalizeDedupeDays(value: unknown) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 7;
+    return Math.max(0, Math.min(30, Math.trunc(parsed)));
+  }
+
   private broadcastChannelLabel(channel: BroadcastChannel) {
     return {
       Email: "Email",
@@ -1156,23 +1526,34 @@ export class FeedbackService {
     }[channel] ?? channel;
   }
 
-  private broadcastAudienceLabel(audience: BroadcastAudience) {
+  private broadcastChannelRequirement(channel: BroadcastChannel) {
+    return {
+      Email: "Cần email hợp lệ",
+      SMS: "Cần số điện thoại",
+      Zalo: "Cần số điện thoại/Zalo",
+      Mixed: "Email hoặc số điện thoại"
+    }[channel] ?? "Thông tin liên hệ hợp lệ";
+  }
+
+  private broadcastAudienceLabel(audience: BroadcastAudience | "promotion_auto" | string) {
     return {
       upcoming_checkin: "Khách sắp check-in",
       today_checkout: "Khách check-out hôm nay",
       thank_you: "Khách vừa lưu trú xong",
       booking_confirmation: "Khách vừa đặt phòng thành công",
-      winback: "Khách cần chăm sóc lại"
+      winback: "Khách cần chăm sóc lại",
+      promotion_auto: "Khuyến mãi tự động"
     }[audience] ?? audience;
   }
 
-  private broadcastAudienceNote(audience: BroadcastAudience) {
+  private broadcastAudienceNote(audience: BroadcastAudience | "promotion_auto" | string) {
     return {
       upcoming_checkin: "Dùng để nhắc giấy tờ, eKYC, giờ nhận phòng và hỗ trợ trước chuyến đi.",
       today_checkout: "Dùng để nhắc dịch vụ phát sinh, thời gian trả phòng và hỗ trợ gia hạn giờ ở.",
       thank_you: "Gửi lời cảm ơn sau kỳ lưu trú và mở đường cho feedback hoặc tái đặt.",
       booking_confirmation: "Xác nhận booking mới, tăng yên tâm và giảm nhu cầu gọi lại xác minh.",
-      winback: "Tái kích hoạt khách cũ đã lâu chưa quay lại hệ thống."
+      winback: "Tái kích hoạt khách cũ đã lâu chưa quay lại hệ thống.",
+      promotion_auto: "Thông báo khuyến mãi được tạo tự động từ UC quản lý khuyến mãi."
     }[audience] ?? "";
   }
 
@@ -1184,6 +1565,9 @@ export class FeedbackService {
       loai_dich_vu: this.normalizeServiceType(rawServiceType),
       muc_do_hai_long: input.muc_do_hai_long ?? input.muc_do,
       noi_dung: this.readString(input.noi_dung),
+      booking_key: this.readString(input.booking_key),
+      issue_tags: this.readStringArray(input.issue_tags ?? input.van_de_tags),
+      mong_muon_xu_ly: this.readString(input.mong_muon_xu_ly),
       tepdinhkem: this.readString(input.tepdinhkem ?? input.tep_dinh_kem)
     };
   }
@@ -1193,12 +1577,20 @@ export class FeedbackService {
     const aliases: Record<string, typeof FEEDBACK_SERVICE_TYPES[number]> = {
       LuuTru: "Lưu trú",
       "Lưu trú": "Lưu trú",
+      Phong: "Phòng",
+      "Phòng": "Phòng",
+      CheckInOut: "Check-in/out",
+      "Check-in/out": "Check-in/out",
       NhaHang: "Nhà hàng",
       "Nhà hàng": "Nhà hàng",
       SPA: "SPA",
       Spa: "SPA",
       GiatLa: "Giặt là",
       "Giặt là": "Giặt là",
+      HoBoi: "Hồ bơi",
+      "Hồ bơi": "Hồ bơi",
+      ThanhToan: "Thanh toán",
+      "Thanh toán": "Thanh toán",
       DichVuKhac: "Dịch vụ khác",
       "Dịch vụ khác": "Dịch vụ khác",
       TuVan: "Tư vấn",
@@ -1213,6 +1605,15 @@ export class FeedbackService {
 
   private readString(value: unknown) {
     return typeof value === "string" ? value.trim() : "";
+  }
+
+  private readStringArray(value: unknown) {
+    const rawValues = Array.isArray(value) ? value : (value ? [value] : []);
+    const allowed = new Set<string>(FEEDBACK_ISSUE_TAGS);
+    return rawValues
+      .map((item) => this.readString(item))
+      .filter((item, index, list) => item && allowed.has(item as typeof FEEDBACK_ISSUE_TAGS[number]) && list.indexOf(item) === index)
+      .slice(0, 5);
   }
 
   private async getCustomerSnapshot(customer: CustomerSnapshot): Promise<CustomerSnapshot> {
@@ -1249,19 +1650,308 @@ export class FeedbackService {
   private mapFeedbackListItem(item: FeedbackListRow) {
     const rating = Math.trunc(Math.max(0, Math.min(5, Number(item.danhGia ?? 0))));
     const status = (item.trangThai || "ChuaXuLy") as FeedbackStatus;
+    const ageHours = Math.max(0, Number(item.ageHours || 0));
+    const parsedContent = this.parseFeedbackContext(item.noiDung || "");
+    const sentimentAnalysis = this.analyzeSentiment(parsedContent.displayContent || item.noiDung || "", rating);
+    const displaySentiment = sentimentAnalysis.sentiment;
+    const operational = this.feedbackOperationalMeta({
+      rating,
+      status,
+      sentiment: displaySentiment,
+      serviceType: item.loaiDichVu || "",
+      ageHours,
+      content: `${parsedContent.contextLine} ${parsedContent.displayContent}`,
+      replyCount: Number(item.replyCount || 0)
+    });
 
     return {
       ...item,
+      rawNoiDung: item.noiDung,
+      noiDung: parsedContent.displayContent,
+      contextLine: parsedContent.contextLine,
+      contextItems: parsedContent.contextItems,
       danhGia: rating,
+      sentiment: displaySentiment,
+      diemCamXuc: sentimentAnalysis.score,
+      ageHours,
+      ageLabel: this.formatAgeHours(ageHours),
+      replyCount: Number(item.replyCount || 0),
       stars: "★".repeat(rating) + "☆".repeat(Math.max(0, 5 - rating)),
       statusLabel: this.statusLabel(status),
       statusTone: this.statusTone(status),
-      sentimentLabel: this.sentimentLabel(item.sentiment),
-      sentimentTone: this.sentimentTone(item.sentiment),
+      sentimentLabel: this.sentimentLabel(displaySentiment),
+      sentimentTone: this.sentimentTone(displaySentiment),
+      ...operational,
       ngayTaoLabel: item.ngayTao ? formatDate(item.ngayTao, "DD/MM/YYYY HH:mm") : "",
       ngayTraLoiMoiNhatLabel: item.ngayTraLoiMoiNhat ? formatDate(item.ngayTraLoiMoiNhat, "DD/MM/YYYY HH:mm") : "",
       attachmentUrl: this.attachmentUrl(item.tepDinhKem)
     };
+  }
+
+  private feedbackOperationalMeta(input: {
+    rating: number;
+    status: FeedbackStatus;
+    sentiment: string | null;
+    serviceType: string;
+    ageHours: number;
+    content: string;
+    replyCount: number;
+  }) {
+    const sentiment = String(input.sentiment || "Neutral");
+    const advisory = input.serviceType === "Tư vấn";
+    const positivePraise = sentiment === "Positive" && input.rating >= 4;
+    const targetHours = advisory
+      ? (input.replyCount === 0 ? 2 : 6)
+      : sentiment === "Negative" || input.rating <= 2
+      ? 2
+      : input.rating <= 3 || sentiment === "Neutral"
+        ? 12
+        : 72;
+    const remainingHours = targetHours - input.ageHours;
+    const closed = input.status === "DaXuLy";
+    const slaRelevant = !positivePraise || advisory;
+    const overdue = !closed && slaRelevant && remainingHours < 0;
+    const dueSoon = !closed && slaRelevant && !overdue && remainingHours <= Math.max(1, targetHours * 0.3);
+    const advisoryIntent = advisory ? this.classifyAdvisoryIntent(input.content) : null;
+    const priorityScore = closed
+      ? 0
+      : (advisory ? 24 : 0)
+        + (sentiment === "Negative" ? 45 : 0)
+        + (input.rating <= 2 ? 35 : input.rating === 3 ? 18 : 0)
+        + (overdue ? 35 : dueSoon ? 18 : 0)
+        + (input.replyCount === 0 ? 8 : 0);
+    const priorityTone = priorityScore >= 70 ? "negative" : priorityScore >= 35 ? "pending" : closed ? "done" : advisory ? "processing" : positivePraise ? "positive" : "processing";
+    const priorityLabel = priorityScore >= 70 ? "Khẩn cấp" : priorityScore >= 35 ? "Ưu tiên cao" : closed ? "Đã đóng" : advisory ? "Cần trả lời" : positivePraise ? "Ghi nhận" : "Theo dõi";
+    const slaTone = closed ? "done" : positivePraise ? "positive" : overdue ? "negative" : dueSoon ? "pending" : "processing";
+    const slaLabel = closed
+      ? "Đã đóng SLA"
+      : positivePraise
+        ? "Không khẩn"
+        : overdue
+        ? `Quá SLA ${this.formatAgeHours(Math.abs(remainingHours))}`
+        : `Còn ${this.formatAgeHours(remainingHours)}`;
+
+    return {
+      targetHours,
+      priorityScore,
+      priorityLabel,
+      priorityTone,
+      slaLabel,
+      slaTone,
+      slaOverdue: overdue,
+      dueSoon,
+      actionHint: this.feedbackActionHint(input, overdue),
+      topicTags: advisory ? this.extractAdvisoryTags(input.content) : this.extractFeedbackTags(input.content, input.serviceType),
+      advisoryIntent,
+      advisoryIntentLabel: advisoryIntent ? this.advisoryTopicLabel(advisoryIntent) : "",
+      suggestedReplies: this.suggestFeedbackReplies(input, overdue)
+    };
+  }
+
+  private feedbackActionHint(input: {
+    rating: number;
+    status: FeedbackStatus;
+    sentiment: string | null;
+    serviceType: string;
+    ageHours: number;
+    content: string;
+    replyCount: number;
+  }, overdue: boolean) {
+    if (input.status === "DaXuLy") return "Đã đóng xử lý. Nếu khách phản hồi thêm, mở lại trạng thái Đang xử lý.";
+    if (input.serviceType === "Tư vấn" && input.replyCount === 0) return "Cần phản hồi lần đầu: trả lời trực tiếp câu hỏi, nêu điều kiện nếu có và chốt bước tiếp theo cho khách.";
+    if (input.serviceType === "Tư vấn" && overdue) return "Tư vấn đã quá SLA: ưu tiên trả lời ngay, xác nhận thông tin còn thiếu và giữ trạng thái Đang xử lý nếu cần follow-up.";
+    if (input.serviceType === "Tư vấn") return "Tư vấn đang mở: trả lời đúng ngữ cảnh booking, hỏi thêm dữ liệu còn thiếu và cập nhật trạng thái theo tiến độ.";
+    if (String(input.sentiment || "Neutral") === "Positive" && input.rating >= 4) return "Phản hồi tích cực: cảm ơn khách, ghi nhận điểm mạnh và có thể đóng sau khi trả lời.";
+    if (overdue) return "Đã quá SLA: CSKH nên trả lời ngay, xin lỗi rõ ràng và nêu bước xử lý tiếp theo.";
+    if (String(input.sentiment || "Neutral") === "Negative" || input.rating <= 2) return "Phản hồi tiêu cực: ưu tiên tiếp nhận, xác minh dịch vụ liên quan và trấn an khách.";
+    return "Theo dõi bình thường: cảm ơn khách, ghi nhận ý kiến và đóng khi đã phản hồi đủ.";
+  }
+
+  private extractFeedbackTags(content: string, serviceType: string) {
+    const text = this.normalizeForMatching(content);
+    const hasTerm = (term: string) => {
+      const normalizedTerm = this.normalizeForMatching(term);
+      if (!normalizedTerm) return false;
+      if (normalizedTerm.includes(" ")) return text.includes(normalizedTerm);
+      return new RegExp(`(^|[^a-z0-9])${this.escapeRegExp(normalizedTerm)}([^a-z0-9]|$)`, "i").test(text);
+    };
+    const hasAny = (terms: string[]) => terms.some((term) => hasTerm(term));
+    const tags = new Set<string>();
+    if (serviceType) tags.add(serviceType);
+    const dictionary: Array<[string, string[]]> = [
+      ["Sạch sẽ", ["sạch", "bẩn", "dơ", "vệ sinh", "mùi hôi"]],
+      ["Tốc độ", ["chậm", "lâu", "chờ", "delay", "trễ"]],
+      ["Nhân viên", ["nhân viên", "lễ tân", "phục vụ", "thái độ", "thân thiện"]],
+      ["Phòng", ["phòng", "giường", "máy lạnh", "tắm", "nước", "view"]],
+      ["Thanh toán", ["thanh toán", "cọc", "hoàn tiền", "hóa đơn", "chuyển khoản"]],
+      ["Dịch vụ", ["spa", "nhà hàng", "ăn sáng", "giặt", "dịch vụ"]],
+      ["Tiếng ồn", ["ồn", "ồn ào", "âm thanh", "karaoke"]],
+      ["Booking", ["booking", "đặt phòng", "checkin", "check-in", "checkout", "check-out", "ekyc", "cccd"]],
+      ["Khen ngợi", ["ngon", "tuyệt", "tuyệt vời", "quá đã", "ok", "hài lòng"]]
+    ];
+    for (const [label, terms] of dictionary) {
+      if (hasAny(terms)) tags.add(label);
+    }
+    return Array.from(tags).slice(0, 5);
+  }
+
+  private extractAdvisoryTags(content: string) {
+    const topic = this.classifyAdvisoryIntent(content);
+    const tags = new Set<string>([this.advisoryTopicLabel(topic)]);
+    const text = this.normalizeForMatching(content);
+    const addIf = (label: string, terms: string[]) => {
+      if (terms.some((term) => text.includes(this.normalizeForMatching(term)))) tags.add(label);
+    };
+
+    addIf("Cần mã booking", ["booking", "ma dat", "ma giao dich", "dat phong"]);
+    addIf("Trước lưu trú", ["sap toi", "cuoi tuan", "ngay mai", "check in", "checkin", "nhan phong"]);
+    addIf("Có phát sinh", ["them dich vu", "gia han", "nang hang", "doi lich", "huy", "hoan"]);
+    addIf("Cần xác minh", ["cccd", "ekyc", "thanh toan", "chuyen khoan", "hoa don"]);
+
+    return Array.from(tags).slice(0, 5);
+  }
+
+  private classifyAdvisoryIntent(content: string): Exclude<AdvisoryTopic, "all"> {
+    const text = this.normalizeForMatching(content);
+    const hasAny = (terms: string[]) => terms.some((term) => text.includes(this.normalizeForMatching(term)));
+    if (hasAny(["ekyc", "cccd", "can cuoc", "giay to", "xac minh"])) return "ekyc";
+    if (hasAny(["check in", "checkin", "nhan phong", "check out", "checkout", "tra phong", "gio nhan", "gio tra"])) return "checkin";
+    if (hasAny(["gia", "khuyen mai", "uu dai", "voucher", "ma giam", "combo"])) return "pricing";
+    if (hasAny(["thanh toan", "chuyen khoan", "hoa don", "coc", "hoan tien", "huy"])) return "payment";
+    if (hasAny(["spa", "nha hang", "an sang", "giat", "dua don", "xe", "dich vu"])) return "service";
+    if (hasAny(["phong", "giuong", "view", "loai phong", "nang hang", "tien nghi"])) return "room";
+    if (hasAny(["chinh sach", "quy dinh", "tre em", "thu cung", "hut thuoc", "phu thu"])) return "policy";
+    if (hasAny(["booking", "dat phong", "ma dat", "ma giao dich", "doi lich"])) return "booking";
+    return "other";
+  }
+
+  private getAdvisoryTopics() {
+    return ADVISORY_TOPICS.map((value) => ({
+      value,
+      label: this.advisoryTopicLabel(value)
+    }));
+  }
+
+  private advisoryTopicLabel(topic: AdvisoryTopic) {
+    return {
+      all: "Tất cả nhóm",
+      booking: "Booking",
+      checkin: "Check-in/out",
+      ekyc: "eKYC/giấy tờ",
+      pricing: "Giá/khuyến mãi",
+      payment: "Thanh toán/hủy hoàn",
+      service: "Dịch vụ thêm",
+      room: "Phòng/lưu trú",
+      policy: "Chính sách",
+      other: "Khác"
+    }[topic] ?? "Khác";
+  }
+
+  private advisoryTopicWhere(topic: AdvisoryTopic) {
+    const termsByTopic: Record<Exclude<AdvisoryTopic, "all">, string[]> = {
+      booking: ["booking", "đặt phòng", "dat phong", "mã đặt", "ma dat", "mã giao dịch", "ma giao dich", "đổi lịch", "doi lich"],
+      checkin: ["check-in", "checkin", "check out", "checkout", "nhận phòng", "nhan phong", "trả phòng", "tra phong", "giờ nhận", "gio nhan", "giờ trả", "gio tra"],
+      ekyc: ["ekyc", "cccd", "căn cước", "can cuoc", "giấy tờ", "giay to", "xác minh", "xac minh"],
+      pricing: ["giá", "gia", "khuyến mãi", "khuyen mai", "ưu đãi", "uu dai", "voucher", "combo", "mã giảm", "ma giam"],
+      payment: ["thanh toán", "thanh toan", "chuyển khoản", "chuyen khoan", "hóa đơn", "hoa don", "cọc", "coc", "hoàn tiền", "hoan tien", "hủy", "huy"],
+      service: ["spa", "nhà hàng", "nha hang", "ăn sáng", "an sang", "giặt", "giat", "đưa đón", "dua don", "dịch vụ", "dich vu"],
+      room: ["phòng", "phong", "giường", "giuong", "view", "loại phòng", "loai phong", "nâng hạng", "nang hang", "tiện nghi", "tien nghi"],
+      policy: ["chính sách", "chinh sach", "quy định", "quy dinh", "trẻ em", "tre em", "thú cưng", "thu cung", "hút thuốc", "hut thuoc", "phụ thu", "phu thu"],
+      other: []
+    };
+    if (topic === "all") return "";
+    if (topic === "other") {
+      const knownTerms = Object.entries(termsByTopic)
+        .filter(([key]) => key !== "other")
+        .flatMap(([, terms]) => terms);
+      return `NOT (${knownTerms.map((term) => `ph.noidung ILIKE '%${term.replace(/'/g, "''")}%'`).join(" OR ")})`;
+    }
+    return `(${termsByTopic[topic].map((term) => `ph.noidung ILIKE '%${term.replace(/'/g, "''")}%'`).join(" OR ")})`;
+  }
+
+  private suggestFeedbackReplies(input: {
+    rating: number;
+    status: FeedbackStatus;
+    sentiment: string | null;
+    serviceType: string;
+    ageHours: number;
+    content: string;
+    replyCount: number;
+  }, overdue: boolean) {
+    if (input.serviceType === "Tư vấn") {
+      const intent = this.classifyAdvisoryIntent(input.content);
+      const directTemplates: Record<Exclude<AdvisoryTopic, "all">, string[]> = {
+        booking: [
+          "CSKH đã tiếp nhận câu hỏi của anh/chị về booking. Anh/chị vui lòng gửi thêm mã đặt phòng hoặc ngày lưu trú để CSKH kiểm tra đúng hồ sơ và phản hồi phương án cụ thể.",
+          "ABC Resort có thể hỗ trợ kiểm tra/điều chỉnh thông tin đặt phòng. Anh/chị vui lòng xác nhận mã giao dịch, ngày nhận phòng và nhu cầu cần thay đổi."
+        ],
+        checkin: [
+          "Về thủ tục check-in/check-out, CSKH sẽ hỗ trợ anh/chị theo lịch lưu trú. Anh/chị vui lòng chuẩn bị CCCD/eKYC và cho biết thời gian dự kiến đến resort để được hướng dẫn chính xác.",
+          "CSKH đã ghi nhận câu hỏi về thời gian nhận/trả phòng. Nếu anh/chị cần nhận phòng sớm hoặc trả phòng muộn, CSKH sẽ kiểm tra tình trạng phòng và phản hồi điều kiện áp dụng."
+        ],
+        ekyc: [
+          "Về eKYC/giấy tờ, anh/chị vui lòng chuẩn bị CCCD còn hiệu lực và kiểm tra ảnh tải lên rõ mặt, rõ thông tin. Nếu hồ sơ đang lỗi, CSKH sẽ hướng dẫn bước cần bổ sung.",
+          "CSKH đã tiếp nhận câu hỏi eKYC. Anh/chị cho biết mã booking hoặc số điện thoại đặt phòng để CSKH kiểm tra trạng thái xác minh trên hệ thống."
+        ],
+        pricing: [
+          "CSKH đã ghi nhận nhu cầu về giá/khuyến mãi. Anh/chị vui lòng cho biết ngày lưu trú, số khách và loại phòng mong muốn để CSKH kiểm tra ưu đãi phù hợp nhất.",
+          "ABC Resort hiện có thể tư vấn ưu đãi theo ngày ở và điều kiện áp dụng. Anh/chị gửi thêm thời gian dự kiến để CSKH phản hồi chính xác."
+        ],
+        payment: [
+          "Về thanh toán/hủy hoàn, CSKH sẽ kiểm tra theo mã booking và chính sách áp dụng tại thời điểm đặt. Anh/chị vui lòng gửi mã giao dịch hoặc số điện thoại đặt phòng.",
+          "CSKH đã tiếp nhận câu hỏi liên quan thanh toán. Nếu có chứng từ chuyển khoản hoặc yêu cầu hoàn/hủy, anh/chị vui lòng gửi kèm để bộ phận liên quan đối soát nhanh hơn."
+        ],
+        service: [
+          "CSKH đã tiếp nhận nhu cầu dịch vụ thêm. Anh/chị vui lòng cho biết ngày sử dụng, số lượng khách và dịch vụ mong muốn để CSKH kiểm tra khả dụng và báo điều kiện áp dụng.",
+          "ABC Resort có thể hỗ trợ đặt thêm dịch vụ trước kỳ lưu trú. Anh/chị gửi giúp mã booking và thời gian mong muốn để CSKH tư vấn gói phù hợp."
+        ],
+        room: [
+          "Về thông tin phòng/lưu trú, CSKH sẽ kiểm tra theo ngày ở và loại phòng còn khả dụng. Anh/chị vui lòng cho biết số khách, ngày nhận phòng và nhu cầu cụ thể.",
+          "CSKH đã ghi nhận câu hỏi về phòng. Nếu anh/chị cần đổi/nâng hạng phòng, CSKH sẽ kiểm tra tình trạng phòng và phản hồi phụ phí nếu có."
+        ],
+        policy: [
+          "CSKH đã tiếp nhận câu hỏi về chính sách. Anh/chị vui lòng cho biết tình huống cụ thể để CSKH phản hồi đúng điều kiện áp dụng tại ABC Resort.",
+          "Với nội dung liên quan quy định lưu trú, CSKH sẽ kiểm tra theo chính sách hiện hành và phản hồi lại anh/chị bằng thông tin rõ ràng nhất."
+        ],
+        other: [
+          "CSKH đã tiếp nhận câu hỏi của anh/chị. Anh/chị vui lòng bổ sung mã booking, ngày lưu trú hoặc nhu cầu cụ thể để CSKH hỗ trợ nhanh và chính xác hơn.",
+          "Cảm ơn anh/chị đã liên hệ ABC Resort. CSKH sẽ kiểm tra thông tin liên quan và phản hồi hướng xử lý tiếp theo trong thời gian sớm nhất."
+        ]
+      };
+      return directTemplates[intent];
+    }
+    if (String(input.sentiment || "Neutral") === "Negative" || input.rating <= 2 || overdue) {
+      return [
+        "ABC Resort rất xin lỗi vì trải nghiệm của anh/chị chưa như mong đợi. CSKH đã ghi nhận phản hồi này và sẽ chuyển bộ phận liên quan kiểm tra ngay.",
+        "Cảm ơn anh/chị đã phản hồi cụ thể. CSKH sẽ theo dõi đến khi có hướng xử lý rõ ràng và cập nhật lại cho anh/chị sớm nhất."
+      ];
+    }
+    return [
+      "ABC Resort cảm ơn anh/chị đã chia sẻ trải nghiệm. CSKH đã ghi nhận ý kiến này để cải thiện chất lượng phục vụ.",
+      "Rất vui khi nhận được phản hồi từ anh/chị. Nếu cần hỗ trợ thêm, CSKH luôn sẵn sàng tiếp nhận và xử lý."
+    ];
+  }
+
+  private formatAgeHours(value: number) {
+    const hours = Math.max(0, Number(value || 0));
+    if (hours < 1) return `${Math.max(1, Math.round(hours * 60))} phút`;
+    if (hours < 24) return `${Math.round(hours)} giờ`;
+    return `${Math.floor(hours / 24)} ngày ${Math.round(hours % 24)} giờ`;
+  }
+
+  private normalizeForMatching(value: string) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  private escapeRegExp(value: string) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   private mapFeedbackReply(item: FeedbackReplyRow) {
@@ -1321,10 +2011,51 @@ export class FeedbackService {
       trang_thai: z.string().optional().default("all"),
       danh_gia: z.string().optional().default("all"),
       loai_dich_vu: z.string().optional().default("all"),
+      tu_van_nhom: z.enum(ADVISORY_TOPICS).optional().default("all"),
       sentiment: z.string().optional().default("all"),
+      uu_tien: z.string().optional().default("all"),
       tu_ngay: z.string().optional().default(""),
       den_ngay: z.string().optional().default(""),
       page: z.coerce.number().optional().default(1)
     }).parse(rawFilters ?? {});
+  }
+
+  private feedbackPriorityWhere(priority: string) {
+    const overdueSql = `
+      ph.tinhtrang <> 'DaXuLy'
+      AND (
+        CASE
+          WHEN COALESCE(ph.sentiment, 'Neutral') = 'Negative' OR COALESCE(ph.mucdohailong, 0) <= 2
+            THEN EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 > 2
+          WHEN ph.loaidichvu = 'Tư vấn'
+            THEN EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 > 6
+          WHEN COALESCE(ph.mucdohailong, 0) <= 3
+            THEN EXTRACT(EPOCH FROM (NOW() - ph.ngayphanhoi)) / 3600 > 12
+          ELSE FALSE
+        END
+      )
+    `;
+    const urgentSql = `
+      ph.tinhtrang <> 'DaXuLy'
+      AND (
+        COALESCE(ph.sentiment, 'Neutral') = 'Negative'
+        OR COALESCE(ph.mucdohailong, 0) <= 2
+        OR ph.loaidichvu = 'Tư vấn'
+      )
+    `;
+    const highSql = `
+      ph.tinhtrang <> 'DaXuLy'
+      AND (
+        COALESCE(ph.sentiment, 'Neutral') = 'Negative'
+        OR COALESCE(ph.mucdohailong, 0) <= 3
+        OR ph.loaidichvu = 'Tư vấn'
+      )
+    `;
+
+    return {
+      urgent: urgentSql,
+      high: highSql,
+      overdue: overdueSql
+    }[priority] || "";
   }
 }

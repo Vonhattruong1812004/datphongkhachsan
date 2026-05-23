@@ -20,6 +20,17 @@ export async function renderSearchPage(req: Request, res: Response) {
     payload = {
       filters: searchFiltersFromRequest(req.query),
       count: 0,
+      summary: {
+        hasStayDates: false,
+        checkinLabel: "Chưa chọn",
+        checkoutLabel: "Chưa chọn",
+        nights: 0,
+        heldRoomCount: 0,
+        sortLabel: "Gợi ý thông minh",
+        bestPrice: 0,
+        bestPriceFormatted: "Chưa có",
+        depositPolicyLabel: "Cọc 50% qua SePay, giữ phòng 10 phút"
+      },
       items: []
     };
   }
@@ -28,6 +39,7 @@ export async function renderSearchPage(req: Request, res: Response) {
     title: "Tim phong",
     rooms: payload.items,
     filters: payload.filters,
+    summary: payload.summary,
     promotions: await bookingService.getActivePromotions(),
     errorMessage
   });
@@ -43,6 +55,111 @@ export async function searchRoomsApi(req: Request, res: Response) {
   });
 }
 
+export async function renderMultiRoomBookingPage(req: Request, res: Response) {
+  const payload = await bookingService.searchRooms(req.query);
+  const profile = await bookingService.getCustomerBookingProfile(req.session.user?.maKhachHang);
+
+  return res.render("booking/multi", {
+    title: "Đặt phòng online",
+    rooms: payload.items,
+    filters: payload.filters,
+    summary: payload.summary,
+    promotions: await bookingService.getActivePromotions(),
+    services: await bookingService.getActiveServices(),
+    user: req.session.user,
+    staffMode: readText(req.query.staff_mode),
+    formValues: {
+      ten_khach: profile?.tenKh ?? req.session.user?.displayName ?? "",
+      email: profile?.email ?? req.session.user?.email ?? "",
+      sdt: profile?.sdt ?? req.session.user?.phone ?? "",
+      cccd: profile?.cccd ?? req.session.user?.cccd ?? "",
+      so_nguoi: Number(readText(req.query.so_khach, "1") || 1),
+      ngay_nhan: readText(req.query.ngay_nhan),
+      ngay_tra: readText(req.query.ngay_tra),
+      ma_km: readText(req.query.ma_km),
+      room_ids: readTextArray(req.query.room_ids),
+      services_json: "[]"
+    },
+    errorMessage: ""
+  });
+}
+
+export async function submitMultiRoomBooking(req: Request, res: Response) {
+  let payload: Awaited<ReturnType<BookingService["searchRooms"]>>;
+  try {
+    payload = await bookingService.searchRooms(req.body);
+  } catch {
+    payload = {
+      filters: searchFiltersFromRequest(req.body),
+      count: 0,
+      summary: {
+        hasStayDates: false,
+        checkinLabel: "Chưa chọn",
+        checkoutLabel: "Chưa chọn",
+        nights: 0,
+        heldRoomCount: 0,
+        sortLabel: "Gợi ý thông minh",
+        bestPrice: 0,
+        bestPriceFormatted: "Chưa có",
+        depositPolicyLabel: "Cọc 50% qua SePay, giữ phòng 10 phút"
+      },
+      items: []
+    };
+  }
+  const profile = await bookingService.getCustomerBookingProfile(req.session.user?.maKhachHang);
+  const formValues = {
+    ten_khach: readText(req.body.ten_khach) || profile?.tenKh || req.session.user?.displayName || "",
+    email: readText(req.body.email) || profile?.email || req.session.user?.email || "",
+    sdt: readText(req.body.sdt) || profile?.sdt || req.session.user?.phone || "",
+    cccd: readText(req.body.cccd) || profile?.cccd || req.session.user?.cccd || "",
+    so_nguoi: Number(readText(req.body.so_nguoi, "1") || 1),
+    ngay_nhan: readText(req.body.ngay_nhan),
+    ngay_tra: readText(req.body.ngay_tra),
+    ma_km: readText(req.body.ma_km),
+    room_ids: readTextArray(req.body.room_ids),
+    services_json: readText(req.body.services_json, "[]")
+  };
+  const bookingInput = {
+    room_ids: formValues.room_ids,
+    ten_khach: formValues.ten_khach,
+    email: formValues.email,
+    sdt: formValues.sdt,
+    cccd: formValues.cccd,
+    so_nguoi: formValues.so_nguoi,
+    ngay_nhan: formValues.ngay_nhan,
+    ngay_tra: formValues.ngay_tra,
+    ma_km: formValues.ma_km || null,
+    services: formValues.services_json
+  };
+
+  try {
+    const hold = await bookingService.createCustomerMultiRoomPaymentHold(bookingInput, req.session.user?.maKhachHang ?? 0);
+    req.session.recentBookingHoldId = hold.holdId;
+    return res.render("booking/multi-payment", {
+      title: "Thanh toán cọc đặt phòng online",
+      hold,
+      preview: hold.preview,
+      filters: searchParamsFromRequest(req.body),
+      formValues
+    });
+  } catch (error) {
+    const errorMessage = formatBookingError(error);
+    const statusCode = error instanceof HttpError ? error.statusCode : (error instanceof ZodError ? 422 : 500);
+    return res.status(statusCode).render("booking/multi", {
+      title: "Đặt phòng online",
+      rooms: payload.items,
+      filters: payload.filters,
+      summary: payload.summary,
+      promotions: await bookingService.getActivePromotions(),
+      services: await bookingService.getActiveServices(),
+      user: req.session.user,
+      staffMode: readText(req.body.staff_mode),
+      formValues,
+      errorMessage
+    });
+  }
+}
+
 export async function previewBookingApi(req: Request, res: Response) {
   const payload = await bookingService.previewBooking(req.body);
 
@@ -50,6 +167,17 @@ export async function previewBookingApi(req: Request, res: Response) {
     ok: true,
     message: "Preview booking thanh cong.",
     data: payload
+  });
+}
+
+export async function createMultiRoomBookingApi(req: Request, res: Response) {
+  const hold = await bookingService.createCustomerMultiRoomPaymentHold(req.body, req.session.user?.maKhachHang ?? 0);
+  req.session.recentBookingHoldId = hold.holdId;
+
+  return res.status(202).json({
+    ok: true,
+    message: "Da tao QR coc 50%. Booking nhieu phong se duoc tao sau khi SePay xac nhan.",
+    data: hold
   });
 }
 
@@ -268,9 +396,12 @@ function searchParamsFromRequest(source: Record<string, unknown>) {
     "hotel_name",
     "so_khach",
     "gia_goi_y",
+    "gia_tu",
+    "gia_den",
     "ngay_nhan",
     "ngay_tra",
-    "sort_by"
+    "sort_by",
+    "staff_mode"
   ];
 
   return keys.reduce<Record<string, string>>((acc, key) => {
@@ -294,6 +425,8 @@ function searchFiltersFromRequest(source: Record<string, unknown>): SearchBookin
     hotel_name: values.hotel_name,
     so_khach: safeNumber(values.so_khach),
     gia_goi_y: safeNumber(values.gia_goi_y),
+    gia_tu: safeNumber(values.gia_tu),
+    gia_den: safeNumber(values.gia_den),
     ngay_nhan: values.ngay_nhan,
     ngay_tra: values.ngay_tra,
     sort_by: sortBy
@@ -312,4 +445,13 @@ function readText(value: unknown, fallback = "") {
   }
 
   return value == null ? fallback : String(value);
+}
+
+function readTextArray(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+  }
+
+  const normalized = String(value ?? "").trim();
+  return normalized ? [normalized] : [];
 }

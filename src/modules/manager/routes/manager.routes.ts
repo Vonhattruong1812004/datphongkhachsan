@@ -23,7 +23,11 @@ import {
   renderCustomers,
   renderManagerHome,
   renderPromotions,
+  renderRefundApprovals,
   renderRooms,
+  refundApprovalsApi,
+  reviewRefundAction,
+  reviewRefundApi,
   roomsApi,
   saveCustomerAction,
   saveCustomerApi,
@@ -64,6 +68,7 @@ const upload = multer({
 managerRouter.get("/", requireRole([ROLE.QUAN_LY]), asyncHandler(renderManagerHome));
 managerRouter.get("/customers", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomers));
 managerRouter.get("/rooms", requireRole([ROLE.QUAN_LY]), asyncHandler(renderRooms));
+managerRouter.get("/refunds", requireRole([ROLE.QUAN_LY]), asyncHandler(renderRefundApprovals));
 managerRouter.get("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(renderPromotions));
 managerRouter.get("/customers/new", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomerNew));
 managerRouter.get("/customers/export.csv", requireRole([ROLE.QUAN_LY]), asyncHandler(exportCustomersCsv));
@@ -73,6 +78,7 @@ managerRouter.post("/customers", requireRole([ROLE.QUAN_LY]), asyncHandler(saveC
 managerRouter.post("/customers/:id/delete", requireRole([ROLE.QUAN_LY]), asyncHandler(deleteCustomerAction));
 managerRouter.post("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(savePromotionAction));
 managerRouter.post("/promotions/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(deletePromotionAction));
+managerRouter.post("/refunds/review", requireRole([ROLE.QUAN_LY]), asyncHandler(reviewRefundAction));
 managerRouter.post("/rooms", requireRole([ROLE.QUAN_LY]), upload.single("hinh_anh_file"), validateCsrfToken, asyncHandler(saveRoomAction));
 managerRouter.post("/rooms/:id/delete", requireRole([ROLE.QUAN_LY]), validateCsrfToken, asyncHandler(deleteRoomAction));
 
@@ -83,6 +89,8 @@ managerApiRouter.post("/customers/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.A
 managerApiRouter.get("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(promotionsApi));
 managerApiRouter.post("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(savePromotionApi));
 managerApiRouter.post("/promotions/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(deletePromotionApi));
+managerApiRouter.get("/refunds", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(refundApprovalsApi));
+managerApiRouter.post("/refunds/review", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(reviewRefundApi));
 managerApiRouter.get("/rooms", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(roomsApi));
 managerApiRouter.post("/rooms", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), upload.single("hinh_anh_file"), validateCsrfToken, asyncHandler(saveRoomApi));
 managerApiRouter.post("/rooms/:id/delete", requireRole([ROLE.QUAN_LY, ROLE.ADMIN]), validateCsrfToken, asyncHandler(deleteRoomApi));

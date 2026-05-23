@@ -958,8 +958,8 @@ async function main() {
     }
 
     const cancelBookingPayload = {
-      ngay_den: ngayDen,
-      ngay_di: ngayDi,
+      ngay_den: dateInput(8),
+      ngay_di: dateInput(9),
       so_nguoi: 1,
       leader_ten_kh: "Smoke Cancel Test",
       leader_cccd: cancelLeaderCccd,
@@ -1138,7 +1138,7 @@ async function main() {
           COALESCE(SUM(amount_requested), 0)::numeric AS total
         FROM refund_requests
         WHERE magiaodich = $1
-          AND status = 'ChoXuLy'
+          AND status = 'ChoQuanLyDuyet'
       `,
       [cancelTransactionId]
     );

@@ -8,6 +8,10 @@
   const advisoryMoments = payload.advisoryMoments || [];
   const channels = payload.channels || [];
   const favoriteHotels = payload.favoriteHotels || [];
+  const supportState = payload.supportState || {};
+  const journeyActions = payload.journeyActions || [];
+  const supportPlaybooks = payload.supportPlaybooks || [];
+  const advisoryTickets = payload.advisoryTickets || [];
   const displayName = profile.tenKh || user?.displayName || "Quý khách";
 %>
 <style>
@@ -16,7 +20,7 @@
   .adv-shell::before,.adv-shell::after{content:"";position:absolute;pointer-events:none;border-radius:999px;z-index:-1;opacity:.42;animation:adv-orbit 14s ease-in-out infinite alternate}
   .adv-shell::before{right:-180px;top:-240px;width:520px;height:520px;background:conic-gradient(from 120deg,rgba(14,165,233,.42),rgba(20,184,166,.36),rgba(250,204,21,.28),rgba(251,113,133,.20),rgba(14,165,233,.42))}
   .adv-shell::after{left:-210px;bottom:-260px;width:520px;height:520px;background:conic-gradient(from 30deg,rgba(251,113,133,.22),rgba(245,158,11,.20),rgba(45,212,191,.28),rgba(14,165,233,.20),rgba(251,113,133,.22));animation-delay:-4s}
-  .adv-hero,.adv-stat,.adv-panel,.adv-card,.adv-channel,.adv-booking{border:1px solid rgba(16,32,51,.10);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.72));box-shadow:0 26px 72px rgba(12,39,64,.12);backdrop-filter:blur(22px)}
+  .adv-hero,.adv-stat,.adv-panel,.adv-card,.adv-channel,.adv-booking,.adv-status,.adv-ticket,.adv-step{border:1px solid rgba(16,32,51,.10);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.72));box-shadow:0 26px 72px rgba(12,39,64,.12);backdrop-filter:blur(22px)}
   .adv-hero{position:relative;overflow:hidden;border-radius:38px;padding:32px;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:center}
   .adv-hero::before{content:"";position:absolute;right:46px;top:30px;width:132px;height:132px;border-radius:42px;background:linear-gradient(135deg,rgba(14,165,233,.24),rgba(20,184,166,.18),rgba(251,113,133,.15));transform:rotate(18deg);animation:adv-breathe 5.5s ease-in-out infinite}
   .adv-kicker{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;border:1px solid rgba(20,184,166,.18);background:rgba(20,184,166,.12);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
@@ -32,6 +36,9 @@
   .adv-focus{position:relative;z-index:1;border-radius:28px;padding:20px;background:rgba(255,255,255,.62);border:1px solid rgba(16,32,51,.08)}
   .adv-focus strong{display:block;color:#102033;font-size:28px;letter-spacing:-.05em}
   .adv-focus span{display:block;margin-top:8px;color:#5f778f;font-size:13px;line-height:1.6}
+  .adv-status{border-radius:28px;padding:18px;margin:18px 0 0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center}
+  .adv-status h2{margin:0;color:#102033;font-size:24px;letter-spacing:-.04em}
+  .adv-status p{margin:6px 0 0;color:#5f778f;font-size:14px;line-height:1.55}
   .adv-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
   .adv-stat{border-radius:24px;padding:17px}
   .adv-stat span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
@@ -46,6 +53,8 @@
   .adv-badge{display:inline-flex;border-radius:999px;padding:6px 10px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.06em;text-transform:uppercase}
   .adv-card h3,.adv-channel h3,.adv-booking h3{margin:12px 0 8px;color:#102033;font-size:24px;letter-spacing:-.045em}
   .adv-card p,.adv-channel p,.adv-booking p{margin:0;color:#5f778f;font-size:14px;line-height:1.6}
+  .adv-meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .adv-mini{display:inline-flex;align-items:center;min-height:28px;border-radius:999px;padding:5px 9px;background:rgba(14,165,233,.10);border:1px solid rgba(14,165,233,.14);color:#0369a1;font-size:11px;font-weight:950}
   .adv-card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
   .adv-chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .adv-chip{display:inline-flex;align-items:center;border-radius:999px;padding:8px 11px;border:1px solid rgba(16,32,51,.08);background:rgba(255,255,255,.72);color:#14314b;font-size:12px;font-weight:900}
@@ -54,6 +63,16 @@
   .adv-line span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
   .adv-line strong{display:block;margin-top:7px;color:#102033;font-size:18px}
   .adv-line p{margin:8px 0 0;color:#5f778f;font-size:13px;line-height:1.55}
+  .adv-step-list,.adv-ticket-list{display:grid;gap:12px}
+  .adv-step,.adv-ticket{border-radius:24px;padding:16px}
+  .adv-step-head,.adv-ticket-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .adv-step h3,.adv-ticket h3{margin:0;color:#102033;font-size:18px;letter-spacing:-.035em}
+  .adv-step p,.adv-ticket p{margin:9px 0 0;color:#5f778f;font-size:13px;line-height:1.55}
+  .adv-step .adv-button{margin-top:12px}
+  .adv-tone{display:inline-flex;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:1000;border:1px solid rgba(16,32,51,.08);background:rgba(148,163,184,.12);color:#475569;white-space:nowrap}
+  .adv-tone.is-done{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.16);color:#047857}
+  .adv-tone.is-active{background:rgba(14,165,233,.12);border-color:rgba(14,165,233,.16);color:#0369a1}
+  .adv-tone.is-warn{background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.18);color:#b45309}
   .adv-channel-list,.adv-booking-list{display:grid;gap:12px}
   .adv-channel,.adv-booking{border-radius:24px;padding:18px}
   .adv-channel .adv-button,.adv-booking .adv-button{margin-top:14px}
@@ -61,8 +80,8 @@
   @keyframes adv-orbit{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
   @keyframes adv-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
   @keyframes adv-breathe{0%,100%{transform:rotate(18deg) scale(1)}50%{transform:rotate(25deg) scale(1.04)}}
-  @media(max-width:1080px){.adv-hero,.adv-layout{grid-template-columns:1fr}.adv-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media(max-width:700px){.adv-shell{padding:22px 12px 48px}.adv-hero,.adv-panel,.adv-stat,.adv-card,.adv-channel,.adv-booking{border-radius:26px;padding:20px}.adv-stats,.adv-grid{grid-template-columns:1fr}.adv-focus{display:none}}
+  @media(max-width:1080px){.adv-hero,.adv-layout{grid-template-columns:1fr}.adv-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.adv-status{grid-template-columns:1fr}}
+  @media(max-width:700px){.adv-shell{padding:22px 12px 48px}.adv-hero,.adv-panel,.adv-stat,.adv-card,.adv-channel,.adv-booking,.adv-status,.adv-step,.adv-ticket{border-radius:26px;padding:20px}.adv-stats,.adv-grid{grid-template-columns:1fr}.adv-focus{display:none}}
 </style>
 
 <main class="adv-shell">
@@ -83,16 +102,27 @@
       <div class="adv-chip-grid">
         <% if (profile.email) { %><span class="adv-chip"><%= profile.email %></span><% } %>
         <% if (profile.sdt) { %><span class="adv-chip"><%= profile.sdt %></span><% } %>
-        <% if (!profile.email && !profile.sdt) { %><span class="adv-chip">Hồ sơ sẵn sàng để bắt đầu tư vấn</span><% } %>
+        <% if (!profile.email && !profile.sdt) { %><span class="adv-chip">Chưa có thông tin liên hệ</span><% } %>
       </div>
     </aside>
   </section>
 
+  <section class="adv-status" aria-label="Trạng thái hỗ trợ">
+    <div>
+      <h2><%= supportState.headline || "Trung tâm tư vấn khách hàng" %></h2>
+      <p><%= supportState.detail || "Chọn AI, CSKH hoặc Zalo theo mức độ cần hỗ trợ." %></p>
+    </div>
+    <div class="adv-actions" style="margin-top:0;">
+      <% if (!supportState.hasContact) { %><a class="adv-button adv-button--support" href="/customer/profile">Bổ sung liên hệ</a><% } %>
+      <% if (supportState.openTicketCount) { %><a class="adv-button" href="#advisoryTickets">Xem ticket mở</a><% } %>
+    </div>
+  </section>
+
   <section class="adv-stats">
-    <article class="adv-stat"><span>Tổng booking</span><strong><%= stats.totalBookings || 0 %></strong></article>
+    <article class="adv-stat"><span>Tổng đặt phòng</span><strong><%= stats.totalBookings || 0 %></strong></article>
     <article class="adv-stat"><span>Booking sắp tới</span><strong><%= stats.bookedCount || 0 %></strong></article>
+    <article class="adv-stat"><span>Ticket tư vấn mở</span><strong><%= stats.openAdvisoryCount || 0 %></strong></article>
     <article class="adv-stat"><span>Dịch vụ đã dùng</span><strong><%= stats.serviceLineCount || 0 %></strong></article>
-    <article class="adv-stat"><span>Cơ sở quen thuộc</span><strong><%= stats.favoriteHotelCount || 0 %></strong></article>
   </section>
 
   <section class="adv-layout">
@@ -111,12 +141,37 @@
               <span class="adv-badge"><%= topic.key.toUpperCase() %></span>
               <h3><%= topic.title %></h3>
               <p><%= topic.description %></p>
+              <div class="adv-meta-row">
+                <span class="adv-mini"><%= topic.channel || "AI" %></span>
+                <span class="adv-mini"><%= topic.responseTarget || "Tư vấn nhanh" %></span>
+              </div>
               <div class="adv-card-actions">
                 <button class="adv-button adv-button--primary" type="button" data-open-ai data-ai-prompt="<%= topic.prompt %>">Mở chat</button>
                 <% if (topic.key === "support") { %>
                   <a class="adv-button adv-button--support" href="/feedback/advisory/new">Sang CSKH</a>
                 <% } %>
               </div>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="adv-panel" style="margin-top:18px;">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Checklist hỗ trợ</h2>
+            <p class="adv-muted">Các mục cần sẵn sàng để CSKH xử lý nhanh, không phải hỏi lại nhiều lần.</p>
+          </div>
+        </div>
+        <div class="adv-step-list">
+          <% journeyActions.forEach((item) => { %>
+            <article class="adv-step">
+              <div class="adv-step-head">
+                <h3><%= item.label %></h3>
+                <span class="adv-tone is-<%= item.tone || "neutral" %>"><%= item.value %></span>
+              </div>
+              <p><%= item.detail %></p>
+              <a class="adv-button" href="<%= item.href %>"><%= item.action %></a>
             </article>
           <% }) %>
         </div>
@@ -157,6 +212,28 @@
 
     <div>
       <section class="adv-panel">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Chọn đúng kênh</h2>
+            <p class="adv-muted">Phân luồng theo mức độ: hỏi thông tin, cần xác minh dữ liệu hoặc cần hỗ trợ gấp.</p>
+          </div>
+        </div>
+        <div class="adv-step-list">
+          <% supportPlaybooks.forEach((item) => { %>
+            <article class="adv-step">
+              <div class="adv-step-head">
+                <h3><%= item.label %></h3>
+                <span class="adv-tone is-active"><%= item.channel %></span>
+              </div>
+              <p><%= item.detail %></p>
+              <div class="adv-meta-row"><span class="adv-mini"><%= item.target %></span></div>
+              <button class="adv-button" type="button" data-open-ai data-ai-prompt="<%= item.prompt %>">Soạn câu hỏi</button>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="adv-panel" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
             <h2>Tình huống nổi bật</h2>
@@ -204,6 +281,37 @@
             </article>
           <% }) %>
         </div>
+      </section>
+
+      <section class="adv-panel" id="advisoryTickets" style="margin-top:18px;">
+        <div class="adv-panel-head">
+          <div>
+            <h2>Yêu cầu gần đây</h2>
+            <p class="adv-muted">Theo dõi các câu hỏi đã gửi CSKH để tránh tạo trùng ticket.</p>
+          </div>
+        </div>
+        <% if (!advisoryTickets.length) { %>
+          <div class="adv-empty">Chưa có yêu cầu tư vấn nào. Khi cần người thật xử lý, hãy tạo yêu cầu CSKH.</div>
+        <% } else { %>
+          <div class="adv-ticket-list">
+            <% advisoryTickets.forEach((ticket) => { %>
+              <article class="adv-ticket">
+                <div class="adv-ticket-head">
+                  <h3>#<%= ticket.id %> · <%= ticket.createdLabel %></h3>
+                  <span class="adv-tone is-<%= ticket.statusTone || "neutral" %>"><%= ticket.statusLabel %></span>
+                </div>
+                <p><%= ticket.preview %></p>
+                <% if (ticket.lastReplyPreview) { %>
+                  <div class="adv-line" style="margin-top:12px;box-shadow:none;">
+                    <span>CSKH phản hồi <%= ticket.lastReplyLabel || "" %></span>
+                    <p><%= ticket.lastReplyPreview %></p>
+                  </div>
+                <% } %>
+                <div class="adv-meta-row"><span class="adv-mini"><%= ticket.replyCount || 0 %> trả lời</span></div>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
       </section>
     </div>
   </section>

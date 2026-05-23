@@ -45,8 +45,15 @@
   .service-table td:last-child{border-right:1px solid rgba(19,48,74,.08);border-radius:0 16px 16px 0}
   .detail-total{font-size:24px!important;color:#0f766e!important}
   .detail-empty{border:1px dashed rgba(19,48,74,.16);border-radius:22px;padding:18px;background:rgba(255,255,255,.56);color:#5f778f}
+  .detail-cancel{border-color:rgba(244,63,94,.18);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,241,242,.62))}
+  .detail-cancel h2{color:#be123c}
+  .detail-cancel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+  .detail-cancel-field{display:grid;gap:6px}
+  .detail-cancel-field label{font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em;color:#173651}
+  .detail-cancel-field input,.detail-cancel-field textarea{width:100%;box-sizing:border-box;min-height:43px;border-radius:14px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.92);padding:9px 12px;color:#102033;font:inherit}
+  .detail-cancel-field textarea{min-height:82px;resize:vertical}
   @keyframes detail-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,20px,0) rotate(14deg)}}
-  @media(max-width:980px){.detail-layout{grid-template-columns:1fr}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:980px){.detail-layout{grid-template-columns:1fr}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-cancel-grid{grid-template-columns:1fr}}
   @media(max-width:640px){.detail-shell{padding:22px 12px 48px}.detail-hero,.detail-card{border-radius:26px;padding:20px}.detail-grid{grid-template-columns:1fr}.service-table{display:block;overflow-x:auto;white-space:nowrap}.detail-hero::before{width:80px;height:80px;right:18px}}
 </style>
 
@@ -61,11 +68,9 @@
         <a class="detail-button" href="/customer/bookings/<%= booking.id %>/edit">Sửa thông tin đặt phòng</a>
       <% } %>
       <% if (booking.cancelable) { %>
-        <form method="post" action="/customer/bookings/<%= booking.id %>/cancel">
-          <button class="detail-button" type="submit">Hủy booking</button>
-        </form>
+        <a class="detail-button" href="#cancelBooking">Hủy booking</a>
       <% } %>
-      <a class="detail-button" href="/customer/bookings">Quay lại lịch sử</a>
+      <a class="detail-button" href="/customer/bookings">Quay lại quản lý đặt phòng</a>
     </div>
   </section>
 
@@ -139,6 +144,47 @@
           </table>
         <% } %>
       </section>
+
+      <% if (booking.cancelable) { const cancel = booking.cancelPreview || {}; %>
+        <section class="detail-card detail-cancel" id="cancelBooking">
+          <h2>Hủy booking và hoàn cọc</h2>
+          <div class="detail-grid">
+            <div class="detail-box"><span>Chính sách</span><strong><%= cancel.policy?.label || "Đang tính" %></strong></div>
+            <div class="detail-box"><span>Cọc đã ghi nhận</span><strong><%= cancel.paidDepositFormatted || "0 đ" %></strong></div>
+            <div class="detail-box"><span>Dự kiến hoàn</span><strong><%= cancel.refundAmountFormatted || "0 đ" %></strong></div>
+          </div>
+          <p class="detail-muted"><%= cancel.policy?.note || "" %> <%= cancel.statusText || "" %></p>
+          <form method="post" action="/customer/bookings/<%= booking.id %>/cancel" onsubmit="return confirm('Bạn xác nhận hủy booking <%= booking.bookingCode || `GD-${booking.id}` %>?');">
+            <div class="detail-cancel-grid">
+              <div class="detail-cancel-field" style="grid-column:1/-1">
+                <label>Lý do hủy *</label>
+                <textarea name="reason" required minlength="6" placeholder="Nhập lý do hủy để resort ghi nhận và xử lý hoàn tiền nếu có."></textarea>
+              </div>
+              <% if (cancel.needsBankInfo) { %>
+                <div class="detail-cancel-field">
+                  <label>Ngân hàng nhận hoàn *</label>
+                  <input name="refund_bank_name" required placeholder="VD: Vietcombank" />
+                </div>
+                <div class="detail-cancel-field">
+                  <label>Số tài khoản *</label>
+                  <input name="refund_account_no" required inputmode="numeric" pattern="[0-9]{4,32}" placeholder="Chỉ nhập số" />
+                </div>
+                <div class="detail-cancel-field">
+                  <label>Chủ tài khoản *</label>
+                  <input name="refund_account_name" required placeholder="Tên đúng trên ngân hàng" />
+                </div>
+                <div class="detail-cancel-field" style="grid-column:1/-1">
+                  <label>Ghi chú hoàn tiền</label>
+                  <input name="refund_note" placeholder="Thông tin bổ sung cho quản lý/kế toán nếu có" />
+                </div>
+              <% } %>
+            </div>
+            <div class="detail-actions">
+              <button class="detail-button" type="submit">Xác nhận hủy booking</button>
+            </div>
+          </form>
+        </section>
+      <% } %>
     </div>
 
     <aside>

@@ -2,14 +2,9 @@
 <%- include("../partials/header") %>
 <%
   const filters = payload.filters || {};
-  const reportType = filters.loai_baocao || "doanhthu";
+  const reportType = filters.loai_baocao || "tonghop";
   const hotelOptions = payload.hotelOptions || [];
-  const queryString = new URLSearchParams(filters).toString();
-  const csvQueryString = new URLSearchParams({ ...filters, format: "csv" }).toString();
-  const jsonQueryString = new URLSearchParams({ ...filters, format: "json" }).toString();
-  const isRevenue = reportType === "doanhthu";
-  const isExpense = reportType === "chiphi";
-  const isSummary = reportType === "tonghop";
+  const statusOptions = payload.statusOptions || [{ value: "all", label: "Tất cả" }];
 %>
 
 <style>
@@ -24,46 +19,17 @@
     --report-yellow: #ffd166;
     --report-pink: #ff6fa3;
     --report-violet: #8b6bff;
-    --report-shadow: 0 28px 86px rgba(18, 38, 63, .16);
+    --report-shadow: 0 24px 56px rgba(15, 82, 112, .13);
+    --report-card-shadow: 0 14px 32px rgba(15, 82, 112, .09);
     min-height: calc(100vh - 84px);
     position: relative;
-    isolation: isolate;
-    overflow: hidden;
     padding: 34px 18px 58px;
     color: var(--report-ink);
     background:
-      radial-gradient(circle at 9% 12%, rgba(33, 207, 166, .30), transparent 27%),
-      radial-gradient(circle at 82% 10%, rgba(255, 111, 163, .18), transparent 30%),
-      radial-gradient(circle at 46% 104%, rgba(183, 239, 74, .22), transparent 38%),
-      linear-gradient(135deg, #fbfffb 0%, #eafcff 39%, #fff7ed 100%);
-  }
-
-  .report-home::before,
-  .report-home::after {
-    content: "";
-    position: absolute;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  .report-home::before {
-    width: 620px;
-    height: 620px;
-    top: -310px;
-    right: -170px;
-    border-radius: 48% 52% 42% 58%;
-    opacity: .38;
-    background: conic-gradient(from 180deg, rgba(24,191,242,.48), rgba(33,207,166,.34), rgba(183,239,74,.32), rgba(255,111,163,.25), rgba(24,191,242,.48));
-  }
-
-  .report-home::after {
-    width: 520px;
-    height: 520px;
-    left: -230px;
-    bottom: -260px;
-    border-radius: 999px;
-    opacity: .30;
-    background: conic-gradient(from 20deg, rgba(255,159,122,.34), rgba(255,209,102,.30), rgba(24,191,242,.26), rgba(139,107,255,.24), rgba(255,159,122,.34));
+      linear-gradient(115deg, rgba(24, 191, 242, .22) 0%, rgba(255, 255, 255, 0) 32%),
+      linear-gradient(245deg, rgba(33, 207, 166, .20) 0%, rgba(255, 255, 255, 0) 34%),
+      linear-gradient(35deg, rgba(255, 111, 163, .12) 0%, rgba(255, 255, 255, 0) 28%),
+      linear-gradient(180deg, #fbfffb 0%, #eafcff 42%, #fff7ed 100%);
   }
 
   .report-wrap {
@@ -85,10 +51,10 @@
 
   .report-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 18px;
     align-items: stretch;
-    border-radius: 38px;
+    border-radius: 8px;
     padding: 28px;
     overflow: hidden;
     position: relative;
@@ -100,10 +66,7 @@
     position: absolute;
     inset: -1px;
     pointer-events: none;
-    background:
-      linear-gradient(120deg, rgba(255, 255, 255, .70), transparent 34%),
-      radial-gradient(circle at 90% 12%, rgba(24, 191, 242, .22), transparent 30%),
-      radial-gradient(circle at 12% 96%, rgba(183, 239, 74, .18), transparent 28%);
+    background: linear-gradient(120deg, rgba(255, 255, 255, .82), rgba(224, 242, 254, .42) 38%, rgba(255, 247, 237, .52));
   }
 
   .report-hero-main,
@@ -116,7 +79,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    border-radius: 999px;
+    border-radius: 8px;
     padding: 7px 12px;
     border: 1px solid rgba(33, 207, 166, .24);
     background: rgba(33, 207, 166, .12);
@@ -129,7 +92,7 @@
   .report-pulse {
     width: 8px;
     height: 8px;
-    border-radius: 999px;
+    border-radius: 8px;
     background: var(--report-mint);
     box-shadow: 0 0 0 7px rgba(33, 207, 166, .14);
   }
@@ -157,27 +120,10 @@
     line-height: 1.7;
   }
 
-  .report-tags,
   .report-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-  }
-
-  .report-tags {
-    margin-top: 20px;
-  }
-
-  .report-tag {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 8px 11px;
-    color: var(--report-ink);
-    background: rgba(255, 255, 255, .68);
-    border: 1px solid rgba(17, 34, 51, .08);
-    font-size: 12px;
-    font-weight: 950;
   }
 
   .report-actions {
@@ -213,89 +159,104 @@
     box-shadow: 0 18px 44px rgba(24, 191, 242, .16);
   }
 
-  .report-side-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    height: 100%;
-  }
-
-  .report-side-stat {
-    border-radius: 26px;
-    padding: 18px;
-    background: rgba(255, 255, 255, .60);
-    border: 1px solid rgba(17, 34, 51, .08);
-  }
-
-  .report-side-stat strong {
-    display: block;
-    color: var(--report-ink);
-    font-size: 25px;
-    line-height: 1.1;
-    overflow-wrap: anywhere;
-  }
-
-  .report-side-stat span {
-    display: block;
-    margin-top: 8px;
-    color: var(--report-muted);
-    font-size: 12px;
-    font-weight: 950;
-    text-transform: uppercase;
-  }
-
   .report-form-card {
-    border-radius: 30px;
-    padding: 20px;
+    border-radius: 8px;
+    padding: 12px;
     margin-bottom: 18px;
+    border: 1px solid rgba(17, 34, 51, .09);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, .88), rgba(236, 254, 255, .72)),
+      radial-gradient(circle at 100% 0%, rgba(33, 207, 166, .14), transparent 34%);
+    box-shadow: 0 18px 50px rgba(17, 34, 51, .08);
   }
 
-  .report-form-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
+  .report-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
-  .report-field {
-    grid-column: span 2;
-  }
-
-  .report-field.is-small {
-    grid-column: span 1;
-  }
-
-  .report-field label {
-    display: block;
-    margin-bottom: 7px;
-    color: var(--report-muted);
+  .report-filter-title {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    border-radius: 999px;
+    padding: 8px 13px;
+    color: #075985;
+    background: rgba(224, 242, 254, .78);
+    border: 1px solid rgba(24, 191, 242, .20);
     font-size: 12px;
-    font-weight: 950;
+    font-weight: 1000;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
-  .report-field input,
-  .report-field select {
-    width: 100%;
-    min-height: 44px;
-    border-radius: 16px;
-    border: 1px solid rgba(17, 34, 51, .12);
-    background: rgba(255, 255, 255, .82);
+  .report-filter-control {
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 34, 51, .10);
+    background: rgba(255, 255, 255, .78);
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(17, 34, 51, .05);
+  }
+
+  .report-filter-control label {
+    display: inline-flex;
+    align-items: center;
+    align-self: stretch;
+    padding: 0 10px 0 12px;
+    border-right: 1px solid rgba(17, 34, 51, .08);
+    background: rgba(248, 250, 252, .72);
+    color: var(--report-muted);
+    font-size: 11px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .report-filter-control select,
+  .report-filter-control input {
+    min-width: 0;
+    height: 40px;
+    border: 0;
+    outline: 0;
+    background: transparent;
     color: var(--report-ink);
-    padding: 10px 12px;
+    padding: 0 12px;
     font: inherit;
-    font-size: 14px;
-    font-weight: 800;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .report-filter-control select {
+    max-width: 190px;
+  }
+
+  .report-filter-control input[type="date"] {
+    width: 138px;
+  }
+
+  .report-filter-control.is-search {
+    flex: 1 1 270px;
+    min-width: 240px;
+  }
+
+  .report-filter-control.is-search input {
+    width: 100%;
   }
 
   .report-form-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 16px;
+    gap: 8px;
+    margin-left: auto;
   }
 
   .report-warning {
-    border-radius: 24px;
+    border-radius: 8px;
     padding: 14px 16px;
     margin-bottom: 14px;
     color: #92400e;
@@ -310,16 +271,34 @@
 
   .report-kpis {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 14px;
     margin-bottom: 18px;
   }
 
   .report-card {
-    border-radius: 28px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
     padding: 18px;
     background: rgba(255, 255, 255, .72);
+    box-shadow: var(--report-card-shadow);
   }
+
+  .report-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 4px;
+    background: linear-gradient(90deg, var(--report-cyan), var(--report-mint), var(--report-yellow), var(--report-pink));
+  }
+
+  .report-card:nth-child(1) { background: linear-gradient(135deg, rgba(224, 242, 254, .92), rgba(255, 255, 255, .94)); }
+  .report-card:nth-child(2) { background: linear-gradient(135deg, rgba(255, 247, 237, .92), rgba(255, 255, 255, .94)); }
+  .report-card:nth-child(3) { background: linear-gradient(135deg, rgba(220, 252, 231, .92), rgba(255, 255, 255, .94)); }
+  .report-card:nth-child(4) { background: linear-gradient(135deg, rgba(254, 243, 199, .92), rgba(255, 255, 255, .94)); }
+  .report-card:nth-child(5) { background: linear-gradient(135deg, rgba(237, 233, 254, .90), rgba(255, 255, 255, .94)); }
+  .report-card:nth-child(6) { background: linear-gradient(135deg, rgba(255, 228, 230, .86), rgba(255, 255, 255, .94)); }
 
   .report-card strong {
     display: block;
@@ -339,7 +318,7 @@
   }
 
   .report-table-card {
-    border-radius: 30px;
+    border-radius: 8px;
     padding: 20px;
     overflow: hidden;
   }
@@ -392,15 +371,23 @@
     font-size: 14px;
   }
 
+  .report-table tbody tr:nth-child(odd) td {
+    background: rgba(240, 249, 255, .82);
+  }
+
+  .report-table tbody tr:nth-child(even) td {
+    background: rgba(240, 253, 244, .78);
+  }
+
   .report-table td:first-child {
     border-left: 1px solid rgba(17, 34, 51, .08);
-    border-radius: 18px 0 0 18px;
+    border-radius: 8px 0 0 8px;
     font-weight: 950;
   }
 
   .report-table td:last-child {
     border-right: 1px solid rgba(17, 34, 51, .08);
-    border-radius: 0 18px 18px 0;
+    border-radius: 0 8px 8px 0;
   }
 
   .report-money {
@@ -417,15 +404,256 @@
 
   .report-empty {
     border: 1px dashed rgba(17, 34, 51, .16);
-    border-radius: 28px;
+    border-radius: 8px;
     padding: 24px;
     color: var(--report-muted);
     background: rgba(255, 255, 255, .58);
   }
 
+  .report-insights {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .report-insight {
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid rgba(17, 34, 51, .10);
+    background: rgba(255, 255, 255, .76);
+    box-shadow: var(--report-card-shadow);
+  }
+
+  .report-insight:nth-child(1) { background: linear-gradient(135deg, rgba(224, 242, 254, .92), rgba(255, 255, 255, .94)); }
+  .report-insight:nth-child(2) { background: linear-gradient(135deg, rgba(255, 247, 237, .92), rgba(255, 255, 255, .94)); }
+  .report-insight:nth-child(3) { background: linear-gradient(135deg, rgba(220, 252, 231, .92), rgba(255, 255, 255, .94)); }
+
+  .report-insight span {
+    display: block;
+    color: var(--report-muted);
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .report-insight strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--report-ink);
+    font-size: 20px;
+    overflow-wrap: anywhere;
+  }
+
+  .report-insight small {
+    display: block;
+    margin-top: 6px;
+    color: var(--report-muted);
+    font-weight: 800;
+    line-height: 1.5;
+  }
+
+  .report-chart-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .report-chart-grid.is-even {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-chart-grid.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .report-chart-stack {
+    display: grid;
+    gap: 14px;
+  }
+
+  .report-chart-card {
+    border: 1px solid rgba(17, 34, 51, .10);
+    border-radius: 8px;
+    padding: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(255, 255, 255, .72)),
+      radial-gradient(circle at 92% 0%, rgba(24, 191, 242, .16), transparent 34%),
+      radial-gradient(circle at 10% 100%, rgba(33, 207, 166, .12), transparent 32%);
+    box-shadow: var(--report-shadow);
+    backdrop-filter: blur(24px);
+  }
+
+  .report-chart-card h2,
+  .report-chart-card h3 {
+    margin: 0;
+    color: var(--report-ink);
+    font-size: 21px;
+  }
+
+  .report-chart-card p {
+    margin: 6px 0 0;
+    color: var(--report-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .report-chart-box {
+    position: relative;
+    min-height: 315px;
+    margin-top: 14px;
+    border: 1px solid rgba(17, 34, 51, .08);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .62), rgba(248, 250, 252, .52));
+    overflow: hidden;
+  }
+
+  .report-chart-box.is-compact {
+    min-height: 230px;
+  }
+
+  .report-chart-box.is-mini {
+    min-height: 205px;
+  }
+
+  .report-chart-box canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+  }
+
+  .report-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .report-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border-radius: 999px;
+    padding: 7px 10px;
+    border: 1px solid rgba(17, 34, 51, .08);
+    background: rgba(255, 255, 255, .74);
+    color: var(--report-muted);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .report-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--legend, #18bff2);
+  }
+
+  .report-chart-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 12px;
+  }
+
+  .report-chart-note span {
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, .72);
+    color: var(--report-muted);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .report-ai-insight {
+    margin-top: 14px;
+    border: 1px solid rgba(24, 191, 242, .18);
+    border-radius: 8px;
+    padding: 13px;
+    background:
+      linear-gradient(135deg, rgba(236, 254, 255, .84), rgba(255, 255, 255, .86)),
+      radial-gradient(circle at 100% 0%, rgba(139, 107, 255, .12), transparent 38%);
+  }
+
+  .report-ai-insight__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .report-ai-insight__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #075985;
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+  }
+
+  .report-ai-insight__label::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #18bff2, #21cfa6);
+    box-shadow: 0 0 0 5px rgba(24, 191, 242, .12);
+  }
+
+  .report-ai-insight__tone {
+    border-radius: 999px;
+    padding: 5px 9px;
+    background: rgba(255, 255, 255, .74);
+    color: var(--report-muted);
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .report-ai-insight strong {
+    display: block;
+    color: var(--report-ink);
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .report-ai-insight ul {
+    margin: 9px 0 0;
+    padding-left: 18px;
+    color: var(--report-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .report-ai-insight li + li {
+    margin-top: 4px;
+  }
+
+  .report-ai-insight__action {
+    margin-top: 9px;
+    border-top: 1px solid rgba(17, 34, 51, .08);
+    padding-top: 9px;
+    color: #0f766e;
+    font-size: 12px;
+    font-weight: 950;
+    line-height: 1.45;
+  }
+
+  .report-ai-insight.is-loading {
+    border-color: rgba(17, 34, 51, .08);
+    background: rgba(255, 255, 255, .66);
+  }
+
   @media (max-width: 1080px) {
     .report-hero,
-    .report-side-grid {
+    .report-chart-grid {
+      grid-template-columns: 1fr;
+    }
+    .report-chart-grid.is-even,
+    .report-chart-grid.is-three {
       grid-template-columns: 1fr;
     }
     .report-field,
@@ -435,6 +663,9 @@
     .report-kpis {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    .report-insights {
+      grid-template-columns: 1fr;
+    }
   }
 
   @media (max-width: 720px) {
@@ -442,7 +673,7 @@
       padding: 20px 12px 42px;
     }
     .report-hero {
-      border-radius: 30px;
+      border-radius: 8px;
       padding: 22px;
     }
     .report-hero h1 {
@@ -452,9 +683,27 @@
     .report-kpis {
       grid-template-columns: 1fr;
     }
-    .report-field,
-    .report-field.is-small {
-      grid-column: 1 / -1;
+    .report-filter-bar {
+      align-items: stretch;
+    }
+    .report-filter-title,
+    .report-filter-control,
+    .report-filter-control.is-search,
+    .report-form-actions {
+      width: 100%;
+      flex: 1 1 100%;
+    }
+    .report-filter-control select,
+    .report-filter-control input,
+    .report-filter-control input[type="date"] {
+      width: 100%;
+      max-width: none;
+    }
+    .report-form-actions {
+      margin-left: 0;
+    }
+    .report-form-actions .report-button {
+      flex: 1 1 0;
     }
     .report-table-head {
       display: block;
@@ -464,38 +713,25 @@
 
 <main class="report-home">
   <div class="report-wrap">
-    <section class="report-hero" aria-label="Báo cáo kế toán">
+    <section class="report-hero" aria-label="Thống kê tài chính">
       <div class="report-hero-main">
-        <div class="report-chip"><span class="report-pulse"></span> Accounting reports</div>
-        <h1>Báo cáo <span>kế toán</span></h1>
-        <p class="report-lead">Tổng hợp doanh thu, chi phí và lợi nhuận theo ngày, kỳ báo cáo và phạm vi cơ sở.</p>
-        <div class="report-tags">
-          <span class="report-tag"><%= payload.rangeLabel %></span>
-          <span class="report-tag"><%= payload.hotelContext.label %></span>
-          <span class="report-tag">Tạo lúc <%= payload.generatedAtLabel %></span>
-        </div>
+        <div class="report-chip"><span class="report-pulse"></span> Financial statistics</div>
+        <h1>Thống kê <span>tài chính</span></h1>
+        <p class="report-lead">Trực quan hóa doanh thu, chi phí, lợi nhuận và dòng tiền theo ngày, kỳ thống kê và phạm vi cơ sở.</p>
         <div class="report-actions">
-          <a class="report-button report-button--primary" href="/api/accounting/reports?<%= csvQueryString %>">Xuất CSV</a>
-          <a class="report-button" href="/api/accounting/reports?<%= jsonQueryString %>">JSON</a>
-          <a class="report-button" href="/accounting/cashflow">Thu chi hợp nhất</a>
+          <a class="report-button report-button--primary" href="/accounting/revenue">Mở doanh thu</a>
+          <a class="report-button" href="/accounting/expenses">Mở chi phí</a>
         </div>
       </div>
-
-      <aside class="report-hero-side" aria-label="Tóm tắt báo cáo">
-        <div class="report-side-grid">
-          <div class="report-side-stat"><strong><%= payload.summary.totalRevenueFormatted %></strong><span>Doanh thu ghi nhận</span></div>
-          <div class="report-side-stat"><strong><%= payload.summary.paidRevenueFormatted %></strong><span>Đã thu</span></div>
-          <div class="report-side-stat"><strong><%= payload.summary.totalExpenseFormatted %></strong><span>Chi phí</span></div>
-          <div class="report-side-stat"><strong><%= payload.summary.outstandingRevenueFormatted %></strong><span>Còn phải thu</span></div>
-        </div>
-      </aside>
     </section>
 
     <section class="report-form-card">
       <form method="get" action="/accounting/reports">
-        <div class="report-form-grid">
-          <div class="report-field">
-            <label for="loai_baocao">Loại báo cáo</label>
+        <div class="report-filter-bar" aria-label="Thanh lọc dữ liệu biểu đồ">
+          <span class="report-filter-title">Lọc biểu đồ</span>
+
+          <div class="report-filter-control">
+            <label for="loai_baocao">Nhóm</label>
             <select id="loai_baocao" name="loai_baocao">
               <option value="doanhthu" <%= reportType === "doanhthu" ? "selected" : "" %>>Doanh thu</option>
               <option value="chiphi" <%= reportType === "chiphi" ? "selected" : "" %>>Chi phí</option>
@@ -503,8 +739,8 @@
             </select>
           </div>
 
-          <div class="report-field is-small">
-            <label for="ky_han">Kỳ hạn</label>
+          <div class="report-filter-control">
+            <label for="ky_han">Kỳ</label>
             <select id="ky_han" name="ky_han">
               <option value="ngay" <%= filters.ky_han === "ngay" ? "selected" : "" %>>Ngày</option>
               <option value="thang" <%= filters.ky_han === "thang" ? "selected" : "" %>>Tháng</option>
@@ -512,17 +748,17 @@
             </select>
           </div>
 
-          <div class="report-field is-small">
-            <label for="tu_ngay">Từ ngày</label>
+          <div class="report-filter-control">
+            <label for="tu_ngay">Từ</label>
             <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
           </div>
 
-          <div class="report-field is-small">
-            <label for="den_ngay">Đến ngày</label>
+          <div class="report-filter-control">
+            <label for="den_ngay">Đến</label>
             <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
           </div>
 
-          <div class="report-field">
+          <div class="report-filter-control">
             <label for="hotel_id">Cơ sở</label>
             <select id="hotel_id" name="hotel_id">
               <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
@@ -533,11 +769,25 @@
               <% }) %>
             </select>
           </div>
-        </div>
 
-        <div class="report-form-actions">
-          <button class="report-button report-button--primary" type="submit">Tạo báo cáo</button>
+          <div class="report-filter-control">
+            <label for="trang_thai">Trạng thái</label>
+            <select id="trang_thai" name="trang_thai">
+              <% statusOptions.forEach((option) => { %>
+                <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="report-filter-control is-search">
+            <label for="search">Tìm</label>
+            <input id="search" name="search" value="<%= filters.search || "" %>" placeholder="Mã giao dịch, khách hàng, phiếu chi..." />
+          </div>
+
+          <div class="report-form-actions">
+          <button class="report-button report-button--primary" type="submit">Cập nhật</button>
           <a class="report-button" href="/accounting/reports">Đặt lại</a>
+          </div>
         </div>
       </form>
     </section>
@@ -550,107 +800,977 @@
       </section>
     <% } %>
 
-    <section class="report-kpis" aria-label="Chỉ số báo cáo">
-      <article class="report-card"><strong><%= payload.summary.revenueTransactionCount %></strong><span>Số giao dịch</span></article>
-      <article class="report-card"><strong><%= payload.summary.expenseVoucherCount %></strong><span>Số phiếu chi</span></article>
-      <article class="report-card"><strong><%= payload.summary.averageRevenuePerTransactionFormatted %></strong><span>TB / giao dịch</span></article>
-      <article class="report-card"><strong><%= payload.summary.paidCoverageFormatted %></strong><span>Tỷ lệ đã thu</span></article>
+    <section class="report-chart-grid" aria-label="Biểu đồ phân tích tài chính">
+      <article class="report-chart-card">
+        <h2>Xu hướng tài chính theo kỳ</h2>
+        <p>So sánh doanh thu ghi nhận, đã thu, chi phí, lợi nhuận và lợi nhuận đã thu.</p>
+        <div class="report-chart-box">
+          <canvas id="reportTrendChart" aria-label="Xu hướng tài chính"></canvas>
+        </div>
+        <div class="report-chart-legend">
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#18bff2"></span>Doanh thu</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#21cfa6"></span>Đã thu</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#ffd166"></span>Chi phí</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#8b6bff"></span>Lợi nhuận</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#ff6fa3"></span>Lợi nhuận đã thu</span>
+        </div>
+      </article>
+
+      <div class="report-chart-stack">
+        <article class="report-chart-card">
+          <h3>Cơ cấu dòng tiền</h3>
+          <p>Tỷ trọng đã thu, còn phải thu, chi phí và lãi/lỗ.</p>
+          <div class="report-chart-box is-compact">
+            <canvas id="reportStructureChart" aria-label="Cơ cấu dòng tiền"></canvas>
+          </div>
+        </article>
+        <article class="report-chart-card">
+          <h3>Ngày nổi bật</h3>
+          <p>Top ngày có doanh thu hoặc chi phí lớn trong kỳ lọc.</p>
+          <div class="report-chart-box is-compact">
+            <canvas id="reportDailyBarChart" aria-label="Top ngày tài chính"></canvas>
+          </div>
+          <div class="report-chart-note" id="reportChartNotes">
+            <span>Đang tải dữ liệu biểu đồ</span>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <section class="report-table-card">
-      <div class="report-table-head">
-        <div>
-          <h2>
-            <% if (isRevenue) { %>Bảng doanh thu theo ngày<% } %>
-            <% if (isExpense) { %>Bảng chi phí theo ngày<% } %>
-            <% if (isSummary) { %>Bảng tổng hợp theo ngày<% } %>
-          </h2>
-          <p><%= payload.noData ? "Không có dữ liệu trong kỳ đã chọn." : `${payload.dailySummary.length || payload.revenue.rows.length || payload.expense.rows.length} dòng dữ liệu.` %></p>
+    <section class="report-chart-grid is-even" aria-label="Biểu đồ cột và waterfall tài chính">
+      <article class="report-chart-card">
+        <h2>Cột chồng thu tiền</h2>
+        <p>Đọc nhanh phần đã thu và còn phải thu theo từng ngày.</p>
+        <div class="report-chart-box">
+          <canvas id="reportStackedChart" aria-label="Cột chồng đã thu và còn phải thu"></canvas>
         </div>
-      </div>
-
-      <% if (payload.noData) { %>
-        <div class="report-empty">Không có dữ liệu phù hợp với bộ lọc hiện tại.</div>
-      <% } else { %>
-        <div class="report-table-wrap">
-          <table class="report-table">
-            <% if (isRevenue) { %>
-              <thead>
-                <tr>
-                  <th>Ngày</th>
-                  <th>Số giao dịch</th>
-                  <th>Doanh thu ghi nhận</th>
-                  <th>Đã thu</th>
-                  <th>Còn phải thu</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% payload.revenue.rows.forEach((row) => { %>
-                  <tr>
-                    <td><%= row.dateLabel %></td>
-                    <td><%= row.transactionCount %></td>
-                    <td class="report-money"><%= row.revenueFormatted %></td>
-                    <td class="report-money"><%= row.paidRevenueFormatted %></td>
-                    <td class="report-money"><%= row.outstandingRevenueFormatted %></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            <% } %>
-
-            <% if (isExpense) { %>
-              <thead>
-                <tr>
-                  <th>Ngày</th>
-                  <th>Số phiếu chi</th>
-                  <th>Tổng chi phí</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% payload.expense.rows.forEach((row) => { %>
-                  <tr>
-                    <td><%= row.dateLabel %></td>
-                    <td><%= row.voucherCount %></td>
-                    <td class="report-money"><%= row.expenseFormatted %></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            <% } %>
-
-            <% if (isSummary) { %>
-              <thead>
-                <tr>
-                  <th>Ngày</th>
-                  <th>Giao dịch</th>
-                  <th>Doanh thu ghi nhận</th>
-                  <th>Đã thu</th>
-                  <th>Còn phải thu</th>
-                  <th>Phiếu chi</th>
-                  <th>Chi phí</th>
-                  <th>Lợi nhuận ghi nhận</th>
-                  <th>Lợi nhuận đã thu</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% payload.dailySummary.forEach((row) => { %>
-                  <tr>
-                    <td><%= row.dateLabel %></td>
-                    <td><%= row.revenueTransactionCount %></td>
-                    <td class="report-money"><%= row.revenueFormatted %></td>
-                    <td class="report-money"><%= row.paidRevenueFormatted %></td>
-                    <td class="report-money"><%= row.outstandingRevenueFormatted %></td>
-                    <td><%= row.expenseVoucherCount %></td>
-                    <td class="report-money"><%= row.expenseFormatted %></td>
-                    <td class="report-money <%= row.profit >= 0 ? 'is-profit' : 'is-loss' %>"><%= row.profitFormatted %></td>
-                    <td class="report-money <%= row.realizedProfit >= 0 ? 'is-profit' : 'is-loss' %>"><%= row.realizedProfitFormatted %></td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            <% } %>
-          </table>
+        <div class="report-chart-legend">
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#21cfa6"></span>Đã thu</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#ff6fa3"></span>Còn phải thu</span>
         </div>
-      <% } %>
+      </article>
+      <article class="report-chart-card">
+        <h2>Waterfall lợi nhuận</h2>
+        <p>Từ doanh thu ghi nhận, trừ chi phí và ra kết quả lợi nhuận.</p>
+        <div class="report-chart-box">
+          <canvas id="reportWaterfallChart" aria-label="Waterfall lợi nhuận"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="report-chart-grid is-three" aria-label="Biểu đồ sức khỏe tài chính">
+      <article class="report-chart-card">
+        <h3>Gauge đã thu</h3>
+        <p>Tỷ lệ doanh thu đã thu trong kỳ.</p>
+        <div class="report-chart-box is-mini">
+          <canvas id="reportGaugeChart" aria-label="Gauge tỷ lệ đã thu"></canvas>
+        </div>
+      </article>
+      <article class="report-chart-card">
+        <h3>Radar sức khỏe</h3>
+        <p>Cân bằng thu tiền, lợi nhuận, kiểm soát chi và hoạt động.</p>
+        <div class="report-chart-box is-mini">
+          <canvas id="reportRadarChart" aria-label="Radar sức khỏe tài chính"></canvas>
+        </div>
+      </article>
+      <article class="report-chart-card">
+        <h3>Heatmap cường độ</h3>
+        <p>Màu đậm hơn là ngày có biến động tài chính mạnh hơn.</p>
+        <div class="report-chart-box is-mini">
+          <canvas id="reportHeatmapChart" aria-label="Heatmap cường độ tài chính"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="report-chart-grid is-even" aria-label="Biểu đồ phân tán và vùng">
+      <article class="report-chart-card">
+        <h2>Scatter thu - chi</h2>
+        <p>Mỗi điểm là một ngày, trục ngang doanh thu và trục dọc chi phí.</p>
+        <div class="report-chart-box">
+          <canvas id="reportScatterChart" aria-label="Scatter doanh thu chi phí"></canvas>
+        </div>
+      </article>
+      <article class="report-chart-card">
+        <h2>Area lợi nhuận đã thu</h2>
+        <p>Vùng biểu diễn lợi nhuận thực thu sau khi trừ chi phí.</p>
+        <div class="report-chart-box">
+          <canvas id="reportAreaChart" aria-label="Area lợi nhuận đã thu"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="report-chart-grid is-even" aria-label="Biểu đồ cột dọc và tròn tài chính">
+      <article class="report-chart-card">
+        <h2>Cột dọc so sánh</h2>
+        <p>So sánh doanh thu, chi phí và lợi nhuận thực thu theo từng ngày.</p>
+        <div class="report-chart-box">
+          <canvas id="reportColumnChart" aria-label="Biểu đồ cột dọc tài chính"></canvas>
+        </div>
+        <div class="report-chart-legend">
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#18bff2"></span>Doanh thu</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#ffd166"></span>Chi phí</span>
+          <span class="report-legend-item"><span class="report-legend-dot" style="--legend:#21cfa6"></span>LN thực thu</span>
+        </div>
+      </article>
+      <article class="report-chart-card">
+        <h2>Pie cơ cấu</h2>
+        <p>Biểu đồ tròn đầy cho tỷ trọng các nhóm tiền trong kỳ.</p>
+        <div class="report-chart-box">
+          <canvas id="reportPieChart" aria-label="Biểu đồ tròn cơ cấu tài chính"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="report-chart-grid is-three" aria-label="Biểu đồ điểm và cực tài chính">
+      <article class="report-chart-card">
+        <h3>Line có chấm</h3>
+        <p>Tỷ lệ đã thu theo ngày, mỗi chấm là một mốc dữ liệu.</p>
+        <div class="report-chart-box is-mini">
+          <canvas id="reportDotLineChart" aria-label="Biểu đồ line có chấm tỷ lệ đã thu"></canvas>
+        </div>
+      </article>
+      <article class="report-chart-card">
+        <h3>Lollipop ngày nổi bật</h3>
+        <p>Nhấn mạnh ngày có tổng biến động thu chi lớn nhất.</p>
+        <div class="report-chart-box is-mini">
+          <canvas id="reportLollipopChart" aria-label="Biểu đồ lollipop ngày nổi bật"></canvas>
+        </div>
+      </article>
+      <article class="report-chart-card">
+        <h3>Polar rose</h3>
+        <p>Cánh tròn biểu diễn doanh thu theo các ngày trong kỳ.</p>
+        <div class="report-chart-box is-mini">
+          <canvas id="reportPolarChart" aria-label="Biểu đồ polar rose doanh thu"></canvas>
+        </div>
+      </article>
     </section>
   </div>
 </main>
+
+<script>
+  (() => {
+    const data = <%- JSON.stringify(payload.chartPayload || {}).replace(/</g, "\\u003c") %>;
+    const chartMode = data.mode || "tonghop";
+    const colors = ["#18bff2", "#21cfa6", "#ffd166", "#8b6bff", "#ff6fa3", "#f97316"];
+    const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")} đ`;
+    const shortMoney = (value) => {
+      const amount = Number(value || 0);
+      if (Math.abs(amount) >= 1000000000) return `${(amount / 1000000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
+      if (Math.abs(amount) >= 1000000) return `${(amount / 1000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr`;
+      if (Math.abs(amount) >= 1000) return `${(amount / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}k`;
+      return amount.toLocaleString("vi-VN");
+    };
+    const aiChartTitles = {
+      reportTrendChart: "Xu hướng tài chính",
+      reportStructureChart: "Cơ cấu dòng tiền",
+      reportDailyBarChart: "Ngày nổi bật",
+      reportStackedChart: "Cột chồng thu tiền",
+      reportWaterfallChart: "Waterfall lợi nhuận",
+      reportGaugeChart: "Gauge đã thu",
+      reportRadarChart: "Radar sức khỏe",
+      reportHeatmapChart: "Heatmap cường độ",
+      reportScatterChart: "Scatter thu - chi",
+      reportAreaChart: "Area lợi nhuận đã thu",
+      reportColumnChart: "Cột dọc so sánh",
+      reportPieChart: "Pie cơ cấu",
+      reportDotLineChart: "Line có chấm",
+      reportLollipopChart: "Lollipop ngày nổi bật",
+      reportPolarChart: "Polar rose"
+    };
+    const escapeHtml = (value) => String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+    const setup = (id) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      const width = Math.max(parent.clientWidth, 280);
+      const height = Math.max(parent.clientHeight, 220);
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { canvas, ctx, width, height };
+    };
+    const wireChartFilters = () => {
+      const form = document.querySelector(".report-form-card form");
+      if (!form) return;
+      const submitButton = form.querySelector('button[type="submit"]');
+      const submit = () => {
+        if (submitButton) {
+          submitButton.textContent = "Đang lọc...";
+          submitButton.disabled = true;
+        }
+        form.requestSubmit();
+      };
+
+      form.querySelectorAll("select, input[type='date']").forEach((control) => {
+        control.addEventListener("change", submit);
+      });
+
+      const search = form.querySelector("input[name='search']");
+      if (search) {
+        search.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            submit();
+          }
+        });
+      }
+    };
+    const text = (ctx, value, x, y, size = 12, color = "#667085", weight = 800, align = "left") => {
+      ctx.fillStyle = color;
+      ctx.font = `${weight} ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(value), x, y);
+    };
+    const rounded = (ctx, x, y, width, height, radius) => {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    };
+    const empty = (ctx, width, height) => {
+      rounded(ctx, 18, 18, width - 36, height - 36, 8);
+      ctx.fillStyle = "rgba(255,255,255,.66)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(17,34,51,.12)";
+      ctx.stroke();
+      text(ctx, "Chưa có dữ liệu biểu đồ", width / 2, height / 2, 13, "#667085", 900, "center");
+    };
+    const niceMax = (value) => {
+      const raw = Math.max(1, Number(value || 1));
+      const exponent = Math.floor(Math.log10(raw));
+      const base = Math.pow(10, exponent);
+      const normalized = raw / base;
+      return (normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * base;
+    };
+    const smoothLine = (ctx, points) => {
+      if (!points.length) return;
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i += 1) {
+        const previous = points[i - 1];
+        const current = points[i];
+        ctx.quadraticCurveTo(previous.x, previous.y, (previous.x + current.x) / 2, (previous.y + current.y) / 2);
+      }
+      const last = points[points.length - 1];
+      ctx.lineTo(last.x, last.y);
+    };
+    const drawTrend = () => {
+      const chart = setup("reportTrendChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.trend) ? data.trend : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const series = chartMode === "doanhthu"
+        ? [
+            ["revenue", "Doanh thu", "#18bff2"],
+            ["paidRevenue", "Đã thu", "#21cfa6"],
+            ["outstandingRevenue", "Còn phải thu", "#ff6fa3"]
+          ]
+        : chartMode === "chiphi"
+          ? [
+              ["expense", "Chi phí", "#ffd166"]
+            ]
+          : [
+              ["revenue", "Doanh thu", "#18bff2"],
+              ["paidRevenue", "Đã thu", "#21cfa6"],
+              ["expense", "Chi phí", "#ffd166"],
+              ["profit", "Lợi nhuận", "#8b6bff"],
+              ["realizedProfit", "LN đã thu", "#ff6fa3"]
+            ];
+      const pad = { left: 74, right: 24, top: 28, bottom: 44 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const values = rows.flatMap((row) => series.map(([key]) => Math.abs(Number(row[key] || 0))));
+      const max = niceMax(Math.max(1, ...values));
+      const zeroY = pad.top + plotH / 2;
+      const y = (value) => zeroY - (Number(value || 0) / max) * (plotH / 2);
+      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
+      rounded(ctx, pad.left - 10, pad.top - 10, plotW + 20, plotH + 20, 8);
+      ctx.fillStyle = "rgba(255,255,255,.56)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(17,34,51,.08)";
+      ctx.lineWidth = 1;
+      for (let i = -2; i <= 2; i += 1) {
+        const lineY = zeroY - (i / 2) * (plotH / 2);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, lineY);
+        ctx.lineTo(pad.left + plotW, lineY);
+        ctx.stroke();
+        text(ctx, shortMoney((max / 2) * i), pad.left - 12, lineY, 10, "#667085", 800, "right");
+      }
+      rows.forEach((row, index) => {
+        if (index % Math.ceil(rows.length / 6) === 0 || index === rows.length - 1) {
+          text(ctx, row.label, x(index), height - 20, 11, "#667085", 800, "center");
+        }
+      });
+      series.forEach(([key, label, color], seriesIndex) => {
+        const points = rows.map((row, index) => ({ x: x(index), y: y(row[key]) }));
+        ctx.strokeStyle = color;
+        ctx.lineWidth = seriesIndex === 0 ? 4 : 3;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.shadowColor = `${color}44`;
+        ctx.shadowBlur = 10;
+        smoothLine(ctx, points);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        const last = points[points.length - 1];
+        if (last) text(ctx, label, Math.min(width - 72, last.x + 8), last.y, 11, color, 950);
+      });
+    };
+    const drawDonut = () => {
+      const chart = setup("reportStructureChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = (Array.isArray(data.structure) ? data.structure : []).filter((row) => Number(row.value || 0) > 0);
+      if (!rows.length) return empty(ctx, width, height);
+      const total = rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
+      const cx = width < 420 ? width / 2 : Math.min(width * .34, 126);
+      const cy = height / 2;
+      const radius = Math.min(width * .22, height * .34, 78);
+      const inner = radius * .62;
+      ctx.lineWidth = radius - inner;
+      ctx.lineCap = "round";
+      let start = -Math.PI / 2;
+      rows.forEach((row, index) => {
+        const share = Number(row.value || 0) / total;
+        const end = start + share * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, (radius + inner) / 2, start + .025, end - .025);
+        ctx.strokeStyle = colors[index % colors.length];
+        ctx.stroke();
+        start = end;
+      });
+      text(ctx, "Tổng", cx, cy - 10, 11, "#667085", 900, "center");
+      text(ctx, shortMoney(total), cx, cy + 12, 16, "#112233", 1000, "center");
+      const legendX = width < 420 ? 24 : cx + radius + 30;
+      const legendY = width < 420 ? height - rows.length * 25 - 10 : Math.max(34, cy - rows.length * 14);
+      rows.forEach((row, index) => {
+        const y = legendY + index * 28;
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.beginPath();
+        ctx.arc(legendX, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        text(ctx, row.label, legendX + 14, y - 5, 12, "#112233", 900);
+        text(ctx, `${Math.round((Number(row.value || 0) / total) * 100)}% · ${shortMoney(row.value)}`, legendX + 14, y + 10, 11);
+      });
+    };
+    const drawBars = () => {
+      const chart = setup("reportDailyBarChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.dailyBars) ? data.dailyBars : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 70, right: 34, top: 24, bottom: 28 };
+      const max = niceMax(Math.max(1, ...rows.flatMap((row) => [row.revenue, row.expense])));
+      const rowH = Math.min(34, (height - pad.top - pad.bottom) / rows.length);
+      rows.forEach((row, index) => {
+        const y = pad.top + index * rowH + 5;
+        const trackW = width - pad.left - pad.right;
+        text(ctx, row.label, pad.left - 12, y + rowH / 2 - 2, 11, "#112233", 900, "right");
+        rounded(ctx, pad.left, y, trackW, 10, 999);
+        ctx.fillStyle = "rgba(17,34,51,.07)";
+        ctx.fill();
+        rounded(ctx, pad.left, y, Math.max(0, trackW * Number(row.revenue || 0) / max), 10, 999);
+        ctx.fillStyle = "#18bff2";
+        ctx.fill();
+        rounded(ctx, pad.left, y + 14, Math.max(0, trackW * Number(row.expense || 0) / max), 10, 999);
+        ctx.fillStyle = "#ffd166";
+        ctx.fill();
+        text(ctx, shortMoney(Math.max(Number(row.revenue || 0), Number(row.expense || 0))), width - pad.right, y + rowH / 2 - 2, 11, "#667085", 850, "right");
+      });
+      const note = document.getElementById("reportChartNotes");
+      if (note) {
+        note.innerHTML = chartMode === "doanhthu"
+          ? `<span>Doanh thu màu xanh</span><span>Đã thu nằm trong biểu đồ xu hướng</span>`
+          : chartMode === "chiphi"
+            ? `<span>Chi phí màu vàng</span><span>Đang lọc theo phiếu chi</span>`
+            : `<span>Doanh thu màu xanh</span><span>Chi phí màu vàng</span>`;
+      }
+    };
+    const drawStackedBars = () => {
+      const chart = setup("reportStackedChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.trend) ? data.trend.filter((row) => Number(row.revenue || 0) > 0).slice(-10) : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 62, right: 22, top: 30, bottom: 44 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const max = niceMax(Math.max(1, ...rows.map((row) => Number(row.revenue || 0))));
+      const gap = Math.max(8, plotW / rows.length * .18);
+      const barW = Math.max(16, (plotW - gap * (rows.length - 1)) / rows.length);
+      text(ctx, shortMoney(max), pad.left - 12, pad.top, 10, "#667085", 800, "right");
+      text(ctx, "0", pad.left - 12, pad.top + plotH, 10, "#667085", 800, "right");
+      ctx.strokeStyle = "rgba(17,34,51,.1)";
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, pad.top + plotH);
+      ctx.lineTo(pad.left + plotW, pad.top + plotH);
+      ctx.stroke();
+      rows.forEach((row, index) => {
+        const x = pad.left + index * (barW + gap);
+        const total = Math.max(0, Number(row.revenue || 0));
+        const paid = Math.min(total, Math.max(0, Number(row.paidRevenue || 0)));
+        const outstanding = Math.max(0, total - paid);
+        const totalH = Math.max(2, total / max * plotH);
+        const paidH = total ? paid / total * totalH : 0;
+        const outstandingH = total ? outstanding / total * totalH : 0;
+        const baseY = pad.top + plotH;
+        rounded(ctx, x, baseY - totalH, barW, totalH, 8);
+        ctx.fillStyle = "rgba(17,34,51,.07)";
+        ctx.fill();
+        rounded(ctx, x, baseY - paidH, barW, paidH, 8);
+        ctx.fillStyle = "#21cfa6";
+        ctx.fill();
+        if (outstandingH > 1) {
+          rounded(ctx, x, baseY - paidH - outstandingH, barW, outstandingH + 2, 8);
+          ctx.fillStyle = "#ff6fa3";
+          ctx.fill();
+        }
+        if (index % Math.ceil(rows.length / 5) === 0 || index === rows.length - 1) {
+          text(ctx, row.label, x + barW / 2, height - 20, 10, "#667085", 850, "center");
+        }
+      });
+    };
+    const drawWaterfall = () => {
+      const chart = setup("reportWaterfallChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.waterfall) ? data.waterfall : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 72, right: 24, top: 34, bottom: 46 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const values = rows.map((row) => Number(row.value || 0));
+      const maxAbs = niceMax(Math.max(1, ...values.map((value) => Math.abs(value))));
+      const zeroY = pad.top + plotH / 2;
+      const y = (value) => zeroY - (Number(value || 0) / maxAbs) * (plotH / 2);
+      ctx.strokeStyle = "rgba(17,34,51,.09)";
+      for (let i = -2; i <= 2; i += 1) {
+        const lineY = zeroY - (i / 2) * (plotH / 2);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, lineY);
+        ctx.lineTo(pad.left + plotW, lineY);
+        ctx.stroke();
+        text(ctx, shortMoney((maxAbs / 2) * i), pad.left - 12, lineY, 10, "#667085", 800, "right");
+      }
+      const gap = Math.max(18, plotW * .06);
+      const barW = Math.max(48, (plotW - gap * (rows.length - 1)) / rows.length);
+      rows.forEach((row, index) => {
+        const value = Number(row.value || 0);
+        const x = pad.left + index * (barW + gap);
+        const topY = value >= 0 ? y(value) : zeroY;
+        const barH = Math.max(3, Math.abs(y(value) - zeroY));
+        rounded(ctx, x, topY, barW, barH, 9);
+        ctx.fillStyle = row.type === "total" ? "#8b6bff" : value >= 0 ? "#21cfa6" : "#ffd166";
+        ctx.fill();
+        text(ctx, shortMoney(value), x + barW / 2, value >= 0 ? topY - 12 : topY + barH + 12, 11, "#112233", 900, "center");
+        text(ctx, row.label, x + barW / 2, height - 22, 11, "#667085", 850, "center");
+      });
+    };
+    const drawGauge = () => {
+      const chart = setup("reportGaugeChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const gauges = data.gauges || {};
+      const value = Math.max(0, Math.min(100, Number(gauges.paidCoverage || 0)));
+      const cx = width / 2;
+      const cy = Math.min(height * .72, height - 34);
+      const radius = Math.min(width * .34, height * .48, 92);
+      const start = Math.PI;
+      const end = Math.PI * 2;
+      ctx.lineWidth = 18;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start, end);
+      ctx.strokeStyle = "rgba(17,34,51,.09)";
+      ctx.stroke();
+      const gradient = ctx.createLinearGradient(cx - radius, 0, cx + radius, 0);
+      gradient.addColorStop(0, "#ff6fa3");
+      gradient.addColorStop(.55, "#ffd166");
+      gradient.addColorStop(1, "#21cfa6");
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start, start + (value / 100) * Math.PI);
+      ctx.strokeStyle = gradient;
+      ctx.stroke();
+      text(ctx, `${Math.round(value)}%`, cx, cy - 18, 30, "#112233", 1000, "center");
+      text(ctx, "đã thu", cx, cy + 10, 12, "#667085", 900, "center");
+      const items = [
+        ["Biên LN", gauges.profitMargin],
+        ["Tỷ lệ chi", gauges.expenseRatio],
+        ["LN thực", gauges.realizedMargin]
+      ];
+      items.forEach((item, index) => {
+        const x = width * (.2 + index * .3);
+        text(ctx, item[0], x, height - 28, 10, "#667085", 850, "center");
+        text(ctx, `${Math.round(Number(item[1] || 0))}%`, x, height - 12, 12, "#112233", 950, "center");
+      });
+    };
+    const drawRadar = () => {
+      const chart = setup("reportRadarChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.radar) ? data.radar : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const cx = width / 2;
+      const cy = height / 2 + 8;
+      const radius = Math.min(width, height) * .29;
+      for (let ring = 1; ring <= 4; ring += 1) {
+        ctx.beginPath();
+        rows.forEach((row, index) => {
+          const angle = -Math.PI / 2 + (index / rows.length) * Math.PI * 2;
+          const r = radius * ring / 4;
+          const x = cx + Math.cos(angle) * r;
+          const y = cy + Math.sin(angle) * r;
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.strokeStyle = "rgba(17,34,51,.1)";
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      rows.forEach((row, index) => {
+        const angle = -Math.PI / 2 + (index / rows.length) * Math.PI * 2;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x, y);
+        text(ctx, row.label, cx + Math.cos(angle) * (radius + 28), cy + Math.sin(angle) * (radius + 22), 10, "#667085", 850, "center");
+      });
+      ctx.strokeStyle = "rgba(17,34,51,.1)";
+      ctx.stroke();
+      ctx.beginPath();
+      rows.forEach((row, index) => {
+        const angle = -Math.PI / 2 + (index / rows.length) * Math.PI * 2;
+        const score = Math.max(0, Math.min(100, Number(row.score ?? row.value ?? 0))) / 100;
+        const x = cx + Math.cos(angle) * radius * score;
+        const y = cy + Math.sin(angle) * radius * score;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = "rgba(24,191,242,.2)";
+      ctx.strokeStyle = "#18bff2";
+      ctx.lineWidth = 3;
+      ctx.fill();
+      ctx.stroke();
+    };
+    const drawHeatmap = () => {
+      const chart = setup("reportHeatmapChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.heatmap) ? data.heatmap : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const maxIntensity = Math.max(1, ...rows.map((row) => Number(row.intensity || 0)));
+      const cols = Math.min(7, Math.max(1, rows.length));
+      const boxGap = 7;
+      const pad = { left: 18, right: 18, top: 24, bottom: 28 };
+      const cellW = (width - pad.left - pad.right - boxGap * (cols - 1)) / cols;
+      const cellH = Math.min(44, (height - pad.top - pad.bottom - boxGap * Math.ceil(rows.length / cols)) / Math.ceil(rows.length / cols));
+      rows.forEach((row, index) => {
+        const col = index % cols;
+        const line = Math.floor(index / cols);
+        const x = pad.left + col * (cellW + boxGap);
+        const y = pad.top + line * (cellH + boxGap);
+        const intensity = Math.max(0, Math.min(1, Number(row.intensity || 0) / maxIntensity));
+        const hue = Number(row.profit || 0) >= 0 ? [33, 207, 166] : [255, 111, 163];
+        rounded(ctx, x, y, cellW, cellH, 8);
+        ctx.fillStyle = `rgba(${hue[0]},${hue[1]},${hue[2]},${.16 + intensity * .72})`;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.72)";
+        ctx.stroke();
+        text(ctx, row.label, x + cellW / 2, y + cellH / 2 - 7, 10, "#112233", 900, "center");
+        text(ctx, shortMoney(row.revenue || row.expense || 0), x + cellW / 2, y + cellH / 2 + 8, 9, "#667085", 800, "center");
+      });
+    };
+    const drawScatter = () => {
+      const chart = setup("reportScatterChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.scatter) ? data.scatter : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 72, right: 28, top: 28, bottom: 48 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const maxX = niceMax(Math.max(1, ...rows.map((row) => Number(row.revenue || 0))));
+      const maxY = niceMax(Math.max(1, ...rows.map((row) => Number(row.expense || 0))));
+      const x = (value) => pad.left + Math.max(0, Number(value || 0)) / maxX * plotW;
+      const y = (value) => pad.top + plotH - Math.max(0, Number(value || 0)) / maxY * plotH;
+      ctx.strokeStyle = "rgba(17,34,51,.1)";
+      for (let i = 0; i <= 4; i += 1) {
+        const gx = pad.left + (i / 4) * plotW;
+        const gy = pad.top + (i / 4) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(gx, pad.top);
+        ctx.lineTo(gx, pad.top + plotH);
+        ctx.moveTo(pad.left, gy);
+        ctx.lineTo(pad.left + plotW, gy);
+        ctx.stroke();
+      }
+      rows.forEach((row) => {
+        const profit = Number(row.profit || 0);
+        const radius = Math.max(5, Math.min(15, Math.sqrt(Math.abs(profit)) / 800));
+        ctx.beginPath();
+        ctx.arc(x(row.revenue), y(row.expense), radius, 0, Math.PI * 2);
+        ctx.fillStyle = profit >= 0 ? "rgba(33,207,166,.76)" : "rgba(255,111,163,.76)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.9)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+      text(ctx, "Doanh thu", pad.left + plotW / 2, height - 18, 11, "#667085", 900, "center");
+      ctx.save();
+      ctx.translate(20, pad.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      text(ctx, "Chi phí", 0, 0, 11, "#667085", 900, "center");
+      ctx.restore();
+      text(ctx, shortMoney(maxX), pad.left + plotW, height - 34, 10, "#667085", 800, "right");
+      text(ctx, shortMoney(maxY), pad.left - 10, pad.top, 10, "#667085", 800, "right");
+    };
+    const drawArea = () => {
+      const chart = setup("reportAreaChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.trend) ? data.trend : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 74, right: 24, top: 28, bottom: 44 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const values = rows.map((row) => Number(row.realizedProfit || 0));
+      const maxAbs = niceMax(Math.max(1, ...values.map((value) => Math.abs(value))));
+      const zeroY = pad.top + plotH / 2;
+      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
+      const y = (value) => zeroY - Number(value || 0) / maxAbs * (plotH / 2);
+      ctx.strokeStyle = "rgba(17,34,51,.09)";
+      for (let i = -2; i <= 2; i += 1) {
+        const lineY = zeroY - (i / 2) * (plotH / 2);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, lineY);
+        ctx.lineTo(pad.left + plotW, lineY);
+        ctx.stroke();
+      }
+      const points = values.map((value, index) => ({ x: x(index), y: y(value) }));
+      ctx.beginPath();
+      points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
+      const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+      gradient.addColorStop(0, "rgba(33,207,166,.42)");
+      gradient.addColorStop(.5, "rgba(24,191,242,.16)");
+      gradient.addColorStop(1, "rgba(255,111,163,.28)");
+      ctx.lineTo(points[points.length - 1].x, zeroY);
+      ctx.lineTo(points[0].x, zeroY);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      ctx.strokeStyle = "#21cfa6";
+      ctx.lineWidth = 3;
+      smoothLine(ctx, points);
+      ctx.stroke();
+      rows.forEach((row, index) => {
+        if (index % Math.ceil(rows.length / 6) === 0 || index === rows.length - 1) {
+          text(ctx, row.label, x(index), height - 20, 10, "#667085", 850, "center");
+        }
+      });
+      text(ctx, shortMoney(maxAbs), pad.left - 12, pad.top, 10, "#667085", 800, "right");
+      text(ctx, shortMoney(-maxAbs), pad.left - 12, pad.top + plotH, 10, "#667085", 800, "right");
+    };
+    const drawColumn = () => {
+      const chart = setup("reportColumnChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.trend) ? data.trend.slice(-10) : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const series = chartMode === "doanhthu"
+        ? [
+            ["revenue", "#18bff2"],
+            ["paidRevenue", "#21cfa6"],
+            ["outstandingRevenue", "#ff6fa3"]
+          ]
+        : chartMode === "chiphi"
+          ? [
+              ["expense", "#ffd166"]
+            ]
+          : [
+              ["revenue", "#18bff2"],
+              ["expense", "#ffd166"],
+              ["realizedProfit", "#21cfa6"]
+            ];
+      const pad = { left: 72, right: 28, top: 28, bottom: 46 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const values = rows.flatMap((row) => series.map(([key]) => Number(row[key] || 0)));
+      const maxAbs = niceMax(Math.max(1, ...values.map((value) => Math.abs(value))));
+      const zeroY = pad.top + plotH / 2;
+      const y = (value) => zeroY - Number(value || 0) / maxAbs * (plotH / 2);
+      ctx.strokeStyle = "rgba(17,34,51,.09)";
+      for (let i = -2; i <= 2; i += 1) {
+        const lineY = zeroY - (i / 2) * (plotH / 2);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, lineY);
+        ctx.lineTo(pad.left + plotW, lineY);
+        ctx.stroke();
+        text(ctx, shortMoney((maxAbs / 2) * i), pad.left - 12, lineY, 10, "#667085", 800, "right");
+      }
+      const groupGap = Math.max(10, plotW / rows.length * .14);
+      const groupW = (plotW - groupGap * (rows.length - 1)) / rows.length;
+      const barGap = 4;
+      const barW = Math.max(5, (groupW - barGap * (series.length - 1)) / series.length);
+      rows.forEach((row, rowIndex) => {
+        const groupX = pad.left + rowIndex * (groupW + groupGap);
+        series.forEach(([key, color], seriesIndex) => {
+          const value = Number(row[key] || 0);
+          const topY = value >= 0 ? y(value) : zeroY;
+          const barH = Math.max(2, Math.abs(y(value) - zeroY));
+          rounded(ctx, groupX + seriesIndex * (barW + barGap), topY, barW, barH, 6);
+          ctx.fillStyle = value < 0 ? "#ff6fa3" : color;
+          ctx.fill();
+        });
+        if (rowIndex % Math.ceil(rows.length / 5) === 0 || rowIndex === rows.length - 1) {
+          text(ctx, row.label, groupX + groupW / 2, height - 20, 10, "#667085", 850, "center");
+        }
+      });
+    };
+    const drawPie = () => {
+      const chart = setup("reportPieChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = (Array.isArray(data.structure) ? data.structure : []).filter((row) => Number(row.value || 0) > 0);
+      if (!rows.length) return empty(ctx, width, height);
+      const total = rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
+      const cx = width < 430 ? width / 2 : width * .35;
+      const cy = height / 2;
+      const radius = Math.min(height * .35, width * .24, 92);
+      let start = -Math.PI / 2;
+      rows.forEach((row, index) => {
+        const share = Number(row.value || 0) / total;
+        const end = start + share * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, radius, start, end);
+        ctx.closePath();
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.86)";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        const mid = start + (end - start) / 2;
+        if (share > .07) {
+          text(ctx, `${Math.round(share * 100)}%`, cx + Math.cos(mid) * radius * .62, cy + Math.sin(mid) * radius * .62, 12, "#fff", 1000, "center");
+        }
+        start = end;
+      });
+      const legendX = width < 430 ? 24 : cx + radius + 32;
+      const legendY = width < 430 ? height - rows.length * 24 - 6 : Math.max(36, cy - rows.length * 13);
+      rows.forEach((row, index) => {
+        const y = legendY + index * 26;
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.beginPath();
+        ctx.arc(legendX, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        text(ctx, row.label, legendX + 14, y - 5, 12, "#112233", 900);
+        text(ctx, shortMoney(row.value), legendX + 14, y + 10, 10, "#667085", 800);
+      });
+    };
+    const drawDotLine = () => {
+      const chart = setup("reportDotLineChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.trend) ? data.trend : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 46, right: 18, top: 30, bottom: 34 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const values = rows.map((row) => Number(row.revenue || 0) > 0 ? Number(row.paidRevenue || 0) / Number(row.revenue || 1) * 100 : 0);
+      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : index / (rows.length - 1) * plotW);
+      const y = (value) => pad.top + plotH - Math.max(0, Math.min(100, value)) / 100 * plotH;
+      ctx.strokeStyle = "rgba(17,34,51,.1)";
+      [0, 25, 50, 75, 100].forEach((tick) => {
+        const lineY = y(tick);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, lineY);
+        ctx.lineTo(pad.left + plotW, lineY);
+        ctx.stroke();
+        text(ctx, `${tick}%`, pad.left - 8, lineY, 9, "#667085", 800, "right");
+      });
+      const points = values.map((value, index) => ({ x: x(index), y: y(value), value }));
+      ctx.strokeStyle = "#8b6bff";
+      ctx.lineWidth = 3;
+      smoothLine(ctx, points);
+      ctx.stroke();
+      points.forEach((point, index) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+      const last = points[points.length - 1];
+      if (last) text(ctx, `${Math.round(last.value)}%`, last.x, Math.max(18, last.y - 16), 12, "#112233", 950, "center");
+    };
+    const drawLollipop = () => {
+      const chart = setup("reportLollipopChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.dailyBars) ? data.dailyBars.slice(0, 6) : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 58, right: 24, top: 26, bottom: 22 };
+      const plotW = width - pad.left - pad.right;
+      const rowH = (height - pad.top - pad.bottom) / rows.length;
+      const max = niceMax(Math.max(1, ...rows.map((row) => Math.max(Number(row.revenue || 0), Number(row.expense || 0), Math.abs(Number(row.profit || 0))))));
+      rows.forEach((row, index) => {
+        const value = Math.max(Number(row.revenue || 0), Number(row.expense || 0), Math.abs(Number(row.profit || 0)));
+        const y = pad.top + rowH * index + rowH / 2;
+        const x = pad.left + value / max * plotW;
+        text(ctx, row.label, pad.left - 10, y, 10, "#112233", 900, "right");
+        ctx.strokeStyle = "rgba(17,34,51,.12)";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        text(ctx, shortMoney(value), Math.min(width - 42, x + 12), y, 10, "#667085", 850);
+      });
+    };
+    const drawPolar = () => {
+      const chart = setup("reportPolarChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(data.trend) ? data.trend.filter((row) => Number(row.revenue || 0) > 0).slice(-12) : [];
+      if (!rows.length) return empty(ctx, width, height);
+      const cx = width / 2;
+      const cy = height / 2 + 5;
+      const radius = Math.min(width, height) * .32;
+      const max = niceMax(Math.max(1, ...rows.map((row) => Number(row.revenue || 0))));
+      const step = Math.PI * 2 / rows.length;
+      rows.forEach((row, index) => {
+        const value = Number(row.revenue || 0);
+        const r = Math.max(14, radius * value / max);
+        const start = -Math.PI / 2 + index * step + .02;
+        const end = start + step - .04;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, start, end);
+        ctx.closePath();
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.globalAlpha = .78;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+      [0.33, 0.66, 1].forEach((ratio) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * ratio, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(17,34,51,.1)";
+        ctx.stroke();
+      });
+      text(ctx, "Doanh thu", cx, cy - 6, 11, "#667085", 900, "center");
+      text(ctx, shortMoney(max), cx, cy + 12, 13, "#112233", 950, "center");
+    };
+    const render = () => {
+      drawTrend();
+      drawDonut();
+      drawBars();
+      drawStackedBars();
+      drawWaterfall();
+      drawGauge();
+      drawRadar();
+      drawHeatmap();
+      drawScatter();
+      drawArea();
+      drawColumn();
+      drawPie();
+      drawDotLine();
+      drawLollipop();
+      drawPolar();
+    };
+    const renderAiInsight = (panel, insight) => {
+      const bullets = Array.isArray(insight?.bullets) ? insight.bullets.slice(0, 3) : [];
+      panel.classList.remove("is-loading");
+      panel.innerHTML = `
+        <div class="report-ai-insight__head">
+          <span class="report-ai-insight__label">AI phân tích</span>
+          <span class="report-ai-insight__tone">${escapeHtml(insight?.toneLabel || insight?.tone || "Tự động")}</span>
+        </div>
+        <strong>${escapeHtml(insight?.headline || "AI chưa có đủ dữ liệu để kết luận.")}</strong>
+        ${bullets.length ? `<ul>${bullets.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+        ${insight?.action ? `<div class="report-ai-insight__action">${escapeHtml(insight.action)}</div>` : ""}
+      `;
+    };
+    const attachAiInsightPanels = () => {
+      Object.entries(aiChartTitles).forEach(([chartId, title]) => {
+        const canvas = document.getElementById(chartId);
+        const card = canvas?.closest(".report-chart-card");
+        if (!card || card.querySelector(`.report-ai-insight[data-ai-chart="${chartId}"]`)) return;
+        const panel = document.createElement("div");
+        panel.className = "report-ai-insight is-loading";
+        panel.dataset.aiChart = chartId;
+        panel.innerHTML = `
+          <div class="report-ai-insight__head">
+            <span class="report-ai-insight__label">AI phân tích</span>
+            <span class="report-ai-insight__tone">Đang đọc</span>
+          </div>
+          <strong>Đang phân tích ${escapeHtml(title.toLowerCase())}...</strong>
+          <ul><li>AI sẽ đọc số liệu, tìm điểm lệch và gợi ý hành động kế toán phù hợp.</li></ul>
+        `;
+        card.appendChild(panel);
+      });
+    };
+    const loadAiInsights = async () => {
+      attachAiInsightPanels();
+      const endpoint = `/api/accounting/reports/ai-insights${window.location.search || ""}`;
+      try {
+        const response = await fetch(endpoint, { credentials: "same-origin" });
+        const json = await response.json();
+        if (!response.ok || !json.ok) throw new Error(json.message || "Không thể tải AI phân tích.");
+        const insights = Array.isArray(json.data?.charts) ? json.data.charts : [];
+        insights.forEach((insight) => {
+          const chartId = String(insight.chartId || "");
+          const safeChartId = window.CSS?.escape ? CSS.escape(chartId) : chartId.replace(/["\\]/g, "\\$&");
+          const panel = document.querySelector(`.report-ai-insight[data-ai-chart="${safeChartId}"]`);
+          if (panel) renderAiInsight(panel, insight);
+        });
+      } catch (error) {
+        document.querySelectorAll(".report-ai-insight").forEach((panel) => {
+          renderAiInsight(panel, {
+            tone: "fallback",
+            toneLabel: "Local",
+            headline: "Chưa gọi được AI phân tích, hệ thống giữ chế độ đọc biểu đồ cơ bản.",
+            bullets: ["Kiểm tra đăng nhập, quyền kế toán hoặc cấu hình provider AI nếu muốn phân tích nâng cao."],
+            action: "Trang vẫn dùng được; biểu đồ và số liệu không bị ảnh hưởng."
+          });
+        });
+      }
+    };
+    wireChartFilters();
+    render();
+    loadAiInsights();
+    window.addEventListener("resize", () => window.requestAnimationFrame(render), { passive: true });
+  })();
+</script>
 
 <%- include("../partials/footer") %>

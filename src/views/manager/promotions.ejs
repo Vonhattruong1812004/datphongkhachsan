@@ -15,7 +15,14 @@
     muc_uu_dai: draftData.muc_uu_dai || editingPromotion?.mucUuDai || "",
     doi_tuong: draftData.doi_tuong || editingPromotion?.doiTuong || "TatCa",
     trang_thai: draftData.trang_thai || editingPromotion?.trangThai || "DangApDung",
-    loai_uu_dai: draftData.loai_uu_dai || editingPromotion?.loaiUuDai || "PERCENT"
+    loai_uu_dai: draftData.loai_uu_dai || editingPromotion?.loaiUuDai || "PERCENT",
+    kenh_ap_dung: draftData.kenh_ap_dung || editingPromotion?.promotionMeta?.channel || "All",
+    so_dem_toi_thieu: draftData.so_dem_toi_thieu || editingPromotion?.promotionMeta?.minNights || "",
+    gia_tri_toi_thieu: draftData.gia_tri_toi_thieu || editingPromotion?.promotionMeta?.minAmount || "",
+    gioi_han_luot_dung: draftData.gioi_han_luot_dung || editingPromotion?.promotionMeta?.usageLimit || "",
+    ngay_chan: draftData.ngay_chan || (editingPromotion?.promotionMeta?.blackoutDates || []).join(", "),
+    chinh_sach_cong_don: draftData.chinh_sach_cong_don || editingPromotion?.promotionMeta?.stackPolicy || "NoStack",
+    muc_tieu_chien_dich: draftData.muc_tieu_chien_dich || editingPromotion?.promotionMeta?.campaignGoal || ""
   };
   const statusLabel = (status) => ({
     DangApDung: "Đang áp dụng",
@@ -23,8 +30,26 @@
     HetHan: "Hết hạn"
   }[status] || status || "Không rõ");
   const typeLabel = (type) => type === "PERCENT" ? "Phần trăm" : "Số tiền cố định";
+  const channelLabel = (value) => ({
+    Direct: "Booking trực tiếp",
+    Website: "Website",
+    Frontdesk: "Lễ tân",
+    CSKH: "CSKH tư vấn",
+    All: "Tất cả kênh"
+  }[value] || "Tất cả kênh");
+  const stackLabel = (value) => ({
+    NoStack: "Không cộng dồn",
+    AllowServiceOnly: "Chỉ cộng dịch vụ",
+    ManualReview: "Cần duyệt thủ công"
+  }[value] || "Không cộng dồn");
   const timelineLabel = (item) => item.isExpiredByDate ? "Đã quá hạn theo ngày" : (item.isUpcoming ? "Sắp bắt đầu" : (item.isActiveWindow ? "Đang nằm trong thời gian áp dụng" : "Ngoài khung ngày"));
-  const attentionPromotions = promotions.filter((item) => item.trangThai !== "DangApDung" || item.isExpiredByDate || item.totalUsageCount > 0).slice(0, 6);
+  const moneyText = (value) => Number(value || 0).toLocaleString("vi-VN");
+  const dateLabel = (value) => {
+    const text = String(value || "").slice(0, 10);
+    const parts = text.split("-");
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : text;
+  };
+  const attentionPromotions = promotions.filter((item) => item.trangThai !== "DangApDung" || item.isExpiredByDate || item.totalUsageCount > 0 || ["rose", "amber"].includes(item.health?.tone || "")).slice(0, 6);
 %>
 
 <style>
@@ -96,7 +121,7 @@
   .promo-alert{margin:0 0 12px;border-radius:8px;padding:12px 14px;border:1px solid rgba(23,32,51,.10);font-size:14px;font-weight:800;line-height:1.5}
   .promo-alert--error{color:#b42318;background:#fff4f4;border-color:rgba(255,107,107,.30)}
   .promo-alert--success{color:#047857;background:#effcf6;border-color:rgba(25,184,121,.28)}
-  .promo-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .promo-summary{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;margin-bottom:16px}
   .promo-stat{border-radius:8px;padding:16px;background:rgba(255,255,255,.86);border:1px solid rgba(23,32,51,.10);box-shadow:var(--promo-shadow)}
   .promo-stat strong{display:block;font-size:30px;line-height:1}
   .promo-stat span{display:block;margin-top:8px;color:var(--promo-muted);font-size:12px;font-weight:850;text-transform:uppercase}
@@ -104,21 +129,22 @@
   .promo-panel,.promo-table-panel{border-radius:8px;padding:18px}
   .promo-panel h2,.promo-table-panel h2{margin:0;font-size:23px}
   .promo-muted{color:var(--promo-muted);font-size:13px;line-height:1.55}
-  .promo-field-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+  .promo-field-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
   .promo-field{display:grid;gap:7px}
   .promo-field.is-wide{grid-column:1 / -1}
   .promo-field label{color:#405066;font-size:12px;font-weight:850;text-transform:uppercase}
   .promo-field input,.promo-field select,.promo-field textarea{width:100%;min-height:42px;border-radius:8px;border:1px solid rgba(23,32,51,.12);background:#fff;color:var(--promo-ink);padding:10px 12px;outline:none;font:inherit}
   .promo-field textarea{min-height:84px;resize:vertical}
   .promo-field input:focus,.promo-field select:focus,.promo-field textarea:focus{border-color:rgba(0,166,214,.55);box-shadow:0 0 0 4px rgba(0,166,214,.12)}
+  .promo-field-hint{color:var(--promo-muted);font-size:11px;font-weight:700;line-height:1.45}
   .promo-form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-  .promo-filter-grid{display:grid;grid-template-columns:1.55fr repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+  .promo-filter-grid{display:grid;grid-template-columns:1.55fr repeat(5,minmax(0,1fr));gap:10px;margin-top:16px}
   .promo-live-pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;border-radius:8px;padding:7px 10px;color:#087894;background:#effbff;border:1px solid rgba(0,166,214,.22);font-size:12px;font-weight:850}
   .promo-live-pill::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--promo-mint)}
   .promo-table-panel{position:relative;overflow:hidden}
   .promo-table-panel::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--promo-cyan),var(--promo-mint),var(--promo-sun),var(--promo-coral))}
   .promo-table-wrap{overflow:auto;margin-top:14px;border-radius:8px;border:1px solid rgba(23,32,51,.10);background:#fff}
-  .promo-table{width:100%;min-width:980px;border-collapse:collapse;table-layout:fixed}
+  .promo-table{width:100%;min-width:1180px;border-collapse:collapse;table-layout:fixed}
   .promo-table th{position:sticky;top:0;z-index:1;padding:12px;color:#405066;font-size:12px;text-align:left;text-transform:uppercase;background:#f4fbff;border-bottom:1px solid rgba(23,32,51,.08)}
   .promo-table td{padding:12px;border-top:1px solid rgba(23,32,51,.07);vertical-align:top;word-break:break-word}
   .promo-table tbody tr:hover{background:#fffdf2;box-shadow:inset 5px 0 0 var(--promo-coral)}
@@ -133,6 +159,14 @@
   .promo-status--berry{color:#9d174d;background:#fdf2f8;box-shadow:inset 0 0 0 1px rgba(217,70,239,.16)}
   .promo-status--slate{color:#475569;background:#f3f5f8;box-shadow:inset 0 0 0 1px rgba(71,85,105,.12)}
   .promo-value{font-weight:900;color:#047857}
+  .promo-mini-grid{display:grid;gap:6px;margin-top:8px}
+  .promo-condition{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .promo-tag{display:inline-flex;align-items:center;border-radius:8px;padding:5px 7px;color:#405066;background:#f8fafc;border:1px solid rgba(23,32,51,.08);font-size:11px;font-weight:850}
+  .promo-meter{height:8px;border-radius:999px;background:#edf2f7;overflow:hidden;margin-top:8px}
+  .promo-meter span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--promo-cyan),var(--promo-mint),var(--promo-sun))}
+  .promo-health{margin-top:8px;border-radius:8px;padding:9px 10px;background:#f8fafc;border:1px solid rgba(23,32,51,.08)}
+  .promo-health strong{display:block;font-size:13px}
+  .promo-health p{margin:4px 0 0}
   .promo-row-actions{display:grid;grid-template-columns:repeat(2,minmax(68px,max-content));gap:7px}
   .promo-row-actions form{margin:0}
   .promo-row-actions .promo-button{min-height:34px;padding:7px 10px;font-size:12px}
@@ -143,15 +177,137 @@
   .promo-insight{border-radius:8px;padding:14px;background:#fff;border:1px solid rgba(23,32,51,.08);border-left:5px solid var(--promo-coral)}
   .promo-empty{border:1px dashed rgba(23,32,51,.14);border-radius:8px;padding:18px;color:var(--promo-muted);background:rgba(255,255,255,.78)}
   .promo-no-results{display:none}
-  .promo-table th:nth-child(1), .promo-table td:nth-child(1){width:20%}
-  .promo-table th:nth-child(2), .promo-table td:nth-child(2){width:16%}
-  .promo-table th:nth-child(3), .promo-table td:nth-child(3){width:13%}
-  .promo-table th:nth-child(4), .promo-table td:nth-child(4){width:14%}
-  .promo-table th:nth-child(5), .promo-table td:nth-child(5){width:15%}
-  .promo-table th:nth-child(6), .promo-table td:nth-child(6){width:12%}
+  .promo-table th:nth-child(1), .promo-table td:nth-child(1){width:18%}
+  .promo-table th:nth-child(2), .promo-table td:nth-child(2){width:14%}
+  .promo-table th:nth-child(3), .promo-table td:nth-child(3){width:12%}
+  .promo-table th:nth-child(4), .promo-table td:nth-child(4){width:18%}
+  .promo-table th:nth-child(5), .promo-table td:nth-child(5){width:14%}
+  .promo-table th:nth-child(6), .promo-table td:nth-child(6){width:14%}
   .promo-table th:nth-child(7), .promo-table td:nth-child(7){width:10%}
   @media(max-width:1280px){.promo-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.promo-layout{grid-template-columns:1fr}.promo-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-hero-mark{display:none}.promo-table{min-width:0;table-layout:auto}}
   @media(max-width:720px){.promo-home{padding:18px 12px 42px}.promo-hero-main{min-height:auto;padding:20px}.promo-hero h1{font-size:38px}.promo-summary{grid-template-columns:1fr 1fr}.promo-filter-grid,.promo-field-grid{grid-template-columns:1fr}.promo-field.is-wide{grid-column:auto}.promo-row-actions{grid-template-columns:1fr}}
+
+  body{background:radial-gradient(circle at 7% 8%,rgba(33,207,166,.30),transparent 30%),radial-gradient(circle at 84% 10%,rgba(255,111,163,.20),transparent 32%),radial-gradient(circle at 50% 104%,rgba(183,239,74,.22),transparent 38%),linear-gradient(135deg,#fbfffb 0%,#eafcff 42%,#fff7ed 100%);color:#112233}
+  .promo-home{--promo-ink:#112233;--promo-muted:#667085;--promo-line:rgba(17,34,51,.10);--promo-card:rgba(255,255,255,.76);--promo-card-strong:rgba(255,255,255,.92);--promo-cyan:#18bff2;--promo-mint:#21cfa6;--promo-lime:#b7ef4a;--promo-pink:#ff6fa3;--promo-violet:#8b6bff;--promo-sun:#ffd166;--promo-coral:#ff9f7a;--promo-shadow:0 28px 86px rgba(18,38,63,.17);min-height:auto;max-width:1240px;margin:0 auto;padding:34px 18px 62px;background:transparent;overflow:hidden}
+  .promo-home::before,.promo-home::after{content:"";position:absolute;pointer-events:none;z-index:-1;border-radius:999px;opacity:.42;animation:promo-float 14s ease-in-out infinite alternate}
+  .promo-home::before{width:580px;height:580px;right:-210px;top:-260px;background:conic-gradient(from 160deg,rgba(24,191,242,.48),rgba(33,207,166,.34),rgba(183,239,74,.30),rgba(255,111,163,.24),rgba(24,191,242,.48))}
+  .promo-home::after{width:500px;height:500px;left:-220px;bottom:-260px;background:conic-gradient(from 20deg,rgba(255,159,122,.32),rgba(255,209,102,.30),rgba(24,191,242,.26),rgba(139,107,255,.22),rgba(255,159,122,.32));animation-delay:-4s}
+  .promo-shell{max-width:1240px}
+  .promo-panel,.promo-hero-main,.promo-table-panel,.promo-stat{border:1px solid var(--promo-line);background:var(--promo-card);box-shadow:var(--promo-shadow);backdrop-filter:blur(26px)}
+  .promo-hero{margin:0 0 18px}
+  .promo-hero-main{border-radius:38px;padding:34px;min-height:286px;color:var(--promo-ink);background:var(--promo-card);display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:stretch}
+  .promo-hero-main::before{content:"";position:absolute;inset:-1px;pointer-events:none;background:linear-gradient(120deg,rgba(255,255,255,.72),transparent 28%),radial-gradient(circle at 86% 18%,rgba(24,191,242,.24),transparent 30%),radial-gradient(circle at 16% 88%,rgba(183,239,74,.20),transparent 28%);opacity:1}
+  .promo-hero-main::after{content:"";position:absolute;right:22px;top:22px;bottom:22px;width:320px;border-radius:32px;background:linear-gradient(145deg,rgba(14,38,58,.90),rgba(12,86,110,.74));box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+  .promo-hero-content{max-width:720px}
+  .promo-chip{border-radius:999px;padding:7px 12px;border:1px solid rgba(33,207,166,.24);background:rgba(33,207,166,.12);color:#087763;font-size:12px;font-weight:1000;letter-spacing:.09em}
+  .promo-dot{border-radius:999px;background:var(--promo-mint);box-shadow:0 0 0 7px rgba(33,207,166,.14);animation:promo-pulse 1.8s ease-in-out infinite}
+  .promo-hero h1{margin:25px 0 12px;color:var(--promo-ink);font-size:clamp(40px,6vw,72px);line-height:.91;letter-spacing:-.075em}
+  .promo-hero h1 span{color:transparent;background:linear-gradient(96deg,#0891b2 0%,#10b981 43%,#f59e0b 72%,#ec4899 100%);-webkit-background-clip:text;background-clip:text}
+  .promo-lead{max-width:720px;color:var(--promo-muted);font-size:16px;line-height:1.72}
+  .promo-actions{gap:10px;margin-top:24px}
+  .promo-button{min-height:45px;border-radius:999px;padding:10px 18px;border:1px solid rgba(17,34,51,.12);background:rgba(255,255,255,.78);font-size:14px;font-weight:950;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+  .promo-button:hover{transform:translateY(-2px);border-color:rgba(24,191,242,.34);box-shadow:0 18px 44px rgba(24,191,242,.16)}
+  .promo-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#08a5c8,#21cfa6);box-shadow:0 18px 42px rgba(33,207,166,.24)}
+  .promo-button--danger{color:#fff;border-color:transparent;background:linear-gradient(135deg,#f43f5e,#ff9f7a)}
+  .promo-hero-main .promo-button{border-color:rgba(17,34,51,.12);background:rgba(255,255,255,.78);color:var(--promo-ink)}
+  .promo-hero-main .promo-button--primary{color:#fff;background:linear-gradient(135deg,#08a5c8,#21cfa6);box-shadow:0 18px 42px rgba(33,207,166,.24)}
+  .promo-hero-mark{right:50px;top:50%;bottom:auto;transform:translateY(-50%);width:230px;z-index:2;gap:12px}
+  .promo-mark-line{height:18px;border-radius:999px;background:rgba(255,255,255,.18);box-shadow:0 14px 34px rgba(2,8,23,.18)}
+  .promo-mark-line span{border-radius:999px}
+  .promo-mark-line:nth-child(1) span{background:#67e8f9}.promo-mark-line:nth-child(2) span{background:#fff2a8}.promo-mark-line:nth-child(3) span{background:#bbf7d0}.promo-mark-line:nth-child(4) span{background:#fecdd3}
+  .promo-alert{border-radius:22px;padding:14px 16px;margin:0 0 16px;font-weight:850}
+  .promo-summary{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px;margin:18px 0}
+  .promo-stat{border-radius:25px;padding:17px;background:linear-gradient(180deg,rgba(255,255,255,.90),rgba(255,255,255,.66));position:relative;overflow:hidden}
+  .promo-stat::after{content:"";position:absolute;right:-34px;top:-40px;width:112px;height:112px;border-radius:999px;background:radial-gradient(circle,rgba(24,191,242,.20),transparent 68%)}
+  .promo-stat:nth-child(2)::after{background:radial-gradient(circle,rgba(33,207,166,.22),transparent 68%)}
+  .promo-stat:nth-child(4)::after,.promo-stat:nth-child(7)::after{background:radial-gradient(circle,rgba(255,111,163,.20),transparent 68%)}
+  .promo-stat:nth-child(5)::after{background:radial-gradient(circle,rgba(255,209,102,.28),transparent 68%)}
+  .promo-stat strong{position:relative;z-index:1;font-size:30px;letter-spacing:-.055em}
+  .promo-stat span{position:relative;z-index:1;color:var(--promo-muted);font-size:12px;font-weight:950;letter-spacing:.07em}
+  .promo-layout{grid-template-columns:minmax(0,1fr) 360px;gap:18px}
+  .promo-panel,.promo-table-panel{border-radius:32px;padding:24px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.70))}
+  .promo-panel h2,.promo-table-panel h2{color:var(--promo-ink);font-size:26px;letter-spacing:-.05em}
+  .promo-muted{color:var(--promo-muted);font-size:13px;line-height:1.6}
+  .promo-field-grid{gap:12px}
+  .promo-field{gap:7px}
+  .promo-field label{font-size:12px;font-weight:1000;letter-spacing:.07em;color:#173651}
+  .promo-field input,.promo-field select,.promo-field textarea{border-radius:18px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);padding:12px 13px;box-sizing:border-box}
+  .promo-field input,.promo-field select{min-height:49px}
+  .promo-field textarea{min-height:118px;line-height:1.55}
+  .promo-field input:focus,.promo-field select:focus,.promo-field textarea:focus{border-color:rgba(24,191,242,.48);box-shadow:0 0 0 4px rgba(24,191,242,.12)}
+  .promo-filter-grid{gap:12px}
+  .promo-live-pill{min-height:34px;border-radius:999px;padding:7px 12px;color:#087763;background:rgba(33,207,166,.12);border:1px solid rgba(33,207,166,.24);font-size:12px;font-weight:1000}
+  .promo-live-pill::before{border-radius:999px;background:var(--promo-mint);box-shadow:0 0 0 6px rgba(33,207,166,.12)}
+  .promo-table-panel::before{height:0;background:none}
+  .promo-table-wrap{border-radius:26px;border:1px solid rgba(17,34,51,.08);background:rgba(255,255,255,.66);box-shadow:0 18px 44px rgba(18,38,63,.08)}
+  .promo-table th{padding:14px 12px;color:#173651;font-size:11px;font-weight:1000;background:rgba(236,254,255,.92)}
+  .promo-table td{padding:15px 12px;border-top:1px solid rgba(17,34,51,.07)}
+  .promo-table tbody tr{transition:background .18s ease,box-shadow .18s ease}
+  .promo-table tbody tr:hover{background:rgba(255,255,255,.92);box-shadow:inset 5px 0 0 var(--promo-mint)}
+  .promo-code strong{font-size:18px;letter-spacing:-.035em}
+  .promo-status,.promo-tag{border-radius:999px;padding:6px 9px;font-size:11px;font-weight:1000}
+  .promo-value{color:#047857;font-size:18px;font-weight:1000}
+  .promo-health,.promo-preview,.promo-insight,.promo-empty{border-radius:22px;background:rgba(255,255,255,.62);border:1px solid rgba(17,34,51,.08)}
+  .promo-insight{border-left:0;box-shadow:inset 0 4px 0 rgba(255,111,163,.42)}
+  .promo-meter{height:9px;background:rgba(148,163,184,.18)}
+  .promo-meter span{background:linear-gradient(90deg,#18bff2,#21cfa6,#ffd166)}
+  @keyframes promo-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
+  @keyframes promo-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
+  @media(max-width:1280px){.promo-home{max-width:1240px}.promo-hero-main{grid-template-columns:1fr}.promo-hero-main::after,.promo-hero-mark{display:none}.promo-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.promo-layout{grid-template-columns:1fr}.promo-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.promo-table{min-width:1180px;table-layout:fixed}}
+  @media(max-width:720px){.promo-home{padding:22px 12px 48px}.promo-hero-main,.promo-panel,.promo-table-panel{border-radius:26px;padding:20px}.promo-hero h1{font-size:44px}.promo-summary,.promo-filter-grid,.promo-field-grid{grid-template-columns:1fr}.promo-field.is-wide{grid-column:auto}.promo-row-actions{grid-template-columns:1fr}.promo-button{width:100%}}
+  @media(prefers-reduced-motion:reduce){.promo-home::before,.promo-home::after,.promo-dot{animation:none}}
+
+  .promo-summary{grid-template-columns:repeat(auto-fit,minmax(138px,1fr))}
+  .promo-layout{grid-template-columns:1fr}
+  .promo-layout>aside{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .promo-field-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .promo-filter-grid{grid-template-columns:minmax(220px,1.45fr) repeat(5,minmax(128px,1fr))}
+  .promo-table-panel{overflow:visible}
+  .promo-table-wrap{overflow:visible}
+  .promo-table{min-width:0!important;width:100%;table-layout:fixed}
+  .promo-table th,.promo-table td{padding:14px 10px}
+  .promo-table th:nth-child(1),.promo-table td:nth-child(1){width:17%}
+  .promo-table th:nth-child(2),.promo-table td:nth-child(2){width:13%}
+  .promo-table th:nth-child(3),.promo-table td:nth-child(3){width:10%}
+  .promo-table th:nth-child(4),.promo-table td:nth-child(4){width:22%}
+  .promo-table th:nth-child(5),.promo-table td:nth-child(5){width:17%}
+  .promo-table th:nth-child(6),.promo-table td:nth-child(6){width:14%}
+  .promo-table th:nth-child(7),.promo-table td:nth-child(7){width:7%}
+  .promo-table td{overflow-wrap:anywhere}
+  .promo-health{padding:8px 9px}
+  .promo-health p{display:none}
+  .promo-row-actions{grid-template-columns:1fr;gap:8px}
+  .promo-row-actions .promo-button{width:100%;min-height:36px}
+  .promo-condition{gap:5px}
+  .promo-tag{max-width:100%;white-space:normal}
+
+  @media(max-width:1080px){
+    .promo-hero-main{grid-template-columns:1fr}
+    .promo-hero-main::after,.promo-hero-mark{display:none}
+    .promo-field-grid,.promo-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .promo-layout>aside{grid-template-columns:1fr}
+    .promo-table,.promo-table thead,.promo-table tbody{display:block;width:100%}
+    .promo-table thead{display:none}
+    .promo-table-wrap{border:0;background:transparent;box-shadow:none}
+    .promo-table tbody{display:grid;gap:14px}
+    .promo-table tr[data-promo-row]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border-radius:24px;padding:16px;background:rgba(255,255,255,.76);border:1px solid rgba(17,34,51,.08);box-shadow:0 18px 44px rgba(18,38,63,.08)}
+    .promo-table td{display:block!important;width:auto!important;border:0;padding:0}
+    .promo-table td::before{display:block;margin-bottom:5px;color:#173651;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
+    .promo-table td:nth-child(1)::before{content:"Chương trình"}
+    .promo-table td:nth-child(2)::before{content:"Khung ngày"}
+    .promo-table td:nth-child(3)::before{content:"Ưu đãi"}
+    .promo-table td:nth-child(4)::before{content:"Rule áp dụng"}
+    .promo-table td:nth-child(5)::before{content:"Trạng thái"}
+    .promo-table td:nth-child(6)::before{content:"Hiệu quả"}
+    .promo-table td:nth-child(7)::before{content:"Thao tác"}
+    .promo-health p{display:block}
+    .promo-row-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+
+  @media(max-width:720px){
+    .promo-layout>aside,.promo-field-grid,.promo-filter-grid,.promo-table tr[data-promo-row]{grid-template-columns:1fr}
+    .promo-table-wrap{margin-top:12px}
+  }
 </style>
 
 <main class="promo-home">
@@ -161,10 +317,9 @@
         <div class="promo-hero-content">
           <div class="promo-chip"><span class="promo-dot"></span> Khuyến mãi CSKH</div>
           <h1>Quản lý <span>khuyến mãi</span></h1>
-          <p class="promo-lead">Tạo ưu đãi, kiểm tra thời gian áp dụng, theo dõi lượt dùng và khóa xóa khi chương trình đã phát sinh giao dịch.</p>
+          <p class="promo-lead">Thiết kế ưu đãi có điều kiện rõ ràng, kiểm soát kênh áp dụng, giới hạn lượt dùng, ngày chặn và theo dõi hiệu quả để CSKH tư vấn đúng chương trình cho từng khách.</p>
           <div class="promo-actions">
             <a class="promo-button promo-button--primary" href="/dashboard/cskh">Về dashboard</a>
-            <a class="promo-button" href="/api/manager/promotions">Promotions API</a>
             <% if (promotionForm.promotion_id) { %><a class="promo-button" href="/manager/promotions">Tạo khuyến mãi mới</a><% } %>
           </div>
         </div>
@@ -186,6 +341,8 @@
       <article class="promo-stat"><strong><%= stats.paused || 0 %></strong><span>Tạm ngưng</span></article>
       <article class="promo-stat"><strong><%= stats.expired || 0 %></strong><span>Hết hạn / quá ngày</span></article>
       <article class="promo-stat"><strong><%= stats.inUse || 0 %></strong><span>Đã phát sinh</span></article>
+      <article class="promo-stat"><strong><%= stats.limited || 0 %></strong><span>Có giới hạn lượt</span></article>
+      <article class="promo-stat"><strong><%= stats.attention || 0 %></strong><span>Cần chú ý</span></article>
     </section>
 
     <section class="promo-layout">
@@ -194,7 +351,7 @@
           <div style="display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap">
             <div>
               <h2>Form quản lý khuyến mãi</h2>
-              <p class="promo-muted">Bắt buộc ngày bắt đầu, ngày kết thúc, mức ưu đãi hợp lệ, tên không trùng và phần trăm không vượt quá 100%.</p>
+              <p class="promo-muted">Tạo ưu đãi có rule rõ: thời gian, mức giảm, tệp khách, kênh áp dụng, điều kiện tối thiểu, quota và ngày không áp dụng.</p>
             </div>
             <span class="promo-live-pill"><%= promotionForm.promotion_id ? "Đang sửa chương trình hiện có" : "Sẵn sàng tạo chương trình mới" %></span>
           </div>
@@ -233,9 +390,49 @@
                   <option value="HetHan" <%= promotionForm.trang_thai === "HetHan" ? "selected" : "" %>>Hết hạn</option>
                 </select>
               </div>
-              <div class="promo-field is-wide">
+              <div class="promo-field">
                 <label for="doi_tuong">Đối tượng áp dụng</label>
-                <textarea id="doi_tuong" name="doi_tuong" placeholder="Ví dụ: TatCa, khách đoàn, khách thân thiết, booking trực tiếp, dịp lễ..."><%= promotionForm.doi_tuong %></textarea>
+                <input id="doi_tuong" name="doi_tuong" value="<%= promotionForm.doi_tuong %>" maxlength="120" placeholder="TatCa, VIP, khách cũ..." />
+              </div>
+              <div class="promo-field">
+                <label for="kenh_ap_dung">Kênh áp dụng</label>
+                <select id="kenh_ap_dung" name="kenh_ap_dung">
+                  <option value="All" <%= promotionForm.kenh_ap_dung === "All" ? "selected" : "" %>>Tất cả kênh</option>
+                  <option value="Website" <%= promotionForm.kenh_ap_dung === "Website" ? "selected" : "" %>>Website</option>
+                  <option value="Direct" <%= promotionForm.kenh_ap_dung === "Direct" ? "selected" : "" %>>Booking trực tiếp</option>
+                  <option value="Frontdesk" <%= promotionForm.kenh_ap_dung === "Frontdesk" ? "selected" : "" %>>Lễ tân</option>
+                  <option value="CSKH" <%= promotionForm.kenh_ap_dung === "CSKH" ? "selected" : "" %>>CSKH tư vấn</option>
+                </select>
+              </div>
+              <div class="promo-field">
+                <label for="so_dem_toi_thieu">Số đêm tối thiểu</label>
+                <input id="so_dem_toi_thieu" name="so_dem_toi_thieu" type="number" min="0" max="30" step="1" value="<%= promotionForm.so_dem_toi_thieu %>" placeholder="0" />
+              </div>
+              <div class="promo-field">
+                <label for="gia_tri_toi_thieu">Giá trị tối thiểu</label>
+                <input id="gia_tri_toi_thieu" name="gia_tri_toi_thieu" type="number" min="0" step="1000" value="<%= promotionForm.gia_tri_toi_thieu %>" placeholder="0" />
+              </div>
+              <div class="promo-field">
+                <label for="gioi_han_luot_dung">Giới hạn lượt dùng</label>
+                <input id="gioi_han_luot_dung" name="gioi_han_luot_dung" type="number" min="0" max="1000000" step="1" value="<%= promotionForm.gioi_han_luot_dung %>" placeholder="0" />
+                <div class="promo-field-hint">Nhập 0 nếu không giới hạn.</div>
+              </div>
+              <div class="promo-field">
+                <label for="chinh_sach_cong_don">Cộng dồn ưu đãi</label>
+                <select id="chinh_sach_cong_don" name="chinh_sach_cong_don">
+                  <option value="NoStack" <%= promotionForm.chinh_sach_cong_don === "NoStack" ? "selected" : "" %>>Không cộng dồn</option>
+                  <option value="AllowServiceOnly" <%= promotionForm.chinh_sach_cong_don === "AllowServiceOnly" ? "selected" : "" %>>Chỉ cộng dịch vụ</option>
+                  <option value="ManualReview" <%= promotionForm.chinh_sach_cong_don === "ManualReview" ? "selected" : "" %>>Cần duyệt thủ công</option>
+                </select>
+              </div>
+              <div class="promo-field is-wide">
+                <label for="ngay_chan">Ngày chặn</label>
+                <input id="ngay_chan" name="ngay_chan" value="<%= promotionForm.ngay_chan %>" placeholder="2026-06-01, 2026-06-02" />
+                <div class="promo-field-hint">Dùng cho ngày lễ/cao điểm không áp dụng ưu đãi, cách nhau bằng dấu phẩy.</div>
+              </div>
+              <div class="promo-field is-wide">
+                <label for="muc_tieu_chien_dich">Mục tiêu chiến dịch</label>
+                <textarea id="muc_tieu_chien_dich" name="muc_tieu_chien_dich" placeholder="Ví dụ: tăng booking ngày thường, kéo khách cũ quay lại, đẩy gói nghỉ dưỡng 2 đêm..."><%= promotionForm.muc_tieu_chien_dich %></textarea>
               </div>
             </div>
             <div class="promo-form-actions">
@@ -249,7 +446,7 @@
           <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
             <div>
               <h2>Thanh lọc nhanh</h2>
-              <p class="promo-muted">Lọc realtime theo tên chương trình, trạng thái, loại ưu đãi và tình trạng timeline.</p>
+              <p class="promo-muted">Lọc realtime theo tên, trạng thái, loại ưu đãi, timeline, kênh áp dụng và mức cần chú ý.</p>
             </div>
             <span class="promo-live-pill" data-promo-live-state>Sẵn sàng lọc realtime</span>
           </div>
@@ -284,6 +481,26 @@
                 <option value="expired">Đã quá hạn</option>
               </select>
             </div>
+            <div class="promo-field">
+              <label for="promo_channel_filter">Kênh</label>
+              <select id="promo_channel_filter">
+                <option value="all">Tất cả kênh</option>
+                <option value="All">Tất cả</option>
+                <option value="Website">Website</option>
+                <option value="Direct">Booking trực tiếp</option>
+                <option value="Frontdesk">Lễ tân</option>
+                <option value="CSKH">CSKH</option>
+              </select>
+            </div>
+            <div class="promo-field">
+              <label for="promo_health_filter">Cần chú ý</label>
+              <select id="promo_health_filter">
+                <option value="all">Tất cả</option>
+                <option value="attention">Có cảnh báo</option>
+                <option value="green">Đang ổn</option>
+                <option value="slate">Chưa phát sinh</option>
+              </select>
+            </div>
           </div>
         </section>
 
@@ -292,10 +509,6 @@
             <div>
               <h2>Danh sách khuyến mãi</h2>
               <p class="promo-muted" data-promo-caption>Đang hiển thị <%= promotions.length %>/<%= promotions.length %> chương trình.</p>
-            </div>
-            <div class="promo-actions" style="margin:0">
-              <a class="promo-button" href="/api/manager/promotions">JSON</a>
-              <a class="promo-button" href="/dashboard/quanly">Dashboard</a>
             </div>
           </div>
 
@@ -306,9 +519,9 @@
                   <th>Chương trình</th>
                   <th>Khung ngày</th>
                   <th>Ưu đãi</th>
-                  <th>Đối tượng</th>
+                  <th>Rule áp dụng</th>
                   <th>Trạng thái</th>
-                  <th>Usage</th>
+                  <th>Hiệu quả</th>
                   <th>Thao tác</th>
                 </tr>
               </thead>
@@ -322,7 +535,9 @@
                     data-status="<%= item.trangThai %>"
                     data-type="<%= item.loaiUuDai %>"
                     data-timeline="<%= item.isExpiredByDate ? "expired" : (item.isUpcoming ? "upcoming" : (item.isActiveWindow ? "active" : "other")) %>"
-                    data-keyword="<%= [item.tenChuongTrinh, item.doiTuong || '', statusLabel(item.trangThai), typeLabel(item.loaiUuDai)].join(' ').toLowerCase() %>"
+                    data-channel="<%= item.promotionMeta?.channel || "All" %>"
+                    data-health="<%= item.health?.tone || "slate" %>"
+                    data-keyword="<%= [item.tenChuongTrinh, item.doiTuong || '', item.conditionLabel || '', item.channelLabel || '', statusLabel(item.trangThai), typeLabel(item.loaiUuDai)].join(' ').toLowerCase() %>"
                   >
                     <td>
                       <div class="promo-code">
@@ -331,7 +546,7 @@
                       </div>
                     </td>
                     <td>
-                      <strong><%= item.startDate || "Chưa đặt" %> → <%= item.endDate || "Chưa đặt" %></strong>
+                      <strong><%= item.startDate ? dateLabel(item.startDate) : "Chưa đặt" %> → <%= item.endDate ? dateLabel(item.endDate) : "Chưa đặt" %></strong>
                       <div class="promo-muted"><%= timelineLabel(item) %></div>
                     </td>
                     <td>
@@ -340,14 +555,32 @@
                     </td>
                     <td>
                       <strong><%= item.doiTuong || "TatCa" %></strong>
+                      <div class="promo-condition">
+                        <span class="promo-tag"><%= item.channelLabel || channelLabel(item.promotionMeta?.channel) %></span>
+                        <span class="promo-tag"><%= item.conditionLabel || "Không ràng buộc thêm" %></span>
+                        <span class="promo-tag"><%= item.stackPolicyLabel || stackLabel(item.promotionMeta?.stackPolicy) %></span>
+                      </div>
+                      <% if (item.blackoutDates && item.blackoutDates.length) { %>
+                        <div class="promo-muted" style="margin-top:6px">Ngày chặn: <%= item.blackoutDates.slice(0, 3).join(", ") %><%= item.blackoutDates.length > 3 ? "..." : "" %></div>
+                      <% } %>
                     </td>
                     <td>
                       <span class="promo-status promo-status--<%= item.statusTone %>"><%= statusLabel(item.trangThai) %></span>
                       <div class="promo-muted" style="margin-top:6px"><span class="promo-status promo-status--<%= item.timelineTone %>"><%= timelineLabel(item) %></span></div>
+                      <div class="promo-health">
+                        <strong><span class="promo-status promo-status--<%= item.health?.tone || "slate" %>"><%= item.health?.label || "Chưa đánh giá" %></span></strong>
+                        <p class="promo-muted"><%= item.health?.action || "" %></p>
+                      </div>
                     </td>
                     <td>
                       <strong><%= item.totalUsageCount %> lượt gắn</strong>
                       <div class="promo-muted"><%= item.bookingUsageCount %> giao dịch · <%= item.detailUsageCount %> chi tiết phòng</div>
+                      <% if (item.usageLimit > 0) { %>
+                        <div class="promo-meter" aria-label="Tỷ lệ dùng"><span style="width:<%= item.usageRate || 0 %>%"></span></div>
+                        <div class="promo-muted">Còn <%= item.remainingUsage %>/<%= item.usageLimit %> lượt · <%= item.usageRate %>%</div>
+                      <% } else { %>
+                        <div class="promo-muted">Không giới hạn lượt dùng</div>
+                      <% } %>
                     </td>
                     <td>
                       <div class="promo-row-actions">
@@ -373,10 +606,15 @@
           <div class="promo-preview">
             <div class="promo-preview-meta">
               <strong><%= promotionForm.ten_chuong_trinh || "Tạo chương trình mới" %></strong>
-              <span class="promo-muted"><%= promotionForm.ngay_bat_dau || "--" %> → <%= promotionForm.ngay_ket_thuc || "--" %></span>
+              <span class="promo-muted"><%= promotionForm.ngay_bat_dau ? dateLabel(promotionForm.ngay_bat_dau) : "--" %> → <%= promotionForm.ngay_ket_thuc ? dateLabel(promotionForm.ngay_ket_thuc) : "--" %></span>
               <span class="promo-muted"><%= promotionForm.loai_uu_dai === "PERCENT" ? "Phần trăm" : "Số tiền cố định" %> · <%= promotionForm.muc_uu_dai || 0 %><%= promotionForm.loai_uu_dai === "PERCENT" ? "%" : " VND" %></span>
               <span class="promo-muted">Đối tượng: <%= promotionForm.doi_tuong || "TatCa" %></span>
+              <span class="promo-muted">Kênh: <%= channelLabel(promotionForm.kenh_ap_dung) %></span>
+              <span class="promo-muted">Điều kiện: <%= Number(promotionForm.so_dem_toi_thieu || 0) > 0 ? `${promotionForm.so_dem_toi_thieu} đêm tối thiểu` : "Không giới hạn đêm" %> · <%= Number(promotionForm.gia_tri_toi_thieu || 0) > 0 ? `từ ${moneyText(promotionForm.gia_tri_toi_thieu)} VND` : "không giới hạn giá trị" %></span>
+              <span class="promo-muted">Quota: <%= Number(promotionForm.gioi_han_luot_dung || 0) > 0 ? `${moneyText(promotionForm.gioi_han_luot_dung)} lượt` : "Không giới hạn" %> · <%= stackLabel(promotionForm.chinh_sach_cong_don) %></span>
+              <% if (promotionForm.ngay_chan) { %><span class="promo-muted">Ngày chặn: <%= promotionForm.ngay_chan %></span><% } %>
               <span class="promo-muted">Trạng thái: <%= statusLabel(promotionForm.trang_thai) %></span>
+              <% if (promotionForm.muc_tieu_chien_dich) { %><span class="promo-muted">Mục tiêu: <%= promotionForm.muc_tieu_chien_dich %></span><% } %>
             </div>
           </div>
         </section>
@@ -392,8 +630,9 @@
                 <article class="promo-insight">
                   <span class="promo-status promo-status--<%= item.statusTone %>"><%= statusLabel(item.trangThai) %></span>
                   <h3 style="margin:10px 0 4px"><a href="/manager/promotions?edit_promotion=<%= item.id %>"><%= item.tenChuongTrinh %></a></h3>
-                  <p class="promo-muted"><%= item.valueLabel %> · <%= item.doiTuong || "TatCa" %></p>
-                  <p class="promo-muted"><%= timelineLabel(item) %> · <%= item.totalUsageCount %> lượt gắn</p>
+                  <p class="promo-muted"><%= item.valueLabel %> · <%= item.doiTuong || "TatCa" %> · <%= item.channelLabel %></p>
+                  <p class="promo-muted"><%= item.conditionLabel %> · <%= item.totalUsageCount %> lượt gắn</p>
+                  <p class="promo-muted"><strong><%= item.health?.label || "Theo dõi" %>:</strong> <%= item.health?.action || timelineLabel(item) %></p>
                 </article>
               <% }) %>
             </div>
@@ -410,12 +649,14 @@
     const statusFilter = document.getElementById("promo_status_filter");
     const typeFilter = document.getElementById("promo_type_filter");
     const timelineFilter = document.getElementById("promo_timeline_filter");
+    const channelFilter = document.getElementById("promo_channel_filter");
+    const healthFilter = document.getElementById("promo_health_filter");
     const rows = Array.from(document.querySelectorAll("[data-promo-row]"));
     const caption = document.querySelector("[data-promo-caption]");
     const liveState = document.querySelector("[data-promo-live-state]");
     const emptyRow = document.querySelector("[data-promo-empty-row]");
 
-    [keywordInput, statusFilter, typeFilter, timelineFilter].forEach((element) => {
+    [keywordInput, statusFilter, typeFilter, timelineFilter, channelFilter, healthFilter].forEach((element) => {
       if (!element) return;
       element.addEventListener("input", applyFilters);
       element.addEventListener("change", applyFilters);
@@ -426,6 +667,8 @@
       const status = String(statusFilter?.value || "all");
       const type = String(typeFilter?.value || "all");
       const timeline = String(timelineFilter?.value || "all");
+      const channel = String(channelFilter?.value || "all");
+      const health = String(healthFilter?.value || "all");
       let visibleCount = 0;
 
       rows.forEach((row) => {
@@ -433,7 +676,11 @@
         const matchesStatus = status === "all" || String(row.getAttribute("data-status") || "") === status;
         const matchesType = type === "all" || String(row.getAttribute("data-type") || "") === type;
         const matchesTimeline = timeline === "all" || String(row.getAttribute("data-timeline") || "") === timeline;
-        const visible = matchesKeyword && matchesStatus && matchesType && matchesTimeline;
+        const rowHealth = String(row.getAttribute("data-health") || "slate");
+        const matchesChannel = channel === "all" || String(row.getAttribute("data-channel") || "All") === channel;
+        const matchesHealth = health === "all"
+          || (health === "attention" ? ["rose", "amber"].includes(rowHealth) : rowHealth === health);
+        const visible = matchesKeyword && matchesStatus && matchesType && matchesTimeline && matchesChannel && matchesHealth;
         row.style.display = visible ? "" : "none";
         if (visible) visibleCount += 1;
       });

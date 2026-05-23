@@ -19,6 +19,7 @@ import {
   processRefundAction,
   processRefundApi,
   refundApi,
+  reportAiInsightsApi,
   reportApi,
   revenueApi
 } from "../controllers/accounting.controller";
@@ -38,6 +39,7 @@ accountingRouter.post("/refunds/process", requireRole([ROLE.KE_TOAN]), asyncHand
 
 accountingApiRouter.get("/dashboard", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(accountingDashboardApi));
 accountingApiRouter.get("/reports", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(reportApi));
+accountingApiRouter.get("/reports/ai-insights", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(reportAiInsightsApi));
 accountingApiRouter.get("/revenue", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(revenueApi));
 accountingApiRouter.get("/expenses", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(expenseApi));
 accountingApiRouter.get("/cashflow", requireRole([ROLE.KE_TOAN, ROLE.ADMIN]), asyncHandler(cashflowApi));

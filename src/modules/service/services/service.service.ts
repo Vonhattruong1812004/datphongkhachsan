@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { query, withTransaction } from "../../../config/database";
@@ -31,7 +32,15 @@ const serviceOrderSchema = z.object({
 const inspectionSchema = z.object({
   room_id: z.coerce.number().int().positive(),
   room_condition: z.enum(["Tot", "CanVeSinh", "HuHaiNhe", "HuHaiNang", "DangBaoTri"]),
-  note: z.string().optional().default("")
+  note: z.string().trim().optional().default("")
+}).superRefine((value, ctx) => {
+  if (["HuHaiNhe", "HuHaiNang", "DangBaoTri"].includes(value.room_condition) && value.note.length < 8) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["note"],
+      message: "Khi đưa phòng sang hư hại/bảo trì, cần ghi chú rõ vấn đề để ca sau xử lý."
+    });
+  }
 });
 
 const orderStatusSchema = z.object({
@@ -52,6 +61,18 @@ interface CatalogRow {
   trangThai: ServiceStatus;
   hinhAnh: string | null;
   orderCount: number;
+  orderCount30Days: number;
+  revenue30Days: number;
+  openOrderCount: number;
+  latestOrderAt: string | null;
+}
+
+interface CatalogFilters {
+  hotelId?: number;
+  keyword?: string;
+  status?: ServiceStatus | "all";
+  category?: string | "all";
+  attention?: "all" | "missing_image" | "inactive" | "ordered" | "no_usage" | "open_orders";
 }
 
 interface HotelOptionRow {
@@ -62,6 +83,7 @@ interface HotelOptionRow {
 
 interface RoomFeedRow {
   id: number;
+  hotelId: number;
   soPhong: string;
   loaiPhong: string;
   trangThai: string;
@@ -94,6 +116,19 @@ interface RecentOrderRow {
   thanhTien: number;
   trangThaiDichVu: ServiceOrderStatus;
   createdAt: string;
+}
+
+interface InspectionHistoryRow {
+  id: number;
+  roomId: number;
+  roomNumber: string;
+  hotelName: string;
+  hotelCity: string | null;
+  fromStatus: string | null;
+  toStatus: string | null;
+  source: string | null;
+  note: string | null;
+  happenedAt: string;
 }
 
 interface FrontdeskTransactionRow {
@@ -171,11 +206,11 @@ export class ServiceModuleService {
 
   private resolveServiceImage(fileName: string | null) {
     const clean = String(fileName || "").trim();
-    if (!clean) {
-      return "/uploads/dichvu/default.jpg";
+    if (!clean || clean === "default.jpg" || clean === "noimg.jpg") {
+      return "";
     }
 
-    if (/^https?:\/\//i.test(clean) || clean.startsWith("/uploads/")) {
+    if (/^https?:\/\//i.test(clean)) {
       return clean;
     }
 
@@ -183,7 +218,28 @@ export class ServiceModuleService {
       .replace(/^\/?public\/uploads\/dichvu\//i, "")
       .replace(/^\/?uploads\/dichvu\//i, "");
 
+    if (fileOnly.startsWith("/") && !/^\/uploads\/dichvu\//i.test(clean)) {
+      return fileOnly;
+    }
+
+    if (!this.serviceImageExists(fileOnly)) {
+      return "";
+    }
+
     return `/uploads/dichvu/${encodeURIComponent(fileOnly)}`;
+  }
+
+  private serviceImageExists(fileName: string) {
+    const safeName = path.basename(fileName);
+    if (!safeName || safeName !== fileName) {
+      return false;
+    }
+
+    return [
+      path.resolve(process.cwd(), "uploads/dichvu", safeName),
+      path.resolve(process.cwd(), "public/uploads/dichvu", safeName),
+      path.resolve(process.cwd(), "../code2/public/uploads/dichvu", safeName)
+    ].some((candidate) => existsSync(candidate));
   }
 
   private async cleanupUploadedServiceImage(fileName: string | null | undefined) {
@@ -200,15 +256,69 @@ export class ServiceModuleService {
     }
   }
 
-  async listCatalog(options: { hotelId?: number } = {}) {
+  private classifyServiceCategory(name: string | null, description: string | null) {
+    const text = `${name || ""} ${description || ""}`.toLowerCase();
+    const rules = [
+      { key: "wellness", label: "Wellness", tone: "green", keywords: ["spa", "massage", "xông", "chăm sóc", "thư giãn", "yoga"] },
+      { key: "transport", label: "Di chuyển", tone: "blue", keywords: ["đưa đón", "sân bay", "xe", "shuttle", "taxi", "tour"] },
+      { key: "room", label: "Tiện nghi phòng", tone: "cyan", keywords: ["dọn phòng", "khăn", "nước", "giặt", "ủi", "laundry", "hành lý", "minibar"] },
+      { key: "dining", label: "Ẩm thực", tone: "amber", keywords: ["thức ăn", "ăn", "nước uống", "chai", "snack", "nhà hàng", "bar", "breakfast"] }
+    ];
+
+    return rules.find((rule) => rule.keywords.some((keyword) => text.includes(keyword)))
+      || { key: "other", label: "Trải nghiệm khác", tone: "slate" };
+  }
+
+  private formatServiceCatalogStatus(status: string | null) {
+    if (status === "HoatDong") return "Đang phục vụ";
+    if (status === "BaoTri") return "Đang bảo trì";
+    if (status === "NgungBan") return "Ngưng bán";
+    return status || "Không rõ";
+  }
+
+  private buildCatalogRecommendation(item: CatalogRow & { imageUrl: string }) {
+    if (item.trangThai !== "HoatDong" && Number(item.openOrderCount || 0) > 0) {
+      return "Còn order chưa hoàn tất, cần xử lý trước khi đóng hẳn.";
+    }
+    if (!item.imageUrl) {
+      return "Thiếu ảnh hiển thị, nên bổ sung để khách dễ chọn dịch vụ.";
+    }
+    if (item.trangThai === "HoatDong" && Number(item.orderCount || 0) === 0) {
+      return "Chưa phát sinh lượt dùng, nên xem lại tên, ảnh, giá hoặc mô tả tư vấn.";
+    }
+    if (item.trangThai === "BaoTri") {
+      return "Đang bảo trì, chỉ mở lại khi bộ phận dịch vụ xác nhận sẵn sàng.";
+    }
+    if (item.trangThai === "NgungBan") {
+      return "Đang ngưng bán, giữ lịch sử giao dịch và cân nhắc mở lại khi có nhu cầu.";
+    }
+    return "Đang vận hành ổn, tiếp tục theo dõi lượt dùng và phản hồi khách.";
+  }
+
+  async listCatalog(options: CatalogFilters = {}) {
     const hasHotelScope = await this.supportsServiceHotelScope();
     const params: unknown[] = [];
     const hotelId = Number(options.hotelId || 0);
     const where: string[] = [];
+    const keyword = String(options.keyword || "").trim();
+    const status = options.status && options.status !== "all" ? options.status : "";
 
     if (hasHotelScope && hotelId > 0) {
       params.push(hotelId);
       where.push(`dv.makhachsan = $${params.length}`);
+    }
+
+    if (keyword) {
+      params.push(`%${keyword.toLowerCase()}%`);
+      where.push(`(
+        lower(COALESCE(dv.tendichvu, '')) LIKE $${params.length}
+        OR lower(COALESCE(dv.mota, '')) LIKE $${params.length}
+      )`);
+    }
+
+    if (status) {
+      params.push(status);
+      where.push(`dv.trangthai = $${params.length}`);
     }
 
     const result = await query<CatalogRow>(
@@ -223,7 +333,11 @@ export class ServiceModuleService {
           dv.mota AS "moTa",
           dv.trangthai AS "trangThai",
           dv.hinhanh AS "hinhAnh",
-          COUNT(ctdv.mactdv)::int AS "orderCount"
+          COUNT(ctdv.mactdv)::int AS "orderCount",
+          COUNT(ctdv.mactdv) FILTER (WHERE ctdv.ngaydat >= NOW() - INTERVAL '30 days')::int AS "orderCount30Days",
+          COALESCE(SUM(COALESCE(ctdv.thanhtien, 0)) FILTER (WHERE ctdv.ngaydat >= NOW() - INTERVAL '30 days'), 0)::numeric AS "revenue30Days",
+          COUNT(ctdv.mactdv) FILTER (WHERE ctdv.trangthaidichvu IN ('ChuaSuDung', 'DangSuDung'))::int AS "openOrderCount",
+          MAX(ctdv.ngaydat) AS "latestOrderAt"
         FROM dichvu dv
         ${hasHotelScope ? "LEFT JOIN khachsan ks ON ks.makhachsan = dv.makhachsan" : ""}
         LEFT JOIN chitietdichvu ctdv ON ctdv.madichvu = dv.madichvu
@@ -241,12 +355,38 @@ export class ServiceModuleService {
       params
     );
 
-    return result.rows.map((item) => ({
-      ...item,
-      giaDichVuFormatted: formatMoney(item.giaDichVu),
-      imageUrl: this.resolveServiceImage(item.hinhAnh),
-      hotelLabel: [item.hotelName, item.hotelCity].filter(Boolean).join(" · ") || "Toàn hệ thống"
-    }));
+    const mapped = result.rows.map((item) => {
+      const imageUrl = this.resolveServiceImage(item.hinhAnh);
+      const category = this.classifyServiceCategory(item.tenDichVu, item.moTa);
+
+      return {
+        ...item,
+        orderCount30Days: Number(item.orderCount30Days || 0),
+        revenue30Days: Number(item.revenue30Days || 0),
+        openOrderCount: Number(item.openOrderCount || 0),
+        giaDichVuFormatted: formatMoney(item.giaDichVu),
+        revenue30DaysFormatted: formatMoney(item.revenue30Days || 0),
+        imageUrl,
+        hotelLabel: [item.hotelName, item.hotelCity].filter(Boolean).join(" · ") || "Toàn hệ thống",
+        statusLabel: this.formatServiceCatalogStatus(item.trangThai),
+        category,
+        recommendation: this.buildCatalogRecommendation({ ...item, imageUrl })
+      };
+    });
+
+    const category = String(options.category || "all");
+    const attention = String(options.attention || "all");
+
+    return mapped
+      .filter((item) => category === "all" || item.category.key === category)
+      .filter((item) => {
+        if (attention === "missing_image") return !item.imageUrl;
+        if (attention === "inactive") return item.trangThai !== "HoatDong";
+        if (attention === "ordered") return Number(item.orderCount || 0) > 0;
+        if (attention === "no_usage") return Number(item.orderCount || 0) === 0;
+        if (attention === "open_orders") return Number(item.openOrderCount || 0) > 0;
+        return true;
+      });
   }
 
   async listActiveCatalog() {
@@ -261,6 +401,7 @@ export class ServiceModuleService {
           SELECT
             p.maphong,
             p.sophong,
+            p.makhachsan,
             p.loaiphong,
             p.trangthai,
             p.tinhtrangphong,
@@ -298,6 +439,7 @@ export class ServiceModuleService {
           rb.trangthai AS "trangThai",
           rb.tinhtrangphong AS "tinhTrangPhong",
           rb.effective_realtime AS "trangThaiRealtime",
+          rb.makhachsan AS "hotelId",
           rb.tenkhachsan AS "hotelName",
           rb.tinhthanh AS "hotelCity",
           active.magiaodich AS "transactionId",
@@ -331,15 +473,116 @@ export class ServiceModuleService {
           rb.sophong ASC
       `
     );
-    const maintenance = result.rows.filter((item) => item.trangThaiRealtime === "Maintenance").length;
-    const cleaning = result.rows.filter((item) => item.trangThaiRealtime === "Cleaning").length;
-    const stayed = result.rows.filter((item) => item.trangThaiRealtime === "Stayed").length;
-    const booked = result.rows.filter((item) => item.trangThaiRealtime === "Booked").length;
-    const available = result.rows.filter((item) => item.trangThaiRealtime === "Available").length;
+    const items = result.rows.map((item) => {
+      const realtime = item.trangThaiRealtime || item.trangThai || "Unknown";
+      const condition = item.tinhTrangPhong || "Tot";
+      const isLocked = Boolean(item.transactionId) || ["Stayed", "Booked"].includes(realtime);
+      const priority =
+        realtime === "Maintenance"
+          ? {
+            key: "maintenance",
+            label: "Ưu tiên bảo trì",
+            rank: 1,
+            tone: "danger",
+            action: "Khóa bán, kiểm tra hư hại và chuyển bảo trì xử lý."
+          }
+          : realtime === "Cleaning"
+            ? {
+              key: "cleaning",
+              label: "Cần vệ sinh",
+              rank: 2,
+              tone: "cleaning",
+              action: "Điều phối vệ sinh, kiểm tra lại rồi đưa về Available."
+            }
+            : realtime === "Stayed"
+              ? {
+                key: "stayed",
+                label: "Đang có khách",
+                rank: 3,
+                tone: "stayed",
+                action: "Chỉ theo dõi; không cập nhật inspection khi phòng còn CheckedIn."
+              }
+              : realtime === "Booked"
+                ? {
+                  key: "booked",
+                  label: "Sắp nhận khách",
+                  rank: 4,
+                  tone: "booked",
+                  action: "Đảm bảo phòng sẵn sàng trước giờ check-in."
+                }
+                : {
+                  key: "available",
+                  label: "Sẵn sàng phục vụ",
+                  rank: 5,
+                  tone: "ok",
+                  action: "Có thể mở bán/nhận khách; kiểm tra định kỳ khi cần."
+                };
+
+      return {
+        ...item,
+        trangThaiRealtime: realtime,
+        statusLabel:
+          realtime === "Maintenance" ? "Maintenance"
+            : realtime === "Cleaning" ? "Cleaning"
+              : realtime === "Stayed" ? "Đang ở"
+                : realtime === "Booked" ? "Đã đặt"
+                  : realtime === "Available" ? "Available"
+                    : realtime,
+        conditionLabel:
+          condition === "Tot" ? "Tốt"
+            : condition === "CanVeSinh" ? "Cần vệ sinh"
+              : condition === "HuHaiNhe" ? "Hư hại nhẹ"
+                : condition === "HuHaiNang" ? "Hư hại nặng"
+                  : condition === "DangBaoTri" ? "Đang bảo trì"
+                    : condition,
+        priorityKey: priority.key,
+        priorityLabel: priority.label,
+        priorityRank: priority.rank,
+        priorityTone: priority.tone,
+        suggestedAction: priority.action,
+        isLocked,
+        canInspect: !isLocked,
+        occupancyLabel: item.bookingCode
+          ? `${item.bookingCode}${item.guestName ? ` · ${item.guestName}` : ""}`
+          : "Không có giao dịch mở",
+        searchText: [
+          item.soPhong,
+          item.loaiPhong,
+          item.hotelName,
+          item.hotelCity,
+          item.bookingCode,
+          item.guestName,
+          realtime,
+          priority.label,
+          condition
+        ].filter(Boolean).join(" ").toLowerCase()
+      };
+    });
+
+    const maintenance = items.filter((item) => item.trangThaiRealtime === "Maintenance").length;
+    const cleaning = items.filter((item) => item.trangThaiRealtime === "Cleaning").length;
+    const stayed = items.filter((item) => item.trangThaiRealtime === "Stayed").length;
+    const booked = items.filter((item) => item.trangThaiRealtime === "Booked").length;
+    const available = items.filter((item) => item.trangThaiRealtime === "Available").length;
+    const byHotel = items.reduce<Record<string, { hotelId: number; hotelName: string; total: number; needsAttention: number }>>((summary, item) => {
+      const key = String(item.hotelId || 0);
+      summary[key] = summary[key] || {
+        hotelId: Number(item.hotelId || 0),
+        hotelName: [item.hotelName, item.hotelCity].filter(Boolean).join(" · ") || "Chưa rõ cơ sở",
+        total: 0,
+        needsAttention: 0
+      };
+      summary[key].total += 1;
+      if (["Maintenance", "Cleaning"].includes(item.trangThaiRealtime)) {
+        summary[key].needsAttention += 1;
+      }
+      return summary;
+    }, {});
 
     return {
       generatedAt: new Date().toISOString(),
       summary: {
+        total: items.length,
         maintenance,
         cleaning,
         stayed,
@@ -347,7 +590,9 @@ export class ServiceModuleService {
         available,
         needsAttention: maintenance + cleaning
       },
-      items: result.rows
+      byHotel: Object.values(byHotel),
+      priorityQueue: items.filter((item) => ["maintenance", "cleaning", "booked"].includes(item.priorityKey)).slice(0, 8),
+      items
     };
   }
 
@@ -402,12 +647,43 @@ export class ServiceModuleService {
     }));
   }
 
-  async buildPagePayload(options: { hotelId?: number } = {}) {
-    const [catalog, roomFeed, activeRooms, recentOrders, hotelOptions, serviceHotelScopeSupported] = await Promise.all([
-      this.listCatalog({ hotelId: options.hotelId }),
+  async listInspectionHistory(limit = 12) {
+    const result = await query<InspectionHistoryRow>(
+      `
+        SELECT
+          rsl.malog AS id,
+          p.maphong AS "roomId",
+          p.sophong AS "roomNumber",
+          ks.tenkhachsan AS "hotelName",
+          ks.tinhthanh AS "hotelCity",
+          rsl.trangthaicu AS "fromStatus",
+          rsl.trangthaimoi AS "toStatus",
+          rsl.nguonthaydoi::text AS source,
+          rsl.ghichu AS note,
+          rsl.thoidiem AS "happenedAt"
+        FROM room_status_log rsl
+        INNER JOIN phong p ON p.maphong = rsl.maphong
+        INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+        WHERE rsl.ghichu ILIKE '%inspection%'
+           OR rsl.ghichu ILIKE '%tinh trang phong%'
+           OR rsl.ghichu ILIKE '%tình trạng phòng%'
+           OR rsl.nguonthaydoi::text = 'HeThong'
+        ORDER BY rsl.thoidiem DESC, rsl.malog DESC
+        LIMIT $1
+      `,
+      [Math.min(Math.max(Number(limit) || 12, 1), 30)]
+    );
+
+    return result.rows;
+  }
+
+  async buildPagePayload(options: CatalogFilters = {}) {
+    const [catalog, roomFeed, activeRooms, recentOrders, inspectionHistory, hotelOptions, serviceHotelScopeSupported] = await Promise.all([
+      this.listCatalog(options),
       this.listRoomFeed(),
       this.listActiveRooms(),
       this.listRecentOrders(),
+      this.listInspectionHistory(),
       this.listHotels(),
       this.supportsServiceHotelScope()
     ]);
@@ -417,15 +693,43 @@ export class ServiceModuleService {
       active: catalog.filter((item) => item.trangThai === "HoatDong").length,
       maintenance: catalog.filter((item) => item.trangThai === "BaoTri").length,
       stopped: catalog.filter((item) => item.trangThai === "NgungBan").length,
-      linked: catalog.filter((item) => Number(item.orderCount || 0) > 0).length
+      linked: catalog.filter((item) => Number(item.orderCount || 0) > 0).length,
+      missingImage: catalog.filter((item) => !item.imageUrl).length,
+      openOrders: catalog.reduce((sum, item) => sum + Number(item.openOrderCount || 0), 0),
+      orders30Days: catalog.reduce((sum, item) => sum + Number(item.orderCount30Days || 0), 0),
+      revenue30Days: catalog.reduce((sum, item) => sum + Number(item.revenue30Days || 0), 0),
+      revenue30DaysFormatted: formatMoney(catalog.reduce((sum, item) => sum + Number(item.revenue30Days || 0), 0))
     };
+    const categorySummary = catalog.reduce<Record<string, { key: string; label: string; total: number }>>((summary, item) => {
+      const key = item.category.key;
+      summary[key] = summary[key] || { key, label: item.category.label, total: 0 };
+      summary[key].total += 1;
+      return summary;
+    }, {});
 
     return {
       catalog,
       roomFeed,
       activeRooms,
       recentOrders,
+      inspectionHistory,
       catalogStats,
+      categorySummary: Object.values(categorySummary),
+      categoryOptions: [
+        { key: "all", label: "Tất cả nhóm" },
+        { key: "wellness", label: "Wellness" },
+        { key: "transport", label: "Di chuyển" },
+        { key: "room", label: "Tiện nghi phòng" },
+        { key: "dining", label: "Ẩm thực" },
+        { key: "other", label: "Trải nghiệm khác" }
+      ],
+      filters: {
+        hotelId: Number(options.hotelId || 0),
+        keyword: String(options.keyword || ""),
+        status: options.status || "all",
+        category: options.category || "all",
+        attention: options.attention || "all"
+      },
       hotelOptions,
       activeHotelId: Number(options.hotelId || 0),
       serviceHotelScopeSupported
@@ -1076,6 +1380,8 @@ export class ServiceModuleService {
             p.maphong AS id,
             p.sophong AS "soPhong",
             p.trangthai AS "trangThai",
+            p.tinhtrangphong AS "roomCondition",
+            p.trangthairealtime AS "realtimeStatus",
             active.magiaodich AS "activeTransactionId",
             active.trangthai AS "activeStayStatus"
           FROM phong p
@@ -1093,7 +1399,7 @@ export class ServiceModuleService {
           LIMIT 1
         `,
         [input.room_id]
-      ) as { rows: Array<{ id: number; soPhong: string; trangThai: string; activeTransactionId: number | null; activeStayStatus: string | null }> };
+      ) as { rows: Array<{ id: number; soPhong: string; trangThai: string; roomCondition: string | null; realtimeStatus: string | null; activeTransactionId: number | null; activeStayStatus: string | null }> };
 
       const room = current.rows[0];
       if (!room) {
@@ -1111,6 +1417,15 @@ export class ServiceModuleService {
           : input.room_condition === "CanVeSinh"
             ? "Cleaning"
             : "Maintenance";
+      const conditionLabel =
+        input.room_condition === "Tot" ? "Tốt"
+          : input.room_condition === "CanVeSinh" ? "Cần vệ sinh"
+            : input.room_condition === "HuHaiNhe" ? "Hư hại nhẹ"
+              : input.room_condition === "HuHaiNang" ? "Hư hại nặng"
+                : "Đang bảo trì";
+      const logNote = input.note
+        ? `Inspection: ${conditionLabel}. ${input.note}`
+        : `Inspection: ${conditionLabel}. Bộ phận dịch vụ cập nhật tình trạng phòng.`;
 
       await client.query(
         `
@@ -1137,9 +1452,9 @@ export class ServiceModuleService {
         `,
         [
           input.room_id,
-          room.trangThai,
+          room.realtimeStatus || room.trangThai,
           nextRoomStatus,
-          input.note?.trim() || `Dich vu cap nhat tinh trang phong sang ${input.room_condition}`
+          logNote
         ]
       );
 
@@ -1148,7 +1463,10 @@ export class ServiceModuleService {
         roomNumber: room.soPhong,
         fromStatus: room.trangThai,
         toStatus: nextRoomStatus,
-        roomCondition: input.room_condition
+        realtimeStatus,
+        roomCondition: input.room_condition,
+        conditionLabel,
+        note: input.note
       };
     });
 

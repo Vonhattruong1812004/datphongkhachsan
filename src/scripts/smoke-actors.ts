@@ -88,6 +88,7 @@ const allowedRoutes: Record<number, string[]> = {
     "/customer/profile",
     "/customer/bookings",
     "/customer/services",
+    "/customer/advisory",
     "/customer/mobile-hub",
     "/ekyc",
     "/feedback/new",

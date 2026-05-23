@@ -1,10 +1,12 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { BookingService } from "../../booking/services/booking.service";
+import { EkycService } from "../../ekyc/services/ekyc.service";
 import { CustomerService } from "../services/customer.service";
 
 const customerService = new CustomerService();
 const bookingService = new BookingService();
+const ekycService = new EkycService();
 
 export async function renderCustomerDashboard(req: Request, res: Response) {
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
@@ -41,19 +43,25 @@ export async function renderCustomerBookings(req: Request, res: Response) {
   };
 
   return res.render("customer/bookings", {
-    title: "Lich su booking",
+    title: "Quan ly dat phong",
     bookings,
-    summary
+    summary,
+    errorMessage: readText(req.query.error),
+    successMessage: readText(req.query.success)
   });
 }
 
 export async function renderCustomerProfile(req: Request, res: Response) {
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
-  const profile = await customerService.getProfile(maKhachHang);
+  const [profile, ekycPayload] = await Promise.all([
+    customerService.getProfile(maKhachHang),
+    ekycService.getStatusForCustomer(maKhachHang)
+  ]);
 
   return res.render("customer/profile", {
     title: "Ho so khach hang",
     profile,
+    ekycPayload,
     errorMessage: readText(req.query.error),
     successMessage: readText(req.query.success)
   });
@@ -73,7 +81,10 @@ export async function updateCustomerProfileAction(req: Request, res: Response) {
 
     return res.redirect(`/customer/profile?success=${encodeURIComponent("Cập nhật thông tin thành công.")}`);
   } catch (error) {
-    const profile = await customerService.getProfile(maKhachHang);
+    const [profile, ekycPayload] = await Promise.all([
+      customerService.getProfile(maKhachHang),
+      ekycService.getStatusForCustomer(maKhachHang)
+    ]);
     return res.status(400).render("customer/profile", {
       title: "Ho so khach hang",
       profile: {
@@ -82,6 +93,7 @@ export async function updateCustomerProfileAction(req: Request, res: Response) {
         sdt: readText(req.body.sdt, profile.sdt || ""),
         diaChi: readText(req.body.dia_chi, profile.diaChi || "")
       },
+      ekycPayload,
       errorMessage: error instanceof Error ? error.message : "Không thể cập nhật thông tin.",
       successMessage: ""
     });
@@ -115,7 +127,7 @@ export async function createCustomerServiceOrderAction(req: Request, res: Respon
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
   try {
     const payload = await customerService.createServiceOrder(maKhachHang, req.body);
-    return res.redirect(`/customer/services?success=${encodeURIComponent(`Đã đặt ${payload.serviceName} cho phòng ${payload.roomNumber}.`)}`);
+    return res.redirect(`/customer/services?success=${encodeURIComponent(`Đã đặt ${payload.serviceName} cho phòng ${payload.roomNumber} (${payload.timingLabel}).`)}`);
   } catch (error) {
     const payload = await customerService.buildServicePortal(maKhachHang);
     return res.status(error instanceof ZodError ? 422 : 400).render("customer/services", {
@@ -202,8 +214,12 @@ export async function updateCustomerBookingAction(req: Request, res: Response) {
 
 export async function cancelCustomerBookingAction(req: Request, res: Response) {
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
-  await bookingService.cancelBookingForCustomer(Number(req.params.id), maKhachHang, req.body.reason || "");
-  return res.redirect("/customer/bookings");
+  try {
+    const payload = await bookingService.cancelBookingForCustomer(Number(req.params.id), maKhachHang, req.body);
+    return res.redirect(`/customer/bookings?success=${encodeURIComponent(payload.message || "Đã hủy booking thành công.")}`);
+  } catch (error) {
+    return res.redirect(`/customer/bookings?error=${encodeURIComponent(formatCustomerBookingError(error))}`);
+  }
 }
 
 export async function updateCustomerBookingApi(req: Request, res: Response) {
@@ -218,10 +234,10 @@ export async function updateCustomerBookingApi(req: Request, res: Response) {
 
 export async function cancelCustomerBookingApi(req: Request, res: Response) {
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
-  const payload = await bookingService.cancelBookingForCustomer(Number(req.params.id), maKhachHang, req.body.reason || "");
+  const payload = await bookingService.cancelBookingForCustomer(Number(req.params.id), maKhachHang, req.body);
   return res.json({
     ok: true,
-    message: "Huy booking thanh cong.",
+    message: payload.message || "Huy booking thanh cong.",
     data: payload
   });
 }
@@ -323,7 +339,11 @@ const customerBookingFieldLabels: Record<string, string> = {
   so_nguoi: "Số người",
   ngay_nhan: "Ngày nhận phòng",
   ngay_tra: "Ngày trả phòng",
-  ma_km: "Khuyến mãi"
+  ma_km: "Khuyến mãi",
+  reason: "Lý do hủy",
+  refund_bank_name: "Ngân hàng nhận hoàn",
+  refund_account_no: "Số tài khoản nhận hoàn",
+  refund_account_name: "Chủ tài khoản nhận hoàn"
 };
 
 const customerServiceFieldLabels: Record<string, string> = {

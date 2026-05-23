@@ -9,6 +9,11 @@
   const preview = payload.preview || { items: [], total: 0 };
   const recentCampaigns = payload.recentCampaigns || [];
   const selectedCampaign = payload.selectedCampaign || null;
+  const previewTotal = Number(preview.total || 0);
+  const previewSendable = Number(preview.sendableTotal || 0);
+  const previewBlocked = Number(preview.blockedByChannel || 0);
+  const previewDeduped = Number(preview.dedupedCount || 0);
+  const templatesJson = JSON.stringify(templates).replace(/</g, "\\u003c");
 %>
 
 <style>
@@ -29,15 +34,15 @@
   }
 
   .care-broadcast__wrap {
-    max-width: 1480px;
+    max-width: 1240px;
     margin: 0 auto;
   }
 
   .care-broadcast__hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) 360px;
-    gap: 20px;
-    margin-bottom: 20px;
+    grid-template-columns: minmax(0, 1.04fr) 340px;
+    gap: 18px;
+    margin-bottom: 18px;
   }
 
   .care-broadcast__card,
@@ -53,8 +58,8 @@
   }
 
   .care-broadcast__card {
-    border-radius: 34px;
-    padding: 32px;
+    border-radius: 32px;
+    padding: 30px;
     position: relative;
     overflow: hidden;
   }
@@ -84,9 +89,9 @@
 
   .care-broadcast__card h1 {
     margin: 22px 0 12px;
-    font-size: clamp(38px, 5vw, 68px);
+    font-size: clamp(38px, 5vw, 64px);
     line-height: .94;
-    letter-spacing: -.06em;
+    letter-spacing: 0;
   }
 
   .care-broadcast__card h1 span {
@@ -226,8 +231,8 @@
 
   .care-broadcast__section {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) 400px;
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 18px;
     align-items: start;
   }
 
@@ -279,16 +284,27 @@
 
   .care-broadcast__template-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
     margin-top: 16px;
   }
 
   .care-broadcast__template {
-    border-radius: 24px;
-    padding: 16px;
+    border-radius: 22px;
+    padding: 14px;
     border: 1px solid rgba(19, 34, 56, .10);
     background: rgba(255,255,255,.82);
+    color: var(--care-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+
+  .care-broadcast__template:hover,
+  .care-broadcast__template.is-active {
+    transform: translateY(-2px);
+    border-color: rgba(236, 72, 153, .28);
+    box-shadow: 0 18px 42px rgba(236, 72, 153, .13);
   }
 
   .care-broadcast__template strong {
@@ -300,8 +316,79 @@
   .care-broadcast__template span {
     display: block;
     color: var(--care-muted);
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.55;
+  }
+
+  .care-broadcast__template small {
+    display: inline-flex;
+    margin-top: 10px;
+    border-radius: 999px;
+    padding: 5px 8px;
+    background: rgba(20, 184, 166, .12);
+    color: #0f766e;
+    font-size: 11px;
+    font-weight: 1000;
+  }
+
+  .care-broadcast__metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+
+  .care-broadcast__metric {
+    border-radius: 18px;
+    padding: 12px;
+    border: 1px solid rgba(19, 34, 56, .08);
+    background: rgba(255, 255, 255, .74);
+  }
+
+  .care-broadcast__metric strong {
+    display: block;
+    font-size: 22px;
+    letter-spacing: 0;
+  }
+
+  .care-broadcast__metric span {
+    display: block;
+    margin-top: 5px;
+    color: var(--care-muted);
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .care-broadcast__tokens,
+  .care-broadcast__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .care-broadcast__tokens {
+    margin-top: 10px;
+  }
+
+  .care-broadcast__token {
+    border-radius: 999px;
+    padding: 6px 9px;
+    background: rgba(14, 165, 233, .10);
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .care-broadcast__actions {
+    justify-content: space-between;
+  }
+
+  .care-broadcast__count {
+    color: var(--care-muted);
+    font-size: 12px;
+    font-weight: 850;
   }
 
   .care-broadcast__preview-head {
@@ -390,7 +477,8 @@
   @media (max-width: 860px) {
     .care-broadcast__stats,
     .care-broadcast__grid,
-    .care-broadcast__template-grid {
+    .care-broadcast__template-grid,
+    .care-broadcast__metrics {
       grid-template-columns: 1fr;
     }
 
@@ -421,9 +509,8 @@
         <div class="care-broadcast__eyebrow"><span class="care-broadcast__pulse"></span> Broadcast CSKH</div>
         <h1>Gửi <span>tin nhắn hàng loạt</span> để giữ chân khách</h1>
         <p class="care-broadcast__lead">
-          Dành cho các chiến dịch outbound của CSKH: nhắc check-in, nhắc check-out,
-          cảm ơn sau lưu trú, xác nhận đặt phòng thành công
-          và chăm sóc lại khách cũ. Màn hình này tách riêng khỏi phản hồi và tư vấn để đội CSKH xử lý đúng vai trò.
+          Chọn đúng tệp khách, đúng kênh liên hệ và tạo outbound queue cho các tình huống trước lưu trú,
+          sau lưu trú, xác nhận booking hoặc chăm sóc lại khách cũ.
         </p>
 
         <div class="care-broadcast__chips">
@@ -447,19 +534,16 @@
 
       <aside class="care-broadcast__side">
         <h2>Tín hiệu outbound</h2>
-        <p class="care-broadcast__meta">CSKH có thể chọn tệp gửi theo đúng nghiệp vụ thay vì gửi thủ công từng khách.</p>
+        <p class="care-broadcast__meta">Các tệp có thể gửi ngay theo dữ liệu booking hiện tại.</p>
         <div class="care-broadcast__stack">
           <div class="care-broadcast__mini">
             <strong><%= Number(stats.winbackCount || 0).toLocaleString("vi-VN") %> khách cần chăm sóc lại</strong>
-            <p class="care-broadcast__meta">Nhóm đã lâu chưa quay lại, phù hợp cho chiến dịch giữ chân.</p>
           </div>
           <div class="care-broadcast__mini">
             <strong><%= Number(stats.upcomingCheckinCount || 0).toLocaleString("vi-VN") %> khách sắp check-in</strong>
-            <p class="care-broadcast__meta">Phù hợp để nhắc eKYC, giấy tờ, giờ nhận phòng và các hỗ trợ trước chuyến đi.</p>
           </div>
           <div class="care-broadcast__mini">
             <strong><%= Number(stats.todayCheckoutCount || 0).toLocaleString("vi-VN") %> khách check-out hôm nay</strong>
-            <p class="care-broadcast__meta">Phù hợp để nhắc dịch vụ phát sinh, thời gian trả phòng và hỗ trợ checkout mượt hơn.</p>
           </div>
         </div>
       </aside>
@@ -470,20 +554,29 @@
         <div class="care-broadcast__preview-head">
           <div>
             <h2>Soạn chiến dịch gửi hàng loạt</h2>
-            <p class="care-broadcast__meta">Chọn đúng mẫu gửi, đúng tệp khách và để hệ thống build outbound queue cho CSKH.</p>
+            <p class="care-broadcast__meta">Mẫu, tệp khách và kênh gửi quyết định số khách được đưa vào queue.</p>
           </div>
         </div>
 
         <div class="care-broadcast__template-grid">
           <% templates.forEach((item) => { %>
-            <article class="care-broadcast__template">
+            <button
+              class="care-broadcast__template <%= form.template_key === item.key ? "is-active" : "" %>"
+              type="button"
+              data-template-key="<%= item.key %>"
+              data-audience-key="<%= item.key %>"
+              data-channel="<%= item.channel %>"
+              data-title="<%= item.title %>"
+              data-message="<%= item.message %>"
+            >
               <strong><%= item.label %></strong>
-              <span><%= item.message %></span>
-            </article>
+              <span><%= item.title %></span>
+              <small><%= item.channel %></small>
+            </button>
           <% }) %>
         </div>
 
-        <form method="post" action="/feedback/broadcast/send" class="care-broadcast__grid">
+        <form id="broadcast-compose" method="post" action="/feedback/broadcast/send" class="care-broadcast__grid">
           <div class="care-broadcast__field">
             <label for="template_key">Mẫu chiến dịch</label>
             <select id="template_key" name="template_key">
@@ -519,18 +612,48 @@
             </select>
           </div>
 
+          <div class="care-broadcast__field">
+            <label for="dedupe_days">Chống gửi trùng</label>
+            <select id="dedupe_days" name="dedupe_days">
+              <% [0, 1, 3, 7, 14, 30].forEach((days) => { %>
+                <option value="<%= days %>" <%= Number(form.dedupe_days || 0) === days ? "selected" : "" %>><%= days === 0 ? "Không chặn" : `${days} ngày` %></option>
+              <% }) %>
+            </select>
+          </div>
+
           <div class="care-broadcast__field care-broadcast__field--full">
             <label for="title">Tiêu đề chiến dịch</label>
             <input id="title" name="title" maxlength="140" value="<%= form.title || "" %>" />
           </div>
 
           <div class="care-broadcast__field care-broadcast__field--full">
+            <label for="campaign_goal">Mục tiêu gửi</label>
+            <input id="campaign_goal" name="campaign_goal" maxlength="180" value="<%= form.campaign_goal || "" %>" placeholder="Ví dụ: giảm no-show, nhắc hoàn tất eKYC, kéo khách cũ quay lại..." />
+          </div>
+
+          <div class="care-broadcast__field care-broadcast__field--full">
             <label for="message">Nội dung tin nhắn</label>
             <textarea id="message" name="message" maxlength="1200"><%= form.message || "" %></textarea>
-            <div class="care-broadcast__hint">Nên viết ngắn, rõ hành động cần khách thực hiện và giữ giọng CSKH thân thiện.</div>
+            <div class="care-broadcast__tokens" aria-label="Biến cá nhân hóa">
+              <span class="care-broadcast__token">{{ten_kh}}</span>
+              <span class="care-broadcast__token">{{ma_giao_dich}}</span>
+              <span class="care-broadcast__token">{{khach_san}}</span>
+              <span class="care-broadcast__count" id="message-count">0/1200 ký tự</span>
+            </div>
+            <div class="care-broadcast__hint">Viết ngắn, rõ hành động cần khách thực hiện và cá nhân hóa vừa đủ.</div>
           </div>
+
           <div class="care-broadcast__field care-broadcast__field--full">
-            <button class="care-broadcast__button care-broadcast__button--primary" type="submit">Đưa vào outbound queue</button>
+            <label for="internal_note">Ghi chú nội bộ</label>
+            <textarea id="internal_note" name="internal_note" maxlength="500" style="min-height:92px"><%= form.internal_note || "" %></textarea>
+            <div class="care-broadcast__hint">Dùng cho ca CSKH sau khi cần follow-up.</div>
+          </div>
+
+          <div class="care-broadcast__field care-broadcast__field--full">
+            <div class="care-broadcast__actions">
+              <button class="care-broadcast__button" type="submit" formmethod="get" formaction="/feedback/broadcast/manage">Cập nhật preview</button>
+              <button class="care-broadcast__button care-broadcast__button--primary" type="submit">Đưa vào outbound queue</button>
+            </div>
           </div>
         </form>
       </div>
@@ -539,8 +662,15 @@
         <div class="care-broadcast__preview-head">
           <div>
             <h2>Preview tệp khách</h2>
-            <p class="care-broadcast__meta"><%= preview.audienceLabel %> · <strong><%= Number(preview.total || 0).toLocaleString("vi-VN") %></strong> người nhận phù hợp.</p>
+            <p class="care-broadcast__meta"><%= preview.audienceLabel %> · <%= preview.channelLabel %> · <%= preview.channelRequirement %>.</p>
           </div>
+        </div>
+
+        <div class="care-broadcast__metrics">
+          <div class="care-broadcast__metric"><strong><%= previewTotal.toLocaleString("vi-VN") %></strong><span>Trong tệp</span></div>
+          <div class="care-broadcast__metric"><strong><%= previewSendable.toLocaleString("vi-VN") %></strong><span>Gửi được</span></div>
+          <div class="care-broadcast__metric"><strong><%= previewBlocked.toLocaleString("vi-VN") %></strong><span>Lệch kênh</span></div>
+          <div class="care-broadcast__metric"><strong><%= previewDeduped.toLocaleString("vi-VN") %></strong><span>Chống trùng</span></div>
         </div>
 
         <div class="care-broadcast__list">
@@ -560,13 +690,13 @@
               </article>
             <% }) %>
           <% } else { %>
-            <div class="care-broadcast__empty">Chưa có khách phù hợp với tệp gửi hiện tại.</div>
+            <div class="care-broadcast__empty">Chưa có khách gửi được theo tệp, kênh và khoảng chống trùng hiện tại.</div>
           <% } %>
         </div>
 
         <div style="margin-top:16px">
           <h2>Lịch sử chiến dịch gần đây</h2>
-          <p class="care-broadcast__meta">Giữ dấu vết outbound queue để CSKH biết ca trước đã gửi gì, cho ai và với mục tiêu nào.</p>
+          <p class="care-broadcast__meta">Không hiển thị dữ liệu smoke test; khuyến mãi tự động được gom nhãn riêng.</p>
         </div>
 
         <div class="care-broadcast__list" style="margin-top:12px">
@@ -578,6 +708,10 @@
                   <span class="care-broadcast__badge"><%= item.statusLabel %></span>
                 </div>
                 <div class="care-broadcast__meta"><%= item.audienceLabel %> · <%= item.channelLabel %> · <%= item.recipientSummary %></div>
+                <div class="care-broadcast__meta"><%= item.goalLabel %> · <%= item.sendTimingLabel %></div>
+                <% if (item.skippedSummary) { %>
+                  <div class="care-broadcast__meta"><%= item.skippedSummary %></div>
+                <% } %>
                 <div class="care-broadcast__row care-broadcast__meta">
                   <span><%= item.createdByName || "Hệ thống / CSKH" %></span>
                   <span><%= item.createdAtLabel %></span>
@@ -589,15 +723,46 @@
           <% } %>
         </div>
 
-        <% if (selectedCampaign) { %>
-          <div style="margin-top:16px">
-            <h2>Chiến dịch đang chọn</h2>
-            <p class="care-broadcast__meta"><strong><%= selectedCampaign.title %></strong> · <%= selectedCampaign.audienceLabel %> · <%= selectedCampaign.channelLabel %></p>
-          </div>
-        <% } %>
       </aside>
     </section>
   </div>
 </main>
+
+<script>
+  (() => {
+    const templates = <%- templatesJson %>;
+    const templateSelect = document.getElementById("template_key");
+    const audienceSelect = document.getElementById("audience_key");
+    const channelSelect = document.getElementById("channel");
+    const titleInput = document.getElementById("title");
+    const messageInput = document.getElementById("message");
+    const count = document.getElementById("message-count");
+    const cards = Array.from(document.querySelectorAll(".care-broadcast__template"));
+
+    function updateCount() {
+      if (!messageInput || !count) return;
+      count.textContent = `${messageInput.value.length}/1200 ký tự`;
+    }
+
+    function applyTemplate(key) {
+      const selected = templates.find((item) => item.key === key);
+      if (!selected) return;
+      if (templateSelect) templateSelect.value = selected.key;
+      if (audienceSelect) audienceSelect.value = selected.key;
+      if (channelSelect) channelSelect.value = selected.channel;
+      if (titleInput) titleInput.value = selected.title;
+      if (messageInput) messageInput.value = selected.message;
+      cards.forEach((card) => card.classList.toggle("is-active", card.dataset.templateKey === selected.key));
+      updateCount();
+    }
+
+    cards.forEach((card) => {
+      card.addEventListener("click", () => applyTemplate(card.dataset.templateKey));
+    });
+    templateSelect?.addEventListener("change", () => applyTemplate(templateSelect.value));
+    messageInput?.addEventListener("input", updateCount);
+    updateCount();
+  })();
+</script>
 
 <%- include("../partials/footer") %>

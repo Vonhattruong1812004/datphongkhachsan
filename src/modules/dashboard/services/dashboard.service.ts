@@ -46,37 +46,61 @@ interface RecentRoomEventRow {
   hotelName: string | null;
 }
 
+interface FinanceTrendRow {
+  date: string;
+  total: number | string | null;
+  paid: number | string | null;
+  outstanding: number | string | null;
+  expense: number | string | null;
+  roomNights: number | string | null;
+}
+
+interface FinanceMixRow {
+  roomRevenue: number | string | null;
+  serviceRevenue: number | string | null;
+  surchargeRevenue: number | string | null;
+  damageRevenue: number | string | null;
+}
+
+interface FinanceBreakdownRow {
+  key: string;
+  count: number | string | null;
+  total: number | string | null;
+  paid: number | string | null;
+}
+
 const cardsByScope: Record<string, DashboardCard[]> = {
   admin: [
-    { label: "Tài khoản", value: "Users", note: "Tạo, sửa, khóa/mở tài khoản và gán đúng vai trò truy cập." },
-    { label: "Sức khỏe", value: "Health", note: "Kiểm runtime, database, storage, PWA, AI và readiness hệ thống." },
-    { label: "Sao lưu", value: "Backup", note: "Tạo snapshot SQL, cấu hình auto backup và đọc metadata backup." },
-    { label: "Phục hồi", value: "Restore", note: "Chọn snapshot toàn bộ, xác nhận rủi ro và phục hồi có kiểm soát." }
+    { label: "Quản lý tài khoản", value: "Users", note: "Tạo, sửa, khóa/mở tài khoản và gán đúng vai trò truy cập." },
+    { label: "Kiểm tra sức khỏe", value: "Health", note: "Kiểm runtime, database, storage, PWA, AI và readiness hệ thống." },
+    { label: "Sao lưu dữ liệu", value: "Backup", note: "Tạo snapshot SQL, cấu hình auto backup và đọc metadata backup." },
+    { label: "Phục hồi hệ thống", value: "Restore", note: "Chọn snapshot toàn bộ, xác nhận rủi ro và phục hồi có kiểm soát." }
   ],
   letan: [
     { label: "Đặt tại quầy", value: "Direct V2", note: "Tạo booking trực tiếp theo luồng lễ tân" },
-    { label: "Lưu trú", value: "Check-in/out", note: "Tách riêng check-in và check-out theo từng phòng" },
-    { label: "Phát sinh", value: "Sửa / Hủy / Dịch vụ", note: "Xử lý thay đổi booking và nhu cầu tại quầy" }
+    { label: "Xử lý lưu trú", value: "Check-in/out", note: "Tách riêng check-in và check-out theo từng phòng" },
+    { label: "Xử lý phát sinh", value: "Sửa / Hủy / Dịch vụ", note: "Xử lý thay đổi booking và nhu cầu tại quầy" }
   ],
   ketoan: [
-    { label: "Finance", value: "Revenue", note: "Bao cao doanh thu / chi phi / doi soat" },
-    { label: "Exports", value: "CSV / JSON", note: "Readable cho bao cao va dashboard" },
-    { label: "Data", value: "DB-backed", note: "Noi du lieu that thay vi mock" }
+    { label: "Thống kê tài chính", value: "Chart", note: "Tổng hợp doanh thu, chi phí, lợi nhuận và dòng tiền theo kỳ." },
+    { label: "Quản lý sổ thu chi", value: "Thu / Chi", note: "Doanh thu gồm khoản còn phải thu; chi phí gồm phiếu chi và chứng từ." },
+    { label: "Xử lý ngoại lệ", value: "Hoàn tiền", note: "Hoàn tiền giữ riêng vì liên kết Lễ tân hủy đặt phòng và Quản lý duyệt hoàn." }
   ],
   dichvu: [
     { label: "Quản lý dịch vụ", value: "Catalog", note: "Danh sách, thêm, sửa, xóa/ngưng và cập nhật thông tin dịch vụ." },
     { label: "Kiểm tra tình trạng phòng", value: "Room check", note: "Chọn phòng đang ở để cập nhật tình trạng sau kiểm tra thực tế." },
-    { label: "Room board live", value: "Realtime", note: "Theo dõi snapshot phòng và tín hiệu vận hành realtime của bộ phận dịch vụ." }
+    { label: "Theo dõi Room board live", value: "Realtime", note: "Theo dõi snapshot phòng và tín hiệu vận hành realtime của bộ phận dịch vụ." }
   ],
   quanly: [
     { label: "Quản lý khách hàng", value: "CRM live", note: "Theo dõi hồ sơ, lịch sử đặt phòng và tín hiệu trùng lặp khách hàng." },
     { label: "Quản lý phòng", value: "Inventory", note: "Nắm tình trạng phòng, ảnh hiển thị, cơ sở và điểm nghẽn vận hành." },
-    { label: "Duyệt eKYC", value: "Review", note: "Duyệt hồ sơ định danh, xem queue theo trạng thái và đồng bộ trạng thái khách cho vận hành." }
+    { label: "Duyệt eKYC", value: "Review", note: "Duyệt hồ sơ định danh, xem queue theo trạng thái và đồng bộ trạng thái khách cho vận hành." },
+    { label: "Duyệt hoàn tiền", value: "Refund", note: "Kiểm tra yêu cầu hoàn cọc sau hủy đặt phòng trước khi chuyển Kế toán chi hoàn." }
   ],
   cskh: [
     { label: "Quản lý phản hồi", value: "Feedback", note: "Lọc phản hồi, xem sentiment, trả lời khách và cập nhật trạng thái trong một màn." },
     { label: "Trả lời tư vấn", value: "Advisory", note: "Xử lý riêng luồng hỏi đáp và tư vấn từ khách hàng, bám theo ngữ cảnh booking khi cần." },
-    { label: "Tin nhắn hàng loạt", value: "Broadcast", note: "Gửi nhắc check-in/out, xác nhận booking, cảm ơn sau lưu trú và chiến dịch giữ chân khách." },
+    { label: "Gửi tin nhắn hàng loạt", value: "Broadcast", note: "Gửi nhắc check-in/out, xác nhận booking, cảm ơn sau lưu trú và chiến dịch giữ chân khách." },
     { label: "Quản lý khuyến mãi", value: "Promo live", note: "Vận hành ưu đãi, mã chăm sóc, chiến dịch quay lại và theo dõi usage thực tế." }
   ]
 };
@@ -92,7 +116,7 @@ const heroByScope: Record<string, { title: string; description: string }> = {
   },
   ketoan: {
     title: "Xin chào, Kế toán!",
-    description: "Theo dõi doanh thu, chi phí, công nợ và dòng tiền hợp nhất."
+    description: "Dashboard kế toán được gom gọn thành các lối vào nghiệp vụ chính: thống kê, doanh thu, chi phí và hoàn tiền."
   },
   dichvu: {
     title: "Xin chào, Bộ phận dịch vụ!",
@@ -100,51 +124,50 @@ const heroByScope: Record<string, { title: string; description: string }> = {
   },
   quanly: {
     title: "Xin chào, Quản lý!",
-    description: "Một bảng điều hành gọn cho quản lý: khách hàng, phòng, review eKYC và KPI vận hành đều nằm trong cùng một nhịp quan sát."
+    description: "Một bảng điều hành gọn cho quản lý: khách hàng, phòng, review eKYC, duyệt hoàn tiền và KPI vận hành đều nằm trong cùng một nhịp quan sát."
   },
   cskh: {
     title: "Xin chào, Chăm sóc khách hàng!",
-    description: "CSKH giờ có bốn nhịp xử lý rõ ràng: phản hồi khách hàng, trả lời tư vấn hỏi đáp, gửi outbound chăm sóc và quản lý khuyến mãi."
+    description: "CSKH xử lý phản hồi, tư vấn, gửi outbound và vận hành khuyến mãi trong cùng nhịp chăm sóc khách."
   }
 };
 
 const actionsByScope: Record<string, DashboardActionLink[]> = {
   admin: [
-    { label: "Người dùng & phân quyền", href: "/admin/users", note: "Tạo tài khoản, đổi vai trò và khóa/mở quyền truy cập." },
+    { label: "Quản lý người dùng & phân quyền", href: "/admin/users", note: "Tạo tài khoản, đổi vai trò và khóa/mở quyền truy cập." },
     { label: "Kiểm tra sức khỏe hệ thống", href: "/admin/diagnostics", note: "Kiểm runtime, readiness, mobile, AI và multi-hotel từ một cụm." },
     { label: "Sao lưu dữ liệu", href: "/admin/backups", note: "Tạo backup và cấu hình sao lưu tự động." },
     { label: "Phục hồi hệ thống", href: "/admin/restore", note: "Khôi phục dữ liệu từ file backup khi cần." }
   ],
   letan: [
     { label: "Đặt phòng tại quầy", href: "/frontdesk/direct-booking", note: "Tạo booking trực tiếp, chọn phòng, gắn khách, dịch vụ, khuyến mãi và tổng tiền." },
-    { label: "Check-in", href: "/frontdesk/checkin", note: "Tra cứu giao dịch, kiểm tra eKYC/giấy tờ và xác nhận nhận phòng." },
-    { label: "Check-out", href: "/frontdesk/checkout-v2", note: "Kiểm tiền phòng, dịch vụ, bồi thường, VietQR và hoàn tất trả phòng." },
+    { label: "Xác nhận check-in", href: "/frontdesk/checkin", note: "Tra cứu giao dịch, kiểm tra eKYC/giấy tờ và xác nhận nhận phòng." },
+    { label: "Hoàn tất check-out", href: "/frontdesk/checkout-v2", note: "Kiểm tiền phòng, dịch vụ, bồi thường, VietQR và hoàn tất trả phòng." },
     { label: "Sửa thông tin đặt phòng", href: "/frontdesk/edit-booking", note: "Cập nhật trưởng đoàn, ngày ở, phòng, số người và tổng tiền realtime." },
     { label: "Hủy đặt phòng", href: "/frontdesk/cancel-booking", note: "Hủy booking hợp lệ, bắt buộc lý do và đồng bộ trạng thái phòng." },
     { label: "Đặt dịch vụ", href: "/service?from=frontdesk", note: "Bổ sung dịch vụ cho khách đang ở, cộng tiền vào giao dịch đang mở." }
   ],
   ketoan: [
-    { label: "Báo cáo tổng hợp", href: "/accounting/reports", note: "Tổng quan doanh thu và chi phí" },
-    { label: "Doanh thu", href: "/accounting/revenue", note: "Danh sách giao dịch thu" },
-    { label: "Chi phí", href: "/accounting/expenses", note: "Quản lý phiếu chi" },
-    { label: "Thu chi hợp nhất", href: "/accounting/cashflow", note: "Timeline dòng tiền" },
-    { label: "Công nợ", href: "/accounting/debts", note: "Đối soát công nợ phải thu" },
-    { label: "Hoàn tiền", href: "/accounting/refunds", note: "Duyệt yêu cầu hoàn cọc và ghi nhận phiếu chi" }
+    { label: "Thống kê tài chính", href: "/accounting/reports", note: "Trực quan hóa doanh thu, chi phí, lợi nhuận và dòng tiền theo kỳ." },
+    { label: "Quản lý doanh thu", href: "/accounting/revenue", note: "Theo dõi giao dịch thu, phương thức thanh toán, tiền đã thu, còn phải thu và công nợ khách." },
+    { label: "Quản lý chi phí", href: "/accounting/expenses", note: "Quản lý phiếu chi, phân loại khoản chi và kiểm soát chứng từ phát sinh." },
+    { label: "Xử lý hoàn tiền", href: "/accounting/refunds", note: "Nhận yêu cầu đã được quản lý duyệt, hiện QR hoàn tiền, xác nhận chứng từ và ghi phiếu chi." }
   ],
   dichvu: [
     { label: "Quản lý dịch vụ", href: "/service/catalog/manage", note: "Quản lý danh mục dịch vụ: thêm mới, chỉnh tên, giá, mô tả, hình ảnh và trạng thái hoạt động." },
     { label: "Kiểm tra tình trạng phòng", href: "/service/room-inspection", note: "Xem phòng đang ở, chọn phòng cần kiểm tra và cập nhật tình trạng sau kiểm tra thực tế." },
-    { label: "Room board live", href: "/service/room-board-live", note: "Theo dõi room feed realtime để nắm phòng đang ở, cần vệ sinh, hư hại hoặc bảo trì." }
+    { label: "Theo dõi Room board live", href: "/service/room-board-live", note: "Theo dõi room feed realtime để nắm phòng đang ở, cần vệ sinh, hư hại hoặc bảo trì." }
   ],
   quanly: [
     { label: "Quản lý khách hàng", href: "/manager/customers", note: "Tra cứu hồ sơ, xem lịch sử giao dịch và kiểm tra dữ liệu trùng." },
     { label: "Quản lý phòng", href: "/manager/rooms", note: "Cập nhật danh mục phòng, ảnh, loại phòng, trạng thái và cơ sở đang khai thác." },
-    { label: "Duyệt eKYC", href: "/ekyc/review", note: "Xem queue eKYC, kiểm ảnh giấy tờ/selfie và đồng bộ quyết định xác thực." }
+    { label: "Duyệt eKYC", href: "/ekyc/review", note: "Xem queue eKYC, kiểm ảnh giấy tờ/selfie và đồng bộ quyết định xác thực." },
+    { label: "Duyệt hoàn tiền", href: "/manager/refunds", note: "Duyệt yêu cầu hoàn cọc do Lễ tân tạo sau khi khách hủy đặt phòng, trước khi Kế toán chi tiền." }
   ],
   cskh: [
     { label: "Quản lý phản hồi", href: "/feedback/manage", note: "Gộp toàn bộ xử lý phản hồi: lọc trạng thái/rating, xem sentiment, trả lời khách và đóng tiến độ." },
     { label: "Trả lời tư vấn", href: "/feedback/advisory/manage", note: "Tách riêng inbox tư vấn/hỏi đáp để CSKH trả lời khách theo từng case, không lẫn với phản hồi thường." },
-    { label: "Tin nhắn hàng loạt", href: "/feedback/broadcast/manage", note: "Soạn và đẩy outbound queue cho nhắc check-in/out, cảm ơn sau lưu trú, xác nhận booking và giữ chân khách cũ." },
+    { label: "Gửi tin nhắn hàng loạt", href: "/feedback/broadcast/manage", note: "Soạn và đẩy outbound queue cho nhắc check-in/out, cảm ơn sau lưu trú, xác nhận booking và giữ chân khách cũ." },
     { label: "Quản lý khuyến mãi", href: "/manager/promotions", note: "Tạo ưu đãi mới, điều phối mã chăm sóc khách và theo dõi usage thực tế của chiến dịch CSKH." }
   ]
 };
@@ -163,7 +186,7 @@ export class DashboardService {
   }
 
   async getStatsSnapshot(scope: string) {
-    const [rooms, transactions, customers, feedback, services, promotions, revenue, roomSummary, recentEvents] = await Promise.all([
+    const [rooms, transactions, customers, feedback, services, promotions, revenue, roomSummary, recentEvents, financeTrend, financeMix, financePayments, financeSources, financeWeekdays] = await Promise.all([
       query<CountRow>("SELECT COUNT(*)::int AS total FROM phong"),
       query<CountRow>("SELECT COUNT(*)::int AS total FROM giaodich"),
       query<CountRow>("SELECT COUNT(*)::int AS total FROM khachhang"),
@@ -322,6 +345,144 @@ export class DashboardService {
           ORDER BY happened_at DESC NULLS LAST, id DESC
           LIMIT 10
         `
+      ),
+      query<FinanceTrendRow>(
+        `
+          WITH days AS (
+            SELECT generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day')::date AS day
+          ),
+          revenue_by_day AS (
+            SELECT
+              DATE(gd.ngaygiaodich) AS day,
+              COALESCE(SUM(CASE WHEN gd.trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(gd.tongtien, 0) ELSE 0 END), 0)::numeric AS total,
+              COALESCE(SUM(CASE WHEN gd.trangthai = 'Paid' THEN COALESCE(gd.tongtien, 0) ELSE 0 END), 0)::numeric AS paid,
+              COALESCE(SUM(CASE WHEN gd.trangthai IN ('Booked', 'Stayed') THEN COALESCE(gd.tongtien, 0) ELSE 0 END), 0)::numeric AS outstanding
+            FROM giaodich gd
+            WHERE DATE(gd.ngaygiaodich) >= CURRENT_DATE - INTERVAL '13 days'
+            GROUP BY DATE(gd.ngaygiaodich)
+          ),
+          rooms_by_day AS (
+            SELECT
+              DATE(gd.ngaygiaodich) AS day,
+              COALESCE(SUM(CASE
+                WHEN gd.trangthai IN ('Booked', 'Stayed', 'Paid')
+                  THEN GREATEST(COALESCE(DATE(ct.ngaytradukien) - DATE(ct.ngaynhandukien), 1), 1)
+                ELSE 0
+              END), 0)::int AS room_nights
+            FROM giaodich gd
+            INNER JOIN chitietgiaodich ct ON ct.magiaodich = gd.magiaodich
+            WHERE DATE(gd.ngaygiaodich) >= CURRENT_DATE - INTERVAL '13 days'
+            GROUP BY DATE(gd.ngaygiaodich)
+          ),
+          expense_by_day AS (
+            SELECT
+              DATE(cp.ngaychi) AS day,
+              COALESCE(SUM(CASE WHEN cp.trangthai::text <> 'DaHuy' THEN COALESCE(cp.sotien, 0) ELSE 0 END), 0)::numeric AS expense
+            FROM chiphi cp
+            WHERE DATE(cp.ngaychi) >= CURRENT_DATE - INTERVAL '13 days'
+            GROUP BY DATE(cp.ngaychi)
+          )
+          SELECT
+            days.day::text AS date,
+            COALESCE(revenue_by_day.total, 0)::numeric AS total,
+            COALESCE(revenue_by_day.paid, 0)::numeric AS paid,
+            COALESCE(revenue_by_day.outstanding, 0)::numeric AS outstanding,
+            COALESCE(expense_by_day.expense, 0)::numeric AS expense,
+            COALESCE(rooms_by_day.room_nights, 0)::int AS "roomNights"
+          FROM days
+          LEFT JOIN revenue_by_day ON revenue_by_day.day = days.day
+          LEFT JOIN expense_by_day ON expense_by_day.day = days.day
+          LEFT JOIN rooms_by_day ON rooms_by_day.day = days.day
+          ORDER BY days.day ASC
+        `
+      ),
+      query<FinanceMixRow>(
+        `
+          WITH month_transactions AS (
+            SELECT magiaodich, trangthai
+            FROM giaodich
+            WHERE date_trunc('month', ngaygiaodich) = date_trunc('month', NOW())
+          ),
+          room_scope AS (
+            SELECT
+              mt.magiaodich,
+              COALESCE(SUM(CASE WHEN mt.trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(ct.thanhtien, 0) ELSE 0 END), 0)::numeric AS room_revenue,
+              COALESCE(SUM(CASE WHEN mt.trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(ct.tienphuthu, 0) ELSE 0 END), 0)::numeric AS surcharge_revenue,
+              COALESCE(SUM(CASE WHEN mt.trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(ct.tienboithuong, 0) ELSE 0 END), 0)::numeric AS damage_revenue
+            FROM month_transactions mt
+            INNER JOIN chitietgiaodich ct ON ct.magiaodich = mt.magiaodich
+            GROUP BY mt.magiaodich
+          ),
+          service_scope AS (
+            SELECT
+              mt.magiaodich,
+              COALESCE(SUM(CASE WHEN mt.trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(ctdv.thanhtien, 0) ELSE 0 END), 0)::numeric AS service_revenue
+            FROM month_transactions mt
+            INNER JOIN chitietdichvu ctdv ON ctdv.magiaodich = mt.magiaodich
+            GROUP BY mt.magiaodich
+          )
+          SELECT
+            COALESCE(SUM(room_scope.room_revenue), 0)::numeric AS "roomRevenue",
+            COALESCE(SUM(service_scope.service_revenue), 0)::numeric AS "serviceRevenue",
+            COALESCE(SUM(room_scope.surcharge_revenue), 0)::numeric AS "surchargeRevenue",
+            COALESCE(SUM(room_scope.damage_revenue), 0)::numeric AS "damageRevenue"
+          FROM month_transactions mt
+          LEFT JOIN room_scope ON room_scope.magiaodich = mt.magiaodich
+          LEFT JOIN service_scope ON service_scope.magiaodich = mt.magiaodich
+        `
+      ),
+      query<FinanceBreakdownRow>(
+        `
+          SELECT
+            COALESCE(NULLIF(TRIM(phuongthucthanhtoan::text), ''), 'ChuaGhiNhan') AS key,
+            COUNT(*)::int AS count,
+            COALESCE(SUM(CASE WHEN trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(tongtien, 0) ELSE 0 END), 0)::numeric AS total,
+            COALESCE(SUM(CASE WHEN trangthai = 'Paid' THEN COALESCE(tongtien, 0) ELSE 0 END), 0)::numeric AS paid
+          FROM giaodich
+          WHERE date_trunc('month', ngaygiaodich) = date_trunc('month', NOW())
+          GROUP BY COALESCE(NULLIF(TRIM(phuongthucthanhtoan::text), ''), 'ChuaGhiNhan')
+          ORDER BY paid DESC, total DESC, count DESC
+          LIMIT 6
+        `
+      ),
+      query<FinanceBreakdownRow>(
+        `
+          SELECT
+            COALESCE(NULLIF(TRIM(nguondat::text), ''), 'Khac') AS key,
+            COUNT(*)::int AS count,
+            COALESCE(SUM(CASE WHEN trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(tongtien, 0) ELSE 0 END), 0)::numeric AS total,
+            COALESCE(SUM(CASE WHEN trangthai = 'Paid' THEN COALESCE(tongtien, 0) ELSE 0 END), 0)::numeric AS paid
+          FROM giaodich
+          WHERE date_trunc('month', ngaygiaodich) = date_trunc('month', NOW())
+          GROUP BY COALESCE(NULLIF(TRIM(nguondat::text), ''), 'Khac')
+          ORDER BY total DESC, count DESC
+          LIMIT 6
+        `
+      ),
+      query<FinanceBreakdownRow>(
+        `
+          WITH weekdays AS (
+            SELECT generate_series(1, 7)::int AS dow
+          ),
+          weekday_data AS (
+            SELECT
+              EXTRACT(ISODOW FROM ngaygiaodich)::int AS dow,
+              COUNT(*)::int AS count,
+              COALESCE(SUM(CASE WHEN trangthai IN ('Booked', 'Stayed', 'Paid') THEN COALESCE(tongtien, 0) ELSE 0 END), 0)::numeric AS total,
+              COALESCE(SUM(CASE WHEN trangthai = 'Paid' THEN COALESCE(tongtien, 0) ELSE 0 END), 0)::numeric AS paid
+            FROM giaodich
+            WHERE date_trunc('month', ngaygiaodich) = date_trunc('month', NOW())
+            GROUP BY EXTRACT(ISODOW FROM ngaygiaodich)::int
+          )
+          SELECT
+            weekdays.dow::text AS key,
+            COALESCE(weekday_data.count, 0)::int AS count,
+            COALESCE(weekday_data.total, 0)::numeric AS total,
+            COALESCE(weekday_data.paid, 0)::numeric AS paid
+          FROM weekdays
+          LEFT JOIN weekday_data ON weekday_data.dow = weekdays.dow
+          ORDER BY weekdays.dow ASC
+        `
       )
     ]);
 
@@ -349,8 +510,91 @@ export class DashboardService {
         maintenanceRooms: Number(roomOverview?.maintenanceRooms ?? 0),
         cleaningRooms: Number(roomOverview?.cleaningRooms ?? 0)
       },
+      financeCharts: scope === "ketoan" ? {
+        trend: financeTrend.rows.map((row) => ({
+          label: this.formatShortDate(row.date),
+          total: Number(row.total ?? 0),
+          paid: Number(row.paid ?? 0),
+          outstanding: Number(row.outstanding ?? 0),
+          expense: Number(row.expense ?? 0),
+          roomNights: Number(row.roomNights ?? 0)
+        })),
+        revenueMix: [
+          { label: "Tiền phòng", value: Number(financeMix.rows[0]?.roomRevenue ?? 0) },
+          { label: "Dịch vụ", value: Number(financeMix.rows[0]?.serviceRevenue ?? 0) },
+          { label: "Phụ thu", value: Number(financeMix.rows[0]?.surchargeRevenue ?? 0) },
+          { label: "Bồi thường", value: Number(financeMix.rows[0]?.damageRevenue ?? 0) }
+        ],
+        payments: financePayments.rows.map((row) => ({
+          label: this.getPaymentMethodLabel(row.key),
+          value: Number(row.paid ?? 0),
+          total: Number(row.total ?? 0),
+          count: Number(row.count ?? 0)
+        })),
+        sources: financeSources.rows.map((row) => ({
+          label: this.getRevenueSourceLabel(row.key),
+          value: Number(row.total ?? 0),
+          paid: Number(row.paid ?? 0),
+          count: Number(row.count ?? 0)
+        })),
+        weekdays: financeWeekdays.rows.map((row) => ({
+          label: this.getWeekdayLabel(Number(row.key || 0)),
+          value: Number(row.total ?? 0),
+          paid: Number(row.paid ?? 0),
+          count: Number(row.count ?? 0)
+        }))
+      } : null,
       recentEvents: recentEvents.rows
     };
+  }
+
+  private formatShortDate(value: string | Date | null) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+  }
+
+  private getPaymentMethodLabel(value: string | null) {
+    const key = String(value || "");
+    const labels: Record<string, string> = {
+      TienMat: "Tiền mặt",
+      ChuyenKhoan: "Chuyển khoản",
+      TheTinDung: "Thẻ tín dụng",
+      ViDienTu: "Ví điện tử",
+      CongNo: "Công nợ",
+      ChuaThanhToan: "Chưa thanh toán",
+      ChuaGhiNhan: "Chưa ghi nhận"
+    };
+    return labels[key] || key || "Khác";
+  }
+
+  private getRevenueSourceLabel(value: string | null) {
+    const key = String(value || "");
+    const labels: Record<string, string> = {
+      Online: "Online",
+      LeTan: "Lễ tân",
+      DaiLy: "Đại lý",
+      Website: "Website",
+      App: "Ứng dụng",
+      Phone: "Điện thoại",
+      WalkIn: "Walk-in",
+      Khac: "Khác"
+    };
+    return labels[key] || key || "Khác";
+  }
+
+  private getWeekdayLabel(value: number) {
+    const labels: Record<number, string> = {
+      1: "Thứ 2",
+      2: "Thứ 3",
+      3: "Thứ 4",
+      4: "Thứ 5",
+      5: "Thứ 6",
+      6: "Thứ 7",
+      7: "Chủ nhật"
+    };
+    return labels[value] || "Chưa rõ";
   }
 
   async getRoomBoardSnapshot(scope: string) {

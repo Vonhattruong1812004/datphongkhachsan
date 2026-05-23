@@ -21,13 +21,17 @@ import {
 const uploadDir = path.resolve(process.cwd(), "uploads/ekyc");
 fs.mkdirSync(uploadDir, { recursive: true });
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const mimeExtensions: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp"
+};
 
 const storage = multer.diskStorage({
   destination: uploadDir,
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    const safeExt = ext || ".jpg";
-    cb(null, `ekyc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${safeExt}`);
+    const safeExt = mimeExtensions[file.mimetype] || ".jpg";
+    cb(null, `ekyc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${safeExt}`);
   }
 });
 
@@ -37,7 +41,9 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024
   },
   fileFilter: (_req, file, cb) => {
-    if (!allowedMimeTypes.has(file.mimetype)) {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const extensionAllowed = [".jpg", ".jpeg", ".png", ".webp"].includes(ext);
+    if (!allowedMimeTypes.has(file.mimetype) || !extensionAllowed) {
       cb(new Error("Ảnh eKYC phải là JPG, PNG hoặc WEBP."));
       return;
     }

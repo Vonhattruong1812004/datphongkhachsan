@@ -4,13 +4,17 @@
   const data = typeof payload !== "undefined" ? payload : {};
   const customer = data.customer || {};
   const form = data.form || {};
+  const pageMode = typeof mode !== "undefined" && mode ? mode : "feedback";
+  const advisoryMode = pageMode === "advisory";
   const serviceTypes = data.serviceTypes || ["Lưu trú", "Nhà hàng", "SPA", "Giặt là", "Dịch vụ khác"];
+  const visibleServiceTypes = serviceTypes.filter(function (type) { return advisoryMode || type !== "Tư vấn"; });
+  const issueTags = data.issueTags || [];
+  const bookingOptions = data.bookingOptions || [];
+  const selectedTags = Array.isArray(form.issue_tags) ? form.issue_tags : (form.issue_tags ? [form.issue_tags] : []);
   const recentFeedbacks = data.recentFeedbacks || [];
   const summary = data.summary || {};
   const success = typeof successMessage !== "undefined" ? successMessage : "";
   const error = typeof errorMessage !== "undefined" ? errorMessage : "";
-  const pageMode = typeof mode !== "undefined" && mode ? mode : "feedback";
-  const advisoryMode = pageMode === "advisory";
   const displayName = customer.tenKh || (typeof currentUser !== "undefined" && currentUser ? currentUser.displayName : "") || "Quý khách";
   const avgRating = Number(summary.avgRating || 0);
 %>
@@ -60,8 +64,18 @@
   .fb-field textarea{min-height:152px;resize:vertical;line-height:1.55}
   .fb-field input:focus,.fb-field select:focus,.fb-field textarea:focus{border-color:rgba(24,191,242,.48);box-shadow:0 0 0 4px rgba(24,191,242,.12)}
   .fb-field input:disabled{background:rgba(226,232,240,.45);color:#64748b}
+  .fb-field-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
   .fb-error-text{min-height:17px;color:#be123c;font-size:12px;font-weight:850}
   .fb-note{font-size:12px;color:var(--muted);line-height:1.55}
+  .fb-context-card{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-radius:22px;padding:13px;background:linear-gradient(135deg,rgba(24,191,242,.10),rgba(33,207,166,.10));border:1px solid rgba(24,191,242,.16)}
+  .fb-context-card strong{display:block;font-size:14px;color:#0f3f55}
+  .fb-context-card span{display:block;margin-top:4px;font-size:12px;color:var(--muted);line-height:1.45}
+  .fb-tag-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+  .fb-check-chip{display:flex!important;align-items:center;gap:8px;min-height:42px;border-radius:999px;border:1px solid rgba(18,48,71,.10);background:rgba(255,255,255,.70);padding:8px 11px;cursor:pointer;text-transform:none!important;letter-spacing:0!important;color:#173651!important;font-size:12px!important;transition:.18s ease}
+  .fb-check-chip input{width:16px!important;min-height:16px!important;height:16px;padding:0;accent-color:#10b981}
+  .fb-check-chip:has(input:checked){border-color:rgba(16,185,129,.34);background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(24,191,242,.10));box-shadow:0 12px 28px rgba(16,185,129,.10)}
+  .fb-context-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .fb-context-list span{display:inline-flex;border-radius:999px;padding:6px 9px;background:rgba(24,191,242,.10);color:#075985;font-size:11px;font-weight:900}
   .fb-rating{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
   .fb-rating input{position:absolute;opacity:0;pointer-events:none}
   .fb-rating label{min-height:58px;border-radius:18px;border:1px solid rgba(18,48,71,.10);background:rgba(255,255,255,.72);display:grid;place-items:center;color:#94a3b8;font-size:22px;font-weight:1000;cursor:pointer;transition:.18s ease}
@@ -93,7 +107,7 @@
   @keyframes fb-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}
   @keyframes fb-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
   @media(max-width:1040px){.fb-hero,.fb-layout{grid-template-columns:1fr}.fb-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.fb-orbit{min-height:250px}}
-  @media(max-width:640px){.fb-shell{padding:22px 12px 48px}.fb-hero,.fb-panel,.fb-side-card{border-radius:26px;padding:20px}.fb-form,.fb-stats{grid-template-columns:1fr}.fb-rating{grid-template-columns:repeat(5,1fr)}.fb-hero h1{font-size:44px}}
+  @media(max-width:640px){.fb-shell{padding:22px 12px 48px}.fb-hero,.fb-panel,.fb-side-card{border-radius:26px;padding:20px}.fb-form,.fb-stats,.fb-tag-grid{grid-template-columns:1fr}.fb-rating{grid-template-columns:repeat(5,1fr)}.fb-hero h1{font-size:44px}}
   @media(prefers-reduced-motion:reduce){.fb-shell::before,.fb-shell::after,.fb-dot,.fb-orbit-ring,.fb-orbit-core,.fb-orbit-word{animation:none}}
 </style>
 
@@ -106,7 +120,7 @@
       <div class="fb-actions">
         <a class="fb-button fb-button--primary" href="#feedbackForm"><%= advisoryMode ? "Tạo yêu cầu tư vấn" : "Viết phản hồi" %></a>
         <a class="fb-button" href="<%= advisoryMode ? "/customer/advisory" : "/customer/dashboard" %>"><%= advisoryMode ? "Về tư vấn" : "Về dashboard" %></a>
-        <a class="fb-button" href="/customer/bookings">Lịch sử booking</a>
+        <a class="fb-button" href="/customer/bookings">Quản lý đặt phòng</a>
       </div>
     </div>
     <aside class="fb-orbit" aria-label="Minh họa phản hồi">
@@ -156,11 +170,39 @@
             <div class="fb-error-text" id="errRating"></div>
           </div>
         <% } else { %>
+          <div class="fb-field is-wide">
+            <div class="fb-field-head">
+              <label>Gắn với đặt phòng</label>
+              <span class="fb-note"><%= bookingOptions.length %> booking gần đây</span>
+            </div>
+            <select id="feedbackBooking" name="booking_key">
+              <option value="">Không gắn booking cụ thể</option>
+              <% bookingOptions.forEach(function (booking) { %>
+                <option
+                  value="<%= booking.key %>"
+                  data-hotel="<%= booking.hotelNames || "" %>"
+                  data-stay="<%= booking.stayLabel || "" %>"
+                  data-room="<%= booking.roomLabel || "" %>"
+                  data-status="<%= booking.statusLabel || "" %>"
+                  <%= String(form.booking_key || "") === String(booking.key) ? "selected" : "" %>
+                >
+                  <%= booking.label %> · <%= booking.stayLabel || booking.statusLabel %>
+                </option>
+              <% }) %>
+            </select>
+            <div class="fb-context-card" id="bookingContextNote">
+              <div>
+                <strong>Chưa chọn booking</strong>
+                <span>Chọn booking nếu phản hồi liên quan đến kỳ lưu trú, phòng, thanh toán hoặc dịch vụ đã đặt.</span>
+              </div>
+              <span class="fb-badge">Tùy chọn</span>
+            </div>
+          </div>
           <div class="fb-field">
             <label>Loại dịch vụ *</label>
             <select id="feedbackServiceType" name="loai_dich_vu" required>
               <option value="">Chọn loại dịch vụ</option>
-              <% serviceTypes.forEach(function (type) { %>
+              <% visibleServiceTypes.forEach(function (type) { %>
                 <option value="<%= type %>" <%= String(form.loai_dich_vu || "") === type ? "selected" : "" %>><%= type %></option>
               <% }) %>
             </select>
@@ -175,6 +217,26 @@
               <% }) %>
             </div>
             <div class="fb-error-text" id="errRating"></div>
+          </div>
+          <div class="fb-field is-wide">
+            <div class="fb-field-head">
+              <label>Nhóm vấn đề</label>
+              <span class="fb-note">Chọn tối đa 5 nhóm</span>
+            </div>
+            <div class="fb-tag-grid" id="issueTagGrid">
+              <% issueTags.forEach(function (tag) { %>
+                <label class="fb-check-chip">
+                  <input type="checkbox" name="issue_tags" value="<%= tag %>" <%= selectedTags.includes(tag) ? "checked" : "" %> />
+                  <span><%= tag %></span>
+                </label>
+              <% }) %>
+            </div>
+            <div class="fb-note">Nhóm vấn đề giúp CSKH chuyển đúng bộ phận và ưu tiên phản hồi có rating thấp.</div>
+          </div>
+          <div class="fb-field is-wide">
+            <label>Mong muốn xử lý</label>
+            <input id="feedbackExpectation" name="mong_muon_xu_ly" maxlength="240" value="<%= form.mong_muon_xu_ly || "" %>" placeholder="VD: kiểm tra hóa đơn, liên hệ lại, đổi lịch dịch vụ, ghi nhận góp ý..." />
+            <div class="fb-note"><span id="expectationCount">0</span>/240 ký tự. Có thể bỏ trống nếu chỉ muốn đánh giá trải nghiệm.</div>
           </div>
         <% } %>
         <div class="fb-field is-wide">
@@ -219,6 +281,13 @@
                 </div>
                 <span class="fb-badge is-<%= item.statusTone || "pending" %>"><%= item.statusLabel || item.trangThai %></span>
               </div>
+              <% if (item.contextItems && item.contextItems.length) { %>
+                <div class="fb-context-list">
+                  <% item.contextItems.forEach(function (contextItem) { %>
+                    <span><%= contextItem %></span>
+                  <% }) %>
+                </div>
+              <% } %>
               <p class="fb-muted" style="margin:10px 0 0;"><%= item.noiDung || "" %></p>
               <div class="fb-actions" style="margin-top:10px;">
                 <span class="fb-badge fb-sentiment is-<%= item.sentimentTone || "neutral" %>"><%= item.sentimentLabel || "Trung lập" %></span>
@@ -249,6 +318,11 @@
     const form = document.getElementById("feedbackForm");
     const serviceType = document.getElementById("feedbackServiceType");
     const content = document.getElementById("feedbackContent");
+    const bookingSelect = document.getElementById("feedbackBooking");
+    const bookingContextNote = document.getElementById("bookingContextNote");
+    const expectation = document.getElementById("feedbackExpectation");
+    const expectationCount = document.getElementById("expectationCount");
+    const issueTagGrid = document.getElementById("issueTagGrid");
     const fileInput = document.getElementById("feedbackFile");
     const preview = document.getElementById("feedbackPreview");
     const previewImg = preview ? preview.querySelector("img") : null;
@@ -268,6 +342,51 @@
     function updateCounter() {
       if (!counter || !content) return;
       counter.textContent = String((content.value || "").length);
+    }
+
+    function updateExpectationCounter() {
+      if (!expectationCount || !expectation) return;
+      expectationCount.textContent = String((expectation.value || "").length);
+    }
+
+    function updateBookingContext() {
+      if (!bookingSelect || !bookingContextNote) return;
+      const selected = bookingSelect.options[bookingSelect.selectedIndex];
+      bookingContextNote.textContent = "";
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      const detail = document.createElement("span");
+      const badge = document.createElement("span");
+      badge.className = "fb-badge";
+      if (!selected || !selected.value) {
+        title.textContent = "Chưa chọn booking";
+        detail.textContent = "Chọn booking nếu phản hồi liên quan đến kỳ lưu trú, phòng, thanh toán hoặc dịch vụ đã đặt.";
+        badge.textContent = "Tùy chọn";
+        body.append(title, detail);
+        bookingContextNote.append(body, badge);
+        return;
+      }
+      const hotel = selected.dataset.hotel || "ABC Resort";
+      const stay = selected.dataset.stay || selected.dataset.status || "";
+      const room = selected.dataset.room || "Chưa rõ phòng";
+      const status = selected.dataset.status || "";
+      title.textContent = hotel;
+      detail.textContent = room + (stay ? " · " + stay : "");
+      badge.className = "fb-badge is-processing";
+      badge.textContent = status;
+      body.append(title, detail);
+      bookingContextNote.append(body, badge);
+    }
+
+    function enforceIssueTagLimit(event) {
+      if (!issueTagGrid) return;
+      const checked = Array.from(issueTagGrid.querySelectorAll("input[type='checkbox']:checked"));
+      if (checked.length <= 5) return;
+      if (event && event.target) event.target.checked = false;
+      if (clientError) {
+        clientError.textContent = "Chỉ chọn tối đa 5 nhóm vấn đề để phản hồi gọn và dễ xử lý.";
+        clientError.style.display = "block";
+      }
     }
 
     function clearErrors() {
@@ -327,10 +446,15 @@
     }
 
     updateCounter();
+    updateExpectationCounter();
+    updateBookingContext();
     content && content.addEventListener("input", function () {
       updateCounter();
       validate(false);
     });
+    expectation && expectation.addEventListener("input", updateExpectationCounter);
+    bookingSelect && bookingSelect.addEventListener("change", updateBookingContext);
+    issueTagGrid && issueTagGrid.addEventListener("change", enforceIssueTagLimit);
     serviceType && serviceType.addEventListener("change", function () { validate(false); });
     form && form.querySelectorAll("input[name='muc_do_hai_long']").forEach(function (input) {
       input.addEventListener("change", function () { validate(false); });

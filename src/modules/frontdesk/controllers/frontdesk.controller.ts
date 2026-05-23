@@ -210,7 +210,7 @@ async function renderCheckoutState(
   }
 
   return res.render("frontdesk/checkout-v2", {
-    title: "Check-out",
+    title: "Hoàn tất check-out",
     keyword,
     selectedRoomId,
     payload,
@@ -244,7 +244,7 @@ async function renderCheckinState(
   }
 
   return res.render("frontdesk/checkin", {
-    title: "Check-in khách hàng",
+    title: "Xác nhận check-in khách hàng",
     keyword,
     payload,
     notice: {

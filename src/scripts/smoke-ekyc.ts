@@ -9,6 +9,9 @@ type AccountRow = {
   username: string;
   roleId: number;
   roleName: string;
+  customerId: number | null;
+  customerStatus: string | null;
+  latestEkycResult: string | null;
 };
 
 type ActorSession = {
@@ -88,9 +91,20 @@ async function findActiveAccounts() {
       SELECT
         tk.username,
         tk.mavaitro AS "roleId",
-        vt.tenvaitro AS "roleName"
+        vt.tenvaitro AS "roleName",
+        tk.makhachhang AS "customerId",
+        kh.trangthaiekyc AS "customerStatus",
+        latest.ketquaxacthuc AS "latestEkycResult"
       FROM taikhoan tk
       INNER JOIN vaitro vt ON vt.mavaitro = tk.mavaitro
+      LEFT JOIN khachhang kh ON kh.makhachhang = tk.makhachhang
+      LEFT JOIN LATERAL (
+        SELECT ev.ketquaxacthuc
+        FROM ekyc_verification ev
+        WHERE ev.makhachhang = tk.makhachhang
+        ORDER BY ev.maekyc DESC
+        LIMIT 1
+      ) latest ON true
       WHERE tk.trangthai = 'HoatDong'
       ORDER BY tk.mavaitro ASC, tk.matk ASC
     `
@@ -196,7 +210,14 @@ async function main() {
 
   try {
     const accounts = await findActiveAccounts();
-    const customer = await loginRole(baseUrl, ROLE.KHACH_HANG, accounts);
+    const customerCandidates = accounts.filter((account) => (
+      account.roleId === ROLE.KHACH_HANG
+      && account.customerId
+      && account.customerStatus !== "DaXacThuc"
+      && account.latestEkycResult !== "ThanhCong"
+      && account.latestEkycResult !== "DangXuLy"
+    ));
+    const customer = await loginRole(baseUrl, ROLE.KHACH_HANG, customerCandidates.length ? customerCandidates : accounts);
     const reviewer = await loginRole(baseUrl, ROLE.QUAN_LY, accounts);
     const customerCsrf = await getCsrf(baseUrl, "/ekyc", customer.cookieJar, "Customer eKYC");
     const reviewerCsrf = await getCsrf(baseUrl, "/ekyc/review", reviewer.cookieJar, "eKYC review");
@@ -269,8 +290,8 @@ async function main() {
     if (detailResult.response.status !== 200 || detailResult.json?.data?.id !== createdEkycId) {
       throw new Error(`eKYC review detail failed: ${detailResult.response.status} ${detailResult.text}`);
     }
-    if (detailResult.json.data.ketQuaXacThuc !== "ThanhCong") {
-      throw new Error(`Rule-based eKYC should initially succeed for valid CCCD, got ${detailResult.json.data.ketQuaXacThuc}`);
+    if (detailResult.json.data.ketQuaXacThuc !== "DangXuLy") {
+      throw new Error(`eKYC should wait for manager review after submit, got ${detailResult.json.data.ketQuaXacThuc}`);
     }
 
     const missingReviewCsrf = await requestJson(`${baseUrl}/api/ekyc/review/${createdEkycId}`, {

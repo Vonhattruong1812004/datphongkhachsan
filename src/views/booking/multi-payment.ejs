@@ -1,0 +1,138 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const booking = preview.booking;
+  const summary = preview.summary;
+  const transfer = hold.paymentTransfer || {};
+  const expiresAt = new Date(hold.expiresAt).getTime();
+  const holdMinutes = Number(transfer.expiresInMinutes || 10);
+%>
+<style>
+  body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
+  .pay-shell{max-width:1120px;margin:0 auto;padding:34px 18px 64px}.pay-card{border:1px solid rgba(19,48,74,.12);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74));box-shadow:0 26px 72px rgba(12,39,64,.14);backdrop-filter:blur(22px);padding:24px;margin-bottom:18px}
+  .pay-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}.pay-chip{display:inline-flex;border-radius:999px;padding:6px 11px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase}.pay-card h1,.pay-card h2{margin:14px 0 10px;color:#102033}.pay-card h1{font-size:clamp(34px,5vw,58px);line-height:1;letter-spacing:-.055em}
+  .pay-muted{color:#5f778f;line-height:1.65}.pay-lines{display:grid;gap:10px;margin-top:14px}.pay-line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed rgba(19,48,74,.14);padding-bottom:10px;color:#5f778f}.pay-line strong{color:#102033}.pay-line--total{border-bottom:0;border-radius:18px;background:linear-gradient(135deg,rgba(14,165,233,.10),rgba(20,184,166,.12));padding:14px;color:#102033;font-size:18px;font-weight:1000}
+  .room-list,.service-list{display:grid;gap:10px;margin-top:13px}.room-item,.service-item{border-radius:18px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.68);padding:12px}.room-item strong,.service-item strong{display:block;color:#102033}.room-item span,.service-item span{display:block;color:#5f778f;font-size:13px;margin-top:4px}
+  .pay-qr{width:100%;border-radius:24px;border:1px solid rgba(19,48,74,.10);background:white;padding:10px}.pay-box{border-radius:18px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.72);padding:14px}.pay-content{font-size:20px;font-weight:1000;color:#0f766e;overflow-wrap:anywhere}.pay-count{font-size:36px;color:#e11d48;font-weight:1000}.pay-copy{border-radius:16px;border:1px solid rgba(14,165,233,.14);background:rgba(14,165,233,.08);padding:11px;color:#0c4a6e;font-size:12px;font-weight:800;line-height:1.45}
+  .pay-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.pay-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer}.pay-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e)}
+  .pay-success{display:none;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.10)}.pay-success.is-show{display:block}.pay-pending.is-hide{display:none}.pay-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}.pay-flow div{border-radius:18px;border:1px solid rgba(20,184,166,.16);background:rgba(20,184,166,.09);padding:12px}.pay-flow span{display:block;color:#0f766e;font-size:11px;font-weight:1000;text-transform:uppercase}.pay-flow strong{display:block;margin-top:5px;color:#102033;font-size:13px;line-height:1.25}
+  @media(max-width:860px){.pay-grid,.pay-flow{grid-template-columns:1fr}}
+</style>
+
+<main class="pay-shell" data-hold-id="<%= hold.holdId %>" data-expires-at="<%= expiresAt %>">
+  <section class="pay-card">
+    <span class="pay-chip">Đặt phòng online · Giữ phòng <%= holdMinutes %> phút · Cọc 50%</span>
+    <h1>Thanh toán cọc để tạo booking nhiều phòng.</h1>
+    <p class="pay-muted">Webhook SePay sẽ khớp đúng nội dung chuyển khoản. Sau khi tiền cọc về đủ, hệ thống tạo một giao dịch đặt phòng với các phòng đã chọn và các dịch vụ đã gán theo từng phòng.</p>
+    <div class="pay-flow" aria-label="Quy trình thanh toán cọc">
+      <div><span>01</span><strong>Quét QR đúng số tiền</strong></div>
+      <div><span>02</span><strong>Không sửa nội dung</strong></div>
+      <div><span>03</span><strong>Webhook xác nhận cọc</strong></div>
+      <div><span>04</span><strong>Tạo booking và dịch vụ</strong></div>
+    </div>
+  </section>
+
+  <section class="pay-card pay-success" id="paySuccess">
+    <span class="pay-chip">Thanh toán thành công</span>
+    <h2>Booking đã được tạo</h2>
+    <p class="pay-muted">Các phòng và dịch vụ theo phòng đã được ghi nhận trong cùng giao dịch.</p>
+    <div class="pay-actions">
+      <a class="pay-button pay-button--primary" id="invoiceLink" href="#">Xem hóa đơn</a>
+      <a class="pay-button" href="/customer/bookings">Lịch sử booking</a>
+    </div>
+  </section>
+
+  <section class="pay-grid pay-pending" id="payPending">
+    <div class="pay-card">
+      <span class="pay-chip"><%= preview.rooms.length %> phòng · <%= preview.services.length %> dịch vụ</span>
+      <h2><%= booking.ten_khach %></h2>
+      <div class="pay-lines">
+        <div class="pay-line"><span>Thời gian</span><strong><%= summary.checkinLabel %> → <%= summary.checkoutLabel %></strong></div>
+        <div class="pay-line"><span>Tiền phòng</span><strong><%= summary.roomAmountFormatted %></strong></div>
+        <div class="pay-line"><span>Dịch vụ</span><strong><%= summary.serviceAmountFormatted %></strong></div>
+        <div class="pay-line"><span>Khuyến mãi</span><strong>-<%= summary.discountFormatted %></strong></div>
+        <div class="pay-line pay-line--total"><span>Tổng hóa đơn</span><strong><%= summary.totalFormatted %></strong></div>
+        <div class="pay-line pay-line--total"><span>Cọc 50%</span><strong><%= summary.depositAmountFormatted %></strong></div>
+      </div>
+
+      <div class="room-list">
+        <% preview.rooms.forEach((room) => { %>
+          <div class="room-item"><strong>Phòng <%= room.soPhong %> · <%= room.loaiPhong %></strong><span><%= room.khachSan %> · <%= room.amountFormatted %></span></div>
+        <% }) %>
+      </div>
+
+      <% if (preview.services.length) { %>
+        <div class="service-list">
+          <% preview.services.forEach((service) => { const room = preview.rooms.find((item) => Number(item.id) === Number(service.room_id)); %>
+            <div class="service-item"><strong><%= service.name %> x <%= service.quantity %></strong><span>Gán cho phòng <%= room?.soPhong || service.room_id %> · <%= service.amountFormatted %></span></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+
+    <aside class="pay-card">
+      <img class="pay-qr" src="<%= transfer.qrImageUrl %>" alt="QR thanh toán SePay" />
+      <div class="pay-box" style="margin-top:14px">
+        <div class="pay-muted">Nội dung chuyển khoản</div>
+        <div class="pay-content"><%= transfer.content %></div>
+      </div>
+      <div class="pay-copy" style="margin-top:12px">Không sửa nội dung chuyển khoản. Webhook dùng mã này để khớp đúng giao dịch giữ phòng.</div>
+      <div class="pay-box" style="margin-top:12px">
+        <div class="pay-muted">Số tiền</div>
+        <div class="pay-content"><%= transfer.amountFormatted %></div>
+      </div>
+      <div class="pay-box" style="margin-top:12px">
+        <div class="pay-muted">Hạn giữ phòng</div>
+        <div class="pay-count" id="countdown">10:00</div>
+      </div>
+      <p class="pay-muted"><%= transfer.bankName %> · <%= transfer.accountNo %> · <%= transfer.accountName %></p>
+    </aside>
+  </section>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const shell = document.querySelector(".pay-shell");
+  const holdId = Number(shell?.dataset.holdId || 0);
+  const expiresAt = Number(shell?.dataset.expiresAt || 0);
+  const countdown = document.getElementById("countdown");
+  const pending = document.getElementById("payPending");
+  const success = document.getElementById("paySuccess");
+  const invoiceLink = document.getElementById("invoiceLink");
+  let done = false;
+
+  function renderCountdown() {
+    const remain = Math.max(0, expiresAt - Date.now());
+    const seconds = Math.ceil(remain / 1000);
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    if (countdown) countdown.textContent = `${mm}:${ss}`;
+  }
+
+  async function poll() {
+    if (done || !holdId) return;
+    try {
+      const response = await fetch(`/api/booking/holds/${holdId}`, { credentials: "same-origin" });
+      const json = await response.json();
+      const data = json?.data || {};
+      if (data.status === "PAID" && data.transactionId) {
+        done = true;
+        pending?.classList.add("is-hide");
+        success?.classList.add("is-show");
+        if (invoiceLink) invoiceLink.href = `/booking/invoice/${data.transactionId}`;
+        return;
+      }
+      if (data.status === "EXPIRED" || Date.now() >= expiresAt) {
+        done = true;
+        if (countdown) countdown.textContent = "Hết hạn";
+      }
+    } catch {}
+  }
+
+  renderCountdown();
+  poll();
+  setInterval(renderCountdown, 1000);
+  setInterval(poll, 2500);
+});
+</script>
+<%- include("../partials/footer") %>

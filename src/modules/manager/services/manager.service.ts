@@ -15,6 +15,14 @@ const ROOM_NUMBER_REGEX = /^[A-Za-z0-9-]{1,32}$/;
 const ROOM_TEXT_REGEX = /^[^<>{}[\]\\]{1,120}$/u;
 const ROOM_NOTE_REGEX = /^[^<>{}[\]\\]{0,500}$/u;
 const ROOM_IMAGE_REGEX = /^(?:https?:\/\/[^\s<>"']{1,240}|(?:\/?uploads\/phong\/)?[A-Za-z0-9_.-]{1,180})$/i;
+const PROMOTION_TEXT_REGEX = /^[^<>{}[\]\\]{0,500}$/u;
+const PROMOTION_CHANNELS = ["Direct", "Website", "Frontdesk", "CSKH", "All"] as const;
+const PROMOTION_STACK_POLICIES = ["NoStack", "AllowServiceOnly", "ManualReview"] as const;
+const refundApprovalSchema = z.object({
+  refund_id: z.coerce.number().int().positive(),
+  action: z.enum(["approve", "reject"]),
+  manager_note: z.string().trim().max(500).optional().default("")
+});
 
 const customerSchema = z.object({
   customer_id: z.preprocess((value) => {
@@ -87,9 +95,16 @@ const promotionSchema = z.object({
   ngay_bat_dau: z.string().optional().nullable(),
   ngay_ket_thuc: z.string().optional().nullable(),
   muc_uu_dai: z.coerce.number().min(0),
-  doi_tuong: z.string().trim().optional().default("TatCa"),
+  doi_tuong: z.string().trim().max(120).regex(PROMOTION_TEXT_REGEX, "Đối tượng không được chứa ký tự HTML hoặc ký tự điều khiển.").optional().default("TatCa"),
   trang_thai: z.enum(["DangApDung", "TamNgung", "HetHan"]).default("DangApDung"),
-  loai_uu_dai: z.enum(["PERCENT", "FIXED"]).default("PERCENT")
+  loai_uu_dai: z.enum(["PERCENT", "FIXED"]).default("PERCENT"),
+  kenh_ap_dung: z.enum(PROMOTION_CHANNELS).optional().default("All"),
+  so_dem_toi_thieu: z.coerce.number().int().min(0).max(30).optional().default(0),
+  gia_tri_toi_thieu: z.coerce.number().min(0).max(1_000_000_000).optional().default(0),
+  gioi_han_luot_dung: z.coerce.number().int().min(0).max(1_000_000).optional().default(0),
+  ngay_chan: z.string().trim().max(300).optional().default(""),
+  chinh_sach_cong_don: z.enum(PROMOTION_STACK_POLICIES).optional().default("NoStack"),
+  muc_tieu_chien_dich: z.string().trim().max(500).regex(PROMOTION_TEXT_REGEX, "Mục tiêu chiến dịch không được chứa ký tự HTML hoặc ký tự điều khiển.").optional().default("")
 }).superRefine((input, ctx) => {
   const start = String(input.ngay_bat_dau || "").trim();
   const end = String(input.ngay_ket_thuc || "").trim();
@@ -133,7 +148,36 @@ const promotionSchema = z.object({
       message: "Ưu đãi phần trăm không được vượt quá 100."
     });
   }
+
+  const blackoutDates = parseDateList(input.ngay_chan || "");
+  if (input.ngay_chan && !blackoutDates.valid) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ngay_chan"],
+      message: "Ngày chặn phải theo định dạng YYYY-MM-DD, cách nhau bằng dấu phẩy."
+    });
+  }
+
+  if (blackoutDates.values.some((date) => (start && date < start) || (end && date > end))) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ngay_chan"],
+      message: "Ngày chặn phải nằm trong khung ngày áp dụng của chương trình."
+    });
+  }
 });
+
+function parseDateList(value: string) {
+  const rawItems = String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const valid = rawItems.every((item) => /^\d{4}-\d{2}-\d{2}$/.test(item) && !Number.isNaN(new Date(`${item}T00:00:00`).getTime()));
+  return {
+    valid,
+    values: valid ? Array.from(new Set(rawItems)).sort() : rawItems
+  };
+}
 
 const roomSchema = z.object({
   room_id: z.coerce.number().int().optional(),
@@ -186,6 +230,269 @@ function normalizeRoomViewValue(value: string | null | undefined) {
 }
 
 export class ManagerService {
+  async listRefundApprovals(rawFilters: unknown = {}) {
+    await this.ensureRefundRequestTable();
+    const filters = this.normalizeRefundApprovalFilters(rawFilters);
+    const params: unknown[] = [filters.tu_ngay, filters.den_ngay];
+    const where = [
+      "DATE(rr.created_at) >= $1",
+      "DATE(rr.created_at) <= $2"
+    ];
+
+    if (filters.trang_thai !== "all") {
+      params.push(filters.trang_thai);
+      where.push(`rr.status = $${params.length}`);
+    }
+
+    if (filters.search) {
+      params.push(`%${filters.search}%`);
+      const idx = params.length;
+      where.push(`
+        (
+          rr.refund_code ILIKE $${idx}
+          OR rr.magiaodich::text ILIKE $${idx}
+          OR COALESCE(rr.customer_name, '') ILIKE $${idx}
+          OR COALESCE(rr.customer_phone, '') ILIKE $${idx}
+          OR COALESCE(rr.bank_name, '') ILIKE $${idx}
+          OR COALESCE(rr.bank_account_no, '') ILIKE $${idx}
+          OR COALESCE(gd.madatcho, '') ILIKE $${idx}
+        )
+      `);
+    }
+
+    const whereSql = `WHERE ${where.join(" AND ")}`;
+    const total = await query<{
+      recordCount: number | string;
+      managerPendingCount: number | string;
+      managerPendingAmount: number | string;
+      accountingReadyCount: number | string;
+      accountingReadyAmount: number | string;
+      rejectedCount: number | string;
+      rejectedAmount: number | string;
+    }>(
+      `
+        SELECT
+          COUNT(*)::int AS "recordCount",
+          COUNT(*) FILTER (WHERE rr.status = 'ChoQuanLyDuyet')::int AS "managerPendingCount",
+          COALESCE(SUM(rr.amount_requested) FILTER (WHERE rr.status = 'ChoQuanLyDuyet'), 0)::numeric AS "managerPendingAmount",
+          COUNT(*) FILTER (WHERE rr.status = 'ChoXuLy')::int AS "accountingReadyCount",
+          COALESCE(SUM(rr.amount_requested) FILTER (WHERE rr.status = 'ChoXuLy'), 0)::numeric AS "accountingReadyAmount",
+          COUNT(*) FILTER (WHERE rr.status = 'TuChoi')::int AS "rejectedCount",
+          COALESCE(SUM(rr.amount_requested) FILTER (WHERE rr.status = 'TuChoi'), 0)::numeric AS "rejectedAmount"
+        FROM refund_requests rr
+        LEFT JOIN giaodich gd ON gd.magiaodich = rr.magiaodich
+        ${whereSql}
+      `,
+      params
+    );
+
+    const totalRecords = Number(total.rows[0]?.recordCount || 0);
+    const totalPages = Math.max(1, Math.ceil(totalRecords / filters.limit));
+    const currentPage = Math.min(filters.page, totalPages);
+    const offset = (currentPage - 1) * filters.limit;
+    filters.page = currentPage;
+
+    const [rows, statusBreakdown] = await Promise.all([
+      query<any>(
+        `
+          SELECT
+            rr.id,
+            rr.magiaodich AS "maGiaoDich",
+            rr.refund_code AS "refundCode",
+            rr.scope,
+            rr.room_ids AS "roomIds",
+            rr.customer_name AS "customerName",
+            rr.customer_phone AS "customerPhone",
+            rr.customer_email AS "customerEmail",
+            rr.bank_name AS "bankName",
+            rr.bank_account_no AS "bankAccountNo",
+            rr.bank_account_name AS "bankAccountName",
+            rr.reason,
+            rr.note,
+            rr.deposit_paid AS "depositPaid",
+            rr.retained_deposit AS "retainedDeposit",
+            rr.already_requested AS "alreadyRequested",
+            rr.refundable_base AS "refundableBase",
+            rr.refund_rate AS "refundRate",
+            rr.hours_before_checkin AS "hoursBeforeCheckin",
+            rr.cancellation_policy_label AS "cancellationPolicyLabel",
+            rr.cancellation_policy_note AS "cancellationPolicyNote",
+            rr.amount_requested AS "amountRequested",
+            rr.amount_paid AS "amountPaid",
+            rr.status,
+            rr.created_by_role AS "createdByRole",
+            rr.created_at AS "createdAt",
+            rr.processed_at AS "processedAt",
+            rr.accounting_note AS "accountingNote",
+            rr.expense_id AS "expenseId",
+            rr.manager_note AS "managerNote",
+            rr.manager_reviewed_at AS "managerReviewedAt",
+            rr.manager_by AS "managerBy",
+            gd.madatcho AS "bookingCode",
+            gd.trangthai AS "transactionStatus",
+            gd.tongtien AS "transactionTotal",
+            hotel_info."hotelNames"
+          FROM refund_requests rr
+          LEFT JOIN giaodich gd ON gd.magiaodich = rr.magiaodich
+          LEFT JOIN LATERAL (
+            SELECT string_agg(DISTINCT ks.tenkhachsan, ' | ' ORDER BY ks.tenkhachsan) AS "hotelNames"
+            FROM chitietgiaodich ct
+            INNER JOIN phong p ON p.maphong = ct.maphong
+            INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+            WHERE ct.magiaodich = rr.magiaodich
+          ) hotel_info ON TRUE
+          ${whereSql}
+          ORDER BY
+            CASE rr.status WHEN 'ChoQuanLyDuyet' THEN 0 WHEN 'ChoXuLy' THEN 1 WHEN 'DaHoan' THEN 2 ELSE 3 END,
+            rr.created_at DESC,
+            rr.id DESC
+          LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+        `,
+        [...params, filters.limit, offset]
+      ),
+      query<{ status: string; count: number | string; total: number | string }>(
+        `
+          SELECT
+            rr.status,
+            COUNT(*)::int AS count,
+            COALESCE(SUM(CASE WHEN rr.status = 'DaHoan' THEN rr.amount_paid ELSE rr.amount_requested END), 0)::numeric AS total
+          FROM refund_requests rr
+          LEFT JOIN giaodich gd ON gd.magiaodich = rr.magiaodich
+          ${whereSql}
+          GROUP BY rr.status
+          ORDER BY total DESC, count DESC
+        `,
+        params
+      )
+    ]);
+
+    const summary = {
+      totalRecords,
+      managerPendingCount: Number(total.rows[0]?.managerPendingCount || 0),
+      managerPendingAmount: Number(total.rows[0]?.managerPendingAmount || 0),
+      accountingReadyCount: Number(total.rows[0]?.accountingReadyCount || 0),
+      accountingReadyAmount: Number(total.rows[0]?.accountingReadyAmount || 0),
+      rejectedCount: Number(total.rows[0]?.rejectedCount || 0),
+      rejectedAmount: Number(total.rows[0]?.rejectedAmount || 0)
+    };
+
+    return {
+      filters,
+      rows: rows.rows.map((row) => this.decorateRefundApprovalRow(row)),
+      summary: {
+        ...summary,
+        managerPendingAmountFormatted: formatMoney(summary.managerPendingAmount),
+        accountingReadyAmountFormatted: formatMoney(summary.accountingReadyAmount),
+        rejectedAmountFormatted: formatMoney(summary.rejectedAmount)
+      },
+      statusOptions: this.getRefundApprovalStatusOptions(),
+      statusBreakdown: statusBreakdown.rows.map((row) => ({
+        status: row.status,
+        count: Number(row.count || 0),
+        total: Number(row.total || 0),
+        totalFormatted: formatMoney(row.total),
+        meta: this.getRefundApprovalStatusMeta(row.status)
+      })),
+      totalRecords,
+      currentPage,
+      totalPages,
+      limit: filters.limit,
+      offset,
+      hasData: rows.rows.length > 0,
+      rangeLabel: `${formatDate(filters.tu_ngay, "DD/MM/YYYY")} - ${formatDate(filters.den_ngay, "DD/MM/YYYY")}`,
+      generatedAtLabel: formatDate(new Date(), "DD/MM/YYYY HH:mm")
+    };
+  }
+
+  async reviewRefundApproval(rawInput: unknown, actor: { username?: string | null } = {}) {
+    await this.ensureRefundRequestTable();
+    const input = refundApprovalSchema.parse(rawInput);
+    const managerNote = input.manager_note.trim();
+
+    const result = await withTransaction(async (client) => {
+      const locked = await client.query(
+        `
+          SELECT *
+          FROM refund_requests
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [input.refund_id]
+      ) as { rows: Array<any> };
+      const refund = locked.rows[0];
+
+      if (!refund) {
+        throw new HttpError(404, "Khong tim thay yeu cau hoan tien.");
+      }
+
+      if (refund.status !== "ChoQuanLyDuyet") {
+        throw new HttpError(409, "Yeu cau hoan tien nay khong con cho quan ly duyet.");
+      }
+
+      const amount = Math.max(0, Math.round(Number(refund.amount_requested || 0)));
+      if (amount <= 0) {
+        throw new HttpError(422, "So tien hoan khong hop le.");
+      }
+
+      const nextStatus = input.action === "approve" ? "ChoXuLy" : "TuChoi";
+      const defaultNote = input.action === "approve"
+        ? "Quan ly da duyet thong tin hoan tien, chuyen Ke toan xu ly chi."
+        : "Quan ly tu choi yeu cau hoan tien.";
+
+      await client.query(
+        `
+          UPDATE refund_requests
+          SET status = $2,
+              manager_note = $3,
+              manager_reviewed_at = NOW(),
+              manager_by = $4
+          WHERE id = $1
+        `,
+        [input.refund_id, nextStatus, managerNote || defaultNote, actor.username || "quanly"]
+      );
+
+      await client.query(
+        `
+          UPDATE giaodich
+          SET ghichu = CASE
+            WHEN COALESCE(ghichu, '') = '' THEN $2
+            ELSE ghichu || ' | ' || $2
+          END
+          WHERE magiaodich = $1
+        `,
+        [
+          refund.magiaodich,
+          input.action === "approve"
+            ? `[REFUND_MANAGER_APPROVED code=${refund.refund_code} amount=${amount}]`
+            : `[REFUND_MANAGER_REJECTED code=${refund.refund_code} amount=${amount}]`
+        ]
+      );
+
+      return {
+        id: input.refund_id,
+        transactionId: Number(refund.magiaodich),
+        refundCode: String(refund.refund_code),
+        action: input.action,
+        status: nextStatus,
+        amount
+      };
+    });
+
+    realtimeHub.publish({
+      type: "refund_manager_reviewed",
+      scopes: ["admin", "quanly", "ketoan", "letan"],
+      data: {
+        ...result,
+        amountFormatted: formatMoney(result.amount)
+      }
+    });
+
+    return {
+      ...result,
+      amountFormatted: formatMoney(result.amount)
+    };
+  }
+
   async listCustomers(rawFilters: unknown) {
     const filters = z.object({
       keyword: z.string().optional().default(""),
@@ -863,6 +1170,7 @@ export class ManagerService {
   }
 
   async listPromotions() {
+    await this.ensurePromotionMetadataColumn();
     const result = await query<{
       id: number;
       tenChuongTrinh: string;
@@ -904,13 +1212,43 @@ export class ManagerService {
       `
     );
 
-    return result.rows.map((row) => ({
-      ...row,
-      bookingUsageCount: Number(row.bookingUsageCount || 0),
-      detailUsageCount: Number(row.detailUsageCount || 0),
-      totalUsageCount: Number(row.bookingUsageCount || 0) + Number(row.detailUsageCount || 0),
-      canDelete: Number(row.bookingUsageCount || 0) + Number(row.detailUsageCount || 0) === 0
-    }));
+    return result.rows.map((row) => {
+      const bookingUsageCount = Number(row.bookingUsageCount || 0);
+      const detailUsageCount = Number(row.detailUsageCount || 0);
+      const totalUsageCount = bookingUsageCount + detailUsageCount;
+      const meta = this.parsePromotionMeta(row.doiTuong);
+      const usageLimit = Number(meta.usageLimit || 0);
+      const remainingUsage = usageLimit > 0 ? Math.max(0, usageLimit - totalUsageCount) : null;
+      const usageRate = usageLimit > 0 ? Math.min(100, Math.round(totalUsageCount * 100 / usageLimit)) : null;
+      const startDate = this.toDateOnly(row.ngayBatDau);
+      const endDate = this.toDateOnly(row.ngayKetThuc);
+
+      return {
+        ...row,
+        ngayBatDau: startDate,
+        ngayKetThuc: endDate,
+        startDate,
+        endDate,
+        doiTuongRaw: row.doiTuong,
+        doiTuong: meta.audience,
+        promotionMeta: meta,
+        channelLabel: this.promotionChannelLabel(meta.channel),
+        stackPolicyLabel: this.promotionStackPolicyLabel(meta.stackPolicy),
+        conditionLabel: this.buildPromotionConditionLabel(meta),
+        campaignGoal: meta.campaignGoal,
+        minNights: meta.minNights,
+        minAmount: meta.minAmount,
+        usageLimit,
+        remainingUsage,
+        usageRate,
+        blackoutDates: meta.blackoutDates,
+        bookingUsageCount,
+        detailUsageCount,
+        totalUsageCount,
+        canDelete: totalUsageCount === 0,
+        health: this.promotionHealth(row.trangThai, startDate, endDate, totalUsageCount, usageLimit)
+      };
+    });
   }
 
   async listHotels() {
@@ -1253,6 +1591,7 @@ export class ManagerService {
   }
 
   async savePromotion(rawInput: unknown) {
+    await this.ensurePromotionMetadataColumn();
     const input = promotionSchema.parse(rawInput);
     const saved = await withTransaction(async (client) => {
       const duplicate = await client.query(
@@ -1271,6 +1610,7 @@ export class ManagerService {
       }
 
       const isNew = !input.promotion_id;
+      const promotionAudiencePayload = this.buildPromotionAudiencePayload(input);
       const result = isNew
         ? await client.query(
           `
@@ -1284,7 +1624,7 @@ export class ManagerService {
               mucuudai AS "mucUuDai",
               loaiuudai AS "loaiUuDai"
           `,
-          [input.ten_chuong_trinh, input.ngay_bat_dau || null, input.ngay_ket_thuc || null, input.muc_uu_dai, input.doi_tuong || null, input.trang_thai, input.loai_uu_dai]
+          [input.ten_chuong_trinh, input.ngay_bat_dau || null, input.ngay_ket_thuc || null, input.muc_uu_dai, promotionAudiencePayload, input.trang_thai, input.loai_uu_dai]
         )
         : await client.query(
           `
@@ -1305,7 +1645,7 @@ export class ManagerService {
               mucuudai AS "mucUuDai",
               loaiuudai AS "loaiUuDai"
           `,
-          [input.promotion_id, input.ten_chuong_trinh, input.ngay_bat_dau || null, input.ngay_ket_thuc || null, input.muc_uu_dai, input.doi_tuong || null, input.trang_thai, input.loai_uu_dai]
+          [input.promotion_id, input.ten_chuong_trinh, input.ngay_bat_dau || null, input.ngay_ket_thuc || null, input.muc_uu_dai, promotionAudiencePayload, input.trang_thai, input.loai_uu_dai]
         );
 
       const promotion = result.rows[0];
@@ -1356,6 +1696,126 @@ export class ManagerService {
     }
 
     return saved;
+  }
+
+  private buildPromotionAudiencePayload(input: z.infer<typeof promotionSchema>) {
+    const blackoutDates = parseDateList(input.ngay_chan || "");
+    return JSON.stringify({
+      version: 1,
+      audience: input.doi_tuong || "TatCa",
+      channel: input.kenh_ap_dung || "All",
+      minNights: Number(input.so_dem_toi_thieu || 0),
+      minAmount: Number(input.gia_tri_toi_thieu || 0),
+      usageLimit: Number(input.gioi_han_luot_dung || 0),
+      blackoutDates: blackoutDates.valid ? blackoutDates.values : [],
+      stackPolicy: input.chinh_sach_cong_don || "NoStack",
+      campaignGoal: input.muc_tieu_chien_dich || ""
+    });
+  }
+
+  private parsePromotionMeta(rawValue: string | null) {
+    const fallback = String(rawValue || "TatCa").trim() || "TatCa";
+    try {
+      const parsed = JSON.parse(fallback) as Record<string, unknown>;
+      return {
+        audience: this.safePromotionText(parsed.audience, "TatCa"),
+        channel: PROMOTION_CHANNELS.includes(parsed.channel as typeof PROMOTION_CHANNELS[number]) ? String(parsed.channel) : "All",
+        minNights: Math.max(0, Math.trunc(Number(parsed.minNights || 0))),
+        minAmount: Math.max(0, Number(parsed.minAmount || 0)),
+        usageLimit: Math.max(0, Math.trunc(Number(parsed.usageLimit || 0))),
+        blackoutDates: Array.isArray(parsed.blackoutDates)
+          ? parsed.blackoutDates.map((item) => String(item)).filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item)).slice(0, 60)
+          : [],
+        stackPolicy: PROMOTION_STACK_POLICIES.includes(parsed.stackPolicy as typeof PROMOTION_STACK_POLICIES[number]) ? String(parsed.stackPolicy) : "NoStack",
+        campaignGoal: this.safePromotionText(parsed.campaignGoal, "")
+      };
+    } catch (_error) {
+      return {
+        audience: fallback,
+        channel: "All",
+        minNights: 0,
+        minAmount: 0,
+        usageLimit: 0,
+        blackoutDates: [],
+        stackPolicy: "NoStack",
+        campaignGoal: ""
+      };
+    }
+  }
+
+  private safePromotionText(value: unknown, fallback: string) {
+    const text = String(value || "").trim();
+    if (!text || !PROMOTION_TEXT_REGEX.test(text)) return fallback;
+    return text.slice(0, 500);
+  }
+
+  private buildPromotionConditionLabel(meta: {
+    minNights: number;
+    minAmount: number;
+    usageLimit: number;
+    blackoutDates: string[];
+  }) {
+    const labels: string[] = [];
+    if (meta.minNights > 0) labels.push(`Tối thiểu ${meta.minNights} đêm`);
+    if (meta.minAmount > 0) labels.push(`Từ ${formatMoney(meta.minAmount)}`);
+    if (meta.usageLimit > 0) labels.push(`Giới hạn ${meta.usageLimit.toLocaleString("vi-VN")} lượt`);
+    if (meta.blackoutDates.length) labels.push(`${meta.blackoutDates.length} ngày chặn`);
+    return labels.length ? labels.join(" · ") : "Không ràng buộc thêm";
+  }
+
+  private promotionChannelLabel(value: string) {
+    return {
+      Direct: "Booking trực tiếp",
+      Website: "Website",
+      Frontdesk: "Lễ tân",
+      CSKH: "CSKH tư vấn",
+      All: "Tất cả kênh"
+    }[value] || "Tất cả kênh";
+  }
+
+  private promotionStackPolicyLabel(value: string) {
+    return {
+      NoStack: "Không cộng dồn",
+      AllowServiceOnly: "Chỉ cộng dịch vụ",
+      ManualReview: "Cần duyệt thủ công"
+    }[value] || "Không cộng dồn";
+  }
+
+  private promotionHealth(status: string, startDate: string | null, endDate: string | null, usageCount: number, usageLimit: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = startDate ? new Date(`${startDate}T00:00:00`) : null;
+    const end = endDate ? new Date(`${endDate}T00:00:00`) : null;
+    const daysToEnd = end && !Number.isNaN(end.getTime())
+      ? Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+    const daysToStart = start && !Number.isNaN(start.getTime())
+      ? Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    if (status === "TamNgung") return { tone: "amber", label: "Đang tạm ngưng", action: "Kiểm tra lý do tạm ngưng trước khi truyền thông." };
+    if (status === "HetHan" || (daysToEnd !== null && daysToEnd < 0)) return { tone: "rose", label: "Đã hết hạn", action: "Đóng truyền thông hoặc tạo chiến dịch mới nếu còn nhu cầu." };
+    if (usageLimit > 0 && usageCount >= usageLimit) return { tone: "rose", label: "Hết lượt dùng", action: "Tạm ngưng hoặc tăng giới hạn sau khi rà soát biên lợi nhuận." };
+    if (daysToStart !== null && daysToStart > 0) return { tone: "amber", label: "Sắp mở", action: "Chuẩn bị broadcast và nội dung tư vấn trước ngày chạy." };
+    if (daysToEnd !== null && daysToEnd <= 3) return { tone: "amber", label: "Sắp hết hạn", action: "Đẩy nhắc lại cho tệp khách phù hợp nếu còn ngân sách ưu đãi." };
+    if (usageLimit > 0 && usageCount / usageLimit >= 0.8) return { tone: "cyan", label: "Gần hết quota", action: "Theo dõi redemption, tránh nhận quá số lượt cam kết." };
+    if (usageCount > 0) return { tone: "green", label: "Đang có chuyển đổi", action: "Giữ theo dõi lượt dùng và phản hồi khách sau booking." };
+    return { tone: "slate", label: "Chưa phát sinh", action: "CSKH nên gắn vào tư vấn hoặc broadcast đúng tệp khách." };
+  }
+
+  private toDateOnly(value: string | Date | null | undefined) {
+    if (!value) return "";
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+    const raw = String(value).trim();
+    const direct = raw.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+    if (direct) return direct;
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
   }
 
   private async ensureBroadcastTables(client: any) {
@@ -1516,6 +1976,7 @@ export class ManagerService {
   }
 
   async deletePromotion(promotionId: number) {
+    await this.ensurePromotionMetadataColumn();
     const usage = await query<{ bookingTotal: number; detailTotal: number }>(
       `
         SELECT
@@ -1553,6 +2014,10 @@ export class ManagerService {
     });
 
     return result.rows[0];
+  }
+
+  private async ensurePromotionMetadataColumn() {
+    await query("ALTER TABLE khuyenmai ALTER COLUMN doituong TYPE TEXT");
   }
 
   private async insertAudit(client: any, customerId: number, action: "CREATE" | "UPDATE" | "DELETE" | "RESET_PASSWORD", before: unknown, after: unknown, actor: { username: string; maNhanVien: number | null }, note: string) {
@@ -1741,6 +2206,152 @@ export class ManagerService {
       healthScore: Math.min(100, Math.round((transactionCount > 0 ? 35 : 0) + (totalSpent > 0 ? 25 : 0) + (row.trangThaiEkyc === "DaXacThuc" ? 25 : 0) + (feedbackCount > 0 ? 15 : 0))),
       canDelete: transactionCount === 0
     };
+  }
+
+  private normalizeRefundApprovalFilters(rawFilters: unknown) {
+    const source = (rawFilters && typeof rawFilters === "object") ? rawFilters as Record<string, unknown> : {};
+    const today = new Date();
+    const fromDefault = new Date(today);
+    fromDefault.setDate(today.getDate() - 30);
+    const dateOnly = (value: Date) => formatDate(value, "YYYY-MM-DD");
+    const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const allowedStatuses = new Set(this.getRefundApprovalStatusOptions().map((item) => item.value));
+    const rawStatus = String(source.trang_thai || "ChoQuanLyDuyet").trim();
+    const tuNgay = String(source.tu_ngay || "").trim();
+    const denNgay = String(source.den_ngay || "").trim();
+
+    return {
+      tu_ngay: isDate(tuNgay) ? tuNgay : dateOnly(fromDefault),
+      den_ngay: isDate(denNgay) ? denNgay : dateOnly(today),
+      trang_thai: allowedStatuses.has(rawStatus) ? rawStatus : "ChoQuanLyDuyet",
+      search: String(source.search || "").trim().slice(0, 120),
+      page: Math.max(1, Number(source.page || 1) || 1),
+      limit: Math.min(100, Math.max(5, Number(source.limit || 20) || 20))
+    };
+  }
+
+  private decorateRefundApprovalRow(row: any) {
+    const amountRequested = Number(row.amountRequested || 0);
+    const amountPaid = Number(row.amountPaid || 0);
+    const depositPaid = Number(row.depositPaid || 0);
+    const retainedDeposit = Number(row.retainedDeposit || 0);
+    const refundableBase = Number(row.refundableBase || 0);
+    const refundRate = Number(row.refundRate || 0);
+    const hoursBeforeCheckin = row.hoursBeforeCheckin === null || row.hoursBeforeCheckin === undefined ? null : Number(row.hoursBeforeCheckin);
+    return {
+      ...row,
+      amountRequested,
+      amountPaid,
+      depositPaid,
+      retainedDeposit,
+      refundableBase,
+      refundRate,
+      alreadyRequested: Number(row.alreadyRequested || 0),
+      transactionTotal: Number(row.transactionTotal || 0),
+      roomCount: String(row.roomIds || "").split(",").filter(Boolean).length,
+      statusMeta: this.getRefundApprovalStatusMeta(row.status),
+      createdAtLabel: formatDate(row.createdAt, "DD/MM/YYYY HH:mm"),
+      processedAtLabel: row.processedAt ? formatDate(row.processedAt, "DD/MM/YYYY HH:mm") : "",
+      managerReviewedAtLabel: row.managerReviewedAt ? formatDate(row.managerReviewedAt, "DD/MM/YYYY HH:mm") : "",
+      amountRequestedFormatted: formatMoney(amountRequested),
+      amountPaidFormatted: formatMoney(amountPaid),
+      depositPaidFormatted: formatMoney(depositPaid),
+      retainedDepositFormatted: formatMoney(retainedDeposit),
+      refundableBaseFormatted: formatMoney(refundableBase),
+      transactionTotalFormatted: formatMoney(row.transactionTotal || 0),
+      refundRateLabel: `${refundRate}%`,
+      hoursBeforeCheckinLabel: hoursBeforeCheckin === null ? "Không xác định" : `${Math.max(0, Math.floor(hoursBeforeCheckin))} giờ`,
+      hotelLabel: row.hotelNames || "Không gắn cơ sở",
+      canReview: row.status === "ChoQuanLyDuyet"
+    };
+  }
+
+  private getRefundApprovalStatusOptions() {
+    return [
+      { value: "all", label: "Tất cả" },
+      { value: "ChoQuanLyDuyet", label: "Chờ quản lý duyệt" },
+      { value: "ChoXuLy", label: "Đã duyệt, chờ kế toán" },
+      { value: "DaHoan", label: "Đã hoàn" },
+      { value: "TuChoi", label: "Từ chối" }
+    ];
+  }
+
+  private getRefundApprovalStatusMeta(status: string) {
+    const map: Record<string, { label: string; tone: string; hint: string }> = {
+      ChoQuanLyDuyet: { label: "Chờ quản lý duyệt", tone: "sun", hint: "Cần kiểm tra thông tin hoàn tiền" },
+      ChoXuLy: { label: "Đã duyệt, chờ kế toán", tone: "cyan", hint: "Kế toán sẽ xử lý chi hoàn" },
+      DaHoan: { label: "Đã hoàn", tone: "green", hint: "Kế toán đã ghi phiếu chi" },
+      TuChoi: { label: "Từ chối", tone: "rose", hint: "Không chuyển yêu cầu sang kế toán" }
+    };
+    return map[status] ?? { label: status || "Không rõ", tone: "slate", hint: "Trạng thái khác" };
+  }
+
+  private async ensureRefundRequestTable(client?: any) {
+    const db = client || { query };
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS refund_requests (
+        id SERIAL PRIMARY KEY,
+        magiaodich INT NOT NULL REFERENCES giaodich(magiaodich) ON DELETE CASCADE,
+        refund_code TEXT NOT NULL UNIQUE,
+        scope TEXT NOT NULL DEFAULT 'all',
+        room_ids TEXT NOT NULL DEFAULT '',
+        customer_name TEXT,
+        customer_phone TEXT,
+        customer_email TEXT,
+        bank_name TEXT NOT NULL,
+        bank_account_no TEXT NOT NULL,
+        bank_account_name TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        note TEXT,
+        deposit_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        retained_deposit NUMERIC(14,2) NOT NULL DEFAULT 0,
+        already_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        refundable_base NUMERIC(14,2) NOT NULL DEFAULT 0,
+        refund_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
+        hours_before_checkin NUMERIC(10,2),
+        cancellation_policy_key TEXT,
+        cancellation_policy_label TEXT,
+        cancellation_policy_note TEXT,
+        amount_requested NUMERIC(14,2) NOT NULL DEFAULT 0,
+        amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ChoQuanLyDuyet',
+        created_by_role TEXT NOT NULL DEFAULT 'LeTan',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        processed_at TIMESTAMPTZ NULL,
+        accounting_note TEXT,
+        expense_id INT NULL REFERENCES chiphi(macp),
+        manager_note TEXT,
+        manager_reviewed_at TIMESTAMPTZ NULL,
+        manager_by TEXT,
+        refund_payment_content TEXT,
+        refund_bank_txn_id TEXT,
+        refund_payment_proof TEXT,
+        refund_paid_at TIMESTAMPTZ NULL,
+        refund_paid_by TEXT
+      )
+    `);
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refundable_base NUMERIC(14,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_rate NUMERIC(5,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS hours_before_checkin NUMERIC(10,2)");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_key TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_label TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS cancellation_policy_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS amount_paid NUMERIC(14,2) NOT NULL DEFAULT 0");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS processed_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS accounting_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS expense_id INT NULL REFERENCES chiphi(macp)");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_note TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_reviewed_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS manager_by TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_payment_content TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_bank_txn_id TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_payment_proof TEXT");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_paid_at TIMESTAMPTZ NULL");
+    await db.query("ALTER TABLE refund_requests ADD COLUMN IF NOT EXISTS refund_paid_by TEXT");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_magiaodich ON refund_requests(magiaodich)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_status ON refund_requests(status)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_created_at ON refund_requests(created_at)");
+    await db.query("CREATE INDEX IF NOT EXISTS idx_refund_requests_bank_txn ON refund_requests(refund_bank_txn_id)");
   }
 
   private getEkycOptions() {

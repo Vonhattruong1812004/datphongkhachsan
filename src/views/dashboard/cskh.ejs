@@ -14,7 +14,7 @@
   const supportCards = [
     {
       badge: "Tiếp nhận",
-      title: "Phản hồi khách hàng",
+      title: "Quản lý phản hồi khách hàng",
       line1: "Lọc phản hồi theo trạng thái, đánh giá, dịch vụ và nội dung khách gửi.",
       line2: "Trả lời, ghi nhận tiến độ và đóng trạng thái khi đã xử lý xong.",
       strong: "Feedback rõ ràng",
@@ -23,7 +23,7 @@
     },
     {
       badge: "Tư vấn",
-      title: "Hỏi đáp với khách",
+      title: "Trả lời hỏi đáp với khách",
       line1: "Nhận các câu hỏi tư vấn từ actor khách hàng, bám theo nội dung case và booking context khi cần.",
       line2: "Trả lời từng case trong inbox riêng để không lẫn với phản hồi đánh giá sau lưu trú.",
       strong: "Advisory rõ luồng",
@@ -32,7 +32,7 @@
     },
     {
       badge: "Outbound",
-      title: "Tin nhắn hàng loạt",
+      title: "Gửi tin nhắn hàng loạt",
       line1: "Gửi nhắc check-in, check-out, xác nhận booking và lời cảm ơn sau lưu trú.",
       line2: "Gửi đúng nhóm khách, đúng thời điểm và theo dõi kết quả sau khi gửi.",
       strong: "Broadcast có chiến lược",
@@ -704,13 +704,13 @@
         <h1>Xin chào <span><%= staffName %></span></h1>
         <p class="guest-lead">
           Một dashboard CSKH gọn theo mẫu khách hàng: tiếp nhận phản hồi,
-          trả lời tư vấn, gửi outbound chăm sóc khách và quản lý khuyến mãi trong cùng nhịp vận hành.
+          trả lời tư vấn, gửi outbound chăm sóc khách và quản lý khuyến mãi.
         </p>
 
         <div class="guest-tags" aria-label="Thông tin nhanh">
           <span class="guest-tag guest-tag--live">Ca chăm sóc: sẵn sàng</span>
           <span class="guest-tag"><%= todayLabel %></span>
-          <span class="guest-tag">4 nghiệp vụ chính</span>
+          <span class="guest-tag"><%= primaryActions.length || 4 %> nghiệp vụ chính</span>
         </div>
 
         <div class="guest-hero-actions">
@@ -721,8 +721,8 @@
         </div>
 
         <div class="guest-mini-stats" aria-label="Tóm tắt CSKH">
-          <div class="guest-mini-stat"><strong>04</strong><span>Nghiệp vụ chính</span></div>
-          <div class="guest-mini-stat"><strong><%= focusCards.length || 4 %></strong><span>Trọng tâm</span></div>
+          <div class="guest-mini-stat"><strong><%= String(primaryActions.length || 4).padStart(2, "0") %></strong><span>Nghiệp vụ chính</span></div>
+          <div class="guest-mini-stat"><strong><%= focusCards.length || primaryActions.length || 4 %></strong><span>Trọng tâm</span></div>
           <div class="guest-mini-stat"><strong>Care</strong><span>Vận hành CSKH</span></div>
         </div>
       </div>
@@ -730,23 +730,23 @@
       <aside class="guest-live-card" aria-label="Minh họa vận hành CSKH">
         <div class="guest-live-ring"></div>
         <div class="guest-live-core"></div>
-        <span class="guest-live-word">Feedback</span>
-        <span class="guest-live-word">Advisory</span>
-        <span class="guest-live-word">Broadcast</span>
-        <span class="guest-live-word">Promo</span>
+        <span class="guest-live-word">Quản lý phản hồi</span>
+        <span class="guest-live-word">Trả lời tư vấn</span>
+        <span class="guest-live-word">Gửi broadcast</span>
+        <span class="guest-live-word">Quản lý khuyến mãi</span>
       </aside>
     </section>
 
     <section class="guest-focus-card">
       <div>
         <strong>Luồng ưu tiên cho CSKH</strong>
-        <span>Gộp đúng bốn cụm việc: phản hồi, tư vấn, outbound chăm sóc và quản lý khuyến mãi.</span>
+        <span>Gộp đúng các cụm việc CSKH: phản hồi, tư vấn, outbound chăm sóc và khuyến mãi.</span>
       </div>
       <div class="guest-flow" aria-label="Luồng nghiệp vụ CSKH">
-        <a href="/feedback/manage">Phản hồi</a>
-        <a href="/feedback/advisory/manage">Tư vấn</a>
-        <a href="/feedback/broadcast/manage">Broadcast</a>
-        <a href="/manager/promotions">Khuyến mãi</a>
+        <a href="/feedback/manage">Quản lý phản hồi</a>
+        <a href="/feedback/advisory/manage">Trả lời tư vấn</a>
+        <a href="/feedback/broadcast/manage">Gửi broadcast</a>
+        <a href="/manager/promotions">Quản lý khuyến mãi</a>
       </div>
     </section>
 

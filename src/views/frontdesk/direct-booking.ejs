@@ -143,6 +143,39 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       justify-content: flex-end;
     }
 
+    .topbar-clock {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      border-radius: 999px;
+      padding: 6px 9px;
+      border: 1px solid rgba(14, 165, 233, 0.18);
+      background: rgba(240, 249, 255, 0.86);
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    .topbar-clock span,
+    .topbar-clock strong {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .topbar-clock span {
+      background: rgba(14, 165, 233, 0.12);
+      color: #0369a1;
+      font-weight: 800;
+      text-transform: capitalize;
+    }
+
+    .topbar-clock strong {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(34, 197, 94, 0.14));
+      color: var(--text-strong);
+      font-weight: 900;
+    }
+
     .user-pill, .nav-link {
       display: inline-flex;
       align-items: center;
@@ -629,6 +662,10 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         </div>
       </div>
       <div class="topbar-right">
+        <div class="topbar-clock" aria-label="Đồng hồ và lịch">
+          <span id="directBookingDate">--/--/----</span>
+          <strong id="directBookingTime">--:--:--</strong>
+        </div>
         <div class="user-pill">Đang đăng nhập · <strong><%= userName %></strong></div>
         <a class="nav-link" href="/frontdesk">Trang lễ tân</a>
         <a class="nav-link logout" href="/auth/logout">Đăng xuất</a>
@@ -1018,6 +1055,28 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
   </main>
 
   <script>
+    (() => {
+      const dateEl = document.getElementById("directBookingDate");
+      const timeEl = document.getElementById("directBookingTime");
+      if (!dateEl || !timeEl) return;
+      const updateClock = () => {
+        const now = new Date();
+        dateEl.textContent = now.toLocaleDateString("vi-VN", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric"
+        });
+        timeEl.textContent = now.toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      };
+      updateClock();
+      window.setInterval(updateClock, 1000);
+    })();
+
     document.addEventListener("DOMContentLoaded", () => {
       const form = document.getElementById("formDatPhongV2");
       const clientErrors = document.getElementById("clientErrors");

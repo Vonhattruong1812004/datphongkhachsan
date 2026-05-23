@@ -6,6 +6,7 @@
   const summary = preview.summary;
   const searchQuery = new URLSearchParams(filters || {}).toString();
   const backSearchUrl = `/booking/search${searchQuery ? `?${searchQuery}` : ""}`;
+  const isCskhAssist = String((filters && filters.staff_mode) || "") === "cskh" || Number(currentUser?.maVaiTro || 0) === 5;
 %>
 <style>
   body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
@@ -22,6 +23,10 @@
   .review-box{border-radius:22px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.70);padding:16px}
   .review-box span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
   .review-box strong{display:block;margin-top:8px;color:#102033;font-size:18px}
+  .review-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:18px}
+  .review-flow div{border-radius:18px;border:1px solid rgba(20,184,166,.16);background:rgba(20,184,166,.09);padding:12px}
+  .review-flow span{display:block;color:#0f766e;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
+  .review-flow strong{display:block;margin-top:5px;color:#102033;font-size:13px;line-height:1.25}
   .review-total{display:grid;gap:10px;margin-top:18px}
   .review-line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed rgba(19,48,74,.14);padding-bottom:10px;color:#5f778f}
   .review-line strong{color:#102033}
@@ -30,15 +35,21 @@
   .review-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 14px 32px rgba(12,39,64,.08)}
   .review-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 50%,#22c55e);box-shadow:0 18px 38px rgba(20,184,166,.18)}
   @keyframes review-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,22px,0) rotate(14deg)}}
-  @media(max-width:860px){.review-hero,.review-grid{grid-template-columns:1fr}.review-img{min-height:220px}}
+  @media(max-width:860px){.review-hero,.review-grid,.review-flow{grid-template-columns:1fr}.review-img{min-height:220px}}
 </style>
 
 <main class="review-shell">
   <section class="review-card review-hero">
     <div>
-      <span class="review-chip">Bước 3 · Kiểm tra trước khi đặt</span>
+      <span class="review-chip"><%= isCskhAssist ? "CSKH hỗ trợ · Bước 3" : "Bước 3 · Kiểm tra trước khi đặt" %></span>
       <h1>Xác nhận thông tin booking.</h1>
-      <p class="review-muted">Kiểm tra lại phòng, ngày ở, thông tin liên hệ và tổng tiền trước khi xác nhận.</p>
+      <p class="review-muted">Kiểm tra lại phòng, ngày ở, thông tin liên hệ, khuyến mãi, tổng tiền và khoản cọc. Sau bước này hệ thống chỉ tạo mã giữ phòng, booking thật chờ SePay xác nhận.</p>
+      <div class="review-flow" aria-label="Luồng cọc SePay">
+        <div><span>Hold</span><strong>Giữ phòng 10 phút</strong></div>
+        <div><span>Cọc</span><strong>Thanh toán 50%</strong></div>
+        <div><span>Webhook</span><strong>Đối chiếu nội dung</strong></div>
+        <div><span>Booking</span><strong>Tạo giao dịch thật</strong></div>
+      </div>
     </div>
     <img class="review-img" src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
   </section>

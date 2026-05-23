@@ -1,8 +1,9 @@
 import { SEPAY_HOLD_MINUTES, buildSepayContent } from "./sepay";
-import type { BookingPreviewInput } from "../booking/services/booking.service";
+import type { BookingMultiRoomInput, BookingPreviewInput } from "../booking/services/booking.service";
 
 export interface CustomerBookingHoldSummary {
   roomAmount: number;
+  serviceAmount?: number;
   discountAmount: number;
   total: number;
   depositAmount: number;
@@ -12,11 +13,12 @@ export interface CustomerBookingHold {
   id: number;
   content: string;
   roomId: number;
+  roomIds?: number[];
   ngayNhan: string;
   ngayTra: string;
   preferredCustomerId: number;
   expiresAt: string;
-  input: BookingPreviewInput;
+  input: BookingPreviewInput | BookingMultiRoomInput;
   summary: CustomerBookingHoldSummary;
   status: "PENDING" | "PAID" | "EXPIRED";
   transactionId?: number;
@@ -29,6 +31,14 @@ class CustomerBookingHoldStore {
   private readonly settledTtlMs = 30 * 60 * 1000;
 
   create(input: BookingPreviewInput, preferredCustomerId: number, summary: CustomerBookingHoldSummary) {
+    return this.createInternal(input, preferredCustomerId, summary, [Number(input.room_id)]);
+  }
+
+  createMulti(input: BookingMultiRoomInput, preferredCustomerId: number, summary: CustomerBookingHoldSummary) {
+    return this.createInternal(input, preferredCustomerId, summary, input.room_ids.map(Number).filter(Boolean));
+  }
+
+  private createInternal(input: BookingPreviewInput | BookingMultiRoomInput, preferredCustomerId: number, summary: CustomerBookingHoldSummary, roomIds: number[]) {
     this.purgeExpired();
     const now = Date.now();
     let id = (now * 100) + Math.floor(Math.random() * 90 + 10);
@@ -39,7 +49,8 @@ class CustomerBookingHoldStore {
     const hold: CustomerBookingHold = {
       id,
       content: buildSepayContent(id),
-      roomId: Number(input.room_id),
+      roomId: roomIds[0] || 0,
+      roomIds: Array.from(new Set(roomIds)),
       ngayNhan: String(input.ngay_nhan || ""),
       ngayTra: String(input.ngay_tra || ""),
       preferredCustomerId,
@@ -88,7 +99,7 @@ class CustomerBookingHoldStore {
     for (const hold of this.holds.values()) {
       if (hold.status !== "PENDING") continue;
       if (!rangesOverlap(hold.ngayNhan, hold.ngayTra, ngayNhan, ngayTra)) continue;
-      result.add(hold.roomId);
+      (hold.roomIds?.length ? hold.roomIds : [hold.roomId]).forEach((roomId) => result.add(roomId));
     }
     return result;
   }

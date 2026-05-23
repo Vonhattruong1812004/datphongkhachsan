@@ -6,8 +6,14 @@
   const summary = payload.summary || {};
   const statusOptions = payload.statusOptions || [];
   const statusBreakdown = payload.statusBreakdown || [];
+  const categoryOptions = payload.categoryOptions || [];
   const dailyTrend = payload.dailyTrend || [];
   const categoryBreakdown = payload.categoryBreakdown || [];
+  const vendorBreakdown = payload.vendorBreakdown || [];
+  const hotelBreakdown = payload.hotelBreakdown || [];
+  const highValueRows = payload.highValueRows || [];
+  const actionItems = payload.actionItems || [];
+  const chartPayload = payload.chartPayload || {};
   const hotelOptions = payload.hotelOptions || [];
   const page = Number(payload.currentPage || 1);
   const totalPages = Number(payload.totalPages || 1);
@@ -19,6 +25,8 @@
   const lastPage = Math.min(totalPages, page + 2);
   for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
   const maxTrend = Math.max(...dailyTrend.map((item) => Number(item.total || 0)), 1);
+  const maxCategory = Math.max(...categoryBreakdown.map((item) => Number(item.total || 0)), 1);
+  const maxVendor = Math.max(...vendorBreakdown.map((item) => Number(item.total || 0)), 1);
 %>
 
 <style>
@@ -395,7 +403,135 @@
   .exp-cat--orange { color: #9a3412; background: rgba(255, 159, 122, .18); }
   .exp-cat--lime { color: #3f6212; background: rgba(183, 239, 74, .20); }
   .exp-cat--pink { color: #be185d; background: rgba(255, 106, 162, .14); }
+  .exp-cat--green { color: #047857; background: rgba(32, 214, 163, .16); }
+  .exp-cat--sun { color: #92400e; background: rgba(255, 209, 102, .22); }
   .exp-cat--slate { color: #475569; background: rgba(100, 116, 139, .14); }
+
+  .exp-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .exp-insight {
+    border: 1px solid rgba(19, 32, 51, .10);
+    border-radius: 24px;
+    padding: 16px;
+    background: rgba(255,255,255,.78);
+    box-shadow: 0 16px 42px rgba(19,32,51,.09);
+  }
+
+  .exp-insight strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--ink);
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .exp-insight p {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .exp-chart-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr);
+    gap: 16px;
+  }
+
+  .exp-chart-card {
+    border: 1px solid rgba(19,32,51,.10);
+    border-radius: 26px;
+    padding: 18px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.72)),
+      radial-gradient(circle at 92% 0%, rgba(255,159,122,.18), transparent 34%),
+      radial-gradient(circle at 10% 100%, rgba(32,214,163,.14), transparent 34%);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(24px);
+  }
+
+  .exp-chart-card h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .exp-chart-card p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .exp-chart-box {
+    position: relative;
+    min-height: 300px;
+    margin-top: 14px;
+    border: 1px solid rgba(19,32,51,.08);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,.58), rgba(248,250,252,.48));
+  }
+
+  .exp-chart-box.is-compact {
+    min-height: 250px;
+  }
+
+  .exp-chart-box::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border-radius: 16px;
+    pointer-events: none;
+    background:
+      linear-gradient(rgba(19,32,51,.045) 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, rgba(19,32,51,.035) 1px, transparent 1px) 0 0 / 16.66% 100%;
+  }
+
+  .exp-chart-box canvas {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: inherit;
+  }
+
+  .exp-analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .exp-mini-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid rgba(19,32,51,.08);
+    border-radius: 18px;
+    background: rgba(255,255,255,.64);
+  }
+
+  .exp-mini-row strong,
+  .exp-mini-row span {
+    display: block;
+  }
+
+  .exp-mini-row small {
+    color: var(--muted);
+    font-weight: 850;
+  }
+
+  .exp-meter.is-thin {
+    height: 7px;
+    margin-top: 8px;
+  }
 
   .exp-table-head {
     display: flex;
@@ -417,7 +553,7 @@
 
   .exp-table {
     width: 100%;
-    min-width: 880px;
+    min-width: 1120px;
     border-collapse: separate;
     border-spacing: 0 9px;
   }
@@ -495,8 +631,13 @@
 
   @media (max-width: 1080px) {
     .exp-hero,
-    .exp-layout {
+    .exp-layout,
+    .exp-chart-grid {
       grid-template-columns: 1fr;
+    }
+    .exp-insight-grid,
+    .exp-analysis-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
@@ -515,7 +656,9 @@
       font-size: 40px;
     }
     .exp-kpi-grid,
-    .exp-field-grid {
+    .exp-field-grid,
+    .exp-insight-grid,
+    .exp-analysis-grid {
       grid-template-columns: 1fr;
     }
     .exp-table-head,
@@ -546,16 +689,16 @@
           <div class="exp-actions">
             <a class="exp-button exp-button--primary" href="/api/accounting/expenses?<%= csvQuery %>">Xuất CSV</a>
             <a class="exp-button" href="/api/accounting/expenses?<%= jsonQuery %>">JSON</a>
-            <a class="exp-button exp-button--mint" href="/accounting/reports?loai_baocao=chiphi&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Báo cáo chi phí</a>
+            <a class="exp-button exp-button--mint" href="/accounting/reports?loai_baocao=chiphi&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Xem báo cáo chi phí</a>
           </div>
         </div>
       </div>
 
       <aside class="exp-kpi-grid" aria-label="KPI chi phí">
-        <article class="exp-kpi is-orange"><span>Tổng chi phí</span><strong><%= summary.totalExpenseFormatted %></strong></article>
+        <article class="exp-kpi is-orange"><span>Chi phí còn hiệu lực</span><strong><%= summary.totalExpenseFormatted %></strong></article>
         <article class="exp-kpi is-green"><span>Đã duyệt</span><strong><%= summary.approvedExpenseFormatted %></strong></article>
         <article class="exp-kpi is-sun"><span>Chờ duyệt</span><strong><%= summary.pendingExpenseFormatted %></strong></article>
-        <article class="exp-kpi is-violet"><span>TB / phiếu</span><strong><%= summary.averageExpenseFormatted %></strong></article>
+        <article class="exp-kpi is-violet"><span>Tỷ lệ duyệt</span><strong><%= summary.approvalRateFormatted %></strong></article>
       </aside>
     </section>
 
@@ -566,6 +709,33 @@
         <% }) %>
       </section>
     <% } %>
+
+    <section class="exp-insight-grid" aria-label="Việc cần xử lý chi phí">
+      <% if (!actionItems.length) { %>
+        <article class="exp-insight">
+          <span class="exp-status exp-status--green">Ổn định</span>
+          <strong>Không có cảnh báo lớn</strong>
+          <p>Chi phí trong kỳ chưa có phiếu thiếu chứng từ hoặc khoản chờ duyệt đáng chú ý.</p>
+        </article>
+      <% } %>
+      <% actionItems.forEach((item) => { %>
+        <article class="exp-insight">
+          <span class="exp-status exp-status--<%= item.tone %>">Cần chú ý</span>
+          <strong><%= item.title %></strong>
+          <p><%= item.note %></p>
+        </article>
+      <% }) %>
+      <article class="exp-insight">
+        <span class="exp-status exp-status--slate">Kiểm soát</span>
+        <strong><%= summary.missingEvidenceCount || 0 %> thiếu chứng từ</strong>
+        <p>Phiếu chi nên có hóa đơn, nhà cung cấp hoặc ghi chú đối soát trước khi duyệt.</p>
+      </article>
+      <article class="exp-insight">
+        <span class="exp-status exp-status--sun">Quy mô</span>
+        <strong><%= summary.averageExpenseFormatted %> / phiếu</strong>
+        <p><%= summary.activeCount || 0 %> phiếu còn hiệu lực, <%= summary.cancelledCount || 0 %> phiếu đã hủy.</p>
+      </article>
+    </section>
 
     <section class="exp-layout">
       <aside class="exp-side-stack">
@@ -586,12 +756,47 @@
                 <input id="so_tien" name="so_tien" type="number" min="0" step="1000" required placeholder="0" />
               </div>
               <div class="exp-field">
+                <label for="loai_chi_phi">Nhóm chi phí</label>
+                <select id="loai_chi_phi" name="loai_chi_phi">
+                  <% categoryOptions.filter((option) => option.value !== "all").forEach((option) => { %>
+                    <option value="<%= option.value %>"><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field">
                 <label for="trang_thai_create">Trạng thái</label>
                 <select id="trang_thai_create" name="trang_thai">
                   <option value="ChoDuyet">Chờ duyệt</option>
                   <option value="DaDuyet">Đã duyệt</option>
                   <option value="Huy">Đã hủy</option>
                 </select>
+              </div>
+              <div class="exp-field">
+                <label for="hotel_id_create">Cơ sở ghi nhận</label>
+                <select id="hotel_id_create" name="hotel_id">
+                  <option value="0">Chi phí dùng chung</option>
+                  <% hotelOptions.forEach((hotel) => { %>
+                    <option value="<%= hotel.id %>"><%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field">
+                <label for="phuong_thuc_chi">Phương thức chi</label>
+                <select id="phuong_thuc_chi" name="phuong_thuc_chi">
+                  <option value="ChuyenKhoan">Chuyển khoản</option>
+                  <option value="TienMat">Tiền mặt</option>
+                  <option value="The">Thẻ</option>
+                  <option value="ViDienTu">Ví điện tử</option>
+                  <option value="CongNo">Công nợ NCC</option>
+                </select>
+              </div>
+              <div class="exp-field">
+                <label for="nha_cung_cap">Nhà cung cấp</label>
+                <input id="nha_cung_cap" name="nha_cung_cap" placeholder="Tên nhà cung cấp..." />
+              </div>
+              <div class="exp-field">
+                <label for="so_hoa_don">Số chứng từ</label>
+                <input id="so_hoa_don" name="so_hoa_don" placeholder="Hóa đơn/phiếu chi..." />
               </div>
               <div class="exp-field is-wide">
                 <label for="noi_dung">Nội dung</label>
@@ -621,6 +826,14 @@
                 <select id="trang_thai" name="trang_thai">
                   <% statusOptions.forEach((option) => { %>
                     <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field">
+                <label for="nhom">Nhóm chi phí</label>
+                <select id="nhom" name="nhom">
+                  <% categoryOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= filters.nhom === option.value ? "selected" : "" %>><%= option.label %></option>
                   <% }) %>
                 </select>
               </div>
@@ -676,6 +889,23 @@
       </aside>
 
       <section class="exp-side-stack">
+        <section class="exp-chart-grid" aria-label="Biểu đồ phân tích chi phí">
+          <article class="exp-chart-card">
+            <h2>Xu hướng chi phí</h2>
+            <p>Theo dõi tổng chi còn hiệu lực, đã duyệt và chờ duyệt theo ngày.</p>
+            <div class="exp-chart-box">
+              <canvas id="expenseTrendChart" aria-label="Xu hướng chi phí theo ngày"></canvas>
+            </div>
+          </article>
+          <article class="exp-chart-card">
+            <h2>Cơ cấu nhóm chi</h2>
+            <p>Tỷ trọng nhóm chi phí để phát hiện nhóm tăng bất thường.</p>
+            <div class="exp-chart-box is-compact">
+              <canvas id="expenseCategoryChart" aria-label="Cơ cấu nhóm chi phí"></canvas>
+            </div>
+          </article>
+        </section>
+
         <section class="exp-panel">
           <h2>Nhóm chi phí</h2>
           <div class="exp-cats">
@@ -686,11 +916,49 @@
               <article class="exp-cat-row">
                 <div>
                   <span class="exp-cat exp-cat--<%= item.meta.tone %>"><%= item.meta.label %></span>
-                  <span style="margin-top:7px"><%= item.count %> phiếu</span>
+                  <span style="margin-top:7px"><%= item.count %> phiếu · <%= item.share %>%</span>
+                  <div class="exp-meter is-thin"><span style="width:<%= Math.max(4, Math.round((Number(item.total || 0) / maxCategory) * 100)) %>%"></span></div>
                 </div>
                 <strong class="exp-money"><%= item.totalFormatted %></strong>
               </article>
             <% }) %>
+          </div>
+        </section>
+
+        <section class="exp-panel">
+          <h2>Nhà cung cấp & cơ sở</h2>
+          <div class="exp-analysis-grid">
+            <div>
+              <p class="exp-muted">Top nhà cung cấp theo chi phí còn hiệu lực.</p>
+              <div class="exp-cats">
+                <% if (!vendorBreakdown.length) { %><div class="exp-empty">Chưa có dữ liệu nhà cung cấp.</div><% } %>
+                <% vendorBreakdown.forEach((vendor) => { %>
+                  <article class="exp-mini-row">
+                    <div>
+                      <strong><%= vendor.vendorName %></strong>
+                      <small><%= vendor.count %> phiếu</small>
+                      <div class="exp-meter is-thin"><span style="width:<%= Math.max(4, Math.round((Number(vendor.total || 0) / maxVendor) * 100)) %>%"></span></div>
+                    </div>
+                    <span class="exp-money"><%= vendor.totalFormatted %></span>
+                  </article>
+                <% }) %>
+              </div>
+            </div>
+            <div>
+              <p class="exp-muted">Phân bổ chi phí theo cơ sở resort.</p>
+              <div class="exp-cats">
+                <% if (!hotelBreakdown.length) { %><div class="exp-empty">Chưa có dữ liệu cơ sở.</div><% } %>
+                <% hotelBreakdown.forEach((hotel) => { %>
+                  <article class="exp-mini-row">
+                    <div>
+                      <strong><%= hotel.hotelLabel %></strong>
+                      <small><%= hotel.count %> phiếu · chờ duyệt <%= hotel.pendingFormatted %></small>
+                    </div>
+                    <span class="exp-money"><%= hotel.totalFormatted %></span>
+                  </article>
+                <% }) %>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -713,6 +981,25 @@
           <% } %>
         </section>
 
+        <section class="exp-panel">
+          <h2>Khoản chi cần rà soát</h2>
+          <div class="exp-cats">
+            <% if (!highValueRows.length) { %>
+              <div class="exp-empty">Chưa có khoản chi giá trị cao trong bộ lọc hiện tại.</div>
+            <% } %>
+            <% highValueRows.forEach((row) => { %>
+              <article class="exp-mini-row">
+                <div>
+                  <span class="exp-cat exp-cat--<%= row.categoryMeta.tone %>"><%= row.categoryMeta.label %></span>
+                  <strong style="margin-top:8px">CP-<%= row.id %> · <%= row.tenChiPhi %></strong>
+                  <small><%= row.ngayChiLabel %> · <%= row.vendorLabel %> · <%= row.invoiceLabel %></small>
+                </div>
+                <span class="exp-money"><%= row.soTienFormatted %></span>
+              </article>
+            <% }) %>
+          </div>
+        </section>
+
         <section class="exp-table-panel">
           <div class="exp-table-head">
             <div>
@@ -733,7 +1020,9 @@
                     <th>Ngày chi</th>
                     <th>Chi phí</th>
                     <th>Nhóm</th>
+                    <th>Nhà cung cấp</th>
                     <th>Cơ sở</th>
+                    <th>Chứng từ</th>
                     <th>Số tiền</th>
                     <th>Trạng thái</th>
                   </tr>
@@ -750,10 +1039,19 @@
                       <td><%= row.ngayChiLabel %></td>
                       <td>
                         <strong><%= row.tenChiPhi %></strong>
+                        <% if (row.isHighValue) { %><span class="exp-status exp-status--rose" style="margin-left:6px">Giá trị cao</span><% } %>
                         <div class="exp-muted"><%= row.noiDung || "Không có nội dung" %></div>
                       </td>
                       <td><span class="exp-cat exp-cat--<%= row.categoryMeta.tone %>"><%= row.categoryMeta.label %></span></td>
+                      <td>
+                        <strong><%= row.vendorLabel %></strong>
+                        <div class="exp-muted"><%= row.phuongThucChiLabel %></div>
+                      </td>
                       <td><%= row.hotelLabel %></td>
+                      <td>
+                        <span class="exp-status exp-status--<%= row.evidenceMeta.tone %>"><%= row.evidenceMeta.label %></span>
+                        <div class="exp-muted" style="margin-top:5px"><%= row.invoiceLabel %></div>
+                      </td>
                       <td class="exp-money"><%= row.soTienFormatted %></td>
                       <td>
                         <span class="exp-status exp-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
@@ -790,5 +1088,175 @@
     </section>
   </div>
 </main>
+
+<script>
+  (() => {
+    const chartPayload = <%- JSON.stringify(chartPayload).replace(/</g, "\\u003c") %>;
+    const colors = ["#f97316", "#10b981", "#12bff3", "#ff6aa2", "#8068ff", "#ffd166", "#65a30d", "#14b8a6"];
+    const moneyShort = (value) => {
+      const amount = Number(value || 0);
+      if (Math.abs(amount) >= 1000000000) return `${(amount / 1000000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
+      if (Math.abs(amount) >= 1000000) return `${(amount / 1000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr`;
+      if (Math.abs(amount) >= 1000) return `${(amount / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}k`;
+      return amount.toLocaleString("vi-VN");
+    };
+    const setup = (id) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      const width = Math.max(parent.clientWidth, 280);
+      const height = Math.max(parent.clientHeight, 220);
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { ctx, width, height };
+    };
+    const text = (ctx, value, x, y, size = 12, color = "#667085", weight = 800, align = "left") => {
+      ctx.fillStyle = color;
+      ctx.font = `${weight} ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(value), x, y);
+    };
+    const roundRect = (ctx, x, y, width, height, radius) => {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    };
+    const empty = (ctx, width, height) => {
+      roundRect(ctx, 18, 18, width - 36, height - 36, 18);
+      ctx.fillStyle = "rgba(255,255,255,.62)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(19,32,51,.12)";
+      ctx.stroke();
+      text(ctx, "Chưa có dữ liệu biểu đồ", width / 2, height / 2, 13, "#667085", 900, "center");
+    };
+    const drawTrend = () => {
+      const chart = setup("expenseTrendChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = chartPayload.trend || [];
+      if (!rows.length) return empty(ctx, width, height);
+      const pad = { left: 70, right: 34, top: 26, bottom: 48 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const max = Math.max(1, ...rows.flatMap((row) => [row.total, row.approved, row.pending]));
+      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
+      const y = (value) => pad.top + plotH - (Number(value || 0) / max) * plotH;
+
+      for (let i = 0; i <= 4; i += 1) {
+        const gy = pad.top + (plotH / 4) * i;
+        ctx.strokeStyle = "rgba(19,32,51,.10)";
+        ctx.beginPath();
+        ctx.moveTo(pad.left, gy);
+        ctx.lineTo(width - pad.right, gy);
+        ctx.stroke();
+        text(ctx, moneyShort(max - (max / 4) * i), pad.left - 14, gy, 11, "#667085", 800, "right");
+      }
+      rows.forEach((row, index) => {
+        if (index % Math.ceil(rows.length / 6) === 0 || index === rows.length - 1) {
+          text(ctx, row.dateLabel, x(index), height - 22, 11, "#667085", 800, "center");
+        }
+      });
+      const drawSeries = (key, color, widthLine = 3, fill = false) => {
+        const points = rows.map((row, index) => ({ x: x(index), y: y(row[key]) }));
+        ctx.beginPath();
+        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+        if (fill) {
+          const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+          gradient.addColorStop(0, `${color}3d`);
+          gradient.addColorStop(1, `${color}05`);
+          ctx.lineTo(points[points.length - 1].x, pad.top + plotH);
+          ctx.lineTo(points[0].x, pad.top + plotH);
+          ctx.closePath();
+          ctx.fillStyle = gradient;
+          ctx.fill();
+        }
+        ctx.beginPath();
+        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
+        ctx.strokeStyle = color;
+        ctx.lineWidth = widthLine;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.shadowColor = `${color}35`;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        points.forEach((point, index) => {
+          if (index === points.length - 1 || index % Math.ceil(points.length / 5) === 0) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 3.8, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+        });
+      };
+      drawSeries("total", "#f97316", 4, true);
+      drawSeries("approved", "#10b981", 3);
+      drawSeries("pending", "#ff6aa2", 3);
+      text(ctx, "Tổng chi", width - 112, 26, 12, "#f97316", 1000);
+      text(ctx, "Đã duyệt", width - 112, 45, 12, "#10b981", 1000);
+      text(ctx, "Chờ duyệt", width - 112, 64, 12, "#ff6aa2", 1000);
+    };
+    const drawCategory = () => {
+      const chart = setup("expenseCategoryChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = (chartPayload.categories || []).filter((row) => Number(row.total || 0) > 0);
+      if (!rows.length) return empty(ctx, width, height);
+      const total = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
+      const cx = Math.min(width * .35, 135);
+      const cy = height / 2;
+      const radius = Math.min(width * .22, height * .32, 78);
+      const inner = radius * .62;
+      let start = -Math.PI / 2;
+      ctx.lineWidth = radius - inner;
+      ctx.lineCap = "round";
+      rows.forEach((row, index) => {
+        const share = Number(row.total || 0) / total;
+        const end = start + share * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, (radius + inner) / 2, start + .025, end - .025);
+        ctx.strokeStyle = colors[index % colors.length];
+        ctx.shadowColor = `${colors[index % colors.length]}35`;
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        start = end;
+      });
+      text(ctx, "Tổng chi", cx, cy - 9, 12, "#667085", 900, "center");
+      text(ctx, moneyShort(total), cx, cy + 13, 16, "#132033", 1000, "center");
+      const lx = Math.min(width * .62, cx + radius + 28);
+      rows.slice(0, 5).forEach((row, index) => {
+        const y = 42 + index * 30;
+        ctx.fillStyle = colors[index % colors.length];
+        ctx.beginPath();
+        ctx.arc(lx, y, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        text(ctx, row.meta?.label || row.categoryKey, lx + 14, y - 5, 12, "#132033", 900);
+        text(ctx, `${Math.round((Number(row.total || 0) / total) * 100)}% · ${moneyShort(row.total)}`, lx + 14, y + 10, 11);
+      });
+    };
+    const renderCharts = () => {
+      drawTrend();
+      drawCategory();
+    };
+    renderCharts();
+    window.addEventListener("resize", () => window.requestAnimationFrame(renderCharts), { passive: true });
+  })();
+</script>
 
 <%- include("../partials/footer") %>
