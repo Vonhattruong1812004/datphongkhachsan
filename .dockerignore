@@ -1,0 +1,15 @@
+node_modules
+dist
+public/build
+.git
+.github
+.env
+.env.*
+!.env.example
+npm-debug.log*
+.DS_Store
+coverage
+playwright-report
+test-results
+storage/backups
+uploads/ekyc

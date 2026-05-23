@@ -117,9 +117,13 @@ export class HomeService {
   private async getHotelCities() {
     const result = await query<{ value: string }>(
       `
-        SELECT DISTINCT tinhthanh AS value
-        FROM khachsan
-        WHERE COALESCE(tinhthanh, '') <> ''
+        SELECT DISTINCT ks.tinhthanh AS value
+        FROM khachsan ks
+        INNER JOIN phong p ON p.makhachsan = ks.makhachsan
+        WHERE COALESCE(ks.tinhthanh, '') <> ''
+          AND p.trangthai = 'Trong'
+          AND COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') = 'Tot'
+          AND COALESCE(NULLIF(p.trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
         ORDER BY value
       `
     );

@@ -6,6 +6,7 @@
   const summary = preview.summary;
   const searchQuery = new URLSearchParams(filters || {}).toString();
   const backSearchUrl = `/booking/search${searchQuery ? `?${searchQuery}` : ""}`;
+  const roomDetailUrl = `/booking/rooms/${room.id}/detail${searchQuery ? `?${searchQuery}` : ""}`;
   const isCskhAssist = String((filters && filters.staff_mode) || "") === "cskh" || Number(currentUser?.maVaiTro || 0) === 5;
 %>
 <style>
@@ -91,6 +92,7 @@
       <div class="review-actions">
         <button class="review-button review-button--primary" type="submit" name="btn_action" value="confirm">Tạo QR cọc 50%</button>
         <button class="review-button" type="submit" name="btn_action" value="review">Tính lại</button>
+        <a class="review-button" href="<%= roomDetailUrl %>">Xem chi tiết phòng</a>
         <a class="review-button" href="/booking/rooms/<%= room.id %>?<%= searchQuery %>">Quay lại chỉnh sửa</a>
         <a class="review-button" href="<%= backSearchUrl %>">Đổi phòng</a>
       </div>

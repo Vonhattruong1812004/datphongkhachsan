@@ -1,3 +1,5 @@
+SET search_path TO abc_resort1, public;
+
 INSERT INTO vaitro (mavaitro, tenvaitro, mota)
 VALUES
   (1, 'Admin', 'Quan tri toan he thong'),

@@ -14,6 +14,7 @@
   .invoice-box strong{display:block;margin-top:8px;color:#102033;font-size:20px}
   .invoice-room{position:relative;border-radius:24px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.70);padding:16px;margin-top:12px}
   .invoice-room h3{margin:0 0 8px;color:#102033}
+  .invoice-room-link{display:inline-flex;margin-top:10px;color:#0f766e;font-weight:1000;text-decoration:none}
   .invoice-table{position:relative;width:100%;border-collapse:separate;border-spacing:0 10px;margin-top:12px}
   .invoice-table th{padding:0 10px 4px;color:#5f778f;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:.07em}
   .invoice-table td{padding:12px 10px;background:rgba(255,255,255,.70);border-top:1px solid rgba(19,48,74,.08);border-bottom:1px solid rgba(19,48,74,.08);color:#14314b}
@@ -45,6 +46,7 @@
         <h3><%= room.hotelName %> · Phòng <%= room.roomNumber %></h3>
         <p class="invoice-muted"><%= room.roomType %> · <%= room.bedType || "Giường tiêu chuẩn" %> · <%= room.view || "View nội khu" %> · <%= room.city %></p>
         <p class="invoice-muted"><%= room.checkinLabel %> → <%= room.checkoutLabel %> · <%= room.guests || 0 %> khách · <strong><%= room.amountFormatted %></strong></p>
+        <% if (room.roomId) { %><a class="invoice-room-link" href="/booking/rooms/<%= room.roomId %>/detail">Xem chi tiết phòng</a><% } %>
       </article>
     <% }) %>
     <h2 class="invoice-section-title">Dịch vụ bổ sung</h2>

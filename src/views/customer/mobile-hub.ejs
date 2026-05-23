@@ -14,7 +14,7 @@
 
     <div id="mobile-pwa-strip" class="flash" style="margin-top:16px;">
       <strong>App mode</strong>
-      <p class="muted" id="mobile-pwa-note">Đang kiểm tra trạng thái PWA, khả năng cài app và offline shell...</p>
+      <p class="muted" id="mobile-pwa-note">Đang kiểm tra trạng thái PWA, khả năng cài app và offline shell trên thiết bị...</p>
       <div class="nav-links" style="margin-top:12px;">
         <button class="button button--primary" id="mobile-install-btn" type="button">Cài app</button>
         <button class="button" id="mobile-update-btn" type="button">Cập nhật app</button>
@@ -109,13 +109,13 @@
       installBtn.disabled = true;
       updateBtn.disabled = true;
     } else if (state.supported === false) {
-      pwaNote.textContent = "Trình duyệt này chưa hỗ trợ cài PWA, nhưng web mode vẫn dùng đầy đủ chức năng.";
+      pwaNote.textContent = "Trình duyệt này chưa bật nút cài tự động. Trên iPhone/iPad, dùng Chia sẻ > Thêm vào Màn hình chính.";
       installBtn.disabled = true;
       updateBtn.disabled = true;
     } else {
       pwaNote.textContent = state.online === false
         ? "Bạn đang offline. App shell vẫn mở được, snapshot sẽ đồng bộ lại khi có mạng."
-        : "PWA đang sẵn sàng ở web mode. Nếu trình duyệt hỗ trợ, nút Cài app sẽ bật lên.";
+        : "PWA đang sẵn sàng ở web mode. Android/Chrome sẽ bật nút Cài app; iPhone/iPad cài qua Chia sẻ > Thêm vào Màn hình chính.";
       installBtn.disabled = true;
       updateBtn.disabled = true;
     }

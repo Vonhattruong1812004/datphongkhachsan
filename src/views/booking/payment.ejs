@@ -7,6 +7,7 @@
   const transfer = hold.paymentTransfer || {};
   const expiresAt = new Date(hold.expiresAt).getTime();
   const holdMinutes = Number(transfer.expiresInMinutes || 10);
+  const roomDetailUrl = `/booking/rooms/${room.id}/detail`;
 %>
 <style>
   body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
@@ -63,6 +64,9 @@
         <div class="pay-line"><span>Khuyến mãi</span><strong>-<%= summary.discountFormatted %></strong></div>
         <div class="pay-line pay-line--total"><span>Tổng hóa đơn</span><strong><%= summary.totalFormatted %></strong></div>
         <div class="pay-line pay-line--total"><span>Cọc 50%</span><strong><%= summary.depositAmountFormatted %></strong></div>
+      </div>
+      <div class="pay-actions">
+        <a class="pay-button" href="<%= roomDetailUrl %>">Xem chi tiết phòng</a>
       </div>
     </div>
 

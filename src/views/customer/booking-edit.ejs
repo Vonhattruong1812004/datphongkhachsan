@@ -3,6 +3,7 @@
 <%
   const booking = payload.booking;
   const room = payload.room;
+  const roomDetailUrl = `/booking/rooms/${room.id}/detail`;
 %>
 <style>
   body{background:radial-gradient(circle at 10% 12%,rgba(45,212,191,.24),transparent 24%),radial-gradient(circle at 88% 10%,rgba(251,113,133,.16),transparent 26%),radial-gradient(circle at 48% 100%,rgba(250,204,21,.15),transparent 30%),linear-gradient(160deg,#fffef5 0%,#effffd 34%,#eef8ff 68%,#fff4f8 100%);color:#14314b}
@@ -119,6 +120,9 @@
           <div>Tổng hiện tại: <strong><%= booking.totalFormatted %></strong></div>
           <div class="cust-edit-policy">Chính sách hủy hiện tại: <strong><%= booking.cancelPreview?.policy?.label || "Đang tính" %></strong> · dự kiến hoàn <strong><%= booking.cancelPreview?.refundAmountFormatted || "0 đ" %></strong>.</div>
           <div>Hệ thống kiểm tra trùng lịch trước khi lưu. Nếu đổi ngày, chính sách hủy sẽ không được dùng để né phí đã phát sinh theo mốc ngày nhận cũ.</div>
+        </div>
+        <div class="cust-edit-actions">
+          <a class="cust-edit-button" href="<%= roomDetailUrl %>">Xem chi tiết phòng</a>
         </div>
       </div>
     </aside>

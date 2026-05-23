@@ -7,5 +7,5 @@ const app = createApp();
 startSepayExpiryJob();
 
 app.listen(env.PORT, "127.0.0.1", () => {
-  logger.info(`ABC Resort Node listening on http://127.0.0.1:${env.PORT}`);
+  logger.info(`Bento Resort Node listening on http://127.0.0.1:${env.PORT}`);
 });

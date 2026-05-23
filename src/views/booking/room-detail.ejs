@@ -1,0 +1,132 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const queryParams = new URLSearchParams(filters || {});
+  const queryText = queryParams.toString();
+  const backUrl = `/booking/multi${queryText ? `?${queryText}` : ""}`;
+  const bookingUrl = `/booking/rooms/${room.id}${queryText ? `?${queryText}` : ""}`;
+  const statusMap = {
+    Trong: "Có thể đặt",
+    Booked: "Đã đặt",
+    Stayed: "Đang ở",
+    BaoTri: "Bảo trì"
+  };
+  const realtimeMap = {
+    Available: "Sẵn sàng",
+    Booked: "Đã giữ/đặt",
+    Stayed: "Đang có khách",
+    Cleaning: "Đang vệ sinh",
+    Maintenance: "Đang bảo trì"
+  };
+  const conditionMap = {
+    Tot: "Tốt",
+    CanVeSinh: "Cần vệ sinh",
+    HuHaiNhe: "Hư hại nhẹ",
+    HuHaiNang: "Hư hại nặng",
+    DangBaoTri: "Đang bảo trì"
+  };
+  const canBook = String(room.trangThai || "") === "Trong"
+    && String(room.tinhTrangPhong || "") === "Tot"
+    && !["Stayed", "Cleaning", "Maintenance"].includes(String(room.trangThaiRealtime || ""));
+  const latestBooking = room.latestBooking || null;
+%>
+<style>
+  body{background:radial-gradient(circle at 10% 10%,rgba(34,211,238,.20),transparent 24%),radial-gradient(circle at 88% 12%,rgba(251,113,133,.16),transparent 27%),linear-gradient(135deg,#fffdf7 0%,#effffd 38%,#eef8ff 70%,#fff5f0 100%);color:#14314b}
+  .room-detail-shell{max-width:1200px;margin:0 auto;padding:32px 18px 66px}
+  .room-detail-hero,.room-detail-panel{border:1px solid rgba(19,48,74,.12);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74));box-shadow:0 24px 66px rgba(12,39,64,.12);backdrop-filter:blur(18px)}
+  .room-detail-hero{overflow:hidden;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);gap:0;margin-bottom:18px}
+  .room-detail-media{min-height:430px;background:#e0f2fe}
+  .room-detail-media img{width:100%;height:100%;min-height:430px;object-fit:cover;display:block}
+  .room-detail-copy{padding:30px;display:flex;flex-direction:column;justify-content:center}
+  .room-kicker{display:inline-flex;width:max-content;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
+  .room-detail-copy h1{margin:18px 0 10px;font-size:clamp(38px,5.2vw,64px);line-height:.96;letter-spacing:-.06em;color:#102033}
+  .room-detail-copy h1 span{color:transparent;background:linear-gradient(135deg,#0ea5e9,#14b8a6 52%,#f97316);-webkit-background-clip:text;background-clip:text}
+  .room-muted{color:#5f778f;line-height:1.65}.room-price{display:block;margin-top:16px;color:#0f766e;font-size:34px;font-weight:1000;letter-spacing:-.05em}
+  .room-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.room-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-weight:900;text-decoration:none}.room-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 52%,#22c55e)}
+  .room-button[aria-disabled="true"]{opacity:.55;pointer-events:none}
+  .room-detail-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(320px,.82fr);gap:18px;align-items:start}.room-detail-panel{padding:22px}.room-detail-panel h2{margin:0 0 12px;font-size:25px;color:#102033;letter-spacing:-.04em}
+  .room-spec-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.room-spec{border-radius:18px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.70);padding:14px}.room-spec span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.room-spec strong{display:block;margin-top:6px;color:#102033;font-size:17px;line-height:1.35}
+  .room-status-grid{display:grid;gap:10px}.room-status{border-radius:18px;border:1px solid rgba(20,184,166,.16);background:rgba(20,184,166,.09);padding:13px}.room-status span{display:block;color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}.room-status strong{display:block;margin-top:5px;color:#102033}
+  .room-note{margin-top:14px;border-radius:18px;border:1px solid rgba(14,165,233,.14);background:rgba(14,165,233,.08);padding:14px;color:#0c4a6e;font-size:14px;line-height:1.7;font-weight:800}
+  .room-last-booking{margin-top:14px;border-radius:20px;border:1px solid rgba(249,115,22,.18);background:linear-gradient(135deg,rgba(255,247,237,.82),rgba(236,253,245,.70));padding:14px}
+  .room-last-booking__head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .room-last-booking__head strong{color:#102033;font-size:16px}
+  .room-last-booking__head span{border-radius:999px;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.18);color:#c2410c;padding:5px 9px;font-size:11px;font-weight:1000;text-transform:uppercase}
+  .room-last-booking__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .room-last-booking__grid div{border-radius:14px;background:rgba(255,255,255,.70);border:1px solid rgba(19,48,74,.08);padding:10px}
+  .room-last-booking__grid span{display:block;color:#5f778f;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+  .room-last-booking__grid strong{display:block;margin-top:4px;color:#102033;font-size:13px;line-height:1.35}
+  .room-policy{display:grid;gap:10px}.room-policy div{border-radius:18px;border:1px dashed rgba(19,48,74,.16);background:rgba(255,255,255,.62);padding:13px;color:#5f778f;font-size:14px;line-height:1.6}.room-policy strong{display:block;color:#102033;margin-bottom:4px}
+  @media(max-width:920px){.room-detail-hero,.room-detail-grid{grid-template-columns:1fr}.room-detail-media,.room-detail-media img{min-height:300px}}
+  @media(max-width:620px){.room-detail-shell{padding:22px 12px 48px}.room-detail-copy,.room-detail-panel{padding:20px}.room-detail-hero,.room-detail-panel{border-radius:24px}.room-spec-grid{grid-template-columns:1fr}}
+</style>
+
+<main class="room-detail-shell">
+  <section class="room-detail-hero">
+    <div class="room-detail-media">
+      <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" onerror="this.onerror=null;this.src='/uploads/phong/1.png';" />
+    </div>
+    <div class="room-detail-copy">
+      <span class="room-kicker"><%= room.tinhThanh %> · <%= room.khachSan %></span>
+      <h1><%= room.loaiPhong %> <span>phòng <%= room.soPhong %></span></h1>
+      <p class="room-muted"><%= room.diaChi || "Địa chỉ cơ sở đang được cập nhật." %></p>
+      <strong class="room-price"><%= room.priceFormatted || `${Number(room.gia || 0).toLocaleString("vi-VN")} đ` %> / đêm</strong>
+      <div class="room-actions">
+        <a class="room-button room-button--primary" href="<%= bookingUrl %>" aria-disabled="<%= canBook ? "false" : "true" %>">Đặt phòng này</a>
+        <a class="room-button" href="<%= backUrl %>">Quay lại danh sách</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="room-detail-grid">
+    <article class="room-detail-panel">
+      <h2>Thông tin phòng</h2>
+      <div class="room-spec-grid">
+        <div class="room-spec"><span>Mã phòng</span><strong>#<%= room.id %></strong></div>
+        <div class="room-spec"><span>Số phòng</span><strong><%= room.soPhong %></strong></div>
+        <div class="room-spec"><span>Loại phòng</span><strong><%= room.loaiPhong %></strong></div>
+        <div class="room-spec"><span>Vị trí</span><strong><%= room.vitri || "Đang cập nhật" %></strong></div>
+        <div class="room-spec"><span>Diện tích</span><strong><%= Number(room.dienTich || 0) ? `${Number(room.dienTich).toLocaleString("vi-VN")} m²` : "Đang cập nhật" %></strong></div>
+        <div class="room-spec"><span>Loại giường</span><strong><%= room.loaiGiuong || "Giường tiêu chuẩn" %></strong></div>
+        <div class="room-spec"><span>View</span><strong><%= room.viewPhong || "View nội khu" %></strong></div>
+        <div class="room-spec"><span>Sức chứa</span><strong>Tối đa <%= room.soKhachToiDa %> khách</strong></div>
+        <div class="room-spec"><span>Giá niêm yết</span><strong><%= room.priceFormatted || `${Number(room.gia || 0).toLocaleString("vi-VN")} đ` %> / đêm</strong></div>
+      </div>
+      <div class="room-note"><%= room.ghiChu || "Phòng phù hợp cho đặt online. Khách chọn ngày nhận/trả ở bước tạo booking để hệ thống kiểm tra trùng lịch và sinh QR cọc SePay." %></div>
+      <div class="room-last-booking">
+        <div class="room-last-booking__head">
+          <strong>Lượt đặt gần nhất</strong>
+          <span><%= latestBooking ? latestBooking.roomStatusLabel : "Chưa có" %></span>
+        </div>
+        <% if (latestBooking) { %>
+          <div class="room-last-booking__grid">
+            <div><span>Mã booking</span><strong><%= latestBooking.bookingCode %></strong></div>
+            <div><span>Khách</span><strong><%= latestBooking.customerName %></strong></div>
+            <div><span>Tạo lúc</span><strong><%= latestBooking.createdAtLabel %></strong></div>
+            <div><span>Ngày ở</span><strong><%= latestBooking.checkinLabel %> → <%= latestBooking.checkoutLabel %></strong></div>
+            <div><span>Số khách</span><strong><%= latestBooking.guestCount || 0 %> khách</strong></div>
+            <div><span>Tổng giao dịch</span><strong><%= latestBooking.totalFormatted %></strong></div>
+          </div>
+        <% } else { %>
+          <p class="room-muted" style="margin:0">Phòng này chưa phát sinh lượt đặt nào trong hệ thống.</p>
+        <% } %>
+      </div>
+    </article>
+
+    <aside class="room-detail-panel">
+      <h2>Trạng thái & nghiệp vụ</h2>
+      <div class="room-status-grid">
+        <div class="room-status"><span>Trạng thái phòng</span><strong><%= statusMap[room.trangThai] || room.trangThai || "Đang cập nhật" %></strong></div>
+        <div class="room-status"><span>Tình trạng kiểm tra</span><strong><%= conditionMap[room.tinhTrangPhong] || room.tinhTrangPhong || "Đang cập nhật" %></strong></div>
+        <div class="room-status"><span>Realtime</span><strong><%= realtimeMap[room.trangThaiRealtime] || room.trangThaiRealtime || "Sẵn sàng" %></strong></div>
+      </div>
+      <div class="room-policy" style="margin-top:14px;">
+        <div><strong>Điều kiện đặt online</strong>Phòng chỉ có thể đặt khi trạng thái là có thể đặt, tình trạng tốt và không ở luồng vệ sinh/bảo trì/đang có khách.</div>
+        <div><strong>Thanh toán cọc</strong>Khi tạo booking, hệ thống sinh QR cọc SePay 50% và giữ phòng trong 10 phút.</div>
+        <div><strong>Hoàn tất booking</strong>Booking chính thức được tạo sau khi webhook xác nhận đúng số tiền và nội dung chuyển khoản.</div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

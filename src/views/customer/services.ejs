@@ -77,6 +77,7 @@
   .svc-booking{border-radius:22px;padding:14px;box-shadow:0 16px 40px rgba(12,39,64,.09)}
   .svc-booking button{width:100%;text-align:left;border:0;background:transparent;padding:0;color:inherit;cursor:pointer}
   .svc-booking strong{display:block;color:#102033;font-size:16px}
+  .svc-room-link{display:inline-flex;margin-top:10px;color:#0f766e;font-size:13px;font-weight:1000;text-decoration:none}
   .svc-empty{border:1px dashed rgba(18,48,71,.18);border-radius:24px;padding:18px;background:rgba(255,255,255,.58);color:#5f778f}
   .svc-orders{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
   .svc-order-card{border-radius:28px;padding:18px;position:relative;overflow:hidden}
@@ -234,6 +235,7 @@
                   <span class="svc-muted"><%= item.hotelName %><%= item.hotelCity ? ` · ${item.hotelCity}` : "" %> · <%= item.checkinLabel %> đến <%= item.checkoutLabel %></span>
                   <span class="svc-help"><%= item.roomStatusLabel %> · <%= item.eligibilityHint %></span>
                 </button>
+                <a class="svc-room-link" href="/booking/rooms/<%= item.roomId %>/detail">Xem chi tiết phòng</a>
               </article>
             <% }) %>
           </div>
@@ -316,6 +318,7 @@
             <span class="svc-chip <%= item.timing === "in_stay" ? "is-active" : "is-fresh" %>"><%= item.timingLabel %></span>
             <h3><%= item.serviceName %></h3>
             <p class="svc-muted"><%= item.bookingCode || `GD-${item.transactionId}` %> · Phòng <%= item.roomNumber || "chưa gán" %><%= item.hotelName ? ` · ${item.hotelName}` : "" %></p>
+            <% if (item.roomId) { %><a class="svc-room-link" href="/booking/rooms/<%= item.roomId %>/detail">Xem chi tiết phòng</a><% } %>
             <div class="svc-lines">
               <div class="svc-line"><span>Số lượng</span><strong><%= item.quantity %></strong></div>
               <div class="svc-line"><span>Đơn giá</span><strong><%= item.unitPriceFormatted %></strong></div>

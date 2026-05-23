@@ -1871,7 +1871,7 @@ export class ManagerService {
     const start = formatDate(promotion.ngayBatDau);
     const end = formatDate(promotion.ngayKetThuc);
 
-    return `ABC Resort vừa mở chương trình ${promotion.tenChuongTrinh} với mức ưu đãi ${benefit}.${start || end ? ` Thời gian áp dụng: ${start || "-"} đến ${end || "-"}.` : ""} Bạn có thể liên hệ CSKH để được tư vấn booking phù hợp và áp dụng ưu đãi đúng nhu cầu.`;
+    return `Bento Resort vừa mở chương trình ${promotion.tenChuongTrinh} với mức ưu đãi ${benefit}.${start || end ? ` Thời gian áp dụng: ${start || "-"} đến ${end || "-"}.` : ""} Bạn có thể liên hệ CSKH để được tư vấn booking phù hợp và áp dụng ưu đãi đúng nhu cầu.`;
   }
 
   private async queuePromotionAnnouncement(client: any, promotion: {
@@ -1957,7 +1957,7 @@ export class ManagerService {
             delivery_channel,
             delivery_status
           )
-          VALUES ($1, $2, $3, $4, $5, NULL, 'ABC Resort', 'Thông báo khuyến mãi mới', NULL, NULL, 'Mixed', 'Queued')
+          VALUES ($1, $2, $3, $4, $5, NULL, 'Bento Resort', 'Thông báo khuyến mãi mới', NULL, NULL, 'Mixed', 'Queued')
         `,
         [
           campaignId,

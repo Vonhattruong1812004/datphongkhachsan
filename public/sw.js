@@ -1,6 +1,5 @@
-const CACHE_NAME = "abc-resort-shell-v3";
+const CACHE_NAME = "abc-resort-shell-v4";
 const APP_SHELL = [
-  "/",
   "/app.css",
   "/manifest.webmanifest",
   "/offline.html",
@@ -8,6 +7,26 @@ const APP_SHELL = [
   "/icons/app-icon-192.png",
   "/icons/app-icon-512.png"
 ];
+const CACHEABLE_API_PATHS = new Set([
+  "/api/customer/mobile-home",
+  "/api/system/health"
+]);
+const NEVER_CACHE_PATHS = new Set([
+  "/logout",
+  "/auth/logout"
+]);
+
+const isCacheableResponse = (response) => {
+  if (!response || !response.ok || response.type !== "basic") return false;
+  const cacheControl = response.headers.get("Cache-Control") || "";
+  return !cacheControl.toLowerCase().includes("no-store");
+};
+
+const safeCachePut = async (request, response) => {
+  if (!isCacheableResponse(response)) return;
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response.clone()).catch(() => undefined);
+};
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -35,13 +54,14 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (NEVER_CACHE_PATHS.has(url.pathname) || request.headers.has("range")) return;
 
   if (url.pathname.startsWith("/api/")) {
+    if (!CACHEABLE_API_PATHS.has(url.pathname)) return;
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const cloned = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, cloned));
+          safeCachePut(request, response).catch(() => undefined);
           return response;
         })
         .catch(() => caches.match(request))
@@ -53,8 +73,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const cloned = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, cloned));
+          const contentType = response.headers.get("Content-Type") || "";
+          if (contentType.includes("text/html")) {
+            safeCachePut(request, response).catch(() => undefined);
+          }
           return response;
         })
         .catch(async () => {
@@ -69,8 +91,7 @@ self.addEventListener("fetch", (event) => {
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request)
         .then((response) => {
-          const cloned = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, cloned));
+          safeCachePut(request, response).catch(() => undefined);
           return response;
         })
         .catch(() => cached);

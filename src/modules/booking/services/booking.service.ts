@@ -158,18 +158,45 @@ const CUSTOMER_CANCEL_POLICY_TIERS = [
 
 export interface SearchRoomRow {
   id: number;
+  maKhachSan?: number;
   soPhong: string;
   loaiPhong: string;
+  dienTich?: number;
+  vitri?: string | null;
   loaiGiuong: string | null;
   viewPhong: string | null;
   gia: number;
   soKhachToiDa: number;
+  trangThai?: string;
+  trangThaiRealtime?: string | null;
   tinhTrangPhong: string;
+  ghiChu?: string | null;
   khachSan: string;
   tinhThanh: string;
   diaChi: string | null;
   hinhAnh: string | null;
   imageUrl?: string;
+  priceFormatted?: string;
+  latestBooking?: LatestRoomBooking | null;
+}
+
+interface LatestRoomBooking {
+  id: number;
+  bookingCode: string;
+  customerName: string;
+  guestCount: number;
+  createdAt: string | null;
+  createdAtLabel: string;
+  checkinDate: string | null;
+  checkoutDate: string | null;
+  checkinLabel: string;
+  checkoutLabel: string;
+  transactionStatus: string;
+  transactionStatusLabel: string;
+  roomStatus: string;
+  roomStatusLabel: string;
+  total: number;
+  totalFormatted: string;
 }
 
 interface PromotionRow {
@@ -198,6 +225,7 @@ interface BookingLookupRow {
   sdt: string | null;
   cccd: string | null;
   maCtGd: number;
+  maPhong: number;
   soPhong: string;
   loaiPhong: string;
   loaiGiuong: string | null;
@@ -213,6 +241,20 @@ interface BookingLookupRow {
   tienBoiThuong: number;
   trangThaiPhong: string;
   ghiChuPhong: string | null;
+}
+
+interface LatestRoomBookingRow {
+  maGiaoDich: number;
+  maDatCho: string | null;
+  ngayGiaoDich: string | null;
+  trangThaiGiaoDich: string;
+  tongTien: number;
+  maCtGd: number;
+  ngayNhanDuKien: string | null;
+  ngayTraDuKien: string | null;
+  trangThaiChiTiet: string;
+  tenKhach: string | null;
+  soNguoi: number | null;
 }
 
 interface BookingServiceLookupRow {
@@ -521,13 +563,19 @@ export class BookingService {
       `
         SELECT
           p.maphong AS id,
+          p.makhachsan AS "maKhachSan",
           p.sophong AS "soPhong",
           p.loaiphong AS "loaiPhong",
+          p.dientich AS "dienTich",
+          p.vitri,
           p.loaigiuong AS "loaiGiuong",
           p.viewphong AS "viewPhong",
           p.gia,
           p.sokhachtoida AS "soKhachToiDa",
+          p.trangthai AS "trangThai",
+          p.trangthairealtime AS "trangThaiRealtime",
           p.tinhtrangphong AS "tinhTrangPhong",
+          p.ghichu AS "ghiChu",
           ks.tenkhachsan AS "khachSan",
           ks.tinhthanh AS "tinhThanh",
           ks.diachi AS "diaChi",
@@ -586,13 +634,19 @@ export class BookingService {
       `
         SELECT
           p.maphong AS id,
+          p.makhachsan AS "maKhachSan",
           p.sophong AS "soPhong",
           p.loaiphong AS "loaiPhong",
+          p.dientich AS "dienTich",
+          p.vitri,
           p.loaigiuong AS "loaiGiuong",
           p.viewphong AS "viewPhong",
           p.gia,
           p.sokhachtoida AS "soKhachToiDa",
+          p.trangthai AS "trangThai",
+          p.trangthairealtime AS "trangThaiRealtime",
           p.tinhtrangphong AS "tinhTrangPhong",
+          p.ghichu AS "ghiChu",
           ks.tenkhachsan AS "khachSan",
           ks.tinhthanh AS "tinhThanh",
           ks.diachi AS "diaChi",
@@ -609,9 +663,56 @@ export class BookingService {
       return null;
     }
 
+    const latestBooking = await query<LatestRoomBookingRow>(
+      `
+        SELECT
+          gd.magiaodich AS "maGiaoDich",
+          gd.madatcho AS "maDatCho",
+          gd.ngaygiaodich AS "ngayGiaoDich",
+          gd.trangthai AS "trangThaiGiaoDich",
+          gd.tongtien AS "tongTien",
+          ct.mactgd AS "maCtGd",
+          ct.ngaynhandukien AS "ngayNhanDuKien",
+          ct.ngaytradukien AS "ngayTraDuKien",
+          ct.trangthai AS "trangThaiChiTiet",
+          COALESCE(NULLIF(ct.tenkhach, ''), kh.tenkh) AS "tenKhach",
+          ct.songuoi AS "soNguoi"
+        FROM chitietgiaodich ct
+        INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+        LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+        WHERE ct.maphong = $1
+        ORDER BY gd.ngaygiaodich DESC NULLS LAST, ct.mactgd DESC
+        LIMIT 1
+      `,
+      [roomId]
+    );
+
+    const latest = latestBooking.rows[0] || null;
+
     return {
       ...result.rows[0],
-      imageUrl: this.resolveRoomImage(result.rows[0].hinhAnh)
+      imageUrl: this.resolveRoomImage(result.rows[0].hinhAnh),
+      priceFormatted: formatMoney(result.rows[0].gia),
+      latestBooking: latest
+        ? {
+            id: latest.maGiaoDich,
+            bookingCode: latest.maDatCho || `GD-${latest.maGiaoDich}`,
+            customerName: latest.tenKhach || "Khách lưu trú",
+            guestCount: Number(latest.soNguoi || 0),
+            createdAt: latest.ngayGiaoDich,
+            createdAtLabel: latest.ngayGiaoDich ? formatDate(latest.ngayGiaoDich, "DD/MM/YYYY HH:mm") : "Chưa rõ",
+            checkinDate: latest.ngayNhanDuKien,
+            checkoutDate: latest.ngayTraDuKien,
+            checkinLabel: latest.ngayNhanDuKien ? formatDate(latest.ngayNhanDuKien) : "Chưa rõ",
+            checkoutLabel: latest.ngayTraDuKien ? formatDate(latest.ngayTraDuKien) : "Chưa rõ",
+            transactionStatus: latest.trangThaiGiaoDich,
+            transactionStatusLabel: formatBookingStatus(latest.trangThaiGiaoDich),
+            roomStatus: latest.trangThaiChiTiet,
+            roomStatusLabel: formatBookingStatus(latest.trangThaiChiTiet),
+            total: Number(latest.tongTien || 0),
+            totalFormatted: formatMoney(latest.tongTien)
+          }
+        : null
     };
   }
 
@@ -627,6 +728,7 @@ export class BookingService {
           p.maphong AS id,
           p.sophong AS "soPhong",
           p.loaiphong AS "loaiPhong",
+          p.vitri,
           p.loaigiuong AS "loaiGiuong",
           p.viewphong AS "viewPhong",
           p.gia,
@@ -1373,6 +1475,7 @@ export class BookingService {
           ct.email,
           ct.sdt,
           ct.cccd,
+          p.maphong AS "maPhong",
           p.sophong AS "soPhong",
           p.loaiphong AS "loaiPhong",
           p.loaigiuong AS "loaiGiuong",
@@ -1439,6 +1542,7 @@ export class BookingService {
       },
       rooms: result.rows.map((row) => ({
         detailId: row.maCtGd,
+        roomId: row.maPhong,
         roomNumber: row.soPhong,
         roomType: row.loaiPhong,
         bedType: row.loaiGiuong,

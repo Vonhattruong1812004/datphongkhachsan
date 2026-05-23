@@ -275,6 +275,23 @@ export async function renderBookingFormPage(req: Request, res: Response) {
   });
 }
 
+export async function renderRoomDetailPage(req: Request, res: Response) {
+  const roomId = Number(req.params.roomId);
+  const room = await bookingService.getRoomById(roomId);
+  if (!room) {
+    throw new HttpError(404, "Khong tim thay phong.");
+  }
+
+  const filters = searchParamsFromRequest(req.query);
+
+  return res.render("booking/room-detail", {
+    title: `Chi tiết phòng ${room.soPhong}`,
+    room,
+    filters,
+    user: req.session.user
+  });
+}
+
 export async function submitBookingForm(req: Request, res: Response) {
   const roomId = Number(req.params.roomId);
   const payload = await bookingService.getBookingFormData(roomId);

@@ -110,13 +110,13 @@ export class CustomerService {
         offlineShellReady: true
       },
       quickActions: [
-        { key: "search", label: "Tim phong", href: "/booking/search" },
-        { key: "history", label: "Lich su", href: "/customer/bookings" },
-        { key: "profile", label: "Ho so", href: "/customer/profile" },
-        { key: "services", label: "Dich vu", href: "/customer/services" },
-        { key: "advisory", label: "Tu van", href: "/customer/advisory" },
+        { key: "search", label: "Tìm phòng", href: "/booking/search" },
+        { key: "history", label: "Lịch sử", href: "/customer/bookings" },
+        { key: "profile", label: "Hồ sơ", href: "/customer/profile" },
+        { key: "services", label: "Dịch vụ", href: "/customer/services" },
+        { key: "advisory", label: "Tư vấn", href: "/customer/advisory" },
         { key: "ekyc", label: "eKYC", href: "/ekyc" },
-        { key: "feedback", label: "Phan hoi", href: "/feedback/new" },
+        { key: "feedback", label: "Phản hồi", href: "/feedback/new" },
         { key: "ai", label: "AI Concierge", href: "/ai/concierge" }
       ],
       bookings: bookings.map((item) => ({

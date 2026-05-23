@@ -1,70 +1,242 @@
-# ABC Resort Node
+# Bento Resort - Hệ thống đặt phòng và vận hành resort
 
-He thong dat phong va van hanh resort duoc rebuild bang Node.js, TypeScript, Express, EJS, React/Vite va PostgreSQL. Du an nay la ban nang cap tu source PHP cu trong `../code2`, nhung code chay chinh nam trong `abc-resort-node/`.
+Đây là hệ thống đặt phòng khách sạn/resort được rebuild bằng **Node.js, TypeScript, Express, EJS, React/Vite và PostgreSQL**. Dự án kế thừa nghiệp vụ từ source PHP cũ trong `../code2`, nhưng phần chạy chính, phát triển chính và deploy chính nằm trong thư mục `abc-resort-node/`.
 
-## Muc tieu
+Hệ thống không chỉ xử lý đặt phòng. Đây là một nền tảng vận hành resort theo nhiều actor: khách hàng, lễ tân, quản lý, kế toán, chăm sóc khách hàng, nhân viên dịch vụ và admin. Mỗi actor có dashboard riêng, UC riêng và dữ liệu được nối với nhau thành workflow đặt phòng, cọc, eKYC, check-in, check-out, hủy phòng, hoàn tiền, dịch vụ bổ sung, phản hồi và báo cáo tài chính.
 
-- Giu dung nghiep vu cua he thong cu.
-- Nang cap trai nghiem theo tung actor: khach hang, le tan, quan ly, ke toan, dich vu va admin.
-- Dong bo logic dat phong, giu phong, thanh toan coc, check-in, check-out, huy phong, hoan tien va bao cao.
-- Tang do an toan bang CSRF, role boundary, smoke test va cac luong kiem thu theo UC.
+## Mục Tiêu Hệ Thống
 
-## Cong nghe
+- Quản lý toàn bộ vòng đời đặt phòng: tìm phòng, giữ phòng, thanh toán cọc, nhận phòng, trả phòng, phát sinh dịch vụ và hóa đơn.
+- Tách rõ nghiệp vụ theo actor để mỗi vai trò chỉ thấy đúng chức năng cần dùng.
+- Đồng bộ trạng thái phòng giữa booking, lễ tân, quản lý và nhân viên dịch vụ.
+- Chuẩn hóa luồng hủy đặt phòng và hoàn tiền qua lễ tân, quản lý và kế toán.
+- Hỗ trợ eKYC để khách hàng gửi giấy tờ, quản lý/lễ tân duyệt và hệ thống dùng lại hồ sơ đã xác thực.
+- Cung cấp dashboard và báo cáo tài chính cho kế toán, có biểu đồ và API phân tích dữ liệu.
+- Kiểm soát bảo mật cơ bản bằng phân quyền, session, CSRF, kiểm tra role boundary và smoke test.
 
-- Backend: Node.js, Express, TypeScript.
-- View server-side: EJS.
-- Frontend asset shell: React, Vite, Tailwind CSS.
-- Database: PostgreSQL, schema mac dinh `abc_resort1`.
-- Auth/session: `express-session` + PostgreSQL session store.
-- Realtime: SSE dashboard/event feed.
-- Payment: SePay webhook + VietQR.
-- PWA: manifest, service worker, offline shell.
+## Công Nghệ Sử Dụng
 
-## Actor va UC chinh
+- **Backend:** Node.js, Express, TypeScript.
+- **View server-side:** EJS.
+- **Frontend asset shell:** React, Vite, Tailwind CSS.
+- **Database:** PostgreSQL, schema mặc định `abc_resort1`.
+- **Auth/session:** `express-session` và PostgreSQL session store.
+- **Validation:** Zod và kiểm tra nghiệp vụ trong service layer.
+- **Realtime:** SSE event feed cho dashboard và room board.
+- **Thanh toán:** SePay webhook, VietQR, cơ chế giữ phòng/chờ cọc.
+- **Upload:** ảnh phòng, ảnh dịch vụ, ảnh phản hồi, ảnh eKYC.
+- **PWA:** manifest, service worker, offline shell.
 
-### Khach hang
+## Actor Và UC Chính
 
-- Tim phong, xem chi tiet phong, dat phong online.
-- Thanh toan coc 50% qua SePay/VietQR.
-- Theo doi booking, dich vu, feedback va ho so ca nhan.
-- Huy dat phong va gui thong tin hoan tien khi can.
+### 1. Khách Hàng
 
-### Le tan
+Các màn chính:
 
-- Dat phong truc tiep tai quay.
-- Ho tro khach cu va khach moi.
-- Giu phong 10 phut, chi tao giao dich that sau khi SePay xac nhan coc.
-- Check-in bang ma giao dich, CCCD hoac so dien thoai.
-- Check-out va thanh toan 50% con lai.
-- Sua thong tin dat phong: doi lich, doi phong trong cung co so, them phong, them/sua dich vu theo dung phong nhan dich vu.
-- Huy phong, ghi nhan thong tin refund.
-- Tra cuu hoat dong: booking gan day, phong qua gio check-in, phong den han check-out.
+- `/customer/dashboard`
+- `/booking/search`
+- `/booking/multi`
+- `/customer/bookings`
+- `/customer/profile`
+- `/ekyc`
+- `/customer/services`
+- `/customer/advisory`
+- `/feedback/new`
 
-### Quan ly
+Nghiệp vụ:
 
-- Dashboard quan ly.
-- Quan ly khach hang CRM: tim kiem, them, sua, xoa/khoa xoa theo rang buoc giao dich.
-- Quan ly phong, khuyen mai va cac du lieu van hanh lien quan.
+- Tìm và đặt phòng online.
+- Đặt nhiều phòng trong cùng một booking.
+- Chọn dịch vụ bổ sung theo từng phòng đủ điều kiện.
+- Thanh toán cọc qua VietQR/SePay.
+- Quản lý đặt phòng: xem chi tiết, sửa thông tin hoặc hủy theo chính sách hoàn cọc.
+- Quản lý hồ sơ cá nhân và eKYC.
+- Gửi phản hồi, đánh giá, ảnh đính kèm và mở tư vấn/hỗ trợ.
 
-### Ke toan
+### 2. Lễ Tân
 
-- Dashboard ke toan.
-- Bao cao ke toan, doanh thu, chi phi, thu chi hop nhat.
-- Cong no phai thu, doi soat.
-- Quan ly yeu cau hoan tien tu luong huy dat phong.
+Các màn chính:
 
-### Dich vu
+- `/dashboard/letan`
+- `/frontdesk`
+- `/frontdesk/direct-booking`
+- `/frontdesk/checkin`
+- `/frontdesk/checkout-v2`
+- `/frontdesk/edit-booking`
+- `/frontdesk/cancel-booking`
+- `/frontdesk/activity-lookup`
+- `/ekyc/review`
 
-- Quan ly danh muc dich vu.
-- Tiep nhan dich vu theo tung phong.
-- Theo doi trang thai phuc vu va feed phong.
+Nghiệp vụ:
 
-### Admin
+- Đặt phòng trực tiếp tại quầy.
+- Tìm khách cũ, tạo khách mới và tạo booking cho khách.
+- Giữ phòng trong thời gian chờ thanh toán cọc.
+- Chỉ tạo giao dịch thật khi SePay xác nhận khoản cọc hợp lệ.
+- Check-in bằng mã giao dịch, CCCD hoặc số điện thoại.
+- Check-out, tính tiền còn lại và các dịch vụ phát sinh.
+- Sửa booking: đổi ngày, đổi phòng, thêm phòng, điều chỉnh dịch vụ theo từng phòng.
+- Hủy booking và ghi nhận dữ liệu hoàn tiền để chuyển workflow sang quản lý/kế toán.
 
-- Quan ly tai khoan, phan quyen, chan doan he thong.
-- Backup/restore va cac cong cu van hanh.
+### 3. Quản Lý
 
-## Thanh toan SePay
+Các màn chính:
+
+- `/dashboard/quanly`
+- `/manager/customers`
+- `/manager/rooms`
+- `/manager/promotions`
+- `/manager/refunds`
+- `/ekyc/review`
+- `/feedback/manage`
+- `/service/room-board-live`
+- `/service/room-inspection`
+
+Nghiệp vụ:
+
+- Quản lý khách hàng CRM: tìm kiếm, thêm, sửa, khóa/xóa theo ràng buộc giao dịch.
+- Quản lý phòng: thông tin phòng, ảnh, giá, sức chứa, loại giường, trạng thái PMS và trạng thái realtime.
+- Quản lý khuyến mãi: thời gian áp dụng, loại giảm, giới hạn, điều kiện, kênh áp dụng và ngày chặn.
+- Duyệt eKYC cho khách hàng.
+- Duyệt yêu cầu hoàn tiền trước khi kế toán chi tiền.
+- Theo dõi phản hồi khách hàng và các tín hiệu vận hành.
+
+### 4. Kế Toán
+
+Các màn chính:
+
+- `/accounting`
+- `/accounting/reports`
+- `/accounting/revenue`
+- `/accounting/expenses`
+- `/accounting/cashflow`
+- `/accounting/debts`
+- `/accounting/refunds`
+
+API liên quan:
+
+- `/api/accounting/dashboard`
+- `/api/accounting/reports`
+- `/api/accounting/reports/ai-insights`
+- `/api/accounting/revenue`
+- `/api/accounting/expenses`
+- `/api/accounting/refunds`
+
+Nghiệp vụ:
+
+- Dashboard kế toán gọn theo đúng actor.
+- Thống kê tài chính bằng biểu đồ trực quan.
+- Quản lý doanh thu: giao dịch, trạng thái thu tiền, phương thức thanh toán, khoản còn phải thu.
+- Quản lý chi phí: phiếu chi, nhóm chi, trạng thái, chứng từ và dữ liệu đối soát.
+- Đối soát dòng tiền, công nợ và hoàn tiền.
+- Xử lý hoàn tiền sau khi quản lý duyệt yêu cầu hoàn.
+- Xuất/đọc dữ liệu phục vụ báo cáo và phân tích.
+
+### 5. Chăm Sóc Khách Hàng
+
+Các màn chính:
+
+- `/dashboard/cskh`
+- `/feedback/manage`
+- `/feedback/advisory/manage`
+- `/feedback/broadcast/manage`
+- `/manager/promotions`
+
+Nghiệp vụ:
+
+- Quản lý phản hồi khách hàng: lọc phản hồi, xem rating, sentiment, ưu tiên, SLA và lịch sử trả lời.
+- Trả lời tư vấn/hỗ trợ khách hàng.
+- Gửi tin nhắn hàng loạt theo nhóm khách phù hợp.
+- Quản lý khuyến mãi phục vụ tư vấn và chăm sóc khách hàng.
+- Theo dõi feedback tiêu cực, phản hồi quá SLA và phản hồi cần ưu tiên.
+
+### 6. Nhân Viên Dịch Vụ
+
+Các màn chính:
+
+- `/dashboard/dichvu`
+- `/service`
+- `/service/catalog/manage`
+- `/service/room-board-live`
+- `/service/room-inspection`
+
+Nghiệp vụ:
+
+- Quản lý danh mục dịch vụ: tên, giá, ảnh, cơ sở áp dụng, trạng thái hoạt động/ngưng bán/bảo trì.
+- Nhận và cập nhật trạng thái order dịch vụ theo từng phòng.
+- Theo dõi room board live: Available, Booked, Stayed, Cleaning, Maintenance.
+- Kiểm tra tình trạng phòng sau vệ sinh, sau checkout hoặc khi phát hiện lỗi.
+- Cập nhật tình trạng phòng:
+  - `Tốt` -> `Available`
+  - `Cần vệ sinh` -> `Cleaning`
+  - `Hư hại nhẹ`, `Hư hại nặng`, `Đang bảo trì` -> `Maintenance`
+- Ghi log `room_status_log` để lễ tân, quản lý và ca sau theo dõi.
+
+### 7. Admin
+
+Các màn chính:
+
+- `/dashboard/admin`
+- `/admin/users`
+- `/admin/diagnostics`
+- `/admin/runtime-health`
+- `/admin/system-readiness`
+- `/admin/mobile-readiness`
+- `/admin/backups`
+
+Nghiệp vụ:
+
+- Quản lý tài khoản và phân quyền.
+- Theo dõi health check, diagnostics, readiness.
+- Kiểm tra môi trường chạy, PWA/mobile readiness và các thông tin vận hành hệ thống.
+- Backup/restore và các công cụ admin nội bộ.
+
+## Workflow Nghiệp Vụ Quan Trọng
+
+### Đặt Phòng Online
+
+1. Khách hàng tìm phòng tại `/booking/search`.
+2. Hệ thống lọc phòng theo cơ sở, số khách, loại phòng, giá và trạng thái khả dụng.
+3. Khách có thể đặt một phòng hoặc nhiều phòng.
+4. Hệ thống tạo hold/chờ cọc và sinh VietQR.
+5. SePay webhook xác nhận giao dịch chuyển khoản.
+6. Khi khoản cọc hợp lệ, hệ thống tạo giao dịch đặt phòng thật.
+7. Khách theo dõi booking trong `/customer/bookings`.
+
+### Đặt Phòng Trực Tiếp Tại Quầy
+
+1. Lễ tân mở `/frontdesk/direct-booking`.
+2. Chọn khách, cơ sở, phòng, ngày ở và dịch vụ đi kèm.
+3. Hệ thống giữ phòng trong thời gian chờ cọc.
+4. Khách chuyển khoản theo VietQR.
+5. Webhook SePay xác nhận đúng số tiền, nội dung và giao dịch.
+6. Booking được tạo và phòng chuyển sang trạng thái đã đặt.
+
+### Check-in Và eKYC
+
+1. Khách gửi eKYC tại `/ekyc`.
+2. Lễ tân/quản lý duyệt tại `/ekyc/review`.
+3. Khi check-in, lễ tân tra cứu bằng mã giao dịch, CCCD hoặc số điện thoại.
+4. Hệ thống ưu tiên dùng hồ sơ eKYC đã xác thực, tránh bắt khách gửi lại khi đã duyệt.
+5. Phòng chuyển sang trạng thái đang ở.
+
+### Check-out Và Dịch Vụ Phát Sinh
+
+1. Lễ tân mở `/frontdesk/checkout-v2`.
+2. Hệ thống tính phần tiền còn lại, dịch vụ phát sinh và tổng phải thanh toán.
+3. Nếu thanh toán qua SePay, hệ thống theo dõi trạng thái thanh toán.
+4. Khi hoàn tất, giao dịch được đóng và phòng chuyển sang luồng cần kiểm tra/vệ sinh.
+
+### Hủy Đặt Phòng Và Hoàn Tiền
+
+1. Khách hàng hoặc lễ tân yêu cầu hủy booking.
+2. Hệ thống tính chính sách hoàn cọc theo thời điểm hủy.
+3. Dữ liệu hoàn tiền được tạo để quản lý duyệt.
+4. Quản lý duyệt yêu cầu tại `/manager/refunds`.
+5. Kế toán xử lý chi hoàn tại `/accounting/refunds`.
+6. Kế toán lưu trạng thái xử lý, ghi chú và thông tin thanh toán hoàn tiền.
+
+## Thanh Toán SePay/VietQR
 
 Webhook:
 
@@ -73,48 +245,47 @@ POST /api/webhook/sepay
 Authorization: Apikey my-secret-key-123
 ```
 
-Thong tin VietinBank dang cau hinh trong code:
+Thông tin tài khoản đang cấu hình:
 
 ```text
-Bank: VietinBank
-Account: 108875396650
-Name: VO NHAT TRUONG
-Prefix bat buoc voi VietinBank/SePay: SEVQR
+Ngân hàng: VietinBank
+Số tài khoản: 108875396650
+Tên tài khoản: VO NHAT TRUONG
+Prefix bắt buộc với VietinBank/SePay: SEVQR
 ```
 
-Noi dung chuyen khoan:
+Nội dung chuyển khoản:
 
 ```text
-Dat phong/coc: SEVQR ROOM{orderId}
+Đặt phòng/cọc: SEVQR ROOM{orderId}
 Checkout: SEVQR OUT{transactionId}P{roomId}
 ```
 
-Luu y khi chay local:
+Ghi chú vận hành:
 
-- App local chay o `http://127.0.0.1:3010`.
-- Neu can SePay goi ve may local, bat ngrok tro dung port 3010.
-- URL webhook tren SePay phai tro toi public URL cua ngrok, vi du:
+- App local thường chạy ở `http://127.0.0.1:3010`.
+- Nếu cần SePay gọi về máy local, dùng ngrok trỏ vào port đang chạy.
+- URL webhook trên SePay phải là URL public của ngrok:
 
 ```text
 https://your-ngrok-domain.ngrok-free.dev/api/webhook/sepay
 ```
 
-## Cai dat local
+## Cài Đặt Local
 
-Yeu cau:
+Yêu cầu:
 
 - Node.js 20+.
-- PostgreSQL dang co database `abc_resort1`.
-- File `.env` tao tu `.env.example`.
+- PostgreSQL đang có database `abc_resort1`.
+- File `.env` tạo từ `.env.example` hoặc cấu hình tương đương.
 
-Lenh cai dat:
+Cài dependency:
 
 ```bash
 npm install
-cp .env.example .env
 ```
 
-Noi dung `.env.example` hien tai:
+Ví dụ `.env`:
 
 ```env
 NODE_ENV=development
@@ -129,27 +300,27 @@ PGDATABASE=abc_resort1
 PGSCHEMA=abc_resort1
 ```
 
-## Chay he thong
+## Chạy Hệ Thống
 
-Chay server va Vite client:
+Chạy server và Vite client:
 
 ```bash
 npm run dev
 ```
 
-Chi chay server:
+Chỉ chạy server:
 
 ```bash
 PORT=3010 npm run dev:server
 ```
 
-Mo trinh duyet:
+Mở trình duyệt:
 
 ```text
 http://127.0.0.1:3010
 ```
 
-Neu port 3010 bi chiem:
+Nếu port 3010 bị chiếm:
 
 ```bash
 lsof -nP -iTCP:3010 -sTCP:LISTEN
@@ -157,18 +328,12 @@ kill <PID>
 PORT=3010 npm run dev:server
 ```
 
-## Kiem tra va test
+## Kiểm Tra Và Test
 
-Build server va client:
+Build server và client:
 
 ```bash
 npm run build
-```
-
-Build rieng server:
-
-```bash
-npm run build:server
 ```
 
 Unit test:
@@ -177,13 +342,15 @@ Unit test:
 npm test
 ```
 
-Kiem tra DB:
+Script test dùng `find src -name '*.test.ts' -print` để chạy ổn trên GitHub Actions Ubuntu, tránh lỗi shell không mở rộng glob `src/**/*.test.ts`.
+
+Kiểm tra DB:
 
 ```bash
 npm run verify:db
 ```
 
-Smoke test tong:
+Smoke test tổng:
 
 ```bash
 npm run smoke
@@ -204,77 +371,159 @@ npm run smoke:feedback
 npm run smoke:ekyc
 ```
 
-## Cau truc thu muc
+## Docker Và Deploy Cloud
+
+Hệ thống đã có cấu hình Docker để tránh lỗi "máy này chạy, máy kia không chạy".
+
+Các file chính:
+
+```text
+Dockerfile                 Build app Node.js production bằng multi-stage
+.dockerignore              Loại node_modules, .env, dist, backup khỏi image
+docker-compose.yml         Chạy app + PostgreSQL local
+.env.docker.example        Mẫu biến môi trường khi deploy container
+src/db/schema.sql          Schema-only để PostgreSQL container khởi tạo lần đầu
+src/db/seeds/              Seed dữ liệu tối thiểu
+```
+
+Chạy bằng Docker Compose:
+
+```bash
+npm run docker:up
+```
+
+Hoặc:
+
+```bash
+docker compose up --build
+```
+
+Mở hệ thống:
+
+```text
+http://localhost:3010
+```
+
+Dừng container:
+
+```bash
+npm run docker:down
+```
+
+Build image thủ công:
+
+```bash
+npm run docker:build
+```
+
+Lưu ý DB:
+
+- PostgreSQL trong `docker-compose.yml` chạy ở port host `5433`, còn trong network Docker app dùng `db:5432`.
+- Lần đầu tạo volume, PostgreSQL tự chạy `src/db/schema.sql` và `src/db/seeds/001_seed_roles.sql`.
+- Dữ liệu nghiệp vụ đầy đủ như phòng, khách sạn, tài khoản demo, booking, hóa đơn... nên được restore/seed riêng khi cần demo đầy đủ.
+- Không đưa `.env` thật hoặc backup có dữ liệu nhạy cảm vào image.
+
+Hướng deploy cloud khuyến nghị:
+
+1. GitHub Actions chạy build/test.
+2. GitHub Actions build Docker image.
+3. Push image lên GitHub Container Registry: `ghcr.io/vonhattruong1812004/datphongkhachsan`.
+4. Cloud/VPS pull image mới.
+5. Cloud/VPS chạy app với biến môi trường production và PostgreSQL riêng.
+6. Mount persistent volume cho `uploads/` và `storage/`.
+
+## GitHub Actions
+
+Workflow CI/CD nằm trong `.github/workflows/node.js.yml` và chạy trên Node.js `22`.
+
+Các bước chính:
+
+1. Checkout source.
+2. Cài Node.js.
+3. Chạy `npm ci`.
+4. Chạy `npm run build`.
+5. Chạy `npm test`.
+6. Build Docker image.
+7. Với push lên `main`, publish image lên GitHub Container Registry.
+
+Pull request chỉ build Docker image để kiểm tra, không push image. Push vào `main` mới publish image.
+
+## Cấu Trúc Thư Mục
 
 ```text
 src/
-  app.ts                    Cau hinh Express app
-  server.ts                 Entry server
+  app.ts                    Cấu hình Express app
+  server.ts                 Entry chạy server
   config/                   Env, database, session, logger, views
   modules/
-    accounting/             Ke toan, doanh thu, chi phi, cong no, refund
-    admin/                  Admin tools
-    ai/                     Concierge, goi y, analytics
-    auth/                   Dang nhap, phan quyen
-    booking/                Dat phong online
-    customer/               Cong khach hang
+    accounting/             Kế toán: báo cáo, doanh thu, chi phí, công nợ, hoàn tiền
+    admin/                  Admin tools, diagnostics, backup
+    ai/                     Concierge, gợi ý, analytics
+    auth/                   Đăng nhập, session, phân quyền
+    booking/                Đặt phòng online, giữ phòng, nhiều phòng
+    customer/               Cổng khách hàng, booking, hồ sơ, dịch vụ, tư vấn
     dashboard/              Dashboard theo actor
-    ekyc/                   Ho so dinh danh
-    feedback/               Phan hoi khach hang
-    frontdesk/              Le tan: dat phong, check-in, checkout, sua, huy
-    home/                   Trang chu
-    manager/                Quan ly: CRM, phong, khuyen mai
+    ekyc/                   Hồ sơ định danh và duyệt eKYC
+    feedback/               Phản hồi, đánh giá, tư vấn, broadcast CSKH
+    frontdesk/              Lễ tân: đặt trực tiếp, check-in, checkout, sửa/hủy
+    home/                   Trang chủ
+    manager/                Quản lý: khách hàng, phòng, khuyến mãi, duyệt hoàn tiền
     payment/                Hold store, SePay/VietQR helpers
     realtime/               SSE realtime
-    service/                Dich vu phong
+    service/                Dịch vụ, room board live, kiểm tra tình trạng phòng
     system/                 Health check
-    webhook/                Webhook SePay va job het han
-  scripts/                  Smoke/verify scripts
-  shared/                   Utils, middleware, HTTP helpers
+    webhook/                Webhook SePay và job hết hạn hold
+  scripts/                  Smoke test và verify scripts
+  shared/                   Utils, middleware, HTTP helpers, constants
   views/                    EJS views
+uploads/
+  phong/                    Ảnh phòng
+  dichvu/                   Ảnh dịch vụ
+  ekyc/                     Ảnh eKYC local
+  phanhoi/                  Ảnh phản hồi
 ```
 
-## Quy uoc phat trien
+## Quy Ước Phát Triển
 
-- Chi fix va phat trien trong `abc-resort-node/`.
-- `../code2` chi dung de doi chieu nghiep vu PHP cu.
-- Khong sua schema database neu khong can thiet.
-- Moi thay doi nghiep vu quan trong nen chay smoke test tuong ung.
-- UC dat phong va thanh toan can dam bao:
-  - Giu phong 10 phut.
-  - Coc 50% moi tao giao dich that.
-  - Dich vu da chon phai tinh vao tong tien.
-  - Check-out thu 50% con lai va cac chi phi phat sinh.
-  - Huy phong tao du lieu refund cho ke toan xu ly.
+- Chỉ phát triển code chính trong `abc-resort-node/`.
+- `../code2` chỉ dùng để đối chiếu nghiệp vụ cũ khi cần.
+- Không sửa schema database nếu chưa thật sự cần.
+- Khi sửa UC theo actor, kiểm tra route, service, view và smoke script liên quan.
+- Không đưa logic nghiệp vụ quan trọng chỉ vào EJS; service layer phải là nơi kiểm tra chính.
+- Khi thay đổi đặt phòng/thanh toán/hủy/hoàn tiền, cần kiểm tra đủ các actor liên quan: khách hàng, lễ tân, quản lý và kế toán.
+- Khi thay đổi tình trạng phòng, cần đảm bảo đồng bộ với room board live, `phong`, `chitietgiaodich` và `room_status_log`.
 
-## Ghi chu van hanh SePay local
+## Checklist Khi Sửa Nghiệp Vụ Quan Trọng
 
-1. Chay app local port 3010.
-2. Bat ngrok:
+- Đặt phòng:
+  - Có giữ phòng.
+  - Có kiểm tra sức chứa.
+  - Có tính đúng số đêm, tiền phòng, khuyến mãi, dịch vụ và cọc.
+  - Không tạo giao dịch thật trước khi cọc hợp lệ nếu workflow yêu cầu SePay.
 
-```bash
-ngrok http 3010
-```
+- Check-in/check-out:
+  - Check-in chỉ áp dụng booking hợp lệ.
+  - Check-out tính đúng tiền còn lại và dịch vụ phát sinh.
+  - Trạng thái phòng được cập nhật đúng sau checkout.
 
-3. Cau hinh webhook SePay:
+- Hủy/hoàn tiền:
+  - Tính chính sách hoàn cọc theo thời điểm hủy.
+  - Tạo dữ liệu cho quản lý duyệt.
+  - Kế toán xử lý hoàn tiền sau khi đã duyệt.
 
-```text
-https://<ngrok-domain>/api/webhook/sepay
-```
+- eKYC:
+  - Khách đã xác thực không bị bắt gửi lại vô lý.
+  - Ảnh eKYC cũ phải được hiển thị nếu còn tồn tại.
+  - Duyệt/từ chối phải ghi trạng thái rõ.
 
-4. Kiem tra webhook local:
+- Dịch vụ:
+  - Dịch vụ phải gắn đúng phòng trong booking.
+  - Không cho đặt dịch vụ cho phòng không đủ điều kiện.
+  - Catalog dịch vụ có ảnh, trạng thái và giá rõ ràng.
 
-```bash
-curl -s -X POST http://127.0.0.1:3010/api/webhook/sepay \
-  -H "Authorization: Apikey my-secret-key-123" \
-  -H "Content-Type: application/json" \
-  -d '{"content":"SEVQR ROOM123","transferAmount":10000}'
-```
+## Ghi Chú Vận Hành
 
-Neu webhook SePay hien `0 / n`, hay kiem tra:
-
-- ngrok co online khong.
-- ngrok co tro dung port app khong.
-- URL tren SePay co dung `/api/webhook/sepay` khong.
-- Noi dung chuyen khoan VietinBank co bat dau bang `SEVQR` khong.
-
+- Repository GitHub: `Vonhattruong1812004/datphongkhachsan`.
+- Branch chính: `main`.
+- App name hiển thị trong UI: `Bento Resort`.
+- README này mô tả hệ thống Node.js hiện tại, không mô tả source PHP cũ.

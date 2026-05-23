@@ -78,6 +78,104 @@
         window.setInterval(update, 1000);
       });
     })();
+
+    (() => {
+      const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches
+        || window.navigator.standalone === true;
+      const state = window.__abcPwaState = {
+        supported: "serviceWorker" in navigator,
+        installed: standalone,
+        installAvailable: false,
+        hasWaitingUpdate: false,
+        online: navigator.onLine
+      };
+      let deferredInstallPrompt = null;
+      let waitingWorker = null;
+
+      const emitState = (eventName = "abc:pwa-state") => {
+        window.dispatchEvent(new CustomEvent(eventName, { detail: { ...state } }));
+      };
+
+      window.__abcPwaInstall = async () => {
+        if (!deferredInstallPrompt) return false;
+        deferredInstallPrompt.prompt();
+        const result = await deferredInstallPrompt.userChoice.catch(() => ({ outcome: "dismissed" }));
+        deferredInstallPrompt = null;
+        state.installAvailable = false;
+        state.installed = result.outcome === "accepted" || state.installed;
+        emitState();
+        return state.installed;
+      };
+
+      window.__abcPwaApplyUpdate = () => {
+        if (!waitingWorker) return false;
+        waitingWorker.postMessage({ type: "SKIP_WAITING" });
+        return true;
+      };
+
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        state.installAvailable = true;
+        emitState("abc:pwa-install-available");
+      });
+
+      window.addEventListener("appinstalled", () => {
+        deferredInstallPrompt = null;
+        state.installAvailable = false;
+        state.installed = true;
+        emitState();
+      });
+
+      window.addEventListener("online", () => {
+        state.online = true;
+        emitState();
+      });
+
+      window.addEventListener("offline", () => {
+        state.online = false;
+        emitState();
+      });
+
+      if (!state.supported) {
+        emitState();
+        return;
+      }
+
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
+          const trackWaitingWorker = (worker) => {
+            if (!worker) return;
+            waitingWorker = worker;
+            state.hasWaitingUpdate = true;
+            emitState();
+          };
+
+          trackWaitingWorker(registration.waiting);
+
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                trackWaitingWorker(newWorker);
+              }
+            });
+          });
+
+          emitState();
+        }).catch(() => {
+          state.supported = false;
+          emitState();
+        });
+
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (window.__abcPwaRefreshing) return;
+          window.__abcPwaRefreshing = true;
+          window.location.reload();
+        });
+      });
+    })();
   </script>
 </head>
 <body>

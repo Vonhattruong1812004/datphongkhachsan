@@ -10,6 +10,9 @@
     "build:server": "tsc -p tsconfig.json",
     "build:client": "vite build",
     "start": "node dist/server.js",
+    "docker:build": "docker build -t bento-resort-node:local .",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
     "test": "tsx --test $(find src -name '*.test.ts' -print)",
     "verify:db": "tsx src/scripts/verify-db.ts",
     "smoke": "tsx src/scripts/smoke.ts",
@@ -38,6 +41,7 @@
     "pino-http": "^10.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "three": "^0.184.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -52,6 +56,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.1.0",
+    "playwright": "^1.60.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "tsx": "^4.19.2",

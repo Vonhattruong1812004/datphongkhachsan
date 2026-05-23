@@ -3,6 +3,7 @@
 <%
   const searchQuery = new URLSearchParams(filters || {}).toString();
   const backSearchUrl = `/booking/search${searchQuery ? `?${searchQuery}` : ""}`;
+  const roomDetailUrl = `/booking/rooms/${room.id}/detail${searchQuery ? `?${searchQuery}` : ""}`;
   const isCskhAssist = String((filters && filters.staff_mode) || (typeof query !== "undefined" && query && query.staff_mode) || "") === "cskh" || Number(currentUser?.maVaiTro || 0) === 5;
 %>
 <style>
@@ -136,6 +137,9 @@
         <div class="book-note">
           <div>Phòng chỉ được giữ sau khi tạo QR cọc. Trong thời gian giữ, phòng không hiện cho lượt đặt trùng ngày.</div>
           <div>Booking thật chỉ được tạo khi webhook SePay nhận đúng số tiền và đúng nội dung chuyển khoản.</div>
+        </div>
+        <div class="book-actions">
+          <a class="book-button" href="<%= roomDetailUrl %>">Xem chi tiết phòng</a>
         </div>
       </div>
     </aside>

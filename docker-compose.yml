@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: bento-resort-db
+    environment:
+      POSTGRES_DB: abc_resort1
+      POSTGRES_USER: bento
+      POSTGRES_PASSWORD: bento_dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - bento_pgdata:/var/lib/postgresql/data
+      - ./src/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./src/db/seeds/001_seed_roles.sql:/docker-entrypoint-initdb.d/02_seed_roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bento -d abc_resort1"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: bento-resort-node:local
+    container_name: bento-resort-app
+    environment:
+      NODE_ENV: production
+      PORT: 3010
+      APP_NAME: Bento Resort
+      SESSION_SECRET: change_me_in_cloud_secret
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: bento
+      PGPASSWORD: bento_dev_password
+      PGDATABASE: abc_resort1
+      PGSCHEMA: abc_resort1
+    ports:
+      - "3010:3010"
+    volumes:
+      - bento_uploads:/app/uploads
+      - bento_storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  bento_pgdata:
+  bento_uploads:
+  bento_storage:

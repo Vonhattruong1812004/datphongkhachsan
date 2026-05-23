@@ -13,6 +13,7 @@ import {
   renderBookingFormPage,
   renderInvoicePage,
   renderMultiRoomBookingPage,
+  renderRoomDetailPage,
   renderSearchPage,
   submitBookingForm,
   submitMultiRoomBooking,
@@ -25,6 +26,7 @@ export const bookingApiRouter = Router();
 bookingRouter.get("/search", asyncHandler(renderSearchPage));
 bookingRouter.get("/multi", asyncHandler(renderMultiRoomBookingPage));
 bookingRouter.post("/multi", asyncHandler(submitMultiRoomBooking));
+bookingRouter.get("/rooms/:roomId/detail", asyncHandler(renderRoomDetailPage));
 bookingRouter.get("/rooms/:roomId", asyncHandler(renderBookingFormPage));
 bookingRouter.post("/rooms/:roomId", asyncHandler(submitBookingForm));
 bookingRouter.get("/invoice/:id", asyncHandler(renderInvoicePage));

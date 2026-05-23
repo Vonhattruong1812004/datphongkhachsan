@@ -12,6 +12,11 @@
     if (staffMode) params.set("staff_mode", staffMode);
     return `/booking/rooms/${room.id}${params.toString() ? `?${params.toString()}` : ""}`;
   };
+  const roomDetailHref = (room) => {
+    const params = new URLSearchParams(filters || {});
+    if (staffMode) params.set("staff_mode", staffMode);
+    return `/booking/rooms/${room.id}/detail${params.toString() ? `?${params.toString()}` : ""}`;
+  };
 %>
 <style>
   body{
@@ -184,6 +189,7 @@
                 </div>
               <% } %>
               <div class="guest-actions">
+                <a class="guest-button" href="<%= roomDetailHref(room) %>">Chi tiết</a>
                 <a class="guest-button guest-button--primary" href="<%= roomHref(room) %>"><%= isCskhAssist ? "Hỗ trợ đặt phòng" : "Đặt phòng" %></a>
               </div>
             </div>
