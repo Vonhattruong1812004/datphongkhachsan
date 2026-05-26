@@ -751,6 +751,550 @@
   @keyframes dash-leaf-sway{0%,100%{transform:rotate(var(--leaf-rot,0deg)) translate3d(0,0,0)}50%{transform:rotate(calc(var(--leaf-rot,0deg) + 8deg)) translate3d(2px,-8px,0)}}
   @keyframes dash-petal-float{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,-10px,0) scale(1.08)}}
   @keyframes dash-fall{0%{transform:translate3d(0,0,0) rotate(0);opacity:0}10%{opacity:.72}100%{transform:translate3d(24px,340px,0) rotate(320deg);opacity:0}}
+  .role-dash.is-letan{
+    --dash-ink:#f8fbff;
+    --dash-muted:#b7c8e6;
+    --dash-card:rgba(8,13,31,.74);
+    --dash-card-strong:rgba(15,23,42,.9);
+    --dash-line:rgba(125,211,252,.18);
+    --dash-shadow:0 28px 90px rgba(0,0,0,.36);
+    background:
+      radial-gradient(ellipse at 50% 118%, rgba(34,211,238,.16), transparent 42%),
+      radial-gradient(ellipse at 16% 12%, rgba(37,99,235,.28), transparent 34%),
+      radial-gradient(ellipse at 84% 18%, rgba(236,72,153,.18), transparent 30%),
+      linear-gradient(180deg,#020617 0%,#071126 46%,#120a2b 78%,#020617 100%);
+  }
+  .role-dash.is-letan::before{
+    inset:-18%;
+    width:auto;
+    height:auto;
+    border-radius:0;
+    opacity:.44;
+    background:
+      radial-gradient(circle,rgba(255,255,255,.9) 0 .8px,transparent 1.8px),
+      radial-gradient(circle,rgba(125,211,252,.58) 0 1px,transparent 2.2px),
+      radial-gradient(circle,rgba(196,181,253,.45) 0 .8px,transparent 1.9px);
+    background-size:118px 118px,196px 196px,310px 310px;
+    animation:dash-galaxy-drift 120s linear infinite;
+  }
+  .role-dash.is-letan::after{
+    inset:-10%;
+    width:auto;
+    height:auto;
+    border-radius:0;
+    opacity:.24;
+    background:
+      radial-gradient(ellipse at 18% 24%,rgba(59,130,246,.28),transparent 28%),
+      radial-gradient(ellipse at 72% 18%,rgba(168,85,247,.2),transparent 28%),
+      radial-gradient(ellipse at 70% 78%,rgba(20,184,166,.12),transparent 32%),
+      radial-gradient(ellipse at 50% 54%,rgba(255,255,255,.12),transparent 18%);
+    filter:blur(2px);
+    animation:dash-galaxy-breathe 22s ease-in-out infinite alternate;
+  }
+  .role-dash.is-letan .dash-fantasy-scene{
+    inset:0;
+    opacity:.42;
+    z-index:0;
+    overflow:hidden;
+  }
+  .role-dash.is-letan .dash-fantasy-scene::before,
+  .role-dash.is-letan .dash-fantasy-scene::after{
+    content:"";
+    position:absolute;
+    pointer-events:none;
+  }
+  .role-dash.is-letan .dash-fantasy-scene::before{
+    left:-12%;
+    top:18%;
+    width:132%;
+    height:240px;
+    border-radius:50%;
+    transform:rotate(-16deg);
+    background:
+      radial-gradient(ellipse at 50% 50%,rgba(255,255,255,.28),transparent 16%),
+      radial-gradient(ellipse at 42% 52%,rgba(125,211,252,.18),transparent 32%),
+      radial-gradient(ellipse at 62% 46%,rgba(216,180,254,.16),transparent 36%);
+    filter:blur(7px);
+  }
+  .role-dash.is-letan .dash-fantasy-scene::after{
+    inset:0;
+    background:
+      radial-gradient(circle at 18% 22%,rgba(255,255,255,.86) 0 1px,transparent 2px),
+      radial-gradient(circle at 36% 68%,rgba(125,211,252,.68) 0 1px,transparent 2px),
+      radial-gradient(circle at 68% 30%,rgba(255,255,255,.76) 0 1px,transparent 2px),
+      radial-gradient(circle at 86% 76%,rgba(196,181,253,.72) 0 1px,transparent 2px);
+    background-size:150px 130px,210px 180px,180px 160px,250px 220px;
+  }
+  .role-dash.is-letan .dash-sun,
+  .role-dash.is-letan .dash-rainbow,
+  .role-dash.is-letan .dash-cloud,
+  .role-dash.is-letan .dash-wave,
+  .role-dash.is-letan .dash-leaf,
+  .role-dash.is-letan .dash-flower,
+  .role-dash.is-letan .dash-petal{
+    display:none;
+  }
+  .role-dash.is-letan .dash-hero-main,
+  .role-dash.is-letan .dash-orbit,
+  .role-dash.is-letan .dash-action,
+  .role-dash.is-letan .dash-stat,
+  .role-dash.is-letan .dash-room,
+  .role-dash.is-letan .dash-event{
+    color:#eef6ff;
+    border-color:rgba(125,211,252,.18);
+    background:
+      linear-gradient(145deg,rgba(8,13,31,.88),rgba(15,23,42,.66)),
+      radial-gradient(ellipse at 80% 8%,rgba(103,232,249,.12),transparent 32%);
+    box-shadow:0 26px 84px rgba(0,0,0,.34);
+  }
+  .role-dash.is-letan .dash-hero h1,
+  .role-dash.is-letan .dash-section-head h2,
+  .role-dash.is-letan .dash-action h3,
+  .role-dash.is-letan .dash-stat h3,
+  .role-dash.is-letan .dash-room h3{
+    color:#fff;
+    text-shadow:0 0 28px rgba(103,232,249,.18);
+  }
+  .role-dash.is-letan .dash-lead,
+  .role-dash.is-letan .dash-action p,
+  .role-dash.is-letan .dash-section-head p,
+  .role-dash.is-letan .dash-stat p,
+  .role-dash.is-letan .dash-room p{
+    color:#cfe8ff;
+  }
+  .role-dash.is-letan .dash-eyebrow,
+  .role-dash.is-letan .dash-pulse,
+  .role-dash.is-letan .dash-orbit-word{
+    color:#eef6ff;
+    border-color:rgba(125,211,252,.2);
+    background:rgba(15,23,42,.72);
+  }
+  .role-dash.is-letan .dash-button{
+    color:#eef6ff;
+    background:rgba(15,23,42,.72);
+    border-color:rgba(125,211,252,.2);
+  }
+  .role-dash.is-letan .dash-button--primary{
+    color:#fff;
+    border-color:transparent;
+    background:linear-gradient(135deg,#2563eb,#06b6d4 48%,#a855f7);
+    box-shadow:0 18px 42px rgba(37,99,235,.24);
+  }
+  .role-dash.is-letan .dash-orbit-stage{
+    background:
+      radial-gradient(ellipse at 50% 52%,rgba(37,99,235,.28),transparent 34%),
+      radial-gradient(ellipse at 26% 20%,rgba(168,85,247,.24),transparent 28%),
+      linear-gradient(180deg,#020617 0%,#09112a 56%,#16092b 100%);
+  }
+  .role-dash.is-letan .dash-orbit-stage::before{
+    border-color:rgba(125,211,252,.22);
+  }
+  .role-dash.is-letan .dash-orbit-stage::after{
+    display:none;
+  }
+  .role-dash.is-letan .dash-orbit-earth{
+    position:absolute;
+    z-index:2;
+    left:50%;
+    top:52%;
+    width:152px;
+    height:152px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 42% 42%,rgba(14,165,233,.20),rgba(2,6,23,.08) 70%);
+    box-shadow:
+      0 0 34px rgba(56,189,248,.34),
+      0 0 76px rgba(37,99,235,.22);
+    animation:dash-earth-float 8s ease-in-out infinite;
+  }
+  .role-dash.is-letan .dash-orbit-earth::before,
+  .role-dash.is-letan .dash-orbit-earth::after{
+    content:"";
+    position:absolute;
+    pointer-events:none;
+  }
+  .role-dash.is-letan .dash-orbit-earth::before{
+    inset:-18px;
+    border-radius:50%;
+    background:radial-gradient(circle,transparent 58%,rgba(103,232,249,.18) 68%,transparent 74%);
+    filter:blur(2px);
+  }
+  .role-dash.is-letan .dash-orbit-earth::after{
+    left:-30px;
+    right:-30px;
+    top:56px;
+    height:36px;
+    border-radius:50%;
+    border-top:2px solid rgba(191,219,254,.42);
+    transform:rotate(-14deg);
+    opacity:.58;
+  }
+  .role-dash.is-letan .dash-orbit-earth canvas{
+    position:relative;
+    z-index:1;
+    display:block;
+    width:100%;
+    height:100%;
+  }
+  .role-dash.is-letan .dash-orbit-word{
+    z-index:3;
+    min-width:104px;
+    justify-content:center;
+    color:#f8fbff;
+    border-color:rgba(255,255,255,.24);
+    box-shadow:0 14px 34px rgba(0,0,0,.28);
+  }
+  .role-dash.is-letan .dash-orbit-word:nth-child(1){
+    background:linear-gradient(135deg,rgba(20,184,166,.92),rgba(8,47,73,.82));
+  }
+  .role-dash.is-letan .dash-orbit-word:nth-child(2){
+    background:linear-gradient(135deg,rgba(14,165,233,.92),rgba(30,64,175,.82));
+  }
+  .role-dash.is-letan .dash-orbit-word:nth-child(3){
+    background:linear-gradient(135deg,rgba(168,85,247,.92),rgba(88,28,135,.82));
+  }
+  .role-dash.is-letan .dash-orbit-word:nth-child(4){
+    background:linear-gradient(135deg,rgba(245,158,11,.94),rgba(154,52,18,.82));
+  }
+  .role-dash.is-letan .dash-hero-main.is-compact,
+  .role-dash.is-letan .dash-orbit.is-compact,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action,
+  .role-dash.is-letan .dash-grid.is-compact .dash-stat,
+  .role-dash.is-letan .dash-grid.is-compact .dash-room{
+    color:#eef6ff !important;
+    border-color:rgba(125,211,252,.20) !important;
+    background:
+      linear-gradient(145deg,rgba(8,13,31,.92),rgba(15,23,42,.74)),
+      radial-gradient(ellipse at 80% 8%,rgba(103,232,249,.12),transparent 32%) !important;
+    box-shadow:0 26px 84px rgba(0,0,0,.34) !important;
+  }
+  .role-dash.is-letan .dash-hero-main::before,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action::before{
+    background:
+      linear-gradient(120deg,rgba(255,255,255,.08),transparent 32%),
+      radial-gradient(circle at 90% 8%,rgba(103,232,249,.14),transparent 30%) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action h3,
+  .role-dash.is-letan .dash-grid.is-compact .dash-stat h3,
+  .role-dash.is-letan .dash-grid.is-compact .dash-room h3{
+    color:#f8fbff !important;
+    text-shadow:none;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action p,
+  .role-dash.is-letan .dash-grid.is-compact .dash-stat p,
+  .role-dash.is-letan .dash-grid.is-compact .dash-room p{
+    color:#cfe8ff !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-code{
+    color:#ffffff !important;
+    border-color:rgba(255,255,255,.24) !important;
+    background:linear-gradient(135deg,var(--card-accent),rgba(15,23,42,.74)) !important;
+    box-shadow:0 12px 28px var(--card-glow) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-open{
+    color:#f8fbff !important;
+    border-radius:999px;
+    padding:7px 12px;
+    background:linear-gradient(135deg,var(--card-accent),rgba(15,23,42,.76));
+    box-shadow:0 12px 30px var(--card-glow);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action{
+    border-color:rgba(125,211,252,.24) !important;
+    background:
+      linear-gradient(145deg,rgba(8,13,31,.90),rgba(15,23,42,.72)),
+      radial-gradient(circle at 88% 12%,var(--card-glow),transparent 36%),
+      linear-gradient(135deg,rgba(255,255,255,.07),transparent 58%) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action::after{
+    opacity:1 !important;
+    background:linear-gradient(90deg,var(--card-accent),rgba(255,255,255,.55),transparent) !important;
+  }
+  .role-dash.is-letan .dash-hero.is-compact{
+    margin-bottom:34px;
+  }
+  .role-dash.is-letan .dash-section.is-compact{
+    margin-top:36px;
+  }
+  .role-dash.is-letan .dash-section-head{
+    align-items:flex-start;
+    margin-bottom:22px;
+  }
+  .role-dash.is-letan .dash-section-head h2{
+    font-size:30px;
+    letter-spacing:-.035em;
+  }
+  .role-dash.is-letan .dash-section-head p{
+    margin-top:8px;
+    color:#d8ecff;
+    font-size:15px;
+    line-height:1.55;
+  }
+  .role-dash.is-letan .dash-grid.is-compact{
+    grid-auto-rows:auto;
+    gap:24px;
+  }
+  .role-dash.is-letan .dash-action:nth-child(1){--card-accent:#22d3ee;--card-glow:rgba(34,211,238,.34)}
+  .role-dash.is-letan .dash-action:nth-child(2){--card-accent:#60a5fa;--card-glow:rgba(96,165,250,.32)}
+  .role-dash.is-letan .dash-action:nth-child(3){--card-accent:#a78bfa;--card-glow:rgba(167,139,250,.30)}
+  .role-dash.is-letan .dash-action:nth-child(4){--card-accent:#fbbf24;--card-glow:rgba(251,191,36,.32)}
+  .role-dash.is-letan .dash-action:nth-child(5){--card-accent:#fb7185;--card-glow:rgba(251,113,133,.32)}
+  .role-dash.is-letan .dash-action:nth-child(6){--card-accent:#34d399;--card-glow:rgba(52,211,153,.30)}
+  .role-dash.is-letan .dash-grid.is-compact .dash-action,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4){
+    grid-column:span 4;
+    min-height:232px;
+    padding:26px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1){
+    grid-column:1 / -1;
+    min-height:248px;
+    padding:34px 320px 34px 36px;
+    border-radius:34px;
+    border-color:rgba(103,232,249,.46) !important;
+    background:
+      linear-gradient(135deg,rgba(5,12,30,.96),rgba(8,32,55,.86) 55%,rgba(6,78,103,.70)),
+      radial-gradient(circle at 83% 18%,rgba(103,232,249,.30),transparent 34%),
+      radial-gradient(circle at 18% 96%,rgba(96,165,250,.18),transparent 38%) !important;
+    box-shadow:0 38px 110px rgba(8,145,178,.28),0 24px 84px rgba(0,0,0,.36) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+    grid-column:span 6;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action::before{
+    width:66px;
+    height:66px;
+    right:26px;
+    top:24px;
+    border-radius:22px;
+    background:
+      linear-gradient(135deg,var(--card-accent),rgba(255,255,255,.28)),
+      radial-gradient(circle at 28% 22%,rgba(255,255,255,.40),transparent 34%) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::before{
+    width:230px;
+    height:154px;
+    right:34px;
+    top:34px;
+    border-radius:30px;
+    border:1px solid rgba(255,255,255,.18);
+    background:
+      radial-gradient(circle at 42% 38%,rgba(255,255,255,.72),rgba(103,232,249,.34) 17%,transparent 34%),
+      radial-gradient(circle at 70% 62%,rgba(96,165,250,.36),transparent 32%),
+      linear-gradient(135deg,rgba(34,211,238,.32),rgba(15,23,42,.70)) !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.20),0 26px 64px rgba(34,211,238,.22);
+    transform:none;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1):hover::before{
+    transform:translateY(-3px) scale(1.02);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::after{
+    left:36px;
+    right:320px;
+    bottom:30px;
+    height:6px;
+    border-radius:999px;
+    background:linear-gradient(90deg,#67e8f9,#60a5fa,rgba(255,255,255,.45),transparent) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action h3{
+    margin:64px 0 12px;
+    font-size:30px;
+    line-height:1.05;
+    letter-spacing:-.035em;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) h3{
+    max-width:760px;
+    margin-top:28px;
+    margin-bottom:14px;
+    font-size:40px;
+    line-height:1.02;
+    letter-spacing:-.03em;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action p{
+    max-width:620px;
+    color:#d7ecff !important;
+    font-size:15.5px;
+    line-height:1.62;
+    font-weight:760;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) p{
+    max-width:720px;
+    color:#e3f4ff !important;
+    font-size:16.5px;
+    line-height:1.66;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-code{
+    padding:8px 12px;
+    font-size:13px;
+    letter-spacing:.08em;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) .dash-code{
+    padding:9px 14px;
+    color:#042f3d !important;
+    background:linear-gradient(135deg,#67e8f9,#e0f2fe) !important;
+    box-shadow:0 14px 34px rgba(103,232,249,.26) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) .dash-code::before{
+    content:"UC ";
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-open{
+    right:26px;
+    bottom:26px;
+    font-size:14px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) .dash-open{
+    right:36px;
+    bottom:34px;
+    min-width:118px;
+    min-height:46px;
+    justify-content:center;
+    display:inline-flex;
+    align-items:center;
+    border:1px solid rgba(255,255,255,.22);
+    color:#031827 !important;
+    background:linear-gradient(135deg,#67e8f9,#d9f99d);
+    box-shadow:0 18px 46px rgba(34,211,238,.28);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2){
+    border-color:rgba(96,165,250,.58) !important;
+    background:
+      linear-gradient(90deg,rgba(96,165,250,.56) 0 9px,transparent 9px),
+      linear-gradient(145deg,rgba(10,16,38,.94),rgba(15,23,42,.78)),
+      radial-gradient(circle at 86% 14%,rgba(96,165,250,.34),transparent 34%) !important;
+    box-shadow:0 30px 86px rgba(37,99,235,.24),0 24px 84px rgba(0,0,0,.34) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3){
+    border-color:rgba(167,139,250,.58) !important;
+    background:
+      linear-gradient(90deg,rgba(167,139,250,.58) 0 9px,transparent 9px),
+      linear-gradient(145deg,rgba(16,12,38,.94),rgba(28,20,54,.78)),
+      radial-gradient(circle at 86% 14%,rgba(167,139,250,.34),transparent 34%) !important;
+    box-shadow:0 30px 86px rgba(124,58,237,.24),0 24px 84px rgba(0,0,0,.34) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4){
+    border-color:rgba(251,191,36,.62) !important;
+    background:
+      linear-gradient(90deg,rgba(251,191,36,.62) 0 9px,transparent 9px),
+      linear-gradient(145deg,rgba(38,24,8,.94),rgba(45,29,12,.78)),
+      radial-gradient(circle at 86% 14%,rgba(251,191,36,.32),transparent 34%) !important;
+    box-shadow:0 30px 86px rgba(245,158,11,.22),0 24px 84px rgba(0,0,0,.34) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5){
+    border-color:rgba(251,113,133,.60) !important;
+    background:
+      linear-gradient(90deg,rgba(251,113,133,.60) 0 9px,transparent 9px),
+      linear-gradient(145deg,rgba(38,12,25,.94),rgba(48,18,34,.78)),
+      radial-gradient(circle at 86% 14%,rgba(251,113,133,.34),transparent 34%) !important;
+    box-shadow:0 30px 86px rgba(225,29,72,.22),0 24px 84px rgba(0,0,0,.34) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+    border-color:rgba(52,211,153,.58) !important;
+    background:
+      linear-gradient(90deg,rgba(52,211,153,.58) 0 9px,transparent 9px),
+      linear-gradient(145deg,rgba(6,28,28,.94),rgba(11,43,37,.78)),
+      radial-gradient(circle at 86% 14%,rgba(52,211,153,.32),transparent 34%) !important;
+    box-shadow:0 30px 86px rgba(16,185,129,.22),0 24px 84px rgba(0,0,0,.34) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-code{
+    min-width:72px;
+    justify-content:center;
+    color:#031827 !important;
+    background:linear-gradient(135deg,var(--card-accent),rgba(255,255,255,.86)) !important;
+    box-shadow:0 14px 34px var(--card-glow) !important;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-code::before{
+    content:"UC ";
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-open{
+    min-width:82px;
+    min-height:38px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:#031827 !important;
+    background:linear-gradient(135deg,var(--card-accent),rgba(255,255,255,.84));
+    border:1px solid rgba(255,255,255,.24);
+    box-shadow:0 14px 34px var(--card-glow);
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action h3{
+    color:#ffffff !important;
+    text-shadow:0 0 24px var(--card-glow);
+  }
+  @media(max-width:1080px){
+    .role-dash.is-letan .dash-grid.is-compact .dash-action,
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+      grid-column:span 6;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1){
+      grid-column:1 / -1;
+      padding-right:260px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::before{
+      width:190px;
+      right:28px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::after{
+      right:260px;
+    }
+  }
+  @media(max-width:720px){
+    .role-dash.is-letan .dash-section.is-compact{
+      margin-top:28px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact{
+      gap:16px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action,
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+      grid-column:1 / -1;
+      min-height:210px;
+      padding:24px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1){
+      min-height:248px;
+      padding-bottom:86px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::before{
+      width:88px;
+      height:88px;
+      right:22px;
+      top:22px;
+      border-radius:26px;
+      opacity:.72;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::after{
+      left:24px;
+      right:24px;
+      bottom:72px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action h3,
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) h3{
+      font-size:28px;
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) h3,
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) p{
+      max-width:calc(100% - 92px);
+    }
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) .dash-open{
+      left:24px;
+      right:auto;
+      bottom:20px;
+    }
+  }
+  @keyframes dash-earth-float{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-54%) scale(1.03)}}
+  @keyframes dash-galaxy-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-120px,90px,0)}}
+  @keyframes dash-galaxy-breathe{from{transform:scale(.98);opacity:.18}to{transform:scale(1.04);opacity:.34}}
   @media(max-width:1080px){.manager-hero,.manager-live-grid,.manager-chart-grid{grid-template-columns:1fr}.manager-radar,.manager-visual-card{min-height:320px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4){grid-column:span 6}.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:span 4}}
   @media(max-width:720px){.manager-dash{padding:20px 12px 42px}.manager-hero-main{min-height:auto;padding:24px;border-radius:28px}.manager-hero h1{font-size:42px}.manager-mini-grid,.manager-command{grid-template-columns:1fr}.manager-chart-box{min-height:250px}.manager-section-head{display:block}.manager-chart-actions{justify-content:flex-start;margin-top:10px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4),.manager-live-panel .dash-stat,.manager-live-panel .dash-event,.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:1/-1}.manager-radar,.manager-visual-card{display:none}}
   @media(max-width:1080px){.dash-hero{grid-template-columns:1fr}.dash-orbit{min-height:320px}.admin-watch{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-action,.dash-action:nth-child(1),.dash-action:nth-child(2),.dash-action:nth-child(4),.dash-action:nth-child(5),.dash-stat,.dash-event,.dash-room{grid-column:span 6}}
@@ -868,21 +1412,26 @@
     <section class="dash-hero <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-hero-main <%= isCommandCenter ? 'is-compact' : '' %>">
         <div class="dash-eyebrow"><span class="dash-dot"></span> <%= meta.label %> command center</div>
-        <h1><%= hero.title %> <span><%= isLetan ? "Gọn hơn." : (isAdmin ? "Điều phối." : (isKetoan ? "Đối soát." : "Sạch hơn.")) %></span></h1>
-        <p class="dash-lead <%= isCommandCenter ? 'is-compact' : '' %>">
-          <%= isLetan
-            ? "Dashboard lễ tân đã được gom lại để tập trung vào các tác vụ cần dùng liên tục trong ca trực: đặt phòng trực tiếp, check-in, check-out, sửa hoặc hủy booking và xử lý dịch vụ theo phòng."
-            : isAdmin
+        <h1>
+          <%= hero.title %>
+          <% if (!isLetan) { %><span><%= isAdmin ? "Điều phối." : (isKetoan ? "Đối soát." : "Sạch hơn.") %></span><% } %>
+        </h1>
+        <% if (!isLetan) { %>
+          <p class="dash-lead <%= isCommandCenter ? 'is-compact' : '' %>">
+            <%= isAdmin
               ? "Quản trị tài khoản, kiểm tra hệ thống, sao lưu và phục hồi dữ liệu trong một màn gọn."
               : isKetoan
                 ? "Theo dõi thống kê, doanh thu, chi phí và hoàn tiền."
                 : hero.description %>
-        </p>
+          </p>
+        <% } %>
+        <% if (!isLetan) { %>
         <div class="dash-hero-actions">
           <% if (actions[0]) { %><a class="dash-button dash-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
           <% if (actions[1]) { %><a class="dash-button" href="<%= actions[1].href %>"><%= actions[1].label %></a><% } %>
           <% if (actions[2]) { %><a class="dash-button" href="<%= actions[2].href %>"><%= actions[2].label %></a><% } %>
         </div>
+        <% } %>
         <div class="dash-pulse-grid <%= isCommandCenter ? 'is-compact' : '' %>">
           <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào nhanh</span></div>
           <div class="dash-pulse"><strong><%= isLetan ? "Core" : (isAdmin ? "Admin" : (isKetoan ? "Finance" : cards.length)) %></strong><span><%= isLetan ? "Màn hình gọn" : (isAdmin ? "Quyền hệ thống" : (isKetoan ? "Nghiệp vụ" : "Trọng tâm")) %></span></div>
@@ -894,6 +1443,11 @@
       <aside class="dash-orbit <%= isCommandCenter ? 'is-compact' : '' %>" aria-label="Minh họa scope dashboard">
         <div class="dash-orbit-stage">
           <% meta.words.forEach((word) => { %><span class="dash-orbit-word"><%= word %></span><% }) %>
+          <% if (isLetan) { %>
+          <div class="dash-orbit-earth" data-earth-3d>
+            <canvas aria-label="Trái Đất 3D"></canvas>
+          </div>
+          <% } %>
         </div>
       </aside>
     </section>
@@ -954,12 +1508,12 @@
     </section>
     <% } %>
 
-    <% if (!isAdmin && showLiveSections) { %>
+    <% if (!isLetan && !isAdmin && showLiveSections) { %>
     <section class="dash-section <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-section-head">
         <div>
-          <h2><%= isLetan ? "Realtime vận hành" : (isAdmin ? "KPI cần theo dõi" : "Live KPI") %></h2>
-          <p><%= isLetan ? "Tình trạng phòng và lưu trú trong ca." : (isAdmin ? "Chỉ số vận hành hệ thống." : "Dữ liệu realtime từ hệ thống.") %></p>
+          <h2><%= isAdmin ? "KPI cần theo dõi" : "Live KPI" %></h2>
+          <p><%= isAdmin ? "Chỉ số vận hành hệ thống." : "Dữ liệu realtime từ hệ thống." %></p>
         </div>
       </div>
       <div class="dash-grid <%= isCommandCenter ? 'is-compact' : '' %>" id="live-overview">
@@ -968,12 +1522,12 @@
     </section>
     <% } %>
 
-    <% if (enableRoomBoard && !isAdmin) { %>
+    <% if (enableRoomBoard && !isAdmin && !isLetan) { %>
       <section class="dash-section <%= isLetan ? 'is-compact' : '' %>">
         <div class="dash-section-head">
           <div>
-            <h2><%= isLetan ? "Phòng cần chú ý" : "Room Board" %></h2>
-            <p><%= isLetan ? "Danh sách phòng cần theo dõi." : "Trạng thái phòng realtime." %></p>
+            <h2>Room Board</h2>
+            <p>Trạng thái phòng realtime.</p>
           </div>
         </div>
         <% if (!isLetan) { %>
@@ -1009,8 +1563,8 @@
 <script>
   (() => {
     const scope = "<%= scope %>";
-    const enableRoomBoard = <%= enableRoomBoard ? "true" : "false" %>;
-    const showLiveSections = <%= showLiveSections ? "true" : "false" %>;
+    const enableRoomBoard = <%= enableRoomBoard && !isLetan ? "true" : "false" %>;
+    const showLiveSections = <%= showLiveSections && !isLetan ? "true" : "false" %>;
     const overview = document.getElementById("live-overview");
     const roomSummary = document.getElementById("live-room-summary");
     const roomBoard = document.getElementById("live-room-board");
@@ -1386,4 +1940,5 @@
     }
   })();
 </script>
+<script type="module" src="/js/home-galaxy-earth.js"></script>
 <%- include("../partials/footer") %>

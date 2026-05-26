@@ -2023,13 +2023,2001 @@
   }
 </style>
 
+<style>
+  body {
+    background: #030712;
+  }
+
+  .site-header {
+    background: rgba(3, 7, 18, 0.78);
+    border-bottom-color: rgba(125, 211, 252, 0.16);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(20px);
+  }
+
+  .brand strong,
+  .brand span,
+  .nav-links .chip,
+  .nav-links .button {
+    color: #f8fbff;
+  }
+
+  .nav-links .chip,
+  .nav-links .button {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(125, 211, 252, 0.18);
+  }
+
+  .header-search__shell,
+  .header-search__panel {
+    background: rgba(15, 23, 42, 0.82);
+    border-color: rgba(125, 211, 252, 0.18);
+    color: #eef6ff;
+  }
+
+  .header-search__input,
+  .header-search__field input {
+    color: #eef6ff;
+  }
+
+  .travel-home {
+    --travel-ink: #f8fbff;
+    --travel-muted: #b7c8e6;
+    --travel-line: rgba(148, 163, 184, 0.22);
+    --travel-card: rgba(8, 13, 31, 0.72);
+    --travel-card-strong: rgba(15, 23, 42, 0.88);
+    --travel-cyan: #67e8f9;
+    --travel-sky: #93c5fd;
+    --travel-sea: #22d3ee;
+    --travel-mint: #5eead4;
+    --travel-sun: #fde68a;
+    --travel-coral: #fb7185;
+    --travel-peach: #f9a8d4;
+    --travel-violet: #c4b5fd;
+    --travel-shadow: 0 30px 100px rgba(0, 0, 0, 0.38);
+    isolation: isolate;
+    background:
+      radial-gradient(ellipse at 50% 130%, rgba(34, 211, 238, 0.16), transparent 42%),
+      radial-gradient(ellipse at 18% 16%, rgba(99, 102, 241, 0.34), transparent 34%),
+      radial-gradient(ellipse at 86% 10%, rgba(236, 72, 153, 0.22), transparent 30%),
+      linear-gradient(180deg, #030712 0%, #071126 42%, #120a2b 74%, #020617 100%);
+  }
+
+  .travel-home[data-theme="night"] {
+    background:
+      radial-gradient(ellipse at 52% 118%, rgba(20, 184, 166, 0.18), transparent 42%),
+      radial-gradient(ellipse at 18% 12%, rgba(59, 130, 246, 0.26), transparent 32%),
+      radial-gradient(ellipse at 82% 20%, rgba(168, 85, 247, 0.28), transparent 34%),
+      linear-gradient(180deg, #01030b 0%, #060b1f 46%, #10071f 78%, #020617 100%);
+  }
+
+  .travel-home::before,
+  .travel-home::after {
+    display: none;
+  }
+
+  .galaxy-background {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .galaxy-background::before,
+  .galaxy-background::after {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background-repeat: repeat;
+    opacity: 0.32;
+  }
+
+  .galaxy-background::before {
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 0.8px, transparent 1.7px),
+      radial-gradient(circle, rgba(125, 211, 252, 0.66) 0 0.9px, transparent 2px),
+      radial-gradient(circle, rgba(255, 255, 255, 0.38) 0 0.7px, transparent 1.8px);
+    background-size: 118px 118px, 196px 196px, 74px 74px;
+    background-position: 0 0, 34px 52px, 18px 22px;
+    animation: galaxy-star-drift 130s linear infinite;
+  }
+
+  .galaxy-background::after {
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.62) 0 1px, transparent 2px),
+      radial-gradient(circle, rgba(196, 181, 253, 0.56) 0 1px, transparent 2px),
+      radial-gradient(circle, rgba(103, 232, 249, 0.42) 0 1.2px, transparent 2.4px);
+    background-size: 190px 190px, 310px 310px, 420px 420px;
+    background-position: 12px 18px, 72px 8px, 140px 96px;
+    animation: galaxy-star-drift-near 96s linear infinite reverse;
+  }
+
+  .galaxy-deep-field,
+  .galaxy-near-field,
+  .galaxy-dust,
+  .galaxy-lens-field {
+    position: absolute;
+    inset: -12%;
+    pointer-events: none;
+  }
+
+  .galaxy-deep-field {
+    opacity: 0.66;
+    background:
+      radial-gradient(circle at 6% 12%, rgba(255,255,255,0.62) 0 1px, transparent 2px),
+      radial-gradient(circle at 16% 82%, rgba(147,197,253,0.38) 0 1px, transparent 2px),
+      radial-gradient(circle at 38% 18%, rgba(255,255,255,0.46) 0 1px, transparent 2px),
+      radial-gradient(circle at 58% 72%, rgba(255,255,255,0.52) 0 1px, transparent 2px),
+      radial-gradient(circle at 76% 28%, rgba(196,181,253,0.46) 0 1px, transparent 2px),
+      radial-gradient(circle at 92% 64%, rgba(255,255,255,0.48) 0 1px, transparent 2px);
+    background-size: 420px 360px;
+    animation: galaxy-parallax-slow 120s linear infinite;
+  }
+
+  .galaxy-near-field {
+    display: none;
+    opacity: 0.72;
+    background:
+      radial-gradient(circle at 10% 28%, rgba(255,255,255,0.96) 0 1.2px, transparent 2.8px),
+      radial-gradient(circle at 32% 64%, rgba(125,211,252,0.82) 0 1.2px, transparent 3px),
+      radial-gradient(circle at 48% 12%, rgba(255,255,255,0.88) 0 1.4px, transparent 3px),
+      radial-gradient(circle at 70% 46%, rgba(255,255,255,0.92) 0 1.3px, transparent 3px),
+      radial-gradient(circle at 84% 22%, rgba(196,181,253,0.86) 0 1.2px, transparent 3px);
+    background-size: 620px 520px;
+    filter: drop-shadow(0 0 7px rgba(191, 219, 254, 0.38));
+    animation: galaxy-parallax-near 68s linear infinite;
+  }
+
+  .galaxy-dust {
+    opacity: 0.2;
+    background:
+      radial-gradient(ellipse at 18% 26%, rgba(59, 130, 246, 0.26), transparent 28%),
+      radial-gradient(ellipse at 62% 18%, rgba(216, 180, 254, 0.18), transparent 26%),
+      radial-gradient(ellipse at 74% 76%, rgba(20, 184, 166, 0.12), transparent 30%),
+      repeating-radial-gradient(circle at 42% 56%, rgba(255,255,255,0.035) 0 1px, transparent 1px 11px);
+    filter: blur(0.6px);
+    mix-blend-mode: screen;
+    animation: galaxy-dust-breathe 28s ease-in-out infinite alternate;
+  }
+
+  .galaxy-lens-field {
+    display: none;
+    opacity: 0.5;
+    background:
+      radial-gradient(circle at 14% 36%, rgba(255,255,255,0.85) 0 1.4px, rgba(125,211,252,0.20) 2px 8px, transparent 16px),
+      radial-gradient(circle at 54% 22%, rgba(255,255,255,0.8) 0 1.2px, rgba(196,181,253,0.18) 2px 7px, transparent 15px),
+      radial-gradient(circle at 88% 44%, rgba(255,255,255,0.78) 0 1.2px, rgba(125,211,252,0.16) 2px 8px, transparent 18px),
+      radial-gradient(circle at 72% 82%, rgba(255,255,255,0.74) 0 1.2px, rgba(255,255,255,0.12) 2px 7px, transparent 15px);
+    animation: galaxy-twinkle-field 5.2s ease-in-out infinite alternate;
+  }
+
+  .galaxy-nebula {
+    position: absolute;
+    width: 56vw;
+    height: 34vw;
+    min-width: 420px;
+    min-height: 260px;
+    border-radius: 50%;
+    filter: blur(34px);
+    opacity: 0.42;
+    transform: rotate(-18deg);
+    background:
+      radial-gradient(ellipse at 30% 45%, rgba(34, 211, 238, 0.52), transparent 42%),
+      radial-gradient(ellipse at 64% 38%, rgba(217, 70, 239, 0.44), transparent 46%),
+      radial-gradient(ellipse at 54% 70%, rgba(59, 130, 246, 0.36), transparent 44%);
+    animation: galaxy-nebula-pulse 12s ease-in-out infinite alternate;
+  }
+
+  .galaxy-nebula--one {
+    top: 80px;
+    left: -12vw;
+  }
+
+  .galaxy-nebula--two {
+    right: -18vw;
+    bottom: 20%;
+    transform: rotate(22deg);
+    animation-delay: -4s;
+  }
+
+  .galaxy-comet {
+    position: absolute;
+    width: 170px;
+    height: 2px;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 100% 50%, #ffffff 0 3px, rgba(186,230,253,0.96) 4px 7px, transparent 8px),
+      linear-gradient(90deg, transparent 0%, rgba(125,211,252,0.05) 16%, rgba(186,230,253,0.48) 68%, rgba(255,255,255,0.96) 100%);
+    filter: drop-shadow(0 0 7px rgba(186,230,253,0.46));
+    opacity: 0;
+    animation: galaxy-comet-horizontal 10s linear infinite;
+    mix-blend-mode: screen;
+  }
+
+  .galaxy-comet::before {
+    content: "";
+    position: absolute;
+    right: -4px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: radial-gradient(circle, #ffffff 0 18%, rgba(186,230,253,0.74) 38%, transparent 72%);
+  }
+
+  .galaxy-comet::after {
+    content: "";
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    width: 80px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: radial-gradient(ellipse, rgba(125,211,252,0.22), transparent 70%);
+    filter: blur(4px);
+  }
+
+  .galaxy-comet--reverse {
+    background:
+      radial-gradient(circle at 0% 50%, #ffffff 0 3px, rgba(186,230,253,0.96) 4px 7px, transparent 8px),
+      linear-gradient(90deg, rgba(255,255,255,0.96) 0%, rgba(186,230,253,0.48) 32%, rgba(125,211,252,0.05) 84%, transparent 100%);
+    animation-name: galaxy-comet-horizontal-reverse;
+  }
+
+  .galaxy-comet--reverse::before {
+    left: -4px;
+    right: auto;
+  }
+
+  .galaxy-comet--reverse::after {
+    left: 24px;
+    right: auto;
+  }
+
+  .galaxy-comet--one {
+    top: 14%;
+    left: -8%;
+    animation-duration: 7.4s;
+  }
+
+  .galaxy-comet--two {
+    top: 36%;
+    left: 38%;
+    width: 210px;
+    animation-duration: 8.8s;
+    animation-delay: -3.4s;
+  }
+
+  .galaxy-comet--three {
+    top: -12%;
+    left: 76%;
+    animation-duration: 11.8s;
+    animation-delay: -1.6s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--four {
+    top: 58%;
+    left: 4%;
+    width: 190px;
+    animation-duration: 9.6s;
+    animation-delay: -6.6s;
+  }
+
+  .galaxy-comet--five {
+    top: -10%;
+    left: 18%;
+    animation-duration: 12.6s;
+    animation-delay: -4.8s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--six {
+    top: 76%;
+    left: 52%;
+    width: 150px;
+    animation-duration: 7.2s;
+    animation-delay: -7.2s;
+  }
+
+  .galaxy-comet--seven {
+    top: -14%;
+    left: 42%;
+    animation-duration: 13.2s;
+    animation-delay: -8.4s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--eight {
+    top: 24%;
+    left: 64%;
+    width: 180px;
+    animation-duration: 7.8s;
+    animation-delay: -5.7s;
+  }
+
+  .galaxy-comet--nine {
+    top: -12%;
+    left: 90%;
+    animation-duration: 12.2s;
+    animation-delay: -6.1s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--ten {
+    top: 68%;
+    left: -16%;
+    width: 220px;
+    animation-duration: 8.2s;
+    animation-delay: -2.7s;
+  }
+
+  .galaxy-comet--eleven {
+    top: 8%;
+    left: 28%;
+    width: 140px;
+    animation-duration: 6.9s;
+    animation-delay: -5.4s;
+  }
+
+  .galaxy-comet--twelve {
+    top: -12%;
+    left: 58%;
+    animation-duration: 11.4s;
+    animation-delay: -2.2s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--thirteen {
+    top: 84%;
+    left: 18%;
+    width: 180px;
+    animation-duration: 7.6s;
+    animation-delay: -6.8s;
+  }
+
+  .galaxy-comet--fourteen {
+    top: -14%;
+    left: 6%;
+    animation-duration: 12.8s;
+    animation-delay: -7.5s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--fifteen {
+    top: 30%;
+    left: -20%;
+    width: 230px;
+    animation-duration: 9s;
+    animation-delay: -8.1s;
+  }
+
+  .galaxy-comet--sixteen {
+    top: -10%;
+    left: 70%;
+    animation-duration: 11.2s;
+    animation-delay: -4s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--seventeen {
+    top: 88%;
+    left: -24%;
+    width: 230px;
+    animation-duration: 8.5s;
+    animation-delay: -3.1s;
+  }
+
+  .galaxy-comet--eighteen {
+    top: -16%;
+    left: 32%;
+    animation-duration: 13.8s;
+    animation-delay: -9.2s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--nineteen {
+    top: 92%;
+    left: 40%;
+    width: 190px;
+    animation-duration: 7.9s;
+    animation-delay: -6.4s;
+  }
+
+  .galaxy-comet--twenty {
+    top: -18%;
+    left: 84%;
+    animation-duration: 12.9s;
+    animation-delay: -11.2s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--twentyone {
+    top: 80%;
+    left: 70%;
+    width: 170px;
+    animation-duration: 7.2s;
+    animation-delay: -1.9s;
+  }
+
+  .galaxy-comet--twentytwo {
+    top: -14%;
+    left: 48%;
+    animation-duration: 14s;
+    animation-delay: -5.6s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--twentythree {
+    top: 66%;
+    left: 24%;
+    width: 200px;
+    animation-duration: 8.1s;
+    animation-delay: -7.7s;
+  }
+
+  .galaxy-comet--twentyfour {
+    top: -20%;
+    left: 12%;
+    animation-duration: 12.4s;
+    animation-delay: -2.8s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--twentyfive {
+    top: 96%;
+    left: -8%;
+    width: 210px;
+    animation-duration: 8.8s;
+    animation-delay: -8.4s;
+  }
+
+  .galaxy-comet--twentysix {
+    top: -16%;
+    left: 64%;
+    animation-duration: 13.5s;
+    animation-delay: -7.2s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--twentyseven {
+    top: 74%;
+    left: -18%;
+    width: 240px;
+    animation-duration: 9.1s;
+    animation-delay: -4.6s;
+  }
+
+  .galaxy-comet--twentyeight {
+    top: -18%;
+    left: 96%;
+    animation-duration: 12.1s;
+    animation-delay: -3.9s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--twentynine {
+    top: 52%;
+    left: -28%;
+    width: 200px;
+    animation-duration: 7.7s;
+    animation-delay: -5.2s;
+  }
+
+  .galaxy-comet--thirty {
+    top: -16%;
+    left: 24%;
+    animation-duration: 13.1s;
+    animation-delay: -10.4s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--thirtyone {
+    top: 86%;
+    left: 58%;
+    width: 160px;
+    animation-duration: 7.5s;
+    animation-delay: -2.4s;
+  }
+
+  .galaxy-comet--thirtytwo {
+    top: -20%;
+    left: 74%;
+    animation-duration: 14.2s;
+    animation-delay: -12.6s;
+    animation-name: galaxy-comet-fall;
+  }
+
+  .galaxy-comet--fall {
+    width: 2px;
+    height: 190px;
+    background:
+      radial-gradient(circle at 50% 100%, #ffffff 0 3px, rgba(186,230,253,0.95) 4px 7px, transparent 8px),
+      linear-gradient(180deg, transparent 0%, rgba(125,211,252,0.05) 16%, rgba(186,230,253,0.46) 68%, rgba(255,255,255,0.96) 100%);
+  }
+
+  .galaxy-comet--fall::before {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: -4px;
+    transform: translateX(-50%);
+  }
+
+  .galaxy-comet--fall::after {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 22px;
+    width: 12px;
+    height: 76px;
+    transform: translateX(-50%);
+  }
+
+  .galaxy-comet--rise {
+    background:
+      radial-gradient(circle at 50% 0%, #ffffff 0 3px, rgba(186,230,253,0.95) 4px 7px, transparent 8px),
+      linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(186,230,253,0.46) 32%, rgba(125,211,252,0.05) 84%, transparent 100%);
+    animation-name: galaxy-comet-rise;
+  }
+
+  .galaxy-comet--rise::before {
+    top: -4px;
+    bottom: auto;
+  }
+
+  .galaxy-comet--rise::after {
+    top: 22px;
+    bottom: auto;
+  }
+
+  .galaxy-milkyway {
+    position: absolute;
+    left: -18%;
+    top: 18%;
+    width: 136%;
+    height: 280px;
+    border-radius: 50%;
+    transform: rotate(-17deg);
+    background:
+      radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, 0.34), transparent 16%),
+      radial-gradient(ellipse at 42% 52%, rgba(125, 211, 252, 0.20), transparent 32%),
+      radial-gradient(ellipse at 62% 46%, rgba(216, 180, 254, 0.18), transparent 36%);
+    filter: blur(5px);
+    opacity: 0.28;
+    mix-blend-mode: screen;
+    animation: galaxy-band-flow 34s ease-in-out infinite alternate;
+  }
+
+  .galaxy-constellation {
+    position: absolute;
+    right: 7%;
+    top: 10%;
+    width: 260px;
+    height: 150px;
+    opacity: 0.7;
+  }
+
+  .galaxy-constellation::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(24deg, transparent 0 18%, rgba(147, 197, 253, 0.42) 18% 19%, transparent 19% 100%),
+      linear-gradient(-18deg, transparent 0 48%, rgba(147, 197, 253, 0.34) 48% 49%, transparent 49% 100%),
+      linear-gradient(11deg, transparent 0 70%, rgba(147, 197, 253, 0.36) 70% 71%, transparent 71% 100%);
+  }
+
+  .galaxy-constellation i {
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    box-shadow: 0 0 16px rgba(224, 242, 254, 0.86);
+    animation: galaxy-twinkle 2.8s ease-in-out infinite;
+  }
+
+  .galaxy-constellation i:nth-child(1) { left: 18%; top: 58%; }
+  .galaxy-constellation i:nth-child(2) { left: 42%; top: 32%; animation-delay: -0.8s; }
+  .galaxy-constellation i:nth-child(3) { left: 63%; top: 48%; animation-delay: -1.5s; }
+  .galaxy-constellation i:nth-child(4) { left: 82%; top: 20%; animation-delay: -2.1s; }
+
+  .galaxy-star-cluster {
+    display: none;
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 22% 32%, #ffffff 0 1px, transparent 2px),
+      radial-gradient(circle at 48% 18%, #bae6fd 0 1px, transparent 2px),
+      radial-gradient(circle at 64% 58%, #ffffff 0 1px, transparent 2px),
+      radial-gradient(circle at 76% 40%, #c4b5fd 0 1px, transparent 2px),
+      radial-gradient(circle at 34% 74%, #ffffff 0 1px, transparent 2px);
+    opacity: 0.86;
+    animation: galaxy-cluster-pulse 4.5s ease-in-out infinite;
+  }
+
+  .galaxy-star-cluster--one {
+    left: 4%;
+    top: 34%;
+  }
+
+  .galaxy-star-cluster--two {
+    right: 3%;
+    bottom: 16%;
+    animation-delay: -2.1s;
+  }
+
+  .travel-shell {
+    z-index: 1;
+  }
+
+  .travel-panel,
+  .travel-search-card,
+  .travel-info-card,
+  .travel-contact-card,
+  .travel-room-card,
+  .travel-city-card {
+    border-color: rgba(148, 163, 184, 0.2);
+    background: rgba(8, 13, 31, 0.72);
+    box-shadow: 0 28px 88px rgba(0, 0, 0, 0.34);
+  }
+
+  .travel-panel {
+    border-radius: 32px;
+    background:
+      linear-gradient(150deg, rgba(15, 23, 42, 0.86), rgba(17, 24, 39, 0.62)),
+      radial-gradient(ellipse at 78% 10%, rgba(103, 232, 249, 0.18), transparent 28%);
+  }
+
+  .travel-panel::before {
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 34%),
+      radial-gradient(ellipse at 24% 100%, rgba(99, 102, 241, 0.2), transparent 34%);
+  }
+
+  .travel-eyebrow,
+  .travel-chip,
+  .travel-room-pill,
+  .travel-mini-pill,
+  .travel-scene-badge,
+  .travel-scene-copy,
+  .travel-scene-depth__title,
+  .travel-scene-depth__chips span {
+    color: #eef6ff;
+    background: rgba(15, 23, 42, 0.64);
+    border-color: rgba(125, 211, 252, 0.18);
+  }
+
+  .travel-title {
+    display: inline-block;
+    padding: 12px 18px 16px;
+    border: 1px solid rgba(125, 211, 252, 0.18);
+    border-radius: 22px;
+    color: #ffffff;
+    letter-spacing: 0;
+    word-spacing: 0.04em;
+    background:
+      linear-gradient(135deg, rgba(2, 6, 23, 0.78), rgba(15, 23, 42, 0.5)),
+      radial-gradient(ellipse at 22% 18%, rgba(103, 232, 249, 0.18), transparent 34%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 18px 48px rgba(2, 6, 23, 0.34),
+      0 0 34px rgba(103, 232, 249, 0.14);
+    text-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.58),
+      0 0 34px rgba(103, 232, 249, 0.26);
+  }
+
+  .travel-kpi {
+    color: #eef6ff;
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(125, 211, 252, 0.18);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  }
+
+  .travel-kpi strong {
+    color: #ffffff;
+  }
+
+  .travel-kpi span {
+    color: #cfe8ff;
+  }
+
+  .travel-field input,
+  .travel-field select {
+    color: #eef6ff;
+    background: rgba(2, 6, 23, 0.62);
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+  .travel-field input::placeholder {
+    color: rgba(226, 232, 240, 0.58);
+  }
+
+  .travel-scene-card {
+    min-height: 640px;
+    border-radius: 32px;
+    border-color: rgba(125, 211, 252, 0.24);
+    background:
+      radial-gradient(ellipse at 46% 42%, rgba(30, 64, 175, 0.26), transparent 34%),
+      radial-gradient(ellipse at 18% 18%, rgba(14, 116, 144, 0.2), transparent 28%),
+      radial-gradient(ellipse at 86% 80%, rgba(88, 28, 135, 0.2), transparent 34%),
+      linear-gradient(180deg, #01030b 0%, #040718 48%, #090416 100%);
+    box-shadow:
+      inset 0 0 80px rgba(0, 0, 0, 0.38),
+      0 34px 110px rgba(2, 6, 23, 0.46),
+      0 0 80px rgba(103, 232, 249, 0.12);
+  }
+
+  .travel-scene-card::before {
+    inset: 0;
+    height: auto;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.92) 0 1px, transparent 2px),
+      radial-gradient(circle at 28% 64%, rgba(125, 211, 252, 0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 86% 72%, rgba(196, 181, 253, 0.82) 0 1px, transparent 2px);
+    background-size: 120px 120px, 160px 160px, 96px 96px, 140px 140px;
+    animation: galaxy-star-drift 86s linear infinite;
+  }
+
+  .travel-scene-card::after {
+    z-index: 2;
+    background:
+      radial-gradient(ellipse at 50% 50%, transparent 0 42%, rgba(2, 6, 23, 0.28) 72%, rgba(0, 0, 0, 0.58) 100%),
+      linear-gradient(112deg, rgba(255,255,255,0.08), transparent 26% 74%, rgba(56,189,248,0.08));
+    opacity: 0.78;
+    animation: none;
+  }
+
+  .travel-scene-3d {
+    display: none;
+  }
+
+  .cosmic-scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .cosmic-scene::before,
+  .cosmic-scene::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .cosmic-scene::before {
+    z-index: 0;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(255,255,255,0.9) 0 1px, transparent 2px),
+      radial-gradient(circle at 34% 18%, rgba(125,211,252,0.55) 0 1px, transparent 2px),
+      radial-gradient(circle at 68% 32%, rgba(255,255,255,0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 84% 70%, rgba(186,230,253,0.72) 0 1px, transparent 2px),
+      radial-gradient(ellipse at 50% 62%, rgba(30, 64, 175, 0.18), transparent 38%);
+    background-size: 150px 130px, 220px 190px, 180px 160px, 260px 220px, 100% 100%;
+    opacity: 0.78;
+  }
+
+  .cosmic-scene::after {
+    z-index: 3;
+    background:
+      radial-gradient(ellipse at 35% 35%, rgba(255,255,255,0.08), transparent 18%),
+      radial-gradient(ellipse at 50% 50%, transparent 0 54%, rgba(0,0,0,0.38) 100%);
+    mix-blend-mode: screen;
+  }
+
+  .cosmic-core,
+  .cosmic-earth,
+  .cosmic-ufo,
+  .cosmic-satellite-craft,
+  .cosmic-orbit,
+  .cosmic-planet,
+  .cosmic-asteroid {
+    z-index: 1;
+  }
+
+  .cosmic-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle at 36% 30%, #fff 0 7%, #fff7c2 12%, transparent 18%),
+      radial-gradient(circle at 42% 44%, #fff7ad 0 19%, #f97316 43%, #9a3412 70%, #1c0b04 100%);
+    box-shadow:
+      inset -18px -14px 28px rgba(67, 20, 7, 0.34),
+      0 0 48px rgba(251, 191, 36, 0.72),
+      0 0 116px rgba(249, 115, 22, 0.34);
+    animation: galaxy-core-breathe 4.8s ease-in-out infinite;
+  }
+
+  .cosmic-orbit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: galaxy-orbit-spin 46s linear infinite;
+  }
+
+  .cosmic-orbit--one {
+    width: 220px;
+    height: 150px;
+  }
+
+  .cosmic-orbit--two {
+    width: 360px;
+    height: 250px;
+    animation-duration: 66s;
+    animation-direction: reverse;
+  }
+
+  .cosmic-orbit--three {
+    width: 520px;
+    height: 360px;
+    animation-duration: 82s;
+  }
+
+  .cosmic-orbit--four {
+    width: 660px;
+    height: 470px;
+    animation-duration: 104s;
+    animation-direction: reverse;
+  }
+
+  .cosmic-planet {
+    position: absolute;
+    border-radius: 50%;
+    overflow: visible;
+    background:
+      radial-gradient(circle at 29% 23%, rgba(255, 255, 255, 0.72), transparent 12%),
+      radial-gradient(circle at 44% 50%, rgba(56, 189, 248, 0.28) 0 16%, transparent 25%),
+      radial-gradient(circle at 70% 74%, rgba(2, 6, 23, 0.58), transparent 34%),
+      linear-gradient(135deg, #0f3f8a, #38bdf8 48%, #041427);
+    box-shadow:
+      inset -22px -17px 28px rgba(2, 6, 23, 0.58),
+      inset 10px 8px 16px rgba(255,255,255,0.12),
+      0 0 22px rgba(125, 211, 252, 0.18);
+    filter: none;
+  }
+
+  .cosmic-planet::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 24% 42%, rgba(255,255,255,0.16) 0 5%, transparent 11%),
+      radial-gradient(circle at 66% 36%, rgba(0,0,0,0.18) 0 7%, transparent 12%),
+      radial-gradient(circle at 40% 72%, rgba(255,255,255,0.1) 0 4%, transparent 10%),
+      linear-gradient(110deg, rgba(255,255,255,0.12), transparent 34% 70%, rgba(0,0,0,0.18));
+    mix-blend-mode: screen;
+    pointer-events: none;
+  }
+
+  .cosmic-planet--a {
+    width: 70px;
+    height: 70px;
+    left: 6%;
+    top: 44%;
+  }
+
+  .cosmic-planet--b {
+    width: 92px;
+    height: 92px;
+    right: 13%;
+    top: 22%;
+    animation: galaxy-float-small 7s ease-in-out infinite;
+    background:
+      radial-gradient(circle at 31% 24%, rgba(255, 255, 255, 0.56), transparent 12%),
+      radial-gradient(circle at 62% 62%, rgba(69, 10, 10, 0.54), transparent 34%),
+      radial-gradient(circle at 42% 54%, rgba(127, 29, 29, 0.36), transparent 22%),
+      linear-gradient(135deg, #62131a, #e55c68 48%, #270707);
+    box-shadow:
+      inset -24px -17px 30px rgba(69, 10, 10, 0.58),
+      inset 9px 7px 15px rgba(255,255,255,0.12),
+      0 0 20px rgba(251, 113, 133, 0.16);
+  }
+
+  .cosmic-planet--c {
+    width: 78px;
+    height: 78px;
+    right: 21%;
+    bottom: 15%;
+    animation: galaxy-float-small 8s ease-in-out infinite reverse;
+    background:
+      radial-gradient(circle at 31% 24%, rgba(255, 255, 255, 0.58), transparent 12%),
+      radial-gradient(circle at 64% 70%, rgba(4, 47, 46, 0.62), transparent 34%),
+      radial-gradient(circle at 42% 48%, rgba(20, 184, 166, 0.22), transparent 24%),
+      linear-gradient(135deg, #063a38, #2dd4bf 47%, #021514);
+    box-shadow:
+      inset -22px -16px 28px rgba(4, 47, 46, 0.58),
+      inset 8px 7px 15px rgba(255,255,255,0.12),
+      0 0 20px rgba(45, 212, 191, 0.16);
+  }
+
+  .cosmic-planet--ring {
+    width: 132px;
+    height: 132px;
+    left: 9%;
+    bottom: 14%;
+    animation: galaxy-float-small 9s ease-in-out infinite;
+    background:
+      radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.62), transparent 12%),
+      repeating-linear-gradient(172deg, rgba(255,255,255,0.13) 0 4px, rgba(120,53,15,0.2) 4px 8px, transparent 8px 14px),
+      radial-gradient(circle at 66% 70%, rgba(69, 26, 3, 0.52), transparent 36%),
+      linear-gradient(135deg, #5b2b0d, #d97706 45%, #241002);
+    box-shadow:
+      inset -26px -18px 32px rgba(69, 26, 3, 0.58),
+      inset 8px 7px 14px rgba(255,255,255,0.12),
+      0 0 22px rgba(251, 191, 36, 0.16);
+  }
+
+  .cosmic-planet--ring::before {
+    content: "";
+    position: absolute;
+    left: -20%;
+    right: -20%;
+    top: 42%;
+    height: 18%;
+    border-radius: 50%;
+    border-top: 5px solid rgba(254, 243, 199, 0.48);
+    border-bottom: 3px solid rgba(146, 64, 14, 0.5);
+    transform: rotate(-15deg);
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.16);
+  }
+
+  .cosmic-planet canvas {
+    display: none;
+  }
+
+  .cosmic-satellite {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffffff, #94a3b8 62%, #334155);
+    box-shadow: 0 0 16px rgba(226, 232, 240, 0.5);
+  }
+
+  .cosmic-orbit--one .cosmic-satellite {
+    left: 10px;
+    top: 38px;
+  }
+
+  .cosmic-orbit--two .cosmic-satellite {
+    right: 32px;
+    bottom: 46px;
+  }
+
+  .cosmic-orbit--three .cosmic-satellite {
+    left: 70px;
+    bottom: 42px;
+  }
+
+  .cosmic-asteroid {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    box-shadow: 0 0 10px rgba(203, 213, 225, 0.52);
+  }
+
+  .cosmic-asteroid--one { left: 18%; top: 16%; }
+  .cosmic-asteroid--two { left: 32%; top: 72%; transform: scale(0.72); }
+  .cosmic-asteroid--three { left: 76%; top: 54%; transform: scale(1.2); }
+  .cosmic-asteroid--four { left: 86%; top: 34%; transform: scale(0.82); }
+
+  .cosmic-earth {
+    position: absolute;
+    left: 10%;
+    top: 24%;
+    width: 154px;
+    height: 154px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 42% 42%, rgba(14, 165, 233, 0.18), rgba(2, 6, 23, 0.08) 70%);
+    box-shadow: 0 0 46px rgba(56, 189, 248, 0.32);
+    animation: galaxy-earth-drift 9s ease-in-out infinite;
+  }
+
+  .cosmic-earth::before,
+  .cosmic-earth::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .cosmic-earth::before {
+    inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, transparent 58%, rgba(103, 232, 249, 0.18) 68%, transparent 74%);
+    filter: blur(2px);
+  }
+
+  .cosmic-earth::after {
+    left: -22px;
+    right: -22px;
+    top: 52px;
+    height: 36px;
+    border-radius: 50%;
+    border-top: 3px solid rgba(191, 219, 254, 0.42);
+    transform: rotate(-14deg);
+    opacity: 0.5;
+  }
+
+  .cosmic-earth canvas {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cosmic-ufo {
+    position: absolute;
+    right: 9%;
+    top: 48%;
+    width: 156px;
+    height: 68px;
+    animation: galaxy-ufo-hover 5.5s ease-in-out infinite;
+  }
+
+  .cosmic-ufo--3d::before,
+  .cosmic-ufo--3d::after,
+  .cosmic-satellite-craft--3d .cosmic-satellite-body,
+  .cosmic-satellite-craft--3d .cosmic-satellite-panel,
+  .cosmic-satellite-craft--3d .cosmic-satellite-dish,
+  .cosmic-astronaut--3d .cosmic-astronaut-helmet,
+  .cosmic-astronaut--3d .cosmic-astronaut-body,
+  .cosmic-astronaut--3d .cosmic-astronaut-arm,
+  .cosmic-astronaut--3d .cosmic-astronaut-leg {
+    display: block;
+  }
+
+  .cosmic-ufo--3d canvas,
+  .cosmic-satellite-craft--3d canvas,
+  .cosmic-astronaut--3d canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  .cosmic-ufo::before {
+    content: "";
+    position: absolute;
+    left: 36px;
+    top: 0;
+    width: 84px;
+    height: 44px;
+    border-radius: 50% 50% 42% 42%;
+    background:
+      radial-gradient(circle at 38% 24%, rgba(255,255,255,0.96), rgba(186,230,253,0.58) 24%, transparent 30%),
+      radial-gradient(ellipse at 52% 76%, rgba(8, 47, 73, 0.5), transparent 52%),
+      linear-gradient(180deg, rgba(241, 245, 249, 0.94), rgba(103, 232, 249, 0.46) 50%, rgba(13, 78, 91, 0.88));
+    border: 1px solid rgba(224, 242, 254, 0.5);
+    box-shadow:
+      inset 0 10px 16px rgba(255,255,255,0.32),
+      inset -9px -8px 16px rgba(2, 6, 23, 0.28),
+      0 0 22px rgba(103, 232, 249, 0.42);
+  }
+
+  .cosmic-ufo::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 6px;
+    height: 30px;
+    border-radius: 50%;
+    background:
+      radial-gradient(ellipse at 50% 18%, rgba(255,255,255,0.88), transparent 18%),
+      repeating-linear-gradient(90deg, rgba(15,23,42,0.22) 0 6px, transparent 6px 15px),
+      linear-gradient(180deg, #f8fafc 0%, #9ca3af 42%, #475569 74%, #0f172a 100%);
+    border: 1px solid rgba(226, 232, 240, 0.42);
+    box-shadow:
+      inset 0 7px 13px rgba(255,255,255,0.26),
+      inset -12px -6px 18px rgba(2, 6, 23, 0.42),
+      0 16px 30px rgba(34, 211, 238, 0.2);
+  }
+
+  .cosmic-ufo-beam {
+    position: absolute;
+    left: 48px;
+    top: 49px;
+    width: 66px;
+    height: 140px;
+    clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+    background:
+      radial-gradient(ellipse at 50% 12%, rgba(224, 242, 254, 0.28), transparent 22%),
+      linear-gradient(180deg, rgba(125, 211, 252, 0.18), rgba(125, 211, 252, 0));
+    filter: blur(1.4px);
+    animation: galaxy-ufo-beam 2.8s ease-in-out infinite;
+  }
+
+  .cosmic-satellite-craft {
+    position: absolute;
+    right: 20%;
+    top: 10%;
+    width: 158px;
+    height: 96px;
+    transform: rotate(-18deg);
+    animation: galaxy-satellite-float 8s ease-in-out infinite;
+  }
+
+  .cosmic-satellite-body {
+    position: absolute;
+    left: 51px;
+    top: 12px;
+    width: 34px;
+    height: 30px;
+    border-radius: 8px;
+    background:
+      radial-gradient(circle at 28% 24%, rgba(255,255,255,0.74), transparent 17%),
+      linear-gradient(135deg, #f8fafc, #9ca3af 52%, #334155);
+    border: 1px solid rgba(226, 232, 240, 0.44);
+    box-shadow:
+      inset -7px -5px 10px rgba(15, 23, 42, 0.32),
+      inset 4px 3px 8px rgba(255,255,255,0.22),
+      0 0 16px rgba(226, 232, 240, 0.24);
+  }
+
+  .cosmic-satellite-panel {
+    position: absolute;
+    top: 8px;
+    width: 48px;
+    height: 38px;
+    border-radius: 6px;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.2) 0 2px, transparent 2px 8px),
+      repeating-linear-gradient(0deg, rgba(15,23,42,0.2) 0 2px, transparent 2px 9px),
+      linear-gradient(135deg, #10245f, #2563eb 48%, #22d3ee);
+    border: 1px solid rgba(191, 219, 254, 0.52);
+    box-shadow: inset -6px -4px 9px rgba(15, 23, 42, 0.36), inset 4px 3px 8px rgba(255,255,255,0.16);
+  }
+
+  .cosmic-satellite-panel--left {
+    left: 0;
+  }
+
+  .cosmic-satellite-panel--right {
+    right: 0;
+  }
+
+  .cosmic-satellite-dish {
+    position: absolute;
+    left: 85px;
+    top: 37px;
+    width: 24px;
+    height: 24px;
+    border-radius: 0 0 999px 999px;
+    border: 3px solid rgba(226, 232, 240, 0.76);
+    border-top: 0;
+    transform: rotate(-22deg);
+  }
+
+  .cosmic-astronaut {
+    position: absolute;
+    left: 63%;
+    bottom: 20%;
+    width: 122px;
+    height: 164px;
+    transform: rotate(12deg);
+    animation: galaxy-astronaut-float 7.5s ease-in-out infinite;
+  }
+
+  .cosmic-astronaut-helmet {
+    position: absolute;
+    left: 18px;
+    top: 0;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 34% 26%, rgba(255,255,255,0.96), transparent 18%),
+      linear-gradient(135deg, #ffffff, #cbd5e1 62%, #64748b);
+    border: 2px solid rgba(226, 232, 240, 0.76);
+    box-shadow: inset -9px -7px 13px rgba(15, 23, 42, 0.24), 0 0 18px rgba(226, 232, 240, 0.38);
+  }
+
+  .cosmic-astronaut-helmet::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 17px;
+    width: 34px;
+    height: 20px;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 28% 30%, rgba(147,197,253,0.86), transparent 14%),
+      linear-gradient(135deg, #020617, #1d4ed8 62%, #38bdf8);
+    box-shadow: inset 0 0 0 2px rgba(15, 23, 42, 0.28);
+  }
+
+  .cosmic-astronaut-body {
+    position: absolute;
+    left: 21px;
+    top: 54px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px 14px 18px 18px;
+    background:
+      linear-gradient(90deg, rgba(15,23,42,0.08) 0 2px, transparent 2px 50px),
+      linear-gradient(180deg, #f8fafc, #dbeafe 58%, #94a3b8);
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    box-shadow: inset -7px -6px 12px rgba(15, 23, 42, 0.18);
+  }
+
+  .cosmic-astronaut-body::before {
+    content: "";
+    position: absolute;
+    left: 13px;
+    top: 14px;
+    width: 20px;
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #ef4444, #22c55e, #38bdf8);
+  }
+
+  .cosmic-astronaut-arm,
+  .cosmic-astronaut-leg {
+    position: absolute;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #f8fafc, #94a3b8);
+  }
+
+  .cosmic-astronaut-arm--left {
+    left: 4px;
+    top: 62px;
+    width: 18px;
+    height: 42px;
+    transform: rotate(24deg);
+  }
+
+  .cosmic-astronaut-arm--right {
+    right: 3px;
+    top: 62px;
+    width: 18px;
+    height: 42px;
+    transform: rotate(-30deg);
+  }
+
+  .cosmic-astronaut-leg--left {
+    left: 24px;
+    bottom: 0;
+    width: 16px;
+    height: 34px;
+    transform: rotate(8deg);
+  }
+
+  .cosmic-astronaut-leg--right {
+    right: 24px;
+    bottom: 0;
+    width: 16px;
+    height: 34px;
+    transform: rotate(-12deg);
+  }
+
+  .cosmic-astronaut-tether {
+    position: absolute;
+    left: -62px;
+    top: 44px;
+    width: 92px;
+    height: 46px;
+    border-top: 2px solid rgba(226, 232, 240, 0.42);
+    border-radius: 50%;
+    transform: rotate(12deg);
+  }
+
+  .cosmic-ufo,
+  .cosmic-satellite-craft {
+    display: none;
+  }
+
+  .cosmic-depth-plane {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    z-index: 0;
+  }
+
+  .cosmic-depth-plane--one {
+    width: 86%;
+    height: 56%;
+    border: 1px solid rgba(125, 211, 252, 0.12);
+    box-shadow: inset 0 0 44px rgba(59, 130, 246, 0.08);
+  }
+
+  .cosmic-depth-plane--two {
+    width: 112%;
+    height: 72%;
+    border: 1px solid rgba(196, 181, 253, 0.1);
+    transform: translate(-50%, -50%) rotate(12deg);
+  }
+
+  .cosmic-depth-plane--three {
+    width: 132%;
+    height: 88%;
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transform: translate(-50%, -50%) rotate(-22deg);
+  }
+
+  .cosmic-star-dust,
+  .cosmic-asteroid-belt,
+  .solar-light-ray {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .cosmic-star-dust {
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 12% 38%, rgba(255,255,255,0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 23% 72%, rgba(125,211,252,0.55) 0 1px, transparent 2px),
+      radial-gradient(circle at 44% 18%, rgba(255,255,255,0.7) 0 1px, transparent 2px),
+      radial-gradient(circle at 58% 86%, rgba(196,181,253,0.62) 0 1px, transparent 2px),
+      radial-gradient(circle at 82% 46%, rgba(255,255,255,0.74) 0 1px, transparent 2px);
+    background-size: 180px 150px, 240px 190px, 160px 130px, 220px 170px, 280px 230px;
+    opacity: 0.8;
+  }
+
+  .cosmic-asteroid-belt {
+    left: 50%;
+    top: 50%;
+    width: 76%;
+    height: 48%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(-16deg);
+    z-index: 1;
+    background:
+      radial-gradient(circle at 8% 50%, rgba(226,232,240,0.65) 0 2px, transparent 3px),
+      radial-gradient(circle at 18% 36%, rgba(148,163,184,0.52) 0 1px, transparent 2px),
+      radial-gradient(circle at 32% 68%, rgba(226,232,240,0.48) 0 1px, transparent 2px),
+      radial-gradient(circle at 48% 30%, rgba(148,163,184,0.54) 0 2px, transparent 3px),
+      radial-gradient(circle at 63% 72%, rgba(226,232,240,0.5) 0 1px, transparent 2px),
+      radial-gradient(circle at 78% 40%, rgba(148,163,184,0.58) 0 1px, transparent 2px),
+      radial-gradient(circle at 92% 55%, rgba(226,232,240,0.52) 0 2px, transparent 3px);
+    border-top: 1px solid rgba(226, 232, 240, 0.08);
+    opacity: 0.62;
+    animation: galaxy-belt-drift 42s linear infinite;
+  }
+
+  .solar-light-ray {
+    left: 76%;
+    top: 28%;
+    width: 42%;
+    height: 42%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    background:
+      radial-gradient(circle, rgba(251,191,36,0.24), transparent 46%),
+      conic-gradient(from 20deg, transparent 0 10%, rgba(251,191,36,0.12) 12%, transparent 18% 36%, rgba(250,204,21,0.1) 40%, transparent 46% 70%, rgba(249,115,22,0.1) 74%, transparent 82% 100%);
+    filter: blur(1px);
+    mix-blend-mode: screen;
+    animation: galaxy-sun-rays 18s linear infinite;
+  }
+
+  .cosmic-core {
+    left: 76%;
+    top: 28%;
+    width: 96px;
+    height: 96px;
+    z-index: 2;
+    animation: galaxy-sun-pulse 5.5s ease-in-out infinite;
+  }
+
+  .cosmic-core::before,
+  .cosmic-core::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .cosmic-core::before {
+    inset: -20px;
+    background: radial-gradient(circle, rgba(251,191,36,0.24), transparent 66%);
+    filter: blur(3px);
+  }
+
+  .cosmic-core::after {
+    inset: 18%;
+    background: radial-gradient(circle at 34% 28%, rgba(255,255,255,0.88), transparent 22%);
+  }
+
+  .solar-orbit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    transform-origin: center;
+    z-index: 1;
+    animation: galaxy-solar-orbit 28s linear infinite;
+  }
+
+  .solar-orbit::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    border-top: 1px solid rgba(125, 211, 252, 0.2);
+    opacity: 0.5;
+  }
+
+  .solar-orbit--mercury {
+    width: 190px;
+    height: 124px;
+    animation-duration: 20s;
+    animation-delay: -5s;
+  }
+
+  .solar-orbit--venus {
+    width: 270px;
+    height: 174px;
+    animation-duration: 28s;
+    animation-direction: reverse;
+    animation-delay: -12s;
+  }
+
+  .solar-orbit--mars {
+    width: 350px;
+    height: 232px;
+    animation-duration: 36s;
+    animation-delay: -19s;
+  }
+
+  .solar-orbit--jupiter {
+    width: 468px;
+    height: 310px;
+    animation-duration: 52s;
+    animation-direction: reverse;
+    animation-delay: -28s;
+  }
+
+  .solar-orbit--saturn {
+    width: 584px;
+    height: 390px;
+    animation-duration: 68s;
+    animation-delay: -43s;
+  }
+
+  .solar-planet {
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    box-shadow:
+      inset -12px -9px 18px rgba(2, 6, 23, 0.58),
+      inset 5px 4px 10px rgba(255, 255, 255, 0.16),
+      0 0 18px rgba(125, 211, 252, 0.12);
+  }
+
+  .solar-planet::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, rgba(255,255,255,0.2), transparent 34% 74%, rgba(0,0,0,0.18));
+  }
+
+  .solar-planet--mercury {
+    width: 20px;
+    height: 20px;
+    background:
+      radial-gradient(circle at 35% 28%, rgba(255,255,255,0.42), transparent 20%),
+      radial-gradient(circle at 62% 62%, rgba(15,23,42,0.44), transparent 34%),
+      linear-gradient(135deg, #9ca3af, #475569);
+  }
+
+  .solar-planet--venus {
+    width: 34px;
+    height: 34px;
+    background:
+      radial-gradient(circle at 32% 24%, rgba(255,255,255,0.58), transparent 16%),
+      repeating-linear-gradient(165deg, rgba(254,243,199,0.18) 0 5px, rgba(161,98,7,0.18) 5px 12px),
+      linear-gradient(135deg, #facc15, #a16207 58%, #3f2206);
+  }
+
+  .solar-planet--mars {
+    width: 30px;
+    height: 30px;
+    background:
+      radial-gradient(circle at 32% 25%, rgba(255,255,255,0.46), transparent 15%),
+      radial-gradient(circle at 62% 64%, rgba(69,10,10,0.52), transparent 32%),
+      linear-gradient(135deg, #f87171, #991b1b 62%, #2a0505);
+  }
+
+  .solar-planet--jupiter {
+    width: 58px;
+    height: 58px;
+    right: -18px;
+    background:
+      radial-gradient(circle at 32% 24%, rgba(255,255,255,0.48), transparent 14%),
+      repeating-linear-gradient(172deg, rgba(254,243,199,0.22) 0 5px, rgba(180,83,9,0.28) 5px 12px, rgba(69,26,3,0.18) 12px 18px),
+      radial-gradient(circle at 64% 58%, rgba(120,53,15,0.42), transparent 26%),
+      linear-gradient(135deg, #fbbf24, #92400e 62%, #2b1204);
+  }
+
+  .solar-planet--saturn {
+    width: 48px;
+    height: 48px;
+    right: -16px;
+    background:
+      radial-gradient(circle at 34% 24%, rgba(255,255,255,0.52), transparent 14%),
+      repeating-linear-gradient(170deg, rgba(254,243,199,0.18) 0 5px, rgba(146,64,14,0.22) 5px 11px),
+      linear-gradient(135deg, #fde68a, #92400e 62%, #241004);
+  }
+
+  .solar-planet--saturn::before {
+    content: "";
+    position: absolute;
+    left: -18px;
+    right: -18px;
+    top: 42%;
+    height: 18%;
+    border-radius: 50%;
+    border-top: 4px solid rgba(254, 243, 199, 0.5);
+    border-bottom: 2px solid rgba(146, 64, 14, 0.42);
+    transform: rotate(-13deg);
+  }
+
+  .cosmic-earth {
+    left: 50%;
+    top: 50%;
+    width: 178px;
+    height: 178px;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    animation: galaxy-earth-center-drift 10s ease-in-out infinite;
+    box-shadow: 0 0 52px rgba(56, 189, 248, 0.28), 0 0 120px rgba(14, 165, 233, 0.16);
+  }
+
+  .moon-orbit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 250px;
+    height: 164px;
+    border: 1px solid rgba(226, 232, 240, 0.18);
+    border-radius: 50%;
+    z-index: 4;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    animation: galaxy-moon-orbit 15s linear infinite;
+  }
+
+  .cosmic-moon {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background:
+      radial-gradient(circle at 32% 24%, rgba(255,255,255,0.78), transparent 18%),
+      radial-gradient(circle at 62% 60%, rgba(51,65,85,0.42), transparent 28%),
+      linear-gradient(135deg, #f8fafc, #94a3b8 68%, #334155);
+    box-shadow:
+      inset -8px -6px 12px rgba(15, 23, 42, 0.34),
+      0 0 18px rgba(226, 232, 240, 0.36);
+  }
+
+  .cosmic-asteroid {
+    z-index: 2;
+    opacity: 0.82;
+  }
+
+  .cosmic-asteroid--one { left: 17%; top: 24%; }
+  .cosmic-asteroid--two { left: 31%; top: 76%; transform: scale(0.72); }
+  .cosmic-asteroid--three { left: 78%; top: 58%; transform: scale(1.2); }
+  .cosmic-asteroid--four { left: 88%; top: 37%; transform: scale(0.82); }
+  .cosmic-asteroid--five { left: 22%; top: 58%; transform: scale(0.58); }
+  .cosmic-asteroid--six { left: 68%; top: 79%; transform: scale(0.68); }
+
+  .travel-curtain,
+  .travel-curtain-toggle {
+    display: none;
+  }
+
+  .travel-scene-top,
+  .travel-scene-depth {
+    z-index: 4;
+  }
+
+  .travel-scene-depth {
+    inset: auto 24px 24px 24px;
+  }
+
+  .travel-scene-badge {
+    backdrop-filter: blur(16px);
+  }
+
+  .travel-room-media::after {
+    background: linear-gradient(180deg, transparent 28%, rgba(2, 6, 23, 0.76));
+  }
+
+  .travel-button--primary {
+    background: linear-gradient(135deg, #2563eb, #06b6d4 48%, #a855f7);
+    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.28);
+  }
+
+  .travel-button--secondary,
+  .travel-room-link {
+    color: #eef6ff;
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(125, 211, 252, 0.18);
+  }
+
+  .travel-section {
+    border: 1px solid rgba(125, 211, 252, 0.14);
+    border-radius: 30px;
+    padding: 26px;
+    background:
+      linear-gradient(145deg, rgba(4, 12, 31, 0.86), rgba(18, 13, 45, 0.72)),
+      radial-gradient(ellipse at 10% 0%, rgba(34, 211, 238, 0.14), transparent 36%);
+    box-shadow: 0 26px 84px rgba(0, 0, 0, 0.32);
+  }
+
+  .travel-section-head h2,
+  .travel-section-head p,
+  .travel-link {
+    color: #f8fbff;
+  }
+
+  .travel-section-head p {
+    color: #bdd7f6;
+  }
+
+  .travel-city-card {
+    background:
+      linear-gradient(145deg, rgba(8, 47, 73, 0.92), rgba(13, 148, 136, 0.42)),
+      radial-gradient(circle at 82% 14%, rgba(103, 232, 249, 0.24), transparent 28%);
+    border-color: rgba(94, 234, 212, 0.28);
+  }
+
+  .travel-city-card strong,
+  .travel-room-card h3,
+  .travel-info-card h3,
+  .travel-contact-card h3 {
+    color: #ffffff;
+  }
+
+  .travel-city-card span,
+  .travel-room-meta,
+  .travel-info-card p,
+  .travel-contact-card p,
+  .travel-list,
+  .travel-search-note {
+    color: #cbe1ff;
+  }
+
+  .travel-room-card {
+    background:
+      linear-gradient(180deg, rgba(17, 24, 39, 0.94), rgba(30, 27, 75, 0.86)),
+      radial-gradient(circle at 18% 0%, rgba(129, 140, 248, 0.22), transparent 28%);
+    border-color: rgba(129, 140, 248, 0.28);
+  }
+
+  .travel-info-card {
+    background:
+      linear-gradient(145deg, rgba(19, 78, 74, 0.86), rgba(8, 13, 31, 0.9)),
+      radial-gradient(circle at 100% 0%, rgba(45, 212, 191, 0.18), transparent 30%);
+    border-color: rgba(45, 212, 191, 0.25);
+  }
+
+  .travel-contact-card {
+    background:
+      linear-gradient(145deg, rgba(76, 29, 149, 0.82), rgba(8, 13, 31, 0.92)),
+      radial-gradient(circle at 4% 0%, rgba(216, 180, 254, 0.20), transparent 32%);
+    border-color: rgba(196, 181, 253, 0.26);
+  }
+
+  .travel-amenity-item {
+    background: rgba(2, 6, 23, 0.44);
+    border: 1px solid rgba(94, 234, 212, 0.16);
+    color: #dbf7ff;
+  }
+
+  .travel-promo-banner {
+    background:
+      linear-gradient(135deg, rgba(251, 191, 36, 0.20), rgba(236, 72, 153, 0.20)),
+      rgba(2, 6, 23, 0.42);
+    border: 1px solid rgba(251, 191, 36, 0.22);
+  }
+
+  .travel-promo-banner strong,
+  .travel-promo-banner span,
+  .travel-promo-chip {
+    color: #fff7ed;
+  }
+
+  @keyframes galaxy-star-drift {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-120px, 90px, 0); }
+  }
+
+  @keyframes galaxy-star-drift-near {
+    from { transform: translate3d(0, 0, 0) scale(1.02); }
+    to { transform: translate3d(180px, -120px, 0) scale(1.02); }
+  }
+
+  @keyframes galaxy-parallax-slow {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-260px, 140px, 0); }
+  }
+
+  @keyframes galaxy-parallax-near {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(320px, -190px, 0) scale(1.04); }
+  }
+
+  @keyframes galaxy-dust-breathe {
+    from { transform: scale(0.98) rotate(-1deg); opacity: 0.22; }
+    to { transform: scale(1.04) rotate(1.2deg); opacity: 0.42; }
+  }
+
+  @keyframes galaxy-twinkle-field {
+    0%, 100% { opacity: 0.32; filter: brightness(0.86); }
+    50% { opacity: 0.72; filter: brightness(1.28); }
+  }
+
+  @keyframes galaxy-nebula-pulse {
+    from { transform: rotate(-18deg) scale(0.96); opacity: 0.32; }
+    to { transform: rotate(-8deg) scale(1.08); opacity: 0.5; }
+  }
+
+  @keyframes galaxy-comet-horizontal {
+    0%, 8% { transform: translate3d(-32vw, 0, 0); opacity: 0; }
+    14%, 74% { opacity: 0.9; }
+    92%, 100% { transform: translate3d(58vw, 0, 0); opacity: 0; }
+  }
+
+  @keyframes galaxy-comet-horizontal-reverse {
+    0%, 8% { transform: translate3d(58vw, 0, 0); opacity: 0; }
+    14%, 74% { opacity: 0.9; }
+    92%, 100% { transform: translate3d(-32vw, 0, 0); opacity: 0; }
+  }
+
+  @keyframes galaxy-comet-fall {
+    0%, 6% { transform: translate3d(0, -44vh, 0); opacity: 0; }
+    12%, 84% { opacity: 0.9; }
+    96%, 100% { transform: translate3d(0, 115vh, 0); opacity: 0; }
+  }
+
+  @keyframes galaxy-comet-rise {
+    0%, 6% { transform: translate3d(0, 115vh, 0); opacity: 0; }
+    12%, 84% { opacity: 0.9; }
+    96%, 100% { transform: translate3d(0, -44vh, 0); opacity: 0; }
+  }
+
+  @keyframes galaxy-spin-slow {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes galaxy-core-breathe {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.06); }
+  }
+
+  @keyframes galaxy-sun-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.12); }
+  }
+
+  @keyframes galaxy-sun-rays {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes galaxy-belt-drift {
+    to { transform: translate(-50%, -50%) rotate(344deg); }
+  }
+
+  @keyframes galaxy-orbit-spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes galaxy-solar-orbit {
+    to { transform: translate(-50%, -50%) rotate(348deg); }
+  }
+
+  @keyframes galaxy-moon-orbit {
+    to { transform: translate(-50%, -50%) rotate(342deg); }
+  }
+
+  @keyframes galaxy-earth-center-drift {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -51.5%) scale(1.025); }
+  }
+
+  @keyframes galaxy-float-small {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-16px); }
+  }
+
+  @keyframes galaxy-band-flow {
+    from { transform: rotate(-17deg) translateX(-24px) scale(0.98); opacity: 0.42; }
+    to { transform: rotate(-12deg) translateX(28px) scale(1.04); opacity: 0.62; }
+  }
+
+  @keyframes galaxy-twinkle {
+    0%, 100% { opacity: 0.46; transform: scale(0.72); }
+    50% { opacity: 1; transform: scale(1.14); }
+  }
+
+  @keyframes galaxy-cluster-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.96); }
+    50% { opacity: 1; transform: scale(1.04); }
+  }
+
+  @keyframes galaxy-earth-drift {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(18px) rotate(6deg); }
+  }
+
+  @keyframes galaxy-ufo-hover {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(-4deg); }
+    50% { transform: translate3d(-18px, -14px, 0) rotate(5deg); }
+  }
+
+  @keyframes galaxy-ufo-beam {
+    0%, 100% { opacity: 0.25; transform: scaleX(0.78); }
+    50% { opacity: 0.7; transform: scaleX(1.08); }
+  }
+
+  @keyframes galaxy-satellite-float {
+    0%, 100% { transform: rotate(-18deg) translateY(0); }
+    50% { transform: rotate(-9deg) translateY(14px); }
+  }
+
+  @keyframes galaxy-astronaut-float {
+    0%, 100% { transform: rotate(12deg) translate3d(0, 0, 0); }
+    50% { transform: rotate(-8deg) translate3d(18px, -18px, 0); }
+  }
+
+  @media (max-width: 760px) {
+    .galaxy-nebula {
+      min-width: 320px;
+      min-height: 220px;
+    }
+
+    .cosmic-orbit--three,
+    .cosmic-orbit--four {
+      transform: translate(-50%, -50%) scale(0.74);
+    }
+
+    .travel-scene-card {
+      min-height: 520px;
+    }
+
+    .cosmic-earth {
+      width: 138px;
+      height: 138px;
+    }
+
+    .cosmic-core {
+      width: 76px;
+      height: 76px;
+      left: 78%;
+      top: 26%;
+    }
+
+    .solar-orbit--jupiter {
+      width: 390px;
+      height: 258px;
+    }
+
+    .solar-orbit--saturn {
+      width: 480px;
+      height: 318px;
+    }
+
+    .moon-orbit {
+      width: 196px;
+      height: 128px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .galaxy-background::before,
+    .galaxy-background::after,
+    .galaxy-nebula,
+    .galaxy-comet,
+    .travel-scene-card::before,
+    .travel-scene-card::after,
+    .cosmic-core,
+    .cosmic-orbit,
+    .solar-orbit,
+    .moon-orbit,
+    .cosmic-planet,
+    .cosmic-earth,
+    .cosmic-ufo,
+    .cosmic-ufo-beam,
+    .cosmic-satellite-craft,
+    .cosmic-astronaut,
+    .galaxy-milkyway,
+    .galaxy-constellation i,
+    .galaxy-star-cluster {
+      animation: none;
+    }
+  }
+</style>
+
 <main class="travel-home" id="travel-home" data-theme="day">
+  <div class="galaxy-background" aria-hidden="true">
+    <span class="galaxy-milkyway"></span>
+    <span class="galaxy-deep-field"></span>
+    <span class="galaxy-dust"></span>
+    <span class="galaxy-near-field"></span>
+    <span class="galaxy-lens-field"></span>
+    <span class="galaxy-nebula galaxy-nebula--one"></span>
+    <span class="galaxy-nebula galaxy-nebula--two"></span>
+    <span class="galaxy-star-cluster galaxy-star-cluster--one"></span>
+    <span class="galaxy-star-cluster galaxy-star-cluster--two"></span>
+    <span class="galaxy-constellation"><i></i><i></i><i></i><i></i></span>
+    <span class="galaxy-comet galaxy-comet--one"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--two"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--three"></span>
+    <span class="galaxy-comet galaxy-comet--four"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--five"></span>
+    <span class="galaxy-comet galaxy-comet--six"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--seven"></span>
+    <span class="galaxy-comet galaxy-comet--eight"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--nine"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--ten"></span>
+    <span class="galaxy-comet galaxy-comet--eleven"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--twelve"></span>
+    <span class="galaxy-comet galaxy-comet--thirteen"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--fourteen"></span>
+    <span class="galaxy-comet galaxy-comet--fifteen"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--sixteen"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--seventeen"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--eighteen"></span>
+    <span class="galaxy-comet galaxy-comet--nineteen"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twenty"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--twentyone"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twentytwo"></span>
+    <span class="galaxy-comet galaxy-comet--twentythree"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--twentyfour"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--twentyfive"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twentysix"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--twentyseven"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twentyeight"></span>
+    <span class="galaxy-comet galaxy-comet--twentynine"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--thirty"></span>
+    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--thirtyone"></span>
+    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--thirtytwo"></span>
+  </div>
   <div class="travel-shell">
     <section class="travel-hero">
       <div class="travel-panel">
         <div class="travel-eyebrow">
           <span class="travel-eyebrow-dot"></span>
-          Bento Resort
+          Hệ thống đặt phòng
         </div>
 
         <h1 class="travel-title">
@@ -2043,25 +4031,6 @@
           <% if (roleMenu) { %>
             <a class="travel-button travel-button--secondary" href="<%= roleMenu.href %>"><%= roleMenu.label %></a>
           <% } %>
-        </div>
-
-        <div class="travel-kpi-row">
-          <article class="travel-kpi">
-            <strong><%= featuredRooms.length %></strong>
-            <span>Phòng nổi bật</span>
-          </article>
-          <article class="travel-kpi">
-            <strong><%= hotels.length %></strong>
-            <span>Khách sạn nội bộ</span>
-          </article>
-          <article class="travel-kpi">
-            <strong><%= cities.length %></strong>
-            <span>Điểm đến</span>
-          </article>
-          <article class="travel-kpi">
-            <strong><%= roomTypes.length %></strong>
-            <span>Dòng phòng</span>
-          </article>
         </div>
 
         <section class="travel-search-card" id="travel-search">
@@ -2132,40 +4101,34 @@
         </section>
       </div>
 
-      <aside class="travel-scene-card" aria-label="Minh họa cảnh quan nghỉ dưỡng">
-        <div class="travel-scene-3d" data-resort-3d>
-          <canvas aria-label="Mô phỏng 3D Bento Resort ven biển"></canvas>
-          <div class="travel-scene-loading" data-resort-3d-loading>Đang dựng Bento Resort 3D...</div>
+      <aside class="travel-scene-card" aria-label="Minh họa ngân hà Bento Resort">
+        <div class="cosmic-scene" aria-hidden="true">
+          <span class="cosmic-star-dust"></span>
+          <span class="cosmic-depth-plane cosmic-depth-plane--one"></span>
+          <span class="cosmic-depth-plane cosmic-depth-plane--two"></span>
+          <span class="cosmic-depth-plane cosmic-depth-plane--three"></span>
+          <span class="cosmic-asteroid-belt"></span>
+          <span class="solar-light-ray"></span>
+          <div class="cosmic-core"></div>
+          <div class="solar-orbit solar-orbit--mercury"><span class="solar-planet solar-planet--mercury"></span></div>
+          <div class="solar-orbit solar-orbit--venus"><span class="solar-planet solar-planet--venus"></span></div>
+          <div class="solar-orbit solar-orbit--mars"><span class="solar-planet solar-planet--mars"></span></div>
+          <div class="solar-orbit solar-orbit--jupiter"><span class="solar-planet solar-planet--jupiter"></span></div>
+          <div class="solar-orbit solar-orbit--saturn"><span class="solar-planet solar-planet--saturn"></span></div>
+          <div class="cosmic-earth" data-earth-3d>
+            <canvas aria-label="Trái Đất 3D dùng texture vệ tinh"></canvas>
+          </div>
+          <div class="moon-orbit"><span class="cosmic-moon"></span></div>
+          <span class="cosmic-asteroid cosmic-asteroid--one"></span>
+          <span class="cosmic-asteroid cosmic-asteroid--two"></span>
+          <span class="cosmic-asteroid cosmic-asteroid--three"></span>
+          <span class="cosmic-asteroid cosmic-asteroid--four"></span>
+          <span class="cosmic-asteroid cosmic-asteroid--five"></span>
+          <span class="cosmic-asteroid cosmic-asteroid--six"></span>
         </div>
-        <div class="travel-curtain" aria-hidden="true">
-          <span class="travel-curtain-valance"></span>
-        </div>
-        <button class="travel-curtain-toggle" type="button" id="travel-theme-toggle" aria-pressed="false" title="Kéo rèm xuống để mở ban đêm">
-          <span class="travel-pull-cord" aria-hidden="true">
-            <span class="travel-pull-knot"></span>
-            <span class="travel-pull-handle"></span>
-          </span>
-          <span class="travel-pull-label" data-theme-label>Kéo xuống đêm</span>
+        <button class="travel-curtain-toggle" type="button" id="travel-theme-toggle" aria-pressed="false" title="Đổi chiều sâu ngân hà">
+          <span class="travel-pull-label" data-theme-label>Đổi ngân hà</span>
         </button>
-        <div class="travel-scene-top">
-          <div class="travel-scene-badge">
-            <strong>3D Resort View</strong>
-            <span>Biển, hồ bơi và khối phòng chuyển động theo thời gian thực.</span>
-          </div>
-          <div class="travel-scene-badge">
-            <strong>Day / Night</strong>
-            <span>Kéo rèm để đổi ánh sáng nghỉ dưỡng ban ngày và ban đêm.</span>
-          </div>
-        </div>
-        <div class="travel-scene-depth" aria-hidden="true">
-          <div class="travel-scene-depth__title">Bento Resort cinematic 3D</div>
-          <div class="travel-scene-depth__chips">
-            <span>Ocean motion</span>
-            <span>Pool deck</span>
-            <span>Resort blocks</span>
-            <span>Palm breeze</span>
-          </div>
-        </div>
       </aside>
     </section>
 
@@ -2300,7 +4263,7 @@
   </div>
 </main>
 
-<script type="module" src="/js/home-3d-resort.js"></script>
+<script type="module" src="/js/home-galaxy-earth.js"></script>
 <script>
   (() => {
     const THEME_KEY = "bento_home_day_night_theme_v1";

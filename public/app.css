@@ -21,10 +21,164 @@ body {
   font-family: "Be Vietnam Pro", system-ui, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 24%),
-    radial-gradient(circle at top right, rgba(244, 196, 108, 0.11), transparent 22%),
-    linear-gradient(180deg, #03101d, #081525 42%, #07111f);
+    radial-gradient(ellipse at 16% 12%, rgba(37, 99, 235, 0.30), transparent 34%),
+    radial-gradient(ellipse at 84% 14%, rgba(168, 85, 247, 0.20), transparent 30%),
+    radial-gradient(ellipse at 52% 108%, rgba(34, 211, 238, 0.16), transparent 42%),
+    linear-gradient(180deg, #020617 0%, #071126 46%, #120a2b 78%, #020617 100%) !important;
   min-height: 100vh;
+  isolation: isolate;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -18%;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: 0;
+  opacity: 0.58;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.90) 0 0.8px, transparent 1.8px),
+    radial-gradient(circle, rgba(125, 211, 252, 0.58) 0 1px, transparent 2.2px),
+    radial-gradient(circle, rgba(196, 181, 253, 0.45) 0 0.8px, transparent 1.9px);
+  background-size: 118px 118px, 196px 196px, 310px 310px;
+  animation: system-galaxy-star-drift 120s linear infinite;
+}
+
+body::after {
+  z-index: 0;
+  opacity: 0.34;
+  background:
+    radial-gradient(ellipse at 18% 24%, rgba(59, 130, 246, 0.28), transparent 28%),
+    radial-gradient(ellipse at 72% 18%, rgba(168, 85, 247, 0.20), transparent 28%),
+    radial-gradient(ellipse at 70% 78%, rgba(20, 184, 166, 0.12), transparent 32%),
+    radial-gradient(ellipse at 50% 54%, rgba(255, 255, 255, 0.12), transparent 18%);
+  filter: blur(2px);
+  animation: system-galaxy-nebula-breathe 22s ease-in-out infinite alternate;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+body > main:not(.travel-home) {
+  background: transparent !important;
+}
+
+.system-galaxy-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0 !important;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.system-galaxy-milkyway {
+  position: absolute;
+  left: -12%;
+  top: 28%;
+  width: 124%;
+  height: 220px;
+  border-radius: 50%;
+  transform: rotate(-16deg);
+  opacity: 0.28;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.30), transparent 16%),
+    radial-gradient(ellipse at 42% 52%, rgba(125,211,252,0.20), transparent 32%),
+    radial-gradient(ellipse at 62% 46%, rgba(216,180,254,0.18), transparent 36%);
+  filter: blur(8px);
+  animation: system-galaxy-nebula-breathe 24s ease-in-out infinite alternate;
+}
+
+.system-galaxy-comet {
+  position: absolute;
+  width: 128px;
+  height: 2px;
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(219, 234, 254, 0.98), rgba(103, 232, 249, 0.72), transparent);
+  box-shadow: 0 0 16px rgba(125, 211, 252, 0.40);
+}
+
+.system-galaxy-comet--one {
+  left: 4%;
+  top: 18%;
+  animation: system-comet-horizontal 8.5s linear infinite;
+}
+
+.system-galaxy-comet--two {
+  right: 6%;
+  top: 34%;
+  animation: system-comet-horizontal-reverse 10s linear infinite 1.2s;
+}
+
+.system-galaxy-comet--three {
+  left: 22%;
+  top: 0;
+  width: 92px;
+  transform: rotate(90deg);
+  animation: system-comet-fall 7.8s linear infinite 0.6s;
+}
+
+.system-galaxy-comet--four {
+  left: 62%;
+  bottom: 0;
+  width: 96px;
+  transform: rotate(90deg);
+  animation: system-comet-rise 9s linear infinite 2s;
+}
+
+.system-galaxy-comet--five {
+  left: 0;
+  top: 72%;
+  width: 150px;
+  animation: system-comet-horizontal 11s linear infinite 3.4s;
+}
+
+.system-galaxy-comet--six {
+  right: 0;
+  top: 58%;
+  width: 118px;
+  animation: system-comet-horizontal-reverse 8.8s linear infinite 4.6s;
+}
+
+@keyframes system-galaxy-star-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-120px, 90px, 0); }
+}
+
+@keyframes system-galaxy-nebula-breathe {
+  from { transform: scale(0.98); opacity: 0.22; }
+  to { transform: scale(1.04); opacity: 0.38; }
+}
+
+@keyframes system-comet-horizontal {
+  0%, 8% { transform: translate3d(-32vw, 0, 0); opacity: 0; }
+  14%, 74% { opacity: 0.88; }
+  92%, 100% { transform: translate3d(120vw, 0, 0); opacity: 0; }
+}
+
+@keyframes system-comet-horizontal-reverse {
+  0%, 8% { transform: translate3d(32vw, 0, 0); opacity: 0; }
+  14%, 74% { opacity: 0.88; }
+  92%, 100% { transform: translate3d(-120vw, 0, 0); opacity: 0; }
+}
+
+@keyframes system-comet-fall {
+  0%, 6% { transform: translate3d(0, -42vh, 0) rotate(90deg); opacity: 0; }
+  12%, 84% { opacity: 0.82; }
+  96%, 100% { transform: translate3d(0, 118vh, 0) rotate(90deg); opacity: 0; }
+}
+
+@keyframes system-comet-rise {
+  0%, 6% { transform: translate3d(0, 42vh, 0) rotate(90deg); opacity: 0; }
+  12%, 84% { opacity: 0.82; }
+  96%, 100% { transform: translate3d(0, -118vh, 0) rotate(90deg); opacity: 0; }
 }
 
 a {

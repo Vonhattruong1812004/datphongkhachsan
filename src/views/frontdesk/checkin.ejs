@@ -186,6 +186,225 @@
   .checkin-table-wrap,.ekyc-panel{background:rgba(255,255,255,.82)}
   .checkin-table th{background:#f1f8ff;color:#31465f}
   .checkin-table td{border-bottom-color:rgba(15,23,42,.08)}
+  /* UC2 color separation pass: sections and inputs must not blend */
+  .checkin-shell > form.checkin-card:first-of-type{
+    border-color:rgba(2,132,199,.30);
+    background:linear-gradient(180deg,#f8fdff 0%,#d8eefb 100%) !important;
+    box-shadow:inset 8px 0 0 rgba(14,165,233,.46),0 28px 74px rgba(0,0,0,.18);
+  }
+  .checkin-shell > form.checkin-card:nth-of-type(2){
+    border-color:rgba(15,118,110,.30);
+    background:linear-gradient(180deg,#fbfffd 0%,#d9f4e7 100%) !important;
+    box-shadow:inset 8px 0 0 rgba(16,185,129,.44),0 28px 74px rgba(0,0,0,.18);
+  }
+  .checkin-card h2{
+    color:#102a3d;
+  }
+  .checkin-card > .checkin-muted{
+    color:#546f83;
+    font-size:14px;
+    line-height:1.6;
+  }
+  .checkin-tag{
+    color:#075985;
+    border-color:rgba(14,165,233,.26);
+    background:#dff3ff;
+  }
+  .checkin-field{
+    gap:9px;
+  }
+  .checkin-field label{
+    color:#15354b;
+    font-size:14px;
+  }
+  .checkin-field input{
+    min-height:50px;
+    border:2px solid #7f9aab;
+    border-radius:14px;
+    background:#fff !important;
+    color:#102a3d;
+    box-shadow:
+      0 0 0 4px rgba(255,255,255,.78),
+      0 7px 0 rgba(15,82,112,.13),
+      0 14px 26px rgba(15,82,112,.12);
+  }
+  .checkin-field input[disabled]{
+    color:#344f63;
+    border-color:#91a8b8;
+    background:#f8fafc !important;
+  }
+  .checkin-field input:hover{
+    border-color:#0e7490;
+    box-shadow:
+      0 0 0 4px rgba(255,255,255,.86),
+      0 7px 0 rgba(14,116,144,.18),
+      0 14px 28px rgba(15,82,112,.15);
+  }
+  .checkin-field input:focus{
+    border-color:#0284c7;
+    background:#fff !important;
+    box-shadow:
+      0 0 0 4px rgba(14,165,233,.24),
+      0 7px 0 rgba(2,132,199,.20),
+      0 14px 30px rgba(2,132,199,.18);
+  }
+  .checkin-table-wrap{
+    border:1px solid rgba(15,82,112,.20);
+    background:#fff;
+    box-shadow:0 16px 36px rgba(15,82,112,.10);
+  }
+  .checkin-table{
+    color:#14354b;
+    background:#fff;
+  }
+  .checkin-table th{
+    color:#23485c;
+    background:#dff3ff;
+    border-bottom-color:rgba(15,82,112,.16);
+  }
+  .checkin-table td{
+    border-bottom-color:rgba(15,82,112,.11);
+  }
+  .checkin-table tbody tr:hover{
+    background:#f1f9ff;
+  }
+  .checkin-scope label{
+    border-color:rgba(245,158,11,.34);
+    background:linear-gradient(135deg,#fff2cc 0%,#ffe4a3 100%);
+    color:#14354b;
+    box-shadow:inset 6px 0 0 #f59e0b;
+  }
+  .checkin-confirm label{
+    border-color:rgba(15,118,110,.34);
+    background:linear-gradient(135deg,#d8fbe8 0%,#bff3d5 100%);
+    color:#14354b;
+    box-shadow:inset 6px 0 0 #059669;
+  }
+  .checkin-scope label:has(input:checked),
+  .checkin-confirm label:has(input:checked){
+    border-color:#0284c7;
+    background:linear-gradient(135deg,#dff3ff 0%,#bfe7ff 100%);
+  }
+  .checkin-table input[type="checkbox"],
+  .checkin-scope input,
+  .checkin-confirm input{
+    accent-color:#0284c7;
+  }
+  /* UC2 vivid work zones: match UC1 contrast without changing behavior */
+  .checkin-title{
+    margin-bottom:24px;
+  }
+  .checkin-shell > form.checkin-card:first-of-type{
+    background:
+      radial-gradient(circle at 8% 0%, rgba(255,255,255,.30), transparent 24%),
+      linear-gradient(135deg,#2dd4bf 0%,#0ea5e9 48%,#2563eb 100%) !important;
+    border-color:rgba(186,230,253,.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.38),
+      0 26px 60px rgba(14,165,233,.24),
+      0 14px 30px rgba(15,23,42,.18);
+  }
+  .checkin-shell > form.checkin-card:nth-of-type(2){
+    background:
+      radial-gradient(circle at 10% 0%, rgba(255,255,255,.30), transparent 24%),
+      linear-gradient(135deg,#22c55e 0%,#14b8a6 48%,#0ea5e9 100%) !important;
+    border-color:rgba(187,247,208,.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.38),
+      0 26px 60px rgba(20,184,166,.23),
+      0 14px 30px rgba(15,23,42,.18);
+  }
+  .checkin-shell > form.checkin-card h2,
+  .checkin-shell > form.checkin-card .checkin-muted,
+  .checkin-shell > form.checkin-card .checkin-field label{
+    color:#fff;
+    text-shadow:0 2px 12px rgba(15,23,42,.28);
+  }
+  .checkin-shell > form.checkin-card .checkin-muted strong{
+    color:#fff;
+  }
+  .checkin-shell > form.checkin-card .checkin-tag{
+    color:#083344;
+    background:rgba(255,255,255,.86);
+    border-color:rgba(255,255,255,.72);
+    text-shadow:none;
+  }
+  .checkin-shell > form.checkin-card .checkin-field input{
+    min-height:54px;
+    background:#ffffff !important;
+    border:2px solid rgba(8,47,73,.55);
+    color:#102a3d;
+    box-shadow:
+      0 0 0 4px rgba(255,255,255,.68),
+      0 10px 0 rgba(8,47,73,.14),
+      0 20px 34px rgba(8,47,73,.18);
+  }
+  .checkin-shell > form.checkin-card .checkin-field input[disabled]{
+    background:#f8fbff !important;
+    border-color:rgba(8,47,73,.46);
+    color:#26465c;
+  }
+  .checkin-shell > form.checkin-card .checkin-field input:focus{
+    border-color:#facc15;
+    box-shadow:
+      0 0 0 4px rgba(250,204,21,.32),
+      0 10px 0 rgba(8,47,73,.16),
+      0 20px 34px rgba(8,47,73,.20);
+  }
+  .checkin-shell > form.checkin-card .checkin-search-actions .button:not(.button--primary){
+    background:rgba(255,255,255,.88);
+    color:#0f2d42;
+    border-color:rgba(255,255,255,.72);
+  }
+  .checkin-shell > form.checkin-card .button--primary{
+    background:linear-gradient(135deg,#facc15,#fb7185 48%,#8b5cf6);
+    color:#0f172a;
+    border-color:rgba(255,255,255,.36);
+    box-shadow:0 18px 36px rgba(15,23,42,.24);
+  }
+  .checkin-shell > form.checkin-card .checkin-table-wrap{
+    background:#ffffff;
+    border:2px solid rgba(8,47,73,.20);
+    box-shadow:
+      0 0 0 5px rgba(255,255,255,.56),
+      0 18px 38px rgba(8,47,73,.16);
+  }
+  .checkin-shell > form.checkin-card .checkin-table{
+    color:#123149;
+    background:#ffffff;
+  }
+  .checkin-shell > form.checkin-card .checkin-table th{
+    background:linear-gradient(135deg,#dff3ff,#c7f9ee);
+    color:#16384f;
+  }
+  .checkin-shell > form.checkin-card .checkin-table td{
+    background:#ffffff;
+    border-bottom-color:rgba(8,47,73,.10);
+  }
+  .checkin-shell > form.checkin-card .checkin-table tbody tr:hover td{
+    background:#f1fbff;
+  }
+  .checkin-shell > form.checkin-card .checkin-scope label{
+    background:linear-gradient(135deg,#fde68a 0%,#fb7185 100%);
+    border-color:rgba(255,255,255,.54);
+    color:#102a3d;
+    box-shadow:
+      inset 7px 0 0 rgba(255,255,255,.60),
+      0 16px 28px rgba(15,23,42,.14);
+  }
+  .checkin-shell > form.checkin-card .checkin-confirm label{
+    background:linear-gradient(135deg,#ccfbf1 0%,#86efac 100%);
+    border-color:rgba(255,255,255,.54);
+    color:#102a3d;
+    box-shadow:
+      inset 7px 0 0 rgba(255,255,255,.62),
+      0 16px 28px rgba(15,23,42,.14);
+  }
+  .checkin-shell > form.checkin-card .checkin-scope label:has(input:checked),
+  .checkin-shell > form.checkin-card .checkin-confirm label:has(input:checked){
+    outline:3px solid rgba(255,255,255,.72);
+    border-color:#ffffff;
+  }
   @keyframes checkin-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
   @media (max-width:900px){.checkin-search-grid{grid-template-columns:1fr}.checkin-search-actions{justify-content:flex-start;padding-bottom:0;white-space:normal}}
 </style>
