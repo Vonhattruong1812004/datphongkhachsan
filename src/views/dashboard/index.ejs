@@ -1295,15 +1295,692 @@
   @keyframes dash-earth-float{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-54%) scale(1.03)}}
   @keyframes dash-galaxy-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-120px,90px,0)}}
   @keyframes dash-galaxy-breathe{from{transform:scale(.98);opacity:.18}to{transform:scale(1.04);opacity:.34}}
+  /* Manager home: galaxy visual system, scoped to actor Quan ly only. */
+  .manager-dash.is-quanly{
+    --mgr-ink:#f8fbff;
+    --mgr-muted:#c8d8f4;
+    --mgr-line:rgba(125,211,252,.20);
+    --mgr-card:rgba(8,13,31,.78);
+    --mgr-strong:rgba(13,20,42,.92);
+    --mgr-shadow:0 30px 90px rgba(0,0,0,.38);
+    background:
+      radial-gradient(ellipse at 50% 118%,rgba(34,211,238,.14),transparent 42%),
+      radial-gradient(ellipse at 14% 14%,rgba(37,99,235,.30),transparent 34%),
+      radial-gradient(ellipse at 86% 12%,rgba(168,85,247,.22),transparent 32%),
+      radial-gradient(ellipse at 76% 82%,rgba(20,184,166,.12),transparent 34%),
+      linear-gradient(180deg,#020617 0%,#071126 48%,#140a2f 78%,#020617 100%);
+  }
+  .manager-dash.is-quanly::before{
+    inset:-18%;
+    width:auto;
+    height:auto;
+    border-radius:0;
+    opacity:.44;
+    background:
+      radial-gradient(circle,rgba(255,255,255,.92) 0 .8px,transparent 1.8px),
+      radial-gradient(circle,rgba(125,211,252,.62) 0 1px,transparent 2.2px),
+      radial-gradient(circle,rgba(196,181,253,.48) 0 .8px,transparent 1.9px);
+    background-size:118px 118px,196px 196px,310px 310px;
+    animation:dash-galaxy-drift 130s linear infinite;
+  }
+  .manager-dash.is-quanly::after{
+    inset:-10%;
+    width:auto;
+    height:auto;
+    border-radius:0;
+    opacity:.28;
+    background:
+      radial-gradient(ellipse at 18% 24%,rgba(59,130,246,.30),transparent 29%),
+      radial-gradient(ellipse at 72% 18%,rgba(168,85,247,.24),transparent 30%),
+      radial-gradient(ellipse at 70% 78%,rgba(20,184,166,.16),transparent 34%),
+      radial-gradient(ellipse at 48% 52%,rgba(255,255,255,.12),transparent 18%);
+    filter:blur(2px);
+    animation:dash-galaxy-breathe 22s ease-in-out infinite alternate;
+  }
+  .manager-dash.is-quanly .manager-hero-main,
+  .manager-dash.is-quanly .manager-visual-card,
+  .manager-dash.is-quanly .manager-live-panel,
+  .manager-dash.is-quanly .manager-room-panel{
+    color:#eef6ff;
+    border-color:rgba(125,211,252,.22);
+    background:
+      linear-gradient(145deg,rgba(8,13,31,.88),rgba(15,23,42,.68)),
+      radial-gradient(ellipse at 86% 8%,rgba(103,232,249,.13),transparent 34%);
+    box-shadow:0 28px 90px rgba(0,0,0,.36);
+    backdrop-filter:blur(24px);
+  }
+  .manager-dash.is-quanly .manager-hero-main::before{
+    background:
+      linear-gradient(120deg,rgba(255,255,255,.10),transparent 30%),
+      radial-gradient(circle at 84% 18%,rgba(34,211,238,.20),transparent 32%),
+      radial-gradient(circle at 20% 88%,rgba(168,85,247,.18),transparent 30%);
+  }
+  .manager-dash.is-quanly .manager-chip{
+    color:#e6fbff;
+    border-color:rgba(125,211,252,.26);
+    background:rgba(15,23,42,.74);
+  }
+  .manager-dash.is-quanly .manager-dot{
+    background:#22d3ee;
+    box-shadow:0 0 0 8px rgba(34,211,238,.16),0 0 22px rgba(34,211,238,.46);
+  }
+  .manager-dash.is-quanly .manager-hero h1,
+  .manager-dash.is-quanly .manager-section-head h2,
+  .manager-dash.is-quanly .manager-live-panel .dash-stat h3,
+  .manager-dash.is-quanly .manager-room-panel .dash-stat h3,
+  .manager-dash.is-quanly .manager-room-panel .dash-room h3{
+    color:#ffffff;
+    letter-spacing:0;
+    text-shadow:0 0 28px rgba(103,232,249,.18);
+  }
+  .manager-dash.is-quanly .manager-hero h1{
+    line-height:.98;
+  }
+  .manager-dash.is-quanly .manager-hero h1 span{
+    background:linear-gradient(96deg,#22d3ee 0%,#38bdf8 32%,#a78bfa 66%,#f472b6 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .manager-dash.is-quanly .manager-lead,
+  .manager-dash.is-quanly .manager-section-head p,
+  .manager-dash.is-quanly .manager-live-panel .dash-stat p,
+  .manager-dash.is-quanly .manager-room-panel .dash-stat p,
+  .manager-dash.is-quanly .manager-room-panel .dash-room p{
+    color:#cfe8ff;
+  }
+  .manager-dash.is-quanly .manager-button{
+    color:#eef6ff;
+    background:rgba(15,23,42,.72);
+    border-color:rgba(125,211,252,.22);
+  }
+  .manager-dash.is-quanly .manager-button:hover{
+    border-color:rgba(34,211,238,.48);
+    box-shadow:0 18px 44px rgba(34,211,238,.18);
+  }
+  .manager-dash.is-quanly .manager-button--primary{
+    color:#031827;
+    border-color:transparent;
+    background:linear-gradient(135deg,#67e8f9,#38bdf8 48%,#a78bfa);
+    box-shadow:0 18px 46px rgba(56,189,248,.24);
+  }
+  .manager-dash.is-quanly .manager-visual-card{
+    min-height:370px;
+    padding:0;
+  }
+  .manager-dash.is-quanly .manager-visual-scene{
+    inset:18px;
+    border:1px solid rgba(125,211,252,.18);
+    background:
+      radial-gradient(ellipse at 50% 54%,rgba(37,99,235,.22),transparent 34%),
+      radial-gradient(ellipse at 26% 20%,rgba(168,85,247,.22),transparent 30%),
+      linear-gradient(180deg,#020617 0%,#09112a 55%,#17092c 100%);
+  }
+  .manager-dash.is-quanly .manager-visual-scene::before{
+    inset:18px;
+    border-color:rgba(125,211,252,.22);
+  }
+  .manager-galaxy-scene,
+  .manager-galaxy-scene > *{
+    position:absolute;
+  }
+  .manager-galaxy-scene{
+    inset:0;
+    overflow:hidden;
+  }
+  .manager-galaxy-scene::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(circle at 18% 22%,rgba(255,255,255,.86) 0 1px,transparent 2px),
+      radial-gradient(circle at 36% 68%,rgba(125,211,252,.72) 0 1px,transparent 2px),
+      radial-gradient(circle at 68% 30%,rgba(255,255,255,.80) 0 1px,transparent 2px),
+      radial-gradient(circle at 86% 76%,rgba(196,181,253,.74) 0 1px,transparent 2px);
+    background-size:130px 120px,190px 170px,170px 150px,230px 210px;
+    opacity:.78;
+  }
+  .manager-galaxy-nebula{
+    left:-10%;
+    top:20%;
+    width:128%;
+    height:220px;
+    border-radius:50%;
+    transform:rotate(-15deg);
+    background:
+      radial-gradient(ellipse at 48% 50%,rgba(255,255,255,.24),transparent 16%),
+      radial-gradient(ellipse at 42% 52%,rgba(125,211,252,.18),transparent 32%),
+      radial-gradient(ellipse at 62% 46%,rgba(216,180,254,.15),transparent 36%);
+    filter:blur(7px);
+    opacity:.86;
+  }
+  .manager-earth-3d{
+    z-index:3;
+    left:50%;
+    top:53%;
+    width:184px;
+    height:184px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 42% 42%,rgba(14,165,233,.20),rgba(2,6,23,.08) 70%);
+    box-shadow:0 0 38px rgba(56,189,248,.36),0 0 86px rgba(37,99,235,.24);
+    animation:dash-earth-float 8s ease-in-out infinite;
+  }
+  .manager-earth-3d canvas{
+    width:100%;
+    height:100%;
+    display:block;
+    border-radius:50%;
+  }
+  .manager-earth-3d::before{
+    content:"";
+    position:absolute;
+    inset:-18px;
+    border-radius:50%;
+    background:radial-gradient(circle,transparent 58%,rgba(103,232,249,.18) 68%,transparent 74%);
+    filter:blur(2px);
+    pointer-events:none;
+  }
+  .manager-galaxy-orbit{
+    z-index:2;
+    left:50%;
+    top:53%;
+    border:1px solid rgba(125,211,252,.20);
+    border-radius:50%;
+    transform:translate(-50%,-50%) rotate(var(--orbit-rot,0deg));
+  }
+  .manager-galaxy-orbit--one{--orbit-rot:-12deg;width:300px;height:112px}
+  .manager-galaxy-orbit--two{--orbit-rot:24deg;width:356px;height:148px;border-color:rgba(167,139,250,.18)}
+  .manager-galaxy-orbit--three{--orbit-rot:-38deg;width:240px;height:92px;border-color:rgba(45,212,191,.18)}
+  .manager-galaxy-moon{
+    z-index:4;
+    right:22%;
+    top:30%;
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:radial-gradient(circle at 34% 34%,#ffffff 0 12%,#dbeafe 34%,#94a3b8 100%);
+    box-shadow:0 0 26px rgba(226,232,240,.32);
+  }
+  .manager-galaxy-planet{
+    z-index:2;
+    border-radius:50%;
+    box-shadow:0 0 18px rgba(255,255,255,.18);
+  }
+  .manager-galaxy-planet--mercury{left:17%;top:25%;width:16px;height:16px;background:radial-gradient(circle at 35% 35%,#f8fafc,#94a3b8 66%,#475569)}
+  .manager-galaxy-planet--venus{right:17%;top:18%;width:24px;height:24px;background:radial-gradient(circle at 34% 34%,#fde68a,#f97316 62%,#7c2d12)}
+  .manager-galaxy-planet--mars{left:22%;bottom:22%;width:22px;height:22px;background:radial-gradient(circle at 35% 35%,#fecaca,#ef4444 62%,#7f1d1d)}
+  .manager-galaxy-planet--saturn{right:18%;bottom:20%;width:30px;height:30px;background:radial-gradient(circle at 34% 34%,#fde68a,#b45309 64%,#451a03)}
+  .manager-galaxy-planet--saturn::after{
+    content:"";
+    position:absolute;
+    left:-13px;
+    right:-13px;
+    top:12px;
+    height:7px;
+    border-radius:50%;
+    border-top:2px solid rgba(253,230,138,.72);
+    transform:rotate(-16deg);
+  }
+  .manager-galaxy-comet{
+    z-index:5;
+    width:90px;
+    height:2px;
+    border-radius:999px;
+    background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.92));
+    filter:drop-shadow(0 0 8px rgba(125,211,252,.48));
+    opacity:0;
+    animation:manager-comet 5.8s linear infinite;
+  }
+  .manager-galaxy-comet--one{--comet-rot:0deg;left:-30%;top:17%;animation-delay:.2s}
+  .manager-galaxy-comet--two{--comet-rot:180deg;right:-28%;top:62%;animation-delay:2s}
+  .manager-galaxy-comet--three{--comet-rot:-90deg;left:20%;bottom:-18%;animation-delay:3.7s}
+  .manager-dash.is-quanly .manager-action{
+    color:#fff;
+    min-height:230px;
+    border:1px solid rgba(255,255,255,.28);
+    background:var(--mgr-action-bg);
+    box-shadow:0 28px 82px var(--mgr-glow),0 18px 70px rgba(0,0,0,.28);
+  }
+  .manager-dash.is-quanly .manager-action:nth-child(1){--mgr-action-bg:linear-gradient(135deg,#2dd4bf 0%,#0ea5e9 56%,#2563eb 100%);--mgr-glow:rgba(14,165,233,.24)}
+  .manager-dash.is-quanly .manager-action:nth-child(2){--mgr-action-bg:linear-gradient(135deg,#fbbf24 0%,#fb7185 54%,#db2777 100%);--mgr-glow:rgba(251,113,133,.24)}
+  .manager-dash.is-quanly .manager-action:nth-child(3){--mgr-action-bg:linear-gradient(135deg,#86efac 0%,#22c55e 46%,#14b8a6 100%);--mgr-glow:rgba(34,197,94,.22)}
+  .manager-dash.is-quanly .manager-action:nth-child(4){--mgr-action-bg:linear-gradient(135deg,#fde68a 0%,#fb923c 48%,#ef4444 100%);--mgr-glow:rgba(251,146,60,.24)}
+  .manager-dash.is-quanly .manager-action:nth-child(n+5){--mgr-action-bg:linear-gradient(135deg,#c084fc 0%,#6366f1 52%,#06b6d4 100%);--mgr-glow:rgba(139,92,246,.24)}
+  .manager-dash.is-quanly .manager-action::before{
+    background:linear-gradient(135deg,rgba(255,255,255,.74),rgba(255,255,255,.10));
+    box-shadow:0 18px 46px rgba(255,255,255,.16);
+  }
+  .manager-dash.is-quanly .manager-action::after{
+    background:linear-gradient(90deg,rgba(255,255,255,.90),rgba(255,255,255,.12));
+  }
+  .manager-dash.is-quanly .manager-code{
+    color:#031827;
+    background:rgba(255,255,255,.84);
+    border-color:rgba(255,255,255,.34);
+  }
+  .manager-dash.is-quanly .manager-code::before{
+    content:"UC ";
+  }
+  .manager-dash.is-quanly .manager-action h3,
+  .manager-dash.is-quanly .manager-action p,
+  .manager-dash.is-quanly .manager-open{
+    color:#ffffff;
+  }
+  .manager-dash.is-quanly .manager-action h3{
+    letter-spacing:0;
+    line-height:1.1;
+  }
+  .manager-dash.is-quanly .manager-action p{
+    max-width:100%;
+    text-shadow:0 1px 18px rgba(0,0,0,.22);
+  }
+  .manager-dash.is-quanly .manager-open{
+    position:relative;
+    right:auto;
+    bottom:auto;
+    display:inline-flex;
+    width:max-content;
+    margin-top:18px;
+    border-radius:999px;
+    padding:8px 12px;
+    background:rgba(3,7,18,.30);
+    border:1px solid rgba(255,255,255,.22);
+  }
+  .manager-dash.is-quanly .manager-live-panel .dash-stat,
+  .manager-dash.is-quanly .manager-room-panel .dash-stat,
+  .manager-dash.is-quanly .manager-room-panel .dash-room,
+  .manager-dash.is-quanly .dash-empty{
+    border:1px solid rgba(125,211,252,.18);
+    background:
+      linear-gradient(145deg,rgba(15,23,42,.88),rgba(30,41,59,.58)),
+      radial-gradient(circle at 90% 8%,rgba(34,211,238,.12),transparent 34%);
+    box-shadow:0 20px 58px rgba(0,0,0,.24);
+  }
+  .manager-dash.is-quanly .manager-live-panel .dash-stat strong,
+  .manager-dash.is-quanly .manager-room-panel .dash-stat strong{
+    color:#67e8f9;
+    text-shadow:0 0 24px rgba(34,211,238,.22);
+  }
+  .manager-dash.is-quanly .dash-badge{
+    color:#e6fbff;
+    background:rgba(34,211,238,.16);
+    border:1px solid rgba(125,211,252,.16);
+  }
+  @keyframes manager-comet{
+    0%{opacity:0;transform:translate3d(0,0,0) rotate(var(--comet-rot,0deg))}
+    8%{opacity:.86}
+    100%{opacity:0;transform:translate3d(520px,0,0) rotate(var(--comet-rot,0deg))}
+  }
   @media(max-width:1080px){.manager-hero,.manager-live-grid,.manager-chart-grid{grid-template-columns:1fr}.manager-radar,.manager-visual-card{min-height:320px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4){grid-column:span 6}.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:span 4}}
   @media(max-width:720px){.manager-dash{padding:20px 12px 42px}.manager-hero-main{min-height:auto;padding:24px;border-radius:28px}.manager-hero h1{font-size:42px}.manager-mini-grid,.manager-command{grid-template-columns:1fr}.manager-chart-box{min-height:250px}.manager-section-head{display:block}.manager-chart-actions{justify-content:flex-start;margin-top:10px}.manager-action,.manager-action:nth-child(1),.manager-action:nth-child(4),.manager-live-panel .dash-stat,.manager-live-panel .dash-event,.manager-room-panel .dash-stat,.manager-room-panel .dash-room{grid-column:1/-1}.manager-radar,.manager-visual-card{display:none}}
+  @media(max-width:1080px){
+    .manager-dash.is-quanly .manager-action,
+    .manager-dash.is-quanly .manager-action:nth-child(1),
+    .manager-dash.is-quanly .manager-action:nth-child(2),
+    .manager-dash.is-quanly .manager-action:nth-child(3),
+    .manager-dash.is-quanly .manager-action:nth-child(4){
+      grid-column:span 6;
+    }
+  }
+  @media(max-width:720px){
+    .manager-dash.is-quanly{
+      padding:18px 12px 42px;
+    }
+    .manager-dash.is-quanly .manager-hero{
+      gap:16px;
+    }
+    .manager-dash.is-quanly .manager-visual-card{
+      display:block;
+      min-height:320px;
+      border-radius:28px;
+    }
+    .manager-dash.is-quanly .manager-visual-scene{
+      inset:12px;
+      border-radius:24px;
+    }
+    .manager-dash.is-quanly .manager-earth-3d{
+      width:154px;
+      height:154px;
+    }
+    .manager-dash.is-quanly .manager-galaxy-orbit--one{width:238px;height:92px}
+    .manager-dash.is-quanly .manager-galaxy-orbit--two{width:286px;height:122px}
+    .manager-dash.is-quanly .manager-galaxy-orbit--three{width:198px;height:78px}
+    .manager-dash.is-quanly .manager-action,
+    .manager-dash.is-quanly .manager-action:nth-child(1),
+    .manager-dash.is-quanly .manager-action:nth-child(2),
+    .manager-dash.is-quanly .manager-action:nth-child(3),
+    .manager-dash.is-quanly .manager-action:nth-child(4){
+      grid-column:1 / -1;
+      min-height:210px;
+      padding:24px;
+    }
+    .manager-dash.is-quanly .manager-action h3{
+      font-size:28px;
+    }
+  }
   @media(max-width:1080px){.dash-hero{grid-template-columns:1fr}.dash-orbit{min-height:320px}.admin-watch{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-action,.dash-action:nth-child(1),.dash-action:nth-child(2),.dash-action:nth-child(4),.dash-action:nth-child(5),.dash-stat,.dash-event,.dash-room{grid-column:span 6}}
   @media(max-width:720px){.role-dash{padding:20px 12px 42px}.dash-hero-main{min-height:auto;padding:24px;border-radius:28px}.dash-hero h1{font-size:42px}.dash-pulse-grid,.dash-strip,.admin-watch{grid-template-columns:1fr}.dash-action,.dash-stat,.dash-event,.dash-room{grid-column:1/-1}.dash-section-head{display:block}.dash-sun{right:24px;top:34px;width:84px;height:84px}.dash-rainbow{right:10px;top:112px;width:156px;height:84px}.dash-cloud--two,.dash-leaf--three,.dash-leaf--four,.dash-flower--two{display:none}}
   @media(prefers-reduced-motion:reduce){.role-dash::before,.role-dash::after,.dash-dot,.dash-orbit-stage::before,.dash-orbit-stage::after,.dash-orbit-word,.dash-action,.dash-sun,.dash-cloud,.dash-wave,.dash-leaf,.dash-flower,.dash-petal{animation:none}.dash-action{transform:none;opacity:1}}
+
+  /* Admin dashboard galaxy theme */
+  .role-dash.is-admin{
+    --dash-ink:#f8fbff;
+    --dash-muted:#bdd3ea;
+    --dash-card:rgba(8,18,40,.78);
+    --dash-card-strong:rgba(10,24,52,.92);
+    --dash-line:rgba(125,211,252,.22);
+    --dash-accent:#67e8f9;
+    --dash-soft:rgba(34,211,238,.22);
+    --dash-gradient:linear-gradient(135deg,#22d3ee 0%,#38bdf8 34%,#a78bfa 68%,#facc15 100%);
+    --dash-shadow:0 34px 100px rgba(0,0,0,.42);
+    background:
+      radial-gradient(circle at 18% 14%,rgba(34,211,238,.22),transparent 30%),
+      radial-gradient(circle at 86% 16%,rgba(168,85,247,.22),transparent 34%),
+      radial-gradient(circle at 50% 104%,rgba(20,184,166,.16),transparent 42%),
+      linear-gradient(135deg,#03111f 0%,#071634 42%,#150d31 74%,#070814 100%);
+  }
+  .role-dash.is-admin::before{
+    inset:0;
+    width:auto;
+    height:auto;
+    border-radius:0;
+    opacity:.86;
+    background:
+      radial-gradient(circle,#e0f2fe 0 1px,transparent 2px) 8% 12% / 140px 140px,
+      radial-gradient(circle,#a7f3d0 0 1px,transparent 2px) 46% 24% / 190px 190px,
+      radial-gradient(circle,#fef3c7 0 1px,transparent 2px) 74% 8% / 160px 160px,
+      linear-gradient(115deg,transparent 0 54%,rgba(125,211,252,.28) 55%,transparent 58% 100%);
+    animation:admin-stars 26s linear infinite;
+  }
+  .role-dash.is-admin::after{
+    inset:auto -14% -34% auto;
+    width:640px;
+    height:640px;
+    border-radius:999px;
+    opacity:.48;
+    background:conic-gradient(from 130deg,rgba(34,211,238,.36),rgba(167,139,250,.24),rgba(250,204,21,.18),rgba(20,184,166,.22),rgba(34,211,238,.36));
+    filter:blur(8px);
+    animation:dash-float 14s ease-in-out infinite alternate;
+  }
+  .role-dash.is-admin .dash-shell{
+    max-width:1280px;
+    z-index:1;
+  }
+  .role-dash.is-admin .dash-shell::before{
+    content:"";
+    position:absolute;
+    inset:-26px -18px;
+    z-index:-1;
+    pointer-events:none;
+    background:
+      linear-gradient(90deg,transparent 0 38%,rgba(34,211,238,.18) 39%,transparent 42%),
+      linear-gradient(0deg,transparent 0 60%,rgba(250,204,21,.12) 61%,transparent 63%);
+    opacity:.46;
+  }
+  .role-dash.is-admin .dash-hero{
+    grid-template-columns:minmax(0,1.02fr) 420px;
+    gap:24px;
+  }
+  .role-dash.is-admin .dash-hero-main.is-compact{
+    min-height:344px;
+    padding:38px;
+    border-color:rgba(125,211,252,.28);
+    background:
+      radial-gradient(circle at 88% 18%,rgba(34,211,238,.26),transparent 24%),
+      radial-gradient(circle at 22% 100%,rgba(167,139,250,.18),transparent 30%),
+      linear-gradient(155deg,rgba(8,18,40,.92),rgba(9,20,48,.82));
+    box-shadow:0 34px 110px rgba(0,0,0,.44),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .role-dash.is-admin .dash-hero-main::before{
+    background:
+      linear-gradient(120deg,rgba(255,255,255,.12),transparent 30%),
+      radial-gradient(circle at 90% 12%,rgba(250,204,21,.18),transparent 26%);
+  }
+  .role-dash.is-admin .dash-eyebrow{
+    color:#dffcff;
+    background:rgba(8,18,40,.70);
+    border-color:rgba(125,211,252,.28);
+    box-shadow:0 16px 40px rgba(34,211,238,.12);
+  }
+  .role-dash.is-admin .dash-dot{
+    background:#facc15;
+    box-shadow:0 0 0 7px rgba(250,204,21,.18),0 0 24px rgba(250,204,21,.44);
+  }
+  .role-dash.is-admin .dash-hero h1{
+    max-width:740px;
+    color:#f8fbff;
+    text-shadow:0 18px 46px rgba(0,0,0,.30);
+  }
+  .role-dash.is-admin .dash-hero h1 span{
+    background:linear-gradient(135deg,#67e8f9 0%,#5eead4 32%,#facc15 64%,#fb7185 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .role-dash.is-admin .dash-lead,
+  .role-dash.is-admin .dash-section-head p{
+    color:#c6d8ec;
+  }
+  .role-dash.is-admin .dash-button{
+    color:#f8fbff;
+    border-color:rgba(125,211,252,.26);
+    background:rgba(10,24,52,.72);
+    box-shadow:0 16px 38px rgba(0,0,0,.22);
+  }
+  .role-dash.is-admin .dash-button--primary{
+    color:#061426;
+    border-color:rgba(255,255,255,.20);
+    background:linear-gradient(135deg,#67e8f9,#5eead4 58%,#facc15);
+    box-shadow:0 20px 54px rgba(34,211,238,.28);
+  }
+  .role-dash.is-admin .dash-pulse{
+    border-color:rgba(125,211,252,.20);
+    background:linear-gradient(155deg,rgba(15,23,42,.74),rgba(14,116,144,.22));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .role-dash.is-admin .dash-pulse:nth-child(2){
+    background:linear-gradient(155deg,rgba(88,28,135,.38),rgba(15,23,42,.74));
+  }
+  .role-dash.is-admin .dash-pulse strong{
+    color:#f8fbff;
+  }
+  .role-dash.is-admin .dash-pulse span{
+    color:#a9c7df;
+  }
+  .role-dash.is-admin .dash-orbit.is-compact{
+    min-height:344px;
+    border-color:rgba(125,211,252,.28);
+    background:
+      radial-gradient(circle at 32% 22%,rgba(34,211,238,.18),transparent 26%),
+      linear-gradient(155deg,rgba(8,18,40,.90),rgba(18,12,45,.82));
+    box-shadow:0 34px 110px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .role-dash.is-admin .dash-orbit-stage{
+    inset:20px;
+    border:1px solid rgba(125,211,252,.20);
+    background:
+      radial-gradient(circle at 18% 22%,rgba(255,255,255,.72) 0 1px,transparent 2px),
+      radial-gradient(circle at 78% 18%,rgba(103,232,249,.64) 0 1px,transparent 2px),
+      radial-gradient(circle at 70% 74%,rgba(250,204,21,.72) 0 1px,transparent 2px),
+      radial-gradient(circle at 50% 50%,rgba(34,211,238,.20),transparent 30%),
+      linear-gradient(145deg,#030817,#08152f 58%,#151032);
+  }
+  .role-dash.is-admin .dash-orbit-stage::before{
+    inset:42px;
+    border:1px solid rgba(125,211,252,.25);
+    border-style:dashed;
+    box-shadow:
+      0 0 0 58px rgba(34,211,238,.045),
+      0 0 0 112px rgba(167,139,250,.04);
+    transform:rotate(-12deg);
+  }
+  .role-dash.is-admin .dash-orbit-stage::after{
+    width:154px;
+    height:154px;
+    left:calc(50% - 77px);
+    top:calc(50% - 77px);
+    border-radius:999px;
+    background:
+      radial-gradient(circle at 36% 30%,rgba(255,255,255,.92) 0 7%,rgba(103,232,249,.86) 8% 18%,transparent 19%),
+      radial-gradient(circle at 60% 62%,rgba(45,212,191,.72),transparent 34%),
+      linear-gradient(135deg,#0ea5e9 0%,#2563eb 46%,#7c3aed 76%,#facc15 100%);
+    box-shadow:
+      0 0 0 18px rgba(34,211,238,.08),
+      0 0 64px rgba(34,211,238,.42),
+      0 28px 72px rgba(0,0,0,.38);
+    transform:rotate(0deg);
+  }
+  .role-dash.is-admin .dash-orbit-word{
+    color:#f8fbff;
+    background:rgba(7,16,34,.82);
+    border-color:rgba(125,211,252,.30);
+    box-shadow:0 14px 34px rgba(0,0,0,.32);
+  }
+  .role-dash.is-admin .dash-section-head{
+    margin-top:6px;
+    margin-bottom:18px;
+  }
+  .role-dash.is-admin .dash-section-head h2{
+    color:#f8fbff;
+    font-size:30px;
+    text-shadow:0 12px 34px rgba(0,0,0,.28);
+  }
+  .role-dash.is-admin .dash-grid.is-compact{
+    gap:22px;
+    grid-auto-rows:minmax(230px,auto);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action,
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(1),
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(3),
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4),
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(5),
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(6){
+    grid-column:span 6;
+    min-height:230px;
+    padding:28px;
+    border-color:rgba(255,255,255,.20);
+    color:#f8fbff;
+    box-shadow:0 30px 82px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.16);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(1){
+    --card-accent:#22d3ee;
+    --card-glow:rgba(34,211,238,.36);
+    background:linear-gradient(135deg,#06b6d4 0%,#2563eb 58%,#312e81 100%);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(2){
+    --card-accent:#34d399;
+    --card-glow:rgba(52,211,153,.34);
+    background:linear-gradient(135deg,#10b981 0%,#14b8a6 52%,#2563eb 100%);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(3){
+    --card-accent:#facc15;
+    --card-glow:rgba(250,204,21,.34);
+    background:linear-gradient(135deg,#f59e0b 0%,#fb7185 58%,#7c3aed 100%);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4){
+    --card-accent:#fb7185;
+    --card-glow:rgba(251,113,133,.34);
+    background:linear-gradient(135deg,#fb7185 0%,#a855f7 54%,#0ea5e9 100%);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action::before{
+    width:74px;
+    height:74px;
+    right:26px;
+    top:24px;
+    border-radius:24px;
+    background:
+      radial-gradient(circle at 34% 30%,rgba(255,255,255,.76) 0 16%,transparent 17%),
+      linear-gradient(135deg,rgba(255,255,255,.34),rgba(255,255,255,.08));
+    box-shadow:0 24px 54px rgba(0,0,0,.24),0 0 34px var(--card-glow);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action::after{
+    left:28px;
+    right:28px;
+    bottom:24px;
+    height:6px;
+    background:linear-gradient(90deg,rgba(255,255,255,.94),rgba(255,255,255,.10));
+    opacity:.82;
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-code{
+    color:#061426;
+    background:rgba(255,255,255,.84);
+    border-color:rgba(255,255,255,.44);
+    box-shadow:0 14px 34px rgba(0,0,0,.18);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action h3{
+    max-width:520px;
+    color:#fff;
+    font-size:31px;
+    line-height:1.02;
+    text-shadow:0 14px 34px rgba(0,0,0,.24);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action p{
+    max-width:540px;
+    color:rgba(255,255,255,.88);
+    font-size:15px;
+    line-height:1.55;
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-open{
+    color:#061426;
+    background:rgba(255,255,255,.86);
+    border-radius:999px;
+    padding:8px 13px;
+    box-shadow:0 14px 34px rgba(0,0,0,.18);
+  }
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:hover{
+    transform:translateY(-8px);
+    border-color:rgba(255,255,255,.44);
+    box-shadow:0 42px 110px rgba(0,0,0,.44),0 0 54px var(--card-glow);
+  }
+  @keyframes admin-stars{
+    0%{background-position:8% 12%,46% 24%,74% 8%,0 0}
+    100%{background-position:8% 132%,46% 124%,74% 118%,240px 0}
+  }
+  @media(max-width:1080px){
+    .role-dash.is-admin .dash-hero{
+      grid-template-columns:1fr;
+    }
+    .role-dash.is-admin .dash-grid.is-compact .dash-action,
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(1),
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(2),
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(3),
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4){
+      grid-column:span 6;
+    }
+  }
+  @media(max-width:720px){
+    .role-dash.is-admin{
+      padding:18px 12px 42px;
+    }
+    .role-dash.is-admin .dash-hero-main.is-compact{
+      min-height:auto;
+      padding:26px;
+      border-radius:28px;
+    }
+    .role-dash.is-admin .dash-hero h1{
+      font-size:44px;
+    }
+    .role-dash.is-admin .dash-orbit.is-compact{
+      min-height:320px;
+      border-radius:28px;
+    }
+    .role-dash.is-admin .dash-grid.is-compact .dash-action,
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(1),
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(2),
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(3),
+    .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(4){
+      grid-column:1/-1;
+      min-height:220px;
+      padding:24px;
+    }
+    .role-dash.is-admin .dash-grid.is-compact .dash-action h3{
+      font-size:28px;
+    }
+  }
 </style>
 
 <% if (isManagerLayout) { %>
-<main class="manager-dash <%= isKetoan ? 'is-ketoan' : '' %>">
+<main class="manager-dash <%= isKetoan ? 'is-ketoan' : 'is-quanly' %>">
   <div class="manager-shell">
     <section class="manager-hero" aria-label="Dashboard <%= meta.label %>">
       <div class="manager-hero-main">
@@ -1318,19 +1995,32 @@
       </div>
       <aside class="manager-visual-card" aria-label="Minh họa dashboard <%= meta.label %>">
         <div class="manager-visual-scene">
-          <div class="manager-visual-core"></div>
           <% if (isKetoan) { %>
+            <div class="manager-visual-core"></div>
             <span class="manager-visual-chip">Thống kê tài chính</span>
             <span class="manager-visual-chip">Quản lý doanh thu</span>
             <span class="manager-visual-chip">Quản lý chi phí</span>
             <span class="manager-visual-chip">Xử lý hoàn tiền</span>
+            <div class="manager-visual-wave"></div>
           <% } else { %>
-            <span class="manager-visual-chip">Quản lý khách</span>
-            <span class="manager-visual-chip">Quản lý phòng</span>
-            <span class="manager-visual-chip">Duyệt eKYC</span>
-            <span class="manager-visual-chip">Duyệt hoàn tiền</span>
+            <div class="manager-galaxy-scene" aria-hidden="true">
+              <span class="manager-galaxy-nebula"></span>
+              <span class="manager-galaxy-orbit manager-galaxy-orbit--one"></span>
+              <span class="manager-galaxy-orbit manager-galaxy-orbit--two"></span>
+              <span class="manager-galaxy-orbit manager-galaxy-orbit--three"></span>
+              <span class="manager-galaxy-comet manager-galaxy-comet--one"></span>
+              <span class="manager-galaxy-comet manager-galaxy-comet--two"></span>
+              <span class="manager-galaxy-comet manager-galaxy-comet--three"></span>
+              <span class="manager-galaxy-planet manager-galaxy-planet--mercury"></span>
+              <span class="manager-galaxy-planet manager-galaxy-planet--venus"></span>
+              <span class="manager-galaxy-planet manager-galaxy-planet--mars"></span>
+              <span class="manager-galaxy-planet manager-galaxy-planet--saturn"></span>
+              <div class="manager-earth-3d" data-earth-3d>
+                <canvas aria-label="Trái Đất 3D"></canvas>
+              </div>
+              <span class="manager-galaxy-moon"></span>
+            </div>
           <% } %>
-          <div class="manager-visual-wave"></div>
         </div>
       </aside>
     </section>
