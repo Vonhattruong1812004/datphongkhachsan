@@ -1510,6 +1510,41 @@
       font-size: 20px;
     }
   }
+
+  /* Frontdesk home background standard: static realistic stars, no old drifting layers. */
+  .guest-home {
+    overflow-x: hidden;
+    overflow-y: visible;
+    background:
+      radial-gradient(ellipse at 16% 12%, rgba(37, 99, 235, .30), transparent 34%),
+      radial-gradient(ellipse at 84% 14%, rgba(168, 85, 247, .20), transparent 30%),
+      radial-gradient(ellipse at 52% 108%, rgba(34, 211, 238, .16), transparent 42%),
+      linear-gradient(180deg, #020617 0%, #071126 46%, #120a2b 78%, #020617 100%);
+  }
+
+  .guest-home::before {
+    opacity: .46;
+    animation: none !important;
+    background:
+      radial-gradient(circle, rgba(255,255,255,.92) 0 .8px, transparent 1.8px),
+      radial-gradient(circle, rgba(125,211,252,.62) 0 1px, transparent 2.2px),
+      radial-gradient(circle, rgba(196,181,253,.48) 0 .8px, transparent 1.9px),
+      radial-gradient(circle, rgba(255,255,255,.36) 0 .7px, transparent 1.8px);
+    background-size: 118px 118px, 196px 196px, 310px 310px, 74px 74px;
+    background-position: 0 0, 34px 52px, 72px 8px, 18px 22px;
+  }
+
+  .guest-home::after {
+    opacity: .24;
+    animation: none !important;
+  }
+
+  .guest-live-ring,
+  .guest-live-core,
+  .guest-live-word,
+  .guest-earth-3d::after {
+    animation: none !important;
+  }
 </style>
 
 <main class="guest-home">

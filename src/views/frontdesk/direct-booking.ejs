@@ -98,13 +98,14 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
     }
 
     .system-galaxy-background::before {
-      opacity: .58;
+      opacity: .46;
       background:
-        radial-gradient(circle, rgba(255,255,255,.90) 0 .8px, transparent 1.8px),
-        radial-gradient(circle, rgba(125,211,252,.58) 0 1px, transparent 2.2px),
-        radial-gradient(circle, rgba(196,181,253,.45) 0 .8px, transparent 1.9px);
-      background-size: 118px 118px, 196px 196px, 310px 310px;
-      animation: system-galaxy-star-drift 120s linear infinite;
+        radial-gradient(circle, rgba(255,255,255,.92) 0 .8px, transparent 1.8px),
+        radial-gradient(circle, rgba(125,211,252,.62) 0 1px, transparent 2.2px),
+        radial-gradient(circle, rgba(196,181,253,.48) 0 .8px, transparent 1.9px),
+        radial-gradient(circle, rgba(255,255,255,.36) 0 .7px, transparent 1.8px);
+      background-size: 118px 118px, 196px 196px, 310px 310px, 74px 74px;
+      background-position: 0 0, 34px 52px, 72px 8px, 18px 22px;
     }
 
     .system-galaxy-background::after {
@@ -115,7 +116,6 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         radial-gradient(ellipse at 70% 78%, rgba(20,184,166,.12), transparent 32%),
         radial-gradient(ellipse at 50% 54%, rgba(255,255,255,.12), transparent 18%);
       filter: blur(2px);
-      animation: system-galaxy-nebula-breathe 22s ease-in-out infinite alternate;
     }
 
     .system-galaxy-comet {

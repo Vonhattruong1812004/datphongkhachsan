@@ -238,6 +238,28 @@
   }
   @keyframes co-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(32px,24px,0) rotate(16deg)}}@keyframes co-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}@keyframes co-spin{to{transform:rotate(360deg)}}@keyframes co-breathe{0%,100%{transform:rotate(14deg) scale(1);border-radius:42px}50%{transform:rotate(22deg) scale(1.06);border-radius:64px}}@keyframes co-drift-a{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(12px,-10px,0)}}@keyframes co-drift-b{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-10px,12px,0)}}
   @media(max-width:1080px){.co-hero,.co-pay{grid-template-columns:1fr}.co-room{grid-column:span 6}.co-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.co-summary .co-stat:last-child{grid-column:1/-1}}@media(max-width:760px){.co-shell{padding:20px 12px 42px}.co-hero-main{min-height:auto;padding:24px}.co-hero h1{font-size:42px}.co-row,.co-search-row{grid-template-columns:1fr}.co-search-actions{justify-content:stretch;padding-bottom:0}.co-search-actions .co-button{flex:1;min-width:0}.co-room{grid-column:1/-1}.co-qr{grid-template-columns:1fr}.co-summary{grid-template-columns:1fr}.co-summary .co-stat:last-child{grid-column:auto}}
+
+  /* Frontdesk UC background standard: static galaxy, no floating legacy blobs. */
+  .co-shell{
+    overflow-x:hidden;
+    overflow-y:visible;
+    background:
+      radial-gradient(ellipse at 16% 12%, rgba(37, 99, 235, .30), transparent 34%),
+      radial-gradient(ellipse at 84% 14%, rgba(168, 85, 247, .20), transparent 30%),
+      radial-gradient(ellipse at 52% 108%, rgba(34, 211, 238, .16), transparent 42%),
+      linear-gradient(180deg, #020617 0%, #071126 46%, #120a2b 78%, #020617 100%);
+  }
+  .co-shell::before,
+  .co-shell::after{
+    display:none;
+    animation:none !important;
+  }
+  .co-dot,
+  .co-orbit-stage::before,
+  .co-orbit-stage::after,
+  .co-word{
+    animation:none !important;
+  }
 </style>
 
 <main class="co-shell">

@@ -775,7 +775,7 @@
       radial-gradient(circle,rgba(125,211,252,.58) 0 1px,transparent 2.2px),
       radial-gradient(circle,rgba(196,181,253,.45) 0 .8px,transparent 1.9px);
     background-size:118px 118px,196px 196px,310px 310px;
-    animation:dash-galaxy-drift 120s linear infinite;
+    animation:none;
   }
   .role-dash.is-letan::after{
     inset:-10%;
@@ -789,13 +789,10 @@
       radial-gradient(ellipse at 70% 78%,rgba(20,184,166,.12),transparent 32%),
       radial-gradient(ellipse at 50% 54%,rgba(255,255,255,.12),transparent 18%);
     filter:blur(2px);
-    animation:dash-galaxy-breathe 22s ease-in-out infinite alternate;
+    animation:none;
   }
   .role-dash.is-letan .dash-fantasy-scene{
-    inset:0;
-    opacity:.42;
-    z-index:0;
-    overflow:hidden;
+    display:none;
   }
   .role-dash.is-letan .dash-fantasy-scene::before,
   .role-dash.is-letan .dash-fantasy-scene::after{
@@ -888,6 +885,7 @@
   }
   .role-dash.is-letan .dash-orbit-stage::before{
     border-color:rgba(125,211,252,.22);
+    animation:none;
   }
   .role-dash.is-letan .dash-orbit-stage::after{
     display:none;
@@ -905,7 +903,6 @@
     box-shadow:
       0 0 34px rgba(56,189,248,.34),
       0 0 76px rgba(37,99,235,.22);
-    animation:dash-earth-float 8s ease-in-out infinite;
   }
   .role-dash.is-letan .dash-orbit-earth::before,
   .role-dash.is-letan .dash-orbit-earth::after{
@@ -937,6 +934,7 @@
     height:100%;
   }
   .role-dash.is-letan .dash-orbit-word{
+    display:none;
     z-index:3;
     min-width:104px;
     justify-content:center;

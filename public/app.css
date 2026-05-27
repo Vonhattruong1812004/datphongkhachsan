@@ -40,13 +40,14 @@ body::after {
 
 body::before {
   z-index: 0;
-  opacity: 0.58;
+  opacity: 0.46;
   background:
-    radial-gradient(circle, rgba(255, 255, 255, 0.90) 0 0.8px, transparent 1.8px),
-    radial-gradient(circle, rgba(125, 211, 252, 0.58) 0 1px, transparent 2.2px),
-    radial-gradient(circle, rgba(196, 181, 253, 0.45) 0 0.8px, transparent 1.9px);
-  background-size: 118px 118px, 196px 196px, 310px 310px;
-  animation: system-galaxy-star-drift 120s linear infinite;
+    radial-gradient(circle, rgba(255, 255, 255, 0.92) 0 0.8px, transparent 1.8px),
+    radial-gradient(circle, rgba(125, 211, 252, 0.62) 0 1px, transparent 2.2px),
+    radial-gradient(circle, rgba(196, 181, 253, 0.48) 0 0.8px, transparent 1.9px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.36) 0 0.7px, transparent 1.8px);
+  background-size: 118px 118px, 196px 196px, 310px 310px, 74px 74px;
+  background-position: 0 0, 34px 52px, 72px 8px, 18px 22px;
 }
 
 body::after {
@@ -58,7 +59,6 @@ body::after {
     radial-gradient(ellipse at 70% 78%, rgba(20, 184, 166, 0.12), transparent 32%),
     radial-gradient(ellipse at 50% 54%, rgba(255, 255, 255, 0.12), transparent 18%);
   filter: blur(2px);
-  animation: system-galaxy-nebula-breathe 22s ease-in-out infinite alternate;
 }
 
 body > * {
@@ -92,7 +92,6 @@ body > main:not(.travel-home) {
     radial-gradient(ellipse at 42% 52%, rgba(125,211,252,0.20), transparent 32%),
     radial-gradient(ellipse at 62% 46%, rgba(216,180,254,0.18), transparent 36%);
   filter: blur(8px);
-  animation: system-galaxy-nebula-breathe 24s ease-in-out infinite alternate;
 }
 
 .system-galaxy-comet {
@@ -134,6 +133,7 @@ body > main:not(.travel-home) {
 }
 
 .system-galaxy-comet--five {
+  display: none;
   left: 0;
   top: 72%;
   width: 150px;
@@ -141,6 +141,7 @@ body > main:not(.travel-home) {
 }
 
 .system-galaxy-comet--six {
+  display: none;
   right: 0;
   top: 58%;
   width: 118px;

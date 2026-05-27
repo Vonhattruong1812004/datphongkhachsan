@@ -479,6 +479,28 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Frontdesk UC background standard: static galaxy, no floating legacy blobs. */
+  .fg-shell {
+    overflow-x: hidden;
+    overflow-y: visible;
+    background:
+      radial-gradient(ellipse at 16% 12%, rgba(37, 99, 235, .30), transparent 34%),
+      radial-gradient(ellipse at 84% 14%, rgba(168, 85, 247, .20), transparent 30%),
+      radial-gradient(ellipse at 52% 108%, rgba(34, 211, 238, .16), transparent 42%),
+      linear-gradient(180deg, #020617 0%, #071126 46%, #120a2b 78%, #020617 100%);
+  }
+
+  .fg-shell::before,
+  .fg-shell::after,
+  .fg-chip-dot {
+    animation: none !important;
+  }
+
+  .fg-shell::before,
+  .fg-shell::after {
+    display: none;
+  }
 </style>
 
 <main class="fg-shell">
