@@ -579,6 +579,29 @@
     .inspect-snapshot dl{grid-template-columns:1fr}
     .inspect-button{width:100%}
   }
+
+  /* Keep the galaxy background continuous while scrolling or entering the page. */
+  html,
+  body{
+    min-height:100%;
+    background:#061321;
+    overscroll-behavior-y:none;
+  }
+  body{
+    background:
+      radial-gradient(circle at 10% 8%,rgba(34,211,238,.18),transparent 27%),
+      radial-gradient(circle at 84% 12%,rgba(167,139,250,.15),transparent 30%),
+      radial-gradient(circle at 72% 92%,rgba(251,113,133,.12),transparent 30%),
+      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
+  }
+  .inspect-shell{
+    min-height:100vh;
+    min-height:100dvh;
+    overflow-x:hidden;
+    overflow-y:visible;
+    background-color:#061321;
+    background-attachment:fixed;
+  }
 </style>
 
 <main class="inspect-shell">
