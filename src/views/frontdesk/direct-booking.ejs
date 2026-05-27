@@ -1665,6 +1665,60 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       box-shadow: 0 18px 44px rgba(15, 23, 42, 0.18);
     }
 
+    .service-room-list {
+      overflow: hidden;
+    }
+
+    .service-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .service-table th,
+    .service-table td {
+      padding: 14px 12px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+
+    .service-table th:nth-child(1),
+    .service-table td:nth-child(1) {
+      width: 22%;
+    }
+
+    .service-table th:nth-child(2),
+    .service-table td:nth-child(2) {
+      width: 24%;
+    }
+
+    .service-table th:nth-child(3),
+    .service-table td:nth-child(3) {
+      width: 23%;
+    }
+
+    .service-table th:nth-child(4),
+    .service-table td:nth-child(4) {
+      width: 31%;
+    }
+
+    .service-table .js-service-qty,
+    .service-table .js-service-room {
+      width: 100% !important;
+      min-width: 0;
+      max-width: 100%;
+      margin: 0;
+    }
+
+    .service-table .js-service-qty {
+      text-align: left;
+    }
+
+    .service-table .js-service-room {
+      padding-left: 10px;
+      padding-right: 28px;
+      white-space: nowrap;
+    }
+
     .room-list table {
       color: #14354b;
     }
@@ -1726,6 +1780,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       .button-group { width: 100%; }
       .button, .button-secondary, .button-link { width: 100%; }
       table { display: block; overflow-x: auto; white-space: nowrap; }
+      .service-room-list { overflow-x: auto; }
+      .service-table { min-width: 560px; }
     }
   </style>
 </head>
@@ -2068,8 +2124,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
           <% if (!payload.services.length) { %>
             <div class="caption">Hiện chưa có dịch vụ hoạt động.</div>
           <% } else { %>
-            <div class="room-list">
-              <table>
+            <div class="room-list service-room-list">
+              <table class="service-table">
                 <thead>
                   <tr>
                     <th>Dịch vụ</th>
