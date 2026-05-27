@@ -919,6 +919,60 @@
       font-size: 25px;
     }
   }
+
+  /* Service dashboard visual cleanup: only rotating Earth inside the universe scene. */
+  .svc-live-card {
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    min-height: 382px;
+  }
+
+  .svc-live-card::before {
+    inset: 22px;
+    background:
+      radial-gradient(circle at 18% 20%, rgba(255, 255, 255, .76) 0 1px, transparent 2px),
+      radial-gradient(circle at 74% 28%, rgba(125, 211, 252, .58) 0 1px, transparent 2px),
+      radial-gradient(circle at 82% 70%, rgba(196, 181, 253, .56) 0 1px, transparent 2px),
+      radial-gradient(circle at 50% 50%, rgba(34, 211, 238, .15), transparent 32%),
+      linear-gradient(145deg, rgba(5, 12, 31, .98), rgba(16, 28, 69, .90));
+    background-size: 150px 150px, 190px 190px, 230px 230px, 100% 100%, 100% 100%;
+  }
+
+  .svc-live-ring {
+    inset: 44px;
+    border: 1px solid rgba(148, 210, 255, .22);
+    box-shadow:
+      inset 0 0 46px rgba(34, 211, 238, .06),
+      0 0 70px rgba(34, 211, 238, .09);
+    transform: rotate(-12deg);
+  }
+
+  .svc-live-core,
+  .svc-live-word {
+    display: none !important;
+  }
+
+  .svc-earth-3d {
+    left: 50%;
+    top: 50%;
+    width: clamp(220px, 22vw, 300px);
+    height: clamp(220px, 22vw, 300px);
+  }
+
+  .svc-earth-3d::after {
+    left: -58px;
+    right: -58px;
+    top: 42%;
+    height: 28%;
+  }
+
+  @media (max-width: 760px) {
+    .svc-earth-3d {
+      width: 190px;
+      height: 190px;
+    }
+  }
 </style>
 
 <main class="svc-home">
@@ -942,14 +996,9 @@
 
       <aside class="svc-live-card" aria-label="Minh họa vận hành dịch vụ">
         <div class="svc-live-ring"></div>
-        <div class="svc-live-core"></div>
         <div class="svc-earth-3d" data-earth-3d>
           <canvas aria-label="Trái Đất 3D xoay"></canvas>
         </div>
-        <span class="svc-live-word">Catalog</span>
-        <span class="svc-live-word">Room Check</span>
-        <span class="svc-live-word">Inspection</span>
-        <span class="svc-live-word">Live Board</span>
       </aside>
     </section>
 
