@@ -1035,6 +1035,155 @@
       height: 240px;
     }
   }
+
+  /* Login balance pass: keep the galaxy visual and form proportional on wide screens. */
+  .travel-auth {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+  }
+
+  .travel-auth__shell {
+    width: min(1540px, calc(100vw - 72px));
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: clamp(28px, 4.4vh, 54px) 0;
+    align-items: center;
+  }
+
+  .travel-auth__back {
+    position: absolute;
+    left: 0;
+    top: clamp(18px, 2.4vh, 30px);
+  }
+
+  .travel-auth__layout {
+    grid-template-columns: minmax(560px, .96fr) minmax(480px, .74fr);
+    gap: clamp(32px, 4vw, 58px);
+    align-items: center;
+  }
+
+  .travel-auth__hero--scene-only {
+    min-height: clamp(560px, 72vh, 740px);
+    max-height: 780px;
+  }
+
+  .travel-auth .travel-scene-card {
+    border-radius: 32px;
+  }
+
+  .travel-auth .cosmic-earth {
+    width: clamp(170px, 17vw, 260px);
+    height: clamp(170px, 17vw, 260px);
+  }
+
+  .travel-auth__card {
+    justify-self: center;
+    max-width: 560px;
+    min-height: clamp(440px, 50vh, 560px);
+    padding: clamp(38px, 3.4vw, 54px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .travel-auth .section-eyebrow {
+    margin-bottom: 30px;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+
+  .travel-auth__grid {
+    gap: 22px;
+  }
+
+  .travel-auth__field {
+    gap: 12px;
+  }
+
+  .travel-auth__field label {
+    font-size: 12px;
+    letter-spacing: .08em;
+  }
+
+  .travel-auth__field input {
+    min-height: 64px;
+    border-radius: 18px;
+    padding-inline: 20px;
+    font-size: 16px;
+  }
+
+  .travel-auth__actions {
+    gap: 16px;
+    margin-top: 28px;
+  }
+
+  .travel-auth__button,
+  .travel-auth__link {
+    min-height: 58px;
+    padding: 14px 28px;
+    font-size: 15px;
+  }
+
+  .travel-auth__button {
+    min-width: 190px;
+  }
+
+  .travel-auth__link {
+    min-width: 160px;
+  }
+
+  @media (max-width: 1180px) {
+    .travel-auth__shell {
+      width: min(100vw - 36px, 980px);
+      padding-top: 74px;
+    }
+
+    .travel-auth__back {
+      left: 0;
+      top: 24px;
+    }
+
+    .travel-auth__layout {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .travel-auth__hero--scene-only {
+      min-height: 430px;
+      max-height: 500px;
+    }
+
+    .travel-auth__card {
+      max-width: 620px;
+      min-height: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .travel-auth__shell {
+      width: min(100vw - 24px, 100%);
+      padding-top: 66px;
+    }
+
+    .travel-auth__hero--scene-only {
+      min-height: 320px;
+    }
+
+    .travel-auth__card {
+      padding: 26px;
+    }
+
+    .travel-auth__actions {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .travel-auth__button,
+    .travel-auth__link {
+      width: 100%;
+    }
+  }
 </style>
 
 <main class="travel-auth">
