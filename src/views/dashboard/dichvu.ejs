@@ -679,23 +679,53 @@
   }
 
   .svc-live-card::after {
+    display:none;
+  }
+
+  .svc-earth-3d {
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: 52%;
+    width: 210px;
+    height: 210px;
+    border-radius: 999px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 42% 42%, rgba(14,165,233,.20), rgba(2,6,23,.08) 70%);
+    filter: drop-shadow(0 28px 48px rgba(0, 0, 0, .38));
+    animation: svc-earth-float 8s ease-in-out infinite;
+  }
+
+  .svc-earth-3d::before,
+  .svc-earth-3d::after {
     content: "";
     position: absolute;
-    left: calc(50% - 92px);
-    top: calc(50% - 92px);
-    width: 184px;
-    height: 184px;
-    border-radius: 50%;
-    background:
-      radial-gradient(circle at 34% 28%, rgba(255,255,255,.88) 0 6%, transparent 12%),
-      radial-gradient(circle at 66% 70%, rgba(52,211,153,.52) 0 14%, transparent 25%),
-      radial-gradient(circle at 38% 62%, rgba(34,211,238,.42) 0 18%, transparent 34%),
-      linear-gradient(135deg, #2563eb 0%, #0891b2 42%, #05235f 100%);
-    box-shadow:
-      inset -24px -18px 38px rgba(0, 0, 0, .34),
-      inset 14px 10px 30px rgba(255, 255, 255, .16),
-      0 0 42px rgba(34, 211, 238, .28);
-    animation: svc-planet-breathe 6s ease-in-out infinite;
+    pointer-events: none;
+    border-radius: 999px;
+  }
+
+  .svc-earth-3d::before {
+    inset: -24px;
+    background: radial-gradient(circle, transparent 58%, rgba(103,232,249,.18) 68%, transparent 74%);
+    filter: blur(2px);
+  }
+
+  .svc-earth-3d::after {
+    left: -48px;
+    right: -48px;
+    top: 78px;
+    height: 46px;
+    border-top: 2px solid rgba(191,219,254,.42);
+    transform: rotate(-14deg);
+    opacity: .58;
+  }
+
+  .svc-earth-3d canvas {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .svc-live-ring {
@@ -820,6 +850,11 @@
     50% { transform: scale(1.04); }
   }
 
+  @keyframes svc-earth-float {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -54%) scale(1.035); }
+  }
+
   @keyframes svc-orbit-tilt {
     from { transform: translate(-50%, -50%) rotate(-18deg); }
     to { transform: translate(-50%, -50%) rotate(342deg); }
@@ -856,10 +891,11 @@
       border-radius: 28px;
     }
     .svc-live-card::after {
-      width: 148px;
-      height: 148px;
-      left: calc(50% - 74px);
-      top: calc(50% - 74px);
+      display:none;
+    }
+    .svc-earth-3d {
+      width: 164px;
+      height: 164px;
     }
     .svc-live-core {
       width: 184px;
@@ -907,6 +943,9 @@
       <aside class="svc-live-card" aria-label="Minh họa vận hành dịch vụ">
         <div class="svc-live-ring"></div>
         <div class="svc-live-core"></div>
+        <div class="svc-earth-3d" data-earth-3d>
+          <canvas aria-label="Trái Đất 3D xoay"></canvas>
+        </div>
         <span class="svc-live-word">Catalog</span>
         <span class="svc-live-word">Room Check</span>
         <span class="svc-live-word">Inspection</span>
@@ -937,4 +976,5 @@
   </div>
 </main>
 
+<script type="module" src="/js/home-galaxy-earth.js"></script>
 <%- include("../partials/footer") %>
