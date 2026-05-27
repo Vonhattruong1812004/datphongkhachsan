@@ -1814,20 +1814,52 @@
     transform:rotate(-12deg);
   }
   .role-dash.is-admin .dash-orbit-stage::after{
-    width:154px;
-    height:154px;
-    left:calc(50% - 77px);
-    top:calc(50% - 77px);
-    border-radius:999px;
-    background:
-      radial-gradient(circle at 36% 30%,rgba(255,255,255,.92) 0 7%,rgba(103,232,249,.86) 8% 18%,transparent 19%),
-      radial-gradient(circle at 60% 62%,rgba(45,212,191,.72),transparent 34%),
-      linear-gradient(135deg,#0ea5e9 0%,#2563eb 46%,#7c3aed 76%,#facc15 100%);
+    display:none;
+  }
+  .role-dash.is-admin .dash-orbit-earth{
+    position:absolute;
+    z-index:2;
+    left:50%;
+    top:53%;
+    width:188px;
+    height:188px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 42% 42%,rgba(14,165,233,.20),rgba(2,6,23,.08) 70%);
     box-shadow:
-      0 0 0 18px rgba(34,211,238,.08),
-      0 0 64px rgba(34,211,238,.42),
+      0 0 42px rgba(56,189,248,.34),
+      0 0 88px rgba(37,99,235,.24),
       0 28px 72px rgba(0,0,0,.38);
-    transform:rotate(0deg);
+    animation:dash-earth-float 8s ease-in-out infinite;
+  }
+  .role-dash.is-admin .dash-orbit-earth::before,
+  .role-dash.is-admin .dash-orbit-earth::after{
+    content:"";
+    position:absolute;
+    pointer-events:none;
+  }
+  .role-dash.is-admin .dash-orbit-earth::before{
+    inset:-22px;
+    border-radius:50%;
+    background:radial-gradient(circle,transparent 58%,rgba(103,232,249,.18) 68%,transparent 74%);
+    filter:blur(2px);
+  }
+  .role-dash.is-admin .dash-orbit-earth::after{
+    left:-42px;
+    right:-42px;
+    top:72px;
+    height:42px;
+    border-radius:50%;
+    border-top:2px solid rgba(191,219,254,.42);
+    transform:rotate(-14deg);
+    opacity:.58;
+  }
+  .role-dash.is-admin .dash-orbit-earth canvas{
+    position:relative;
+    z-index:1;
+    display:block;
+    width:100%;
+    height:100%;
   }
   .role-dash.is-admin .dash-orbit-word{
     color:#f8fbff;
@@ -2133,7 +2165,7 @@
       <aside class="dash-orbit <%= isCommandCenter ? 'is-compact' : '' %>" aria-label="Minh họa scope dashboard">
         <div class="dash-orbit-stage">
           <% meta.words.forEach((word) => { %><span class="dash-orbit-word"><%= word %></span><% }) %>
-          <% if (isLetan) { %>
+          <% if (isLetan || isAdmin) { %>
           <div class="dash-orbit-earth" data-earth-3d>
             <canvas aria-label="Trái Đất 3D"></canvas>
           </div>
