@@ -464,6 +464,275 @@
       grid-template-columns:1fr;
     }
   }
+
+  /* UC1 Admin final polish: clearer hierarchy and calmer account cards. */
+  .admin-users{
+    padding-top:28px;
+  }
+  .admin-users__wrap{
+    max-width:1340px;
+  }
+  .admin-hero{
+    grid-template-columns:minmax(0,1.08fr) 380px;
+    gap:26px;
+    margin-bottom:34px;
+  }
+  .admin-hero-main{
+    min-height:320px;
+    border-radius:32px;
+    border-color:rgba(125,211,252,.34);
+    background:
+      radial-gradient(circle at 86% 16%,rgba(103,232,249,.18),transparent 26%),
+      radial-gradient(circle at 16% 90%,rgba(250,204,21,.13),transparent 24%),
+      linear-gradient(145deg,rgba(7,18,42,.96),rgba(12,27,58,.88));
+  }
+  .admin-orbit{
+    min-height:320px;
+    border-radius:32px;
+  }
+  .admin-hero h1{
+    max-width:720px;
+    font-size:clamp(42px,5.2vw,68px);
+    line-height:.98;
+  }
+  .admin-lead{
+    max-width:760px;
+    font-size:16px;
+  }
+  .admin-mini-stat{
+    min-height:96px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    border-radius:20px;
+  }
+  .admin-section{
+    margin-top:34px;
+  }
+  .admin-section-head{
+    align-items:center;
+    margin-bottom:16px;
+  }
+  .admin-section-head h2{
+    font-size:32px;
+    line-height:1.06;
+  }
+  .admin-section-head p{
+    max-width:760px;
+    font-size:14px;
+    line-height:1.55;
+  }
+  .admin-card{
+    border-radius:28px;
+    padding:28px;
+    border-color:rgba(125,211,252,.30);
+    background:
+      linear-gradient(145deg,rgba(8,18,40,.92),rgba(13,25,56,.82)),
+      radial-gradient(circle at 96% 0%,rgba(94,234,212,.10),transparent 34%);
+  }
+  .admin-filter-card{
+    padding-left:34px;
+  }
+  .admin-filter-card::before{
+    width:8px;
+    border-radius:999px;
+    inset:26px auto 26px 18px;
+  }
+  .admin-filter-row{
+    grid-template-columns:minmax(260px,1.35fr) repeat(3,minmax(160px,.82fr)) minmax(170px,auto);
+    gap:18px;
+  }
+  .admin-filter-field,
+  .admin-field{
+    gap:8px;
+  }
+  .admin-filter-field label,
+  .admin-field label{
+    color:#f2fbff;
+    font-size:13px;
+    letter-spacing:.04em;
+  }
+  .admin-filter-field input,
+  .admin-filter-field select,
+  .admin-field input,
+  .admin-field select{
+    min-height:56px;
+    border-radius:18px;
+    border:2px solid #9bdcf4;
+    background:#f9fdff;
+    color:#082033;
+    font-size:15px;
+    font-weight:850;
+    box-shadow:0 12px 26px rgba(0,0,0,.16);
+  }
+  .admin-filter-field input:focus,
+  .admin-filter-field select:focus,
+  .admin-field input:focus,
+  .admin-field select:focus{
+    border-color:#facc15;
+    box-shadow:0 0 0 4px rgba(250,204,21,.18),0 16px 34px rgba(0,0,0,.20);
+  }
+  .admin-filter-actions{
+    align-self:stretch;
+    align-items:end;
+  }
+  .admin-filter-actions .admin-button{
+    min-height:54px;
+  }
+  .admin-quick-filters{
+    gap:12px;
+    margin-top:20px;
+  }
+  .admin-quick-filter{
+    min-height:42px;
+    padding:9px 13px;
+    border-color:rgba(186,230,253,.38);
+    background:rgba(255,255,255,.08);
+    color:#eaf8ff;
+  }
+  .admin-quick-filter.is-active{
+    background:linear-gradient(135deg,#67e8f9,#a7f3d0 58%,#facc15);
+    color:#061826;
+  }
+  .admin-grid{
+    grid-template-columns:repeat(12,minmax(0,1fr));
+    gap:20px;
+  }
+  .admin-field{
+    grid-column:span 4;
+  }
+  .admin-field.is-wide{
+    grid-column:span 6;
+  }
+  .admin-form-actions{
+    margin-top:22px;
+    padding-top:18px;
+    border-top:1px solid rgba(125,211,252,.18);
+  }
+  .admin-form-note{
+    color:#d7edff;
+    font-size:14px;
+    font-weight:800;
+  }
+  .admin-users-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:22px;
+  }
+  .admin-user-card,
+  .admin-user-card:nth-child(4n+2),
+  .admin-user-card:nth-child(4n+3),
+  .admin-user-card:nth-child(4n+4){
+    min-height:0;
+    padding:24px;
+    border-radius:26px;
+    border:1px solid rgba(125,211,252,.28);
+    background:
+      linear-gradient(90deg,var(--role-color,#38bdf8) 0 8px,transparent 8px),
+      radial-gradient(circle at 96% 12%,rgba(255,255,255,.10),transparent 28%),
+      linear-gradient(145deg,rgba(9,20,44,.96),rgba(13,28,61,.88));
+    box-shadow:0 24px 68px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .admin-user-card::before{
+    display:none;
+  }
+  .admin-user-top{
+    align-items:center;
+  }
+  .admin-user-id,
+  .admin-status{
+    min-height:34px;
+    align-items:center;
+    color:#061826;
+    background:#f8fdff;
+    border-color:rgba(186,230,253,.78);
+  }
+  .admin-status{
+    color:#065f46;
+    background:#d1fae5;
+  }
+  .admin-status.is-locked{
+    color:#7f1d1d;
+    background:#ffe4e6;
+  }
+  .admin-user-card h3{
+    margin:20px 0 8px;
+    font-size:28px;
+    line-height:1.05;
+  }
+  .admin-user-card p{
+    color:#d7edff;
+    font-size:15px;
+  }
+  .admin-user-meta{
+    gap:12px;
+    margin-top:18px;
+  }
+  .admin-user-meta div{
+    min-height:74px;
+    border:1px solid rgba(186,230,253,.70);
+    background:#ffffff;
+    box-shadow:0 10px 24px rgba(0,0,0,.14);
+  }
+  .admin-user-meta small{
+    color:#526b80;
+    font-size:11px;
+  }
+  .admin-user-meta strong{
+    color:#061826;
+    font-size:14px;
+  }
+  .admin-user-actions{
+    gap:10px;
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid rgba(125,211,252,.18);
+  }
+  .admin-user-actions .admin-button{
+    min-height:40px;
+    color:#061826;
+    background:#f8fdff;
+    border-color:rgba(186,230,253,.72);
+  }
+  .admin-user-actions .admin-button--danger{
+    color:#fff;
+    background:linear-gradient(135deg,#fb7185,#e11d48);
+    border-color:rgba(255,255,255,.24);
+  }
+  @media(max-width:1080px){
+    .admin-hero,
+    .admin-filter-row{
+      grid-template-columns:1fr;
+    }
+    .admin-users-grid{
+      grid-template-columns:1fr;
+    }
+    .admin-field,
+    .admin-field.is-wide{
+      grid-column:span 6;
+    }
+  }
+  @media(max-width:720px){
+    .admin-hero-main,
+    .admin-card{
+      padding:22px;
+    }
+    .admin-section-head h2{
+      font-size:27px;
+    }
+    .admin-field,
+    .admin-field.is-wide{
+      grid-column:1/-1;
+    }
+    .admin-filter-card{
+      padding-left:24px;
+    }
+    .admin-filter-card::before{
+      inset:22px auto 22px 12px;
+    }
+    .admin-user-card{
+      padding:20px;
+    }
+  }
 </style>
 
 <main class="admin-users">
