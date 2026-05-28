@@ -399,6 +399,17 @@
       font-size:26px;
     }
   }
+
+  /* Admin diagnostics cleanup: keep stars in the fixed system background only. */
+  .health-board{
+    background:transparent !important;
+  }
+  .health-board::before,
+  .health-board::after{
+    display:none !important;
+    content:none !important;
+    animation:none !important;
+  }
 </style>
 
 <main class="health-board">
