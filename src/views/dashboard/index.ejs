@@ -2022,11 +2022,17 @@
   }
 
   .role-dash.is-admin .dash-hero {
-    grid-template-columns: 1fr !important;
+    grid-template-columns:minmax(0,1.02fr) minmax(360px,420px) !important;
   }
 
   .role-dash.is-admin .dash-orbit.is-compact {
-    display: none !important;
+    display:block !important;
+    background:
+      radial-gradient(circle at 32% 22%,rgba(34,211,238,.18),transparent 26%),
+      linear-gradient(155deg,rgba(8,18,40,.90),rgba(18,12,45,.82)) !important;
+  }
+  .role-dash.is-admin .dash-orbit-word{
+    display:none !important;
   }
 </style>
 
