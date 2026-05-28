@@ -475,13 +475,27 @@
 
   /* Admin backup cleanup: avoid duplicate falling stars inside the page content. */
   .backup-workspace{
-    background:transparent !important;
+    overflow:visible !important;
+    background:
+      linear-gradient(135deg,rgba(3,17,31,.86) 0%,rgba(7,22,52,.80) 48%,rgba(22,13,51,.84) 100%) !important;
   }
   .backup-workspace::before,
   .backup-workspace::after{
     display:none !important;
     content:none !important;
     animation:none !important;
+  }
+  .bk-panel,
+  .bk-score,
+  .bk-stat,
+  .bk-card,
+  .bk-file,
+  .bk-empty,
+  .bk-mode-item{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    will-change:auto !important;
+    box-shadow:0 18px 52px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08) !important;
   }
 </style>
 
