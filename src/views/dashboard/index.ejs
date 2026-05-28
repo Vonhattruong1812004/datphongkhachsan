@@ -2007,6 +2007,33 @@
       font-size:28px;
     }
   }
+
+  /* Admin cleanup: keep only the fixed system galaxy; remove local moving stars and old orbit illustration. */
+  .role-dash.is-admin::before,
+  .role-dash.is-admin::after,
+  .role-dash.is-admin .dash-shell::before {
+    animation: none !important;
+  }
+
+  .role-dash.is-admin::before {
+    background:
+      radial-gradient(circle,#e0f2fe 0 1px,transparent 2px) 8% 12% / 220px 220px,
+      radial-gradient(circle,#a7f3d0 0 1px,transparent 2px) 42% 26% / 280px 280px,
+      radial-gradient(circle,#fde68a 0 1px,transparent 2px) 74% 8% / 250px 250px !important;
+  }
+
+  .role-dash.is-admin::after,
+  .role-dash.is-admin .dash-shell::before {
+    display: none !important;
+  }
+
+  .role-dash.is-admin .dash-hero {
+    grid-template-columns: 1fr !important;
+  }
+
+  .role-dash.is-admin .dash-orbit.is-compact {
+    display: none !important;
+  }
 </style>
 
 <% if (isManagerLayout) { %>

@@ -735,18 +735,17 @@
   }
 
   /* UC1 Admin cleanup: no animated illustration on this workflow page. */
+  .admin-users{
+    background: transparent !important;
+  }
   .admin-users::before{
-    opacity:.42;
+    display:none !important;
+    content:none !important;
     animation:none !important;
-    background:
-      radial-gradient(circle,#e0f2fe 0 1px,transparent 2px) 8% 12% / 220px 220px,
-      radial-gradient(circle,#a7f3d0 0 1px,transparent 2px) 42% 26% / 280px 280px,
-      radial-gradient(circle,#fde68a 0 1px,transparent 2px) 74% 8% / 250px 250px,
-      radial-gradient(circle,rgba(255,255,255,.66) 0 1px,transparent 2px) 18% 74% / 320px 320px;
   }
   .admin-users::after{
-    opacity:.24;
-    filter:blur(18px);
+    display:none !important;
+    content:none !important;
   }
   .admin-hero{
     grid-template-columns:1fr;
