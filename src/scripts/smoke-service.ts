@@ -91,6 +91,26 @@ async function requestJson(url: string, init?: RequestInit) {
   return { response, json, text };
 }
 
+async function paySepayDeposit(baseUrl: string, holdId: number, depositAmount: number) {
+  const sepayResult = await requestJson(`${baseUrl}/api/webhook/sepay`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Apikey my-secret-key-123"
+    },
+    body: JSON.stringify({
+      content: `SEVQR ROOM${holdId}`,
+      amount: depositAmount
+    })
+  });
+
+  if (sepayResult.response.status !== 200 || !sepayResult.json?.ok || !sepayResult.json?.transactionId) {
+    throw new Error(`Service smoke SePay deposit failed: ${sepayResult.response.status} ${sepayResult.text}`);
+  }
+
+  return Number(sepayResult.json.transactionId);
+}
+
 async function findActiveAccounts() {
   const result = await query<AccountRow>(
     `
@@ -656,10 +676,24 @@ async function main() {
         services: []
       })
     });
-    if (createBooking.response.status !== 200 || !createBooking.json?.data?.transactionId) {
+    if (createBooking.response.status !== 200 || !createBooking.json?.data?.holdId) {
       throw new Error(`Frontdesk setup booking failed: ${createBooking.response.status} ${createBooking.text}`);
     }
-    transactionId = Number(createBooking.json.data.transactionId);
+    const holdId = Number(createBooking.json.data.holdId);
+    transactionId = await paySepayDeposit(baseUrl, holdId, Number(createBooking.json.data.depositAmount || 0));
+    const holdStatusResult = await requestJson(`${baseUrl}/api/frontdesk/direct-booking/holds/${holdId}`, {
+      headers: {
+        Accept: "application/json",
+        Cookie: frontdesk.cookieJar
+      }
+    });
+    if (
+      holdStatusResult.response.status !== 200 ||
+      holdStatusResult.json?.data?.status !== "PAID" ||
+      Number(holdStatusResult.json?.data?.transactionId || 0) !== transactionId
+    ) {
+      throw new Error(`Service setup direct booking hold did not switch to PAID: ${holdStatusResult.response.status} ${holdStatusResult.text}`);
+    }
 
     const beforeCheckinOrder = await requestJson(`${baseUrl}/api/service/orders`, {
       method: "POST",

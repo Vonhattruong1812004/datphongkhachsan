@@ -475,9 +475,45 @@
 
   /* Admin backup cleanup: avoid duplicate falling stars inside the page content. */
   .backup-workspace{
-    overflow:visible !important;
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden !important;
     background:
       linear-gradient(135deg,rgba(3,17,31,.86) 0%,rgba(7,22,52,.80) 48%,rgba(22,13,51,.84) 100%) !important;
+  }
+  .backup-workspace,
+  .backup-workspace *{
+    box-sizing:border-box;
+  }
+  .bk-wrap,
+  .bk-panel,
+  .bk-score,
+  .bk-stat,
+  .bk-card,
+  .bk-file,
+  .bk-empty,
+  .bk-mode-item,
+  .bk-preview,
+  .bk-meta div,
+  .bk-actions{
+    min-width:0;
+    max-width:100%;
+  }
+  .bk-field input,
+  .bk-field select{
+    min-width:0;
+    max-width:100%;
+  }
+  .bk-panel h1,
+  .bk-file h3,
+  .bk-preview dd,
+  .bk-meta strong,
+  .bk-mode-item span,
+  .bk-score p,
+  .bk-flash,
+  .bk-button{
+    overflow-wrap:anywhere;
+    word-break:break-word;
   }
   .backup-workspace::before,
   .backup-workspace::after{
@@ -496,6 +532,33 @@
     backdrop-filter:none !important;
     will-change:auto !important;
     box-shadow:0 18px 52px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08) !important;
+  }
+  @media(max-width:760px){
+    .bk-wrap{
+      width:100%;
+      max-width:100%;
+    }
+    .bk-panel,
+    .bk-score,
+    .bk-stat,
+    .bk-card,
+    .bk-file,
+    .bk-empty,
+    .bk-mode-item,
+    .bk-preview{
+      overflow:hidden;
+    }
+    .bk-actions{
+      display:grid;
+      grid-template-columns:1fr;
+      width:100%;
+    }
+    .bk-button{
+      width:100%;
+      padding-left:12px;
+      padding-right:12px;
+      text-align:center;
+    }
   }
 </style>
 
