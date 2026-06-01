@@ -369,34 +369,146 @@ export class FrontdeskService {
       ),
       query<FrontdeskActivityEventRow>(
         `
-          SELECT *
-          FROM (
+          WITH booking_scope AS (
+            SELECT
+              gd.magiaodich,
+              gd.madatcho,
+              gd.trangthai,
+              gd.nguondat,
+              gd.ngaygiaodich,
+              gd.ghichu,
+              COALESCE(kh.tenkh, '') AS customer_name,
+              COALESCE(kh.sdt, '') AS customer_phone,
+              COALESCE(kh.cccd, '') AS customer_cccd,
+              COALESCE(room_info.room_summary, '') AS room_summary
+            FROM giaodich gd
+            LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+            LEFT JOIN LATERAL (
+              SELECT STRING_AGG(DISTINCT p.sophong::text, ', ' ORDER BY p.sophong::text) AS room_summary
+              FROM chitietgiaodich ct
+              INNER JOIN phong p ON p.maphong = ct.maphong
+              WHERE ct.magiaodich = gd.magiaodich
+            ) room_info ON TRUE
+            WHERE ($2 = ''
+                OR gd.magiaodich::text ILIKE $3
+                OR COALESCE(gd.madatcho, '') ILIKE $3
+                OR COALESCE(kh.tenkh, '') ILIKE $3
+                OR COALESCE(kh.sdt, '') ILIKE $3
+                OR COALESCE(kh.cccd, '') ILIKE $3
+                OR COALESCE(room_info.room_summary, '') ILIKE $3
+                OR COALESCE(gd.ghichu, '') ILIKE $3)
+          ), note_events AS (
+            SELECT
+              ('booking-note-' || bs.magiaodich || '-' || n.ordinality)::text AS id,
+              'audit'::text AS category,
+              CONCAT('Booking ', COALESCE(NULLIF(bs.madatcho, ''), '#' || bs.magiaodich), ' được cập nhật') AS title,
+              TRIM(n.note) AS detail,
+              CASE
+                WHEN n.note ILIKE '%hủy%' OR n.note ILIKE '%huy%' OR n.note ILIKE '%REFUND_REQUEST%' THEN 'Hủy/Hoàn tiền'
+                WHEN n.note ILIKE '%cập nhật%' OR n.note ILIKE '%cap nhat%' OR n.note ILIKE '%CUSTOMER_EDIT%' OR n.note ILIKE '%sửa%' OR n.note ILIKE '%sua%' THEN 'Sửa booking'
+                WHEN n.note ILIKE '%SEPAY_PAID%' OR n.note ILIKE '%thanh toan%' OR n.note ILIKE '%thanh toán%' THEN 'Thanh toán'
+                WHEN n.note ILIKE '%Them phong%' OR n.note ILIKE '%thêm phòng%' THEN 'Thêm phòng'
+                ELSE 'Audit'
+              END AS source,
+              COALESCE(
+                (regexp_match(n.note, 'at=(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)'))[1]::timestamptz,
+                to_timestamp(replace((regexp_match(n.note, '(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})'))[1], 'T', ' '), 'YYYY-MM-DD HH24:MI:SS'),
+                bs.ngaygiaodich
+              ) AS "happenedAt"
+            FROM booking_scope bs
+            CROSS JOIN LATERAL regexp_split_to_table(COALESCE(bs.ghichu, ''), '\s*\|\s*') WITH ORDINALITY AS n(note, ordinality)
+            WHERE TRIM(n.note) <> ''
+              AND (
+                n.note ILIKE '%hủy%'
+                OR n.note ILIKE '%huy%'
+                OR n.note ILIKE '%cập nhật%'
+                OR n.note ILIKE '%cap nhat%'
+                OR n.note ILIKE '%CUSTOMER_EDIT%'
+                OR n.note ILIKE '%sửa%'
+                OR n.note ILIKE '%sua%'
+                OR n.note ILIKE '%REFUND_REQUEST%'
+                OR n.note ILIKE '%SEPAY_PAID%'
+                OR n.note ILIKE '%Them phong%'
+                OR n.note ILIKE '%Check-in%'
+                OR n.note ILIKE '%Check-out%'
+              )
+          ), detail_note_events AS (
+            SELECT
+              ('detail-note-' || ct.mactgd || '-' || n.ordinality)::text AS id,
+              'audit'::text AS category,
+              CONCAT('P', p.sophong, ' · GD-', gd.magiaodich) AS title,
+              TRIM(n.note) AS detail,
+              CASE
+                WHEN n.note ILIKE '%hủy%' OR n.note ILIKE '%huy%' THEN 'Hủy booking'
+                WHEN n.note ILIKE '%cập nhật%' OR n.note ILIKE '%cap nhat%' OR n.note ILIKE '%sửa%' OR n.note ILIKE '%sua%' THEN 'Sửa booking'
+                ELSE 'Chi tiết phòng'
+              END AS source,
+              COALESCE(
+                to_timestamp(replace((regexp_match(n.note, '(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})'))[1], 'T', ' '), 'YYYY-MM-DD HH24:MI:SS'),
+                gd.ngaygiaodich
+              ) AS "happenedAt"
+            FROM chitietgiaodich ct
+            INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+            INNER JOIN phong p ON p.maphong = ct.maphong
+            LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+            CROSS JOIN LATERAL regexp_split_to_table(COALESCE(ct.ghichu, ''), '\s*\|\s*') WITH ORDINALITY AS n(note, ordinality)
+            WHERE ct.ghichu IS NOT NULL
+              AND ($2 = ''
+                OR gd.magiaodich::text ILIKE $3
+                OR COALESCE(gd.madatcho, '') ILIKE $3
+                OR COALESCE(kh.tenkh, '') ILIKE $3
+                OR COALESCE(kh.sdt, '') ILIKE $3
+                OR COALESCE(kh.cccd, '') ILIKE $3
+                OR p.sophong::text ILIKE $3
+                OR COALESCE(ct.ghichu, '') ILIKE $3)
+              AND TRIM(n.note) <> ''
+              AND (n.note ILIKE '%hủy%' OR n.note ILIKE '%huy%' OR n.note ILIKE '%cập nhật%' OR n.note ILIKE '%cap nhat%' OR n.note ILIKE '%sửa%' OR n.note ILIKE '%sua%')
+          ), room_events AS (
             SELECT
               ('room-' || rsl.malog)::text AS id,
               'room'::text AS category,
               CONCAT('P', p.sophong, ' đổi trạng thái') AS title,
-              CONCAT(COALESCE(NULLIF(rsl.trangthaicu, ''), '?'), ' -> ', COALESCE(NULLIF(rsl.trangthaimoi, ''), '?')) AS detail,
+              CONCAT(COALESCE(NULLIF(rsl.trangthaicu, ''), '?'), ' -> ', COALESCE(NULLIF(rsl.trangthaimoi, ''), '?'), CASE WHEN COALESCE(rsl.ghichu, '') <> '' THEN ' · ' || rsl.ghichu ELSE '' END) AS detail,
               COALESCE(NULLIF(rsl.nguonthaydoi::text, ''), 'HeThong') AS source,
               rsl.thoidiem AS "happenedAt"
             FROM room_status_log rsl
             INNER JOIN phong p ON p.maphong = rsl.maphong
-
-            UNION ALL
-
-            SELECT
-              ('booking-' || gd.magiaodich)::text AS id,
-              'booking'::text AS category,
-              CONCAT('Booking #', gd.magiaodich) AS title,
-              CONCAT(gd.trangthai::text, ' · ', COALESCE(kh.tenkh, 'Khách hàng')) AS detail,
-              COALESCE(NULLIF(gd.nguondat::text, ''), 'Booking') AS source,
-              gd.ngaygiaodich AS "happenedAt"
-            FROM giaodich gd
+            LEFT JOIN giaodich gd ON gd.magiaodich = rsl.magiaodich
             LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
-            WHERE gd.ngaygiaodich IS NOT NULL
+            WHERE rsl.thoidiem >= NOW() - ($1::int * INTERVAL '1 day')
+              AND ($2 = ''
+                OR COALESCE(gd.magiaodich::text, '') ILIKE $3
+                OR COALESCE(gd.madatcho, '') ILIKE $3
+                OR COALESCE(kh.tenkh, '') ILIKE $3
+                OR COALESCE(kh.sdt, '') ILIKE $3
+                OR COALESCE(kh.cccd, '') ILIKE $3
+                OR p.sophong::text ILIKE $3
+                OR COALESCE(rsl.ghichu, '') ILIKE $3)
+          ), booking_created_events AS (
+            SELECT
+              ('booking-' || bs.magiaodich)::text AS id,
+              'booking'::text AS category,
+              CONCAT('Booking ', COALESCE(NULLIF(bs.madatcho, ''), '#' || bs.magiaodich)) AS title,
+              CONCAT(bs.trangthai::text, ' · ', COALESCE(NULLIF(bs.customer_name, ''), 'Khách hàng'), CASE WHEN bs.room_summary <> '' THEN ' · P' || bs.room_summary ELSE '' END) AS detail,
+              COALESCE(NULLIF(bs.nguondat::text, ''), 'Booking') AS source,
+              bs.ngaygiaodich AS "happenedAt"
+            FROM booking_scope bs
+          )
+          SELECT *
+          FROM (
+            SELECT * FROM room_events
+            UNION ALL
+            SELECT * FROM booking_created_events
+            UNION ALL
+            SELECT * FROM note_events
+            UNION ALL
+            SELECT * FROM detail_note_events
           ) events
+          WHERE "happenedAt" >= NOW() - ($1::int * INTERVAL '1 day')
           ORDER BY "happenedAt" DESC
-          LIMIT 12
-        `
+          LIMIT 24
+        `,
+        [days, keyword, search]
       )
     ]);
 
