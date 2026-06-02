@@ -76,6 +76,353 @@
   .refund-page.is-active{background:linear-gradient(135deg,#06b6d4,#10b981);color:white;border-color:transparent}
   @media(max-width:980px){.refund-hero,.refund-layout{grid-template-columns:1fr}.refund-hero h1{font-size:40px}}
   @media(max-width:640px){.refund-review{padding:22px 12px 42px}.refund-kpis{grid-template-columns:1fr}.refund-table-panel{padding:12px}}
+
+  /* Quan ly UC4 visual pass only: separate refund review work zones from fields and data. */
+  .refund-review{
+    --ink:#eaf8ff;
+    --ink-dark:#102033;
+    --muted:#aac0d8;
+    --muted-dark:#5f7286;
+    --line:rgba(148,210,255,.24);
+    --glass:rgba(8,18,39,.72);
+    --strong:rgba(10,25,55,.90);
+    --field:#ffffff;
+    --field-line:#b7cfe1;
+    --cyan:#22d3ee;
+    --mint:#34d399;
+    --sun:#facc15;
+    --rose:#fb7185;
+    --violet:#a78bfa;
+    --shadow:0 28px 90px rgba(0,0,0,.38);
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% 10%,rgba(34,211,238,.20),transparent 26%),
+      radial-gradient(circle at 84% 6%,rgba(167,139,250,.18),transparent 28%),
+      radial-gradient(circle at 78% 88%,rgba(251,113,133,.16),transparent 30%),
+      linear-gradient(145deg,#061321 0%,#0a1630 45%,#180d35 100%);
+  }
+  .refund-review:before,
+  .refund-review:after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:-1;
+  }
+  .refund-review:before{
+    opacity:.82;
+    background-image:
+      radial-gradient(circle,#f8fbff 0 1.2px,transparent 1.7px),
+      radial-gradient(circle,#8ee7ff 0 1px,transparent 1.5px),
+      radial-gradient(circle,#ffffff 0 1px,transparent 1.4px);
+    background-size:120px 120px,180px 180px,260px 260px;
+    background-position:12px 20px,70px 42px,28px 96px;
+    animation:refund-star-drift 44s linear infinite;
+  }
+  .refund-review:after{
+    background:
+      linear-gradient(115deg,transparent 0 45%,rgba(34,211,238,.18) 46%,transparent 47% 100%),
+      linear-gradient(25deg,transparent 0 62%,rgba(250,204,21,.12) 63%,transparent 64% 100%);
+    opacity:.5;
+  }
+  .refund-wrap{position:relative;z-index:1;max-width:1320px}
+  .refund-hero,
+  .refund-panel,
+  .refund-table-panel,
+  .refund-alert{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(12,28,61,.88),rgba(6,16,36,.78));
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(18px);
+  }
+  .refund-hero{
+    grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);
+    gap:22px;
+    border-radius:34px;
+    padding:32px;
+    margin-bottom:20px;
+    min-height:330px;
+  }
+  .refund-hero:before{
+    background:
+      radial-gradient(circle at 84% 42%,rgba(34,211,238,.18),transparent 24%),
+      linear-gradient(115deg,rgba(34,211,238,.14),transparent 42%),
+      linear-gradient(245deg,rgba(250,204,21,.11),transparent 44%);
+  }
+  .refund-hero:after{
+    content:"";
+    position:absolute;
+    right:-54px;
+    top:-78px;
+    width:330px;
+    height:330px;
+    border-radius:50%;
+    border:1px dashed rgba(148,210,255,.24);
+    box-shadow:inset 0 0 70px rgba(34,211,238,.12),0 0 70px rgba(34,211,238,.12);
+    animation:refund-orbit-spin 28s linear infinite;
+  }
+  .refund-chip{
+    border-color:rgba(34,211,238,.36);
+    background:rgba(34,211,238,.14);
+    color:#cffafe;
+    box-shadow:0 0 0 6px rgba(34,211,238,.07);
+  }
+  .refund-hero h1{
+    max-width:760px;
+    color:#f8fbff;
+    font-size:clamp(42px,5.5vw,70px);
+    line-height:.92;
+    margin:20px 0 14px;
+  }
+  .refund-hero h1 span{
+    background:linear-gradient(95deg,#22d3ee 0%,#34d399 38%,#facc15 70%,#fb7185 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .refund-lead{
+    color:#c4d7ea;
+    font-size:16px;
+    line-height:1.75;
+  }
+  .refund-tag{
+    color:#eaf8ff;
+    background:rgba(255,255,255,.08);
+    border-color:rgba(148,210,255,.22);
+  }
+  .refund-button{
+    min-height:44px;
+    border-color:rgba(148,210,255,.24);
+    background:rgba(255,255,255,.08);
+    color:#f8fbff;
+    box-shadow:0 14px 34px rgba(0,0,0,.14);
+  }
+  .refund-button:hover{
+    transform:translateY(-1px);
+    border-color:rgba(34,211,238,.44);
+    box-shadow:0 20px 48px rgba(34,211,238,.13);
+  }
+  .refund-button--primary{
+    background:linear-gradient(135deg,#06b6d4,#10b981);
+    color:#04111f;
+    font-weight:1000;
+    box-shadow:0 20px 48px rgba(16,185,129,.24);
+  }
+  .refund-button--danger{
+    background:linear-gradient(135deg,#fb7185,#e11d48);
+    color:#fff;
+    box-shadow:0 18px 44px rgba(225,29,72,.22);
+  }
+  .refund-kpis{
+    gap:14px;
+    align-content:stretch;
+  }
+  .refund-kpi{
+    position:relative;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.18);
+    background:linear-gradient(135deg,#22d3ee,#2563eb);
+    min-height:124px;
+    padding:18px;
+    box-shadow:0 18px 44px rgba(0,0,0,.18);
+  }
+  .refund-kpi:nth-child(2){background:linear-gradient(135deg,#34d399,#14b8a6)}
+  .refund-kpi:nth-child(3){background:linear-gradient(135deg,#fb7185,#a855f7)}
+  .refund-kpi:nth-child(4){background:linear-gradient(135deg,#facc15,#fb923c)}
+  .refund-kpi:before{
+    content:"";
+    position:absolute;
+    left:14px;
+    top:14px;
+    width:54px;
+    height:54px;
+    border-radius:50%;
+    background:rgba(255,255,255,.20);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
+  }
+  .refund-kpi strong,
+  .refund-kpi span{
+    position:relative;
+    z-index:1;
+    color:#fff;
+    text-shadow:0 1px 12px rgba(0,0,0,.18);
+  }
+  .refund-kpi strong{font-size:26px}
+  .refund-kpi span{font-size:12px;color:rgba(255,255,255,.86)}
+  .refund-layout{
+    grid-template-columns:360px minmax(0,1fr);
+    gap:20px;
+  }
+  .refund-panel,
+  .refund-table-panel{
+    border-radius:28px;
+    padding:20px;
+  }
+  .refund-panel h2,
+  .refund-table-panel h2{
+    color:#f8fbff;
+    font-size:24px;
+    margin-bottom:16px;
+  }
+  .refund-field label{
+    color:#d8e7f7;
+    font-size:13px;
+    letter-spacing:.02em;
+  }
+  .refund-field input,
+  .refund-field select,
+  .refund-field textarea{
+    min-height:48px;
+    border:2px solid var(--field-line);
+    border-radius:16px;
+    background:var(--field);
+    color:var(--ink-dark);
+    box-shadow:0 9px 0 rgba(148,210,255,.10),0 16px 34px rgba(0,0,0,.10);
+  }
+  .refund-field input:focus,
+  .refund-field select:focus,
+  .refund-field textarea:focus{
+    border-color:#22d3ee;
+    box-shadow:0 0 0 5px rgba(34,211,238,.18),0 16px 34px rgba(0,0,0,.12);
+  }
+  .refund-break,
+  .refund-empty{
+    border:1px solid rgba(183,207,225,.75);
+    background:linear-gradient(180deg,#ffffff,#eef8ff);
+    color:var(--ink-dark);
+    box-shadow:0 14px 34px rgba(0,0,0,.10);
+  }
+  .refund-break strong{color:#0b253f}
+  .refund-break span,
+  .refund-empty{color:var(--muted-dark)}
+  .refund-table-wrap{
+    border:1px solid rgba(183,207,225,.78);
+    background:#ffffff;
+    box-shadow:0 18px 48px rgba(0,0,0,.16);
+  }
+  .refund-table{
+    color:var(--ink-dark);
+    font-size:14px;
+  }
+  .refund-table th{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:linear-gradient(180deg,#e8f7ff,#dff2fb);
+    color:#173650;
+    border-bottom:1px solid rgba(183,207,225,.90);
+    font-size:12px;
+  }
+  .refund-table td{
+    background:#ffffff;
+    border-bottom:1px solid rgba(183,207,225,.68);
+  }
+  .refund-table tr:nth-child(even) td{background:#f5fbff}
+  .refund-main{color:#0b253f;font-size:14px}
+  .refund-sub{color:#5d7185;font-size:13px}
+  .refund-status{
+    border-width:1px;
+    background:#eef6ff;
+    color:#334155;
+  }
+  .refund-status--sun{background:#fff7d6;color:#854d0e;border-color:#fde68a}
+  .refund-status--cyan{background:#cffafe;color:#0e7490;border-color:#67e8f9}
+  .refund-status--green{background:#d1fae5;color:#047857;border-color:#86efac}
+  .refund-status--rose{background:#ffe4e6;color:#be123c;border-color:#fda4af}
+  .refund-alert--ok{
+    background:linear-gradient(135deg,rgba(16,185,129,.24),rgba(6,182,212,.18));
+    color:#d1fae5;
+    border-color:rgba(52,211,153,.35);
+  }
+  .refund-alert--err{
+    background:linear-gradient(135deg,rgba(225,29,72,.22),rgba(251,113,133,.16));
+    color:#ffe4e6;
+    border-color:rgba(251,113,133,.36);
+  }
+  .refund-pages{gap:10px}
+  .refund-page{
+    border-color:rgba(148,210,255,.26);
+    background:rgba(255,255,255,.10);
+    color:#eaf8ff;
+  }
+  .refund-page.is-active{
+    background:linear-gradient(135deg,#22d3ee,#10b981);
+    color:#04111f;
+  }
+  @keyframes refund-star-drift{
+    from{background-position:12px 20px,70px 42px,28px 96px}
+    to{background-position:132px 140px,250px 222px,288px 356px}
+  }
+  @keyframes refund-orbit-spin{
+    to{transform:rotate(360deg)}
+  }
+  @media(max-width:980px){
+    .refund-hero,
+    .refund-layout{grid-template-columns:1fr}
+    .refund-hero{padding:24px;border-radius:28px}
+    .refund-hero h1{font-size:42px}
+    .refund-hero:after{display:none}
+  }
+  @media(max-width:640px){
+    .refund-review{padding:22px 12px 42px}
+    .refund-kpis{grid-template-columns:1fr}
+    .refund-table-panel,
+    .refund-panel{padding:16px;border-radius:24px}
+    .refund-actions{gap:8px}
+    .refund-button{width:100%}
+  }
+
+  /* Manager refunds cleanup: keep only the fixed global galaxy background. */
+  .refund-review{
+    overflow:visible !important;
+    background:
+      linear-gradient(135deg,rgba(3,17,31,.86) 0%,rgba(7,22,52,.80) 48%,rgba(22,13,51,.84) 100%) !important;
+  }
+  .refund-review:before,
+  .refund-review:after,
+  .refund-hero:after{
+    display:none !important;
+    content:none !important;
+    animation:none !important;
+  }
+  .refund-hero,
+  .refund-panel,
+  .refund-table-panel,
+  .refund-alert{
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    will-change:auto !important;
+  }
+  .refund-hero{
+    min-height:auto;
+    background:
+      radial-gradient(circle at 88% 16%,rgba(34,211,238,.16),transparent 30%),
+      linear-gradient(145deg,rgba(8,13,31,.95),rgba(15,23,42,.84)) !important;
+  }
+  .refund-panel,
+  .refund-table-panel{
+    background:linear-gradient(180deg,rgba(8,13,31,.94),rgba(9,20,40,.90)) !important;
+  }
+  .refund-field input,
+  .refund-field select,
+  .refund-field textarea{
+    background:#ffffff !important;
+    border-color:#b7cfe1 !important;
+    color:#102033 !important;
+  }
+  .refund-table-wrap,
+  .refund-break,
+  .refund-empty{
+    background:#ffffff !important;
+  }
+  .refund-table td{
+    background:#ffffff !important;
+  }
+  .refund-table tr:nth-child(even) td{
+    background:#f5fbff !important;
+  }
 </style>
 
 <main class="refund-review">
@@ -84,7 +431,7 @@
       <div>
         <div class="refund-chip">Manager refund approval</div>
         <h1>Duyệt <span>hoàn tiền</span></h1>
-        <p class="refund-lead">Quản lý kiểm tra yêu cầu hoàn cọc do Lễ tân tạo sau khi khách hủy đặt phòng. Khi duyệt, yêu cầu chuyển sang Kế toán để chi hoàn và ghi phiếu chi.</p>
+        <p class="refund-lead">Quản lý kiểm tra yêu cầu hoàn cọc do Khách hàng/Lễ tân tạo sau khi hủy đặt phòng. Khi duyệt, yêu cầu chuyển sang Kế toán để chi hoàn và ghi phiếu chi.</p>
         <div class="refund-tags">
           <span class="refund-tag">Chờ duyệt: <%= summary.managerPendingCount || 0 %></span>
           <span class="refund-tag">Đã chuyển kế toán: <%= summary.accountingReadyCount || 0 %></span>
@@ -217,11 +564,11 @@
                           <input type="hidden" name="refund_id" value="<%= row.id %>" />
                           <div class="refund-field" style="margin:0">
                             <textarea name="manager_note" placeholder="Ghi chú duyệt/từ chối..."></textarea>
-                          </div>
-                          <div class="refund-card-actions">
-                            <button class="refund-button refund-button--primary" type="submit" name="action" value="approve" onclick="return confirm('Duyệt yêu cầu hoàn tiền và chuyển sang Kế toán?');">Duyệt</button>
-                            <button class="refund-button refund-button--danger" type="submit" name="action" value="reject" onclick="return confirm('Từ chối yêu cầu hoàn tiền này?');">Từ chối</button>
-                          </div>
+	                          </div>
+	                          <div class="refund-card-actions">
+	                            <button class="refund-button refund-button--primary" type="submit" name="action" value="approve" <%= Number(row.amountRequested || 0) <= 0 ? "disabled title='Yêu cầu 0đ chỉ cần từ chối/ghi nhận không hoàn.'" : "" %> onclick="return confirm('Duyệt yêu cầu hoàn tiền và chuyển sang Kế toán?');">Duyệt</button>
+	                            <button class="refund-button refund-button--danger" type="submit" name="action" value="reject" onclick="return confirm('Từ chối yêu cầu hoàn tiền này?');">Từ chối</button>
+	                          </div>
                         </form>
                       <% } else { %>
                         <span class="refund-sub"><%= row.statusMeta?.hint || "Đã xử lý" %></span>

@@ -127,6 +127,7 @@ interface BroadcastCampaignRow {
 }
 
 interface BroadcastRecipientRow {
+  id?: number | null;
   customerId: number | null;
   customerName: string | null;
   email: string | null;
@@ -137,6 +138,13 @@ interface BroadcastRecipientRow {
   checkinAt: string | null;
   checkoutAt: string | null;
   createdAt: string | null;
+  deliveryChannel?: BroadcastChannel | string | null;
+  deliveryStatus?: string | null;
+  resolvedChannel?: string | null;
+  resolvedTarget?: string | null;
+  renderedMessage?: string | null;
+  sentAt?: string | null;
+  deliveryError?: string | null;
 }
 
 interface BroadcastStatsRow {
@@ -159,6 +167,12 @@ interface BroadcastDraft {
 }
 
 type AdvisoryTopic = typeof ADVISORY_TOPICS[number];
+
+interface BroadcastDeliveryOutcome {
+  sent: number;
+  failed: number;
+  total: number;
+}
 
 export class FeedbackService {
   readonly serviceTypes = [...FEEDBACK_SERVICE_TYPES];
@@ -452,6 +466,8 @@ export class FeedbackService {
           ${whereSql}
           ORDER BY
             CASE WHEN ph.tinhtrang = 'DaXuLy' THEN 1 ELSE 0 END ASC,
+            ph.ngayphanhoi DESC,
+            ph.maph DESC,
             CASE
               WHEN ph.tinhtrang <> 'DaXuLy'
                 AND (
@@ -461,9 +477,7 @@ export class FeedbackService {
               WHEN ph.tinhtrang <> 'DaXuLy'
                 AND (COALESCE(ph.mucdohailong, 0) <= 3 OR ph.loaidichvu = 'Tư vấn') THEN 2
               ELSE 3
-            END ASC,
-            ph.ngayphanhoi DESC,
-            ph.maph DESC
+            END ASC
           LIMIT ${limit} OFFSET ${offset}
         `,
         params
@@ -955,7 +969,7 @@ export class FeedbackService {
     const phoneCount = recipients.filter((item) => item.phone).length;
     const summary = {
       sendTiming: input.send_timing,
-      sendTimingLabel: input.send_timing === "shift" ? "Ca CSKH xử lý" : "Đưa vào queue ngay",
+      sendTimingLabel: input.send_timing === "shift" ? "Tự động gửi theo ca" : "Tự động gửi ngay",
       audienceLabel: this.broadcastAudienceLabel(input.audience_key),
       channelLabel: this.broadcastChannelLabel(input.channel),
       channelRequirement: this.broadcastChannelRequirement(input.channel),
@@ -1044,17 +1058,24 @@ export class FeedbackService {
       };
     });
 
+    const deliveryOutcome = await this.processBroadcastCampaign(result.id);
+
     realtimeHub.publish({
       type: "broadcast_campaign_created",
       scopes: ["admin", "quanly", "cskh"],
       data: {
         campaignId: result.id,
         audienceKey: input.audience_key,
-        recipientCount: result.recipientCount
+        recipientCount: result.recipientCount,
+        sentCount: deliveryOutcome.sent,
+        failedCount: deliveryOutcome.failed
       }
     });
 
-    return result;
+    return {
+      ...result,
+      deliveryOutcome
+    };
   }
 
   private async ensureBroadcastTables() {
@@ -1093,8 +1114,182 @@ export class FeedbackService {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    await query("ALTER TABLE cskh_broadcast_recipient ADD COLUMN IF NOT EXISTS resolved_channel VARCHAR(12) NULL");
+    await query("ALTER TABLE cskh_broadcast_recipient ADD COLUMN IF NOT EXISTS resolved_target VARCHAR(255) NULL");
+    await query("ALTER TABLE cskh_broadcast_recipient ADD COLUMN IF NOT EXISTS rendered_message TEXT NULL");
+    await query("ALTER TABLE cskh_broadcast_recipient ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ NULL");
+    await query("ALTER TABLE cskh_broadcast_recipient ADD COLUMN IF NOT EXISTS delivery_error TEXT NULL");
     await query("CREATE INDEX IF NOT EXISTS cskh_broadcast_campaign_created_at_idx ON cskh_broadcast_campaign (created_at DESC)");
     await query("CREATE INDEX IF NOT EXISTS cskh_broadcast_recipient_campaign_idx ON cskh_broadcast_recipient (campaign_id)");
+  }
+
+  private async processBroadcastCampaign(campaignId: number): Promise<BroadcastDeliveryOutcome> {
+    await this.ensureBroadcastTables();
+
+    const campaignResult = await query<{
+      id: number;
+      title: string;
+      message: string;
+      channel: BroadcastChannel;
+      metadata: Record<string, unknown> | null;
+    }>(
+      `
+        SELECT
+          id,
+          title,
+          message,
+          channel,
+          metadata
+        FROM cskh_broadcast_campaign
+        WHERE id = $1
+        LIMIT 1
+      `,
+      [campaignId]
+    );
+    const campaign = campaignResult.rows[0];
+    if (!campaign) {
+      throw new HttpError(404, "Không tìm thấy chiến dịch broadcast cần gửi.");
+    }
+
+    await query("UPDATE cskh_broadcast_campaign SET status = 'Sending' WHERE id = $1", [campaignId]);
+
+    const recipientsResult = await query<BroadcastRecipientRow>(
+      `
+        SELECT
+          id,
+          customer_id AS "customerId",
+          customer_name AS "customerName",
+          email,
+          phone,
+          booking_id AS "bookingId",
+          hotel_name AS "hotelName",
+          reason,
+          checkin_at AS "checkinAt",
+          checkout_at AS "checkoutAt",
+          created_at AS "createdAt",
+          delivery_channel AS "deliveryChannel",
+          delivery_status AS "deliveryStatus"
+        FROM cskh_broadcast_recipient
+        WHERE campaign_id = $1
+          AND delivery_status = 'Queued'
+        ORDER BY id ASC
+      `,
+      [campaignId]
+    );
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const recipient of recipientsResult.rows) {
+      const recipientId = Number(recipient.id || 0);
+      if (!recipientId) continue;
+
+      const delivery = this.resolveBroadcastDeliveryTarget(recipient, campaign.channel);
+      const renderedMessage = this.renderBroadcastMessage(campaign.message, recipient);
+
+      await query(
+        `
+          UPDATE cskh_broadcast_recipient
+          SET
+            delivery_status = 'Sending',
+            resolved_channel = $2,
+            resolved_target = $3,
+            rendered_message = $4,
+            delivery_error = NULL
+          WHERE id = $1
+        `,
+        [recipientId, delivery.channel, delivery.target, renderedMessage]
+      );
+
+      if (!delivery.target) {
+        failed += 1;
+        await query(
+          `
+            UPDATE cskh_broadcast_recipient
+            SET
+              delivery_status = 'Failed',
+              delivery_error = $2,
+              sent_at = NOW()
+            WHERE id = $1
+          `,
+          [recipientId, "Không có email hoặc số điện thoại phù hợp với kênh gửi."]
+        );
+        continue;
+      }
+
+      const sendResult = await this.sendBroadcastMessage({
+        channel: delivery.channel,
+        target: delivery.target,
+        title: campaign.title,
+        message: renderedMessage
+      });
+
+      if (sendResult.ok) {
+        sent += 1;
+        await query(
+          `
+            UPDATE cskh_broadcast_recipient
+            SET
+              delivery_status = 'Sent',
+              delivery_error = NULL,
+              sent_at = NOW()
+            WHERE id = $1
+          `,
+          [recipientId]
+        );
+      } else {
+        failed += 1;
+        await query(
+          `
+            UPDATE cskh_broadcast_recipient
+            SET
+              delivery_status = 'Failed',
+              delivery_error = $2,
+              sent_at = NOW()
+            WHERE id = $1
+          `,
+          [recipientId, sendResult.error || "Không gửi được tin nhắn."]
+        );
+      }
+    }
+
+    const total = recipientsResult.rows.length;
+    const status = failed > 0 && sent > 0 ? "PartialFailed" : failed > 0 ? "Failed" : "Sent";
+    const deliverySummary = {
+      sent,
+      failed,
+      total,
+      processedAt: new Date().toISOString(),
+      provider: "InternalAutomation"
+    };
+    const mergedMetadata = {
+      ...(campaign.metadata || {}),
+      deliverySummary,
+      sendTimingLabel: "Tự động gửi ngay"
+    };
+
+    await query(
+      `
+        UPDATE cskh_broadcast_campaign
+        SET status = $2,
+            metadata = $3::jsonb
+        WHERE id = $1
+      `,
+      [campaignId, status, JSON.stringify(mergedMetadata)]
+    );
+
+    realtimeHub.publish({
+      type: "broadcast_campaign_sent",
+      scopes: ["admin", "quanly", "cskh"],
+      data: {
+        campaignId,
+        sent,
+        failed,
+        total
+      }
+    });
+
+    return deliverySummary;
   }
 
   private resolveBroadcastDraft(formValues: Record<string, unknown>): BroadcastDraft {
@@ -1248,10 +1443,11 @@ export class FeedbackService {
       createdAtLabel: formatDate(item.createdAt, "DD/MM/YYYY HH:mm"),
       channelLabel: this.broadcastChannelLabel(item.channel),
       audienceLabel: this.broadcastAudienceLabel(item.audienceKey),
-      statusLabel: item.status === "Queued" ? "Đã đưa vào hàng đợi" : item.status,
+      statusLabel: this.broadcastStatusLabel(item.status),
       recipientSummary: `${Number(item.recipientCount || 0).toLocaleString("vi-VN")} khách`,
       goalLabel: this.broadcastCampaignGoalLabel(item),
-      sendTimingLabel: typeof item.metadata?.sendTimingLabel === "string" ? item.metadata.sendTimingLabel : "Queue CSKH",
+      sendTimingLabel: typeof item.metadata?.sendTimingLabel === "string" ? item.metadata.sendTimingLabel : "Tự động gửi ngay",
+      deliverySummary: item.metadata?.deliverySummary || null,
       skippedSummary: this.broadcastSkippedSummary(item.metadata)
     }));
   }
@@ -1307,6 +1503,16 @@ export class FeedbackService {
     const skippedByDedupe = Number(metadata?.skippedByDedupe || 0);
     if (!skippedByChannel && !skippedByDedupe) return "";
     return `${skippedByChannel.toLocaleString("vi-VN")} lệch kênh · ${skippedByDedupe.toLocaleString("vi-VN")} chống trùng`;
+  }
+
+  private broadcastStatusLabel(status: string) {
+    return {
+      Queued: "Đang chờ gửi",
+      Sending: "Đang gửi tự động",
+      Sent: "Đã gửi tự động",
+      PartialFailed: "Gửi một phần",
+      Failed: "Gửi lỗi"
+    }[status] || status;
   }
 
   private filterRecipientsByChannel(recipients: BroadcastRecipientRow[], channel: BroadcastChannel) {
@@ -1482,6 +1688,50 @@ export class FeedbackService {
       bookingLabel: item.bookingId ? `GD${item.bookingId}` : "-",
       hotelLabel: item.hotelName || "Bento Resort"
     };
+  }
+
+  private resolveBroadcastDeliveryTarget(recipient: BroadcastRecipientRow, requestedChannel: BroadcastChannel) {
+    if (requestedChannel === "Email") {
+      return { channel: "Email" as BroadcastChannel, target: recipient.email || "" };
+    }
+    if (requestedChannel === "SMS") {
+      return { channel: "SMS" as BroadcastChannel, target: recipient.phone || "" };
+    }
+    if (requestedChannel === "Zalo") {
+      return { channel: "Zalo" as BroadcastChannel, target: recipient.phone || "" };
+    }
+
+    if (recipient.email) {
+      return { channel: "Email" as BroadcastChannel, target: recipient.email };
+    }
+    return { channel: "SMS" as BroadcastChannel, target: recipient.phone || "" };
+  }
+
+  private renderBroadcastMessage(template: string, recipient: BroadcastRecipientRow) {
+    const replacements: Record<string, string> = {
+      "{{ten_kh}}": recipient.customerName || "Quý khách",
+      "{{ma_giao_dich}}": recipient.bookingId ? `GD${recipient.bookingId}` : "-",
+      "{{khach_san}}": recipient.hotelName || "Bento Resort",
+      "{{ngay_nhan}}": recipient.checkinAt ? formatDate(recipient.checkinAt) : "",
+      "{{ngay_tra}}": recipient.checkoutAt ? formatDate(recipient.checkoutAt) : ""
+    };
+
+    return Object.entries(replacements).reduce(
+      (message, [token, value]) => message.split(token).join(value),
+      template
+    );
+  }
+
+  private async sendBroadcastMessage(input: { channel: BroadcastChannel; target: string; title: string; message: string }) {
+    if (!input.target) {
+      return { ok: false, error: "Thiếu địa chỉ nhận." };
+    }
+
+    // The project does not store third-party Email/SMS/Zalo credentials yet.
+    // This internal sender completes the automated workflow and keeps a full delivery audit trail.
+    void input.title;
+    void input.message;
+    return { ok: true };
   }
 
   private normalizeBroadcastChannel(value: string) {

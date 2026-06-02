@@ -308,6 +308,441 @@
     .promo-layout>aside,.promo-field-grid,.promo-filter-grid,.promo-table tr[data-promo-row]{grid-template-columns:1fr}
     .promo-table-wrap{margin-top:12px}
   }
+
+  /* CSKH UC4 visual pass only: promotion workspace galaxy separation. */
+  body{
+    background:
+      radial-gradient(circle at 12% 13%,rgba(34,211,238,.18),transparent 28%),
+      radial-gradient(circle at 78% 7%,rgba(168,85,247,.22),transparent 32%),
+      radial-gradient(circle at 86% 88%,rgba(250,204,21,.12),transparent 32%),
+      linear-gradient(135deg,#04111f 0%,#11153c 48%,#210c35 100%);
+    color:#f8fafc;
+  }
+
+  .promo-home{
+    --promo-ink:#f8fafc;
+    --promo-muted:#dbeafe;
+    --promo-line:rgba(125,211,252,.36);
+    --promo-card:rgba(8,18,36,.92);
+    --promo-card-strong:rgba(13,25,49,.96);
+    --promo-cyan:#67e8f9;
+    --promo-mint:#5eead4;
+    --promo-lime:#86efac;
+    --promo-pink:#fb7185;
+    --promo-violet:#a78bfa;
+    --promo-sun:#fde68a;
+    --promo-coral:#fdba74;
+    --promo-shadow:0 28px 78px rgba(0,0,0,.36);
+    max-width:none;
+    min-height:calc(100vh - 84px);
+    padding:34px 18px 62px;
+    color:#f8fafc;
+    background:
+      radial-gradient(circle at 8% 22%,rgba(255,255,255,.70) 0 1px,transparent 2px),
+      radial-gradient(circle at 30% 64%,rgba(125,211,252,.72) 0 1px,transparent 2px),
+      radial-gradient(circle at 54% 18%,rgba(255,255,255,.64) 0 1px,transparent 2px),
+      radial-gradient(circle at 76% 36%,rgba(253,230,138,.72) 0 1px,transparent 2px),
+      radial-gradient(circle at 92% 76%,rgba(255,255,255,.66) 0 1px,transparent 2px),
+      radial-gradient(circle at 12% 12%,rgba(34,211,238,.18),transparent 30%),
+      radial-gradient(circle at 84% 10%,rgba(168,85,247,.20),transparent 34%),
+      radial-gradient(circle at 74% 92%,rgba(251,113,133,.14),transparent 34%),
+      linear-gradient(135deg,#04111f 0%,#101843 52%,#220d35 100%);
+    overflow:hidden;
+  }
+
+  .promo-home::before{
+    inset:0;
+    width:auto;
+    height:auto;
+    right:auto;
+    top:auto;
+    border-radius:0;
+    opacity:.62;
+    background:
+      radial-gradient(circle at 16% 72%,rgba(125,211,252,.78) 0 1px,transparent 2px),
+      radial-gradient(circle at 38% 28%,rgba(255,255,255,.60) 0 1px,transparent 2px),
+      radial-gradient(circle at 68% 62%,rgba(253,230,138,.70) 0 1px,transparent 2px),
+      radial-gradient(circle at 88% 18%,rgba(255,255,255,.66) 0 1px,transparent 2px);
+    animation:none;
+  }
+
+  .promo-home::after{
+    width:780px;
+    height:780px;
+    left:auto;
+    right:-270px;
+    bottom:-360px;
+    border-radius:999px;
+    opacity:.42;
+    background:
+      radial-gradient(circle at 42% 45%,rgba(103,232,249,.25),transparent 0 24%,rgba(167,139,250,.18) 25% 42%,transparent 43%),
+      conic-gradient(from 140deg,rgba(34,211,238,.24),rgba(251,113,133,.18),rgba(250,204,21,.15),rgba(34,211,238,.24));
+    animation:promo-float 18s ease-in-out infinite alternate;
+  }
+
+  .promo-shell{
+    max-width:1280px;
+  }
+
+  .promo-hero-main,
+  .promo-panel,
+  .promo-table-panel{
+    border:1px solid rgba(125,211,252,.36);
+    background:
+      radial-gradient(circle at 10% 15%,rgba(34,211,238,.17),transparent 28%),
+      radial-gradient(circle at 88% 10%,rgba(168,85,247,.18),transparent 32%),
+      linear-gradient(145deg,rgba(8,18,36,.96),rgba(18,20,54,.90));
+    box-shadow:0 26px 72px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter:blur(22px);
+  }
+
+  .promo-hero-main{
+    border-radius:28px;
+    padding:34px;
+    min-height:320px;
+    color:#f8fafc;
+  }
+
+  .promo-hero-main::before{
+    background:
+      linear-gradient(120deg,rgba(255,255,255,.12),transparent 25%),
+      radial-gradient(circle at 84% 24%,rgba(253,230,138,.18),transparent 28%),
+      radial-gradient(circle at 16% 86%,rgba(34,211,238,.14),transparent 26%);
+    opacity:1;
+  }
+
+  .promo-hero-main::after{
+    background:
+      radial-gradient(circle at 50% 50%,rgba(103,232,249,.34),transparent 0 15%,rgba(139,92,246,.20) 16% 32%,transparent 33%),
+      linear-gradient(145deg,rgba(3,7,18,.94),rgba(14,25,59,.82));
+    border:1px solid rgba(125,211,252,.28);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),0 24px 62px rgba(0,0,0,.28);
+  }
+
+  .promo-chip{
+    border:1px solid rgba(253,230,138,.48);
+    background:rgba(15,23,42,.74);
+    color:#fde68a;
+    letter-spacing:0;
+    box-shadow:0 16px 34px rgba(250,204,21,.12);
+  }
+
+  .promo-dot{
+    background:#facc15;
+    box-shadow:0 0 0 7px rgba(250,204,21,.16);
+  }
+
+  .promo-hero h1,
+  .promo-panel h2,
+  .promo-table-panel h2{
+    color:#ffffff;
+    letter-spacing:0;
+    text-shadow:0 12px 34px rgba(0,0,0,.38);
+  }
+
+  .promo-hero h1{
+    max-width:760px;
+    font-size:clamp(44px,5.8vw,76px);
+    line-height:.96;
+  }
+
+  .promo-hero h1 span{
+    background:linear-gradient(96deg,#67e8f9 0%,#86efac 34%,#fde68a 66%,#f9a8d4 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+
+  .promo-lead,
+  .promo-muted,
+  .promo-panel p,
+  .promo-table-panel p,
+  .promo-field-hint{
+    color:#dbeafe;
+    font-weight:800;
+  }
+
+  .promo-button{
+    min-height:48px;
+    border:1px solid rgba(186,230,253,.44);
+    background:rgba(255,255,255,.94);
+    color:#071626;
+    font-size:14px;
+    font-weight:1000;
+    box-shadow:0 14px 36px rgba(0,0,0,.18);
+  }
+
+  .promo-button--primary,
+  .promo-hero-main .promo-button--primary{
+    color:#061826;
+    border-color:rgba(255,255,255,.38);
+    background:linear-gradient(135deg,#22d3ee 0%,#a78bfa 48%,#fb7185 100%);
+    box-shadow:0 20px 54px rgba(103,232,249,.24);
+  }
+
+  .promo-button--danger{
+    color:#ffffff;
+    background:linear-gradient(135deg,#f43f5e,#fb923c);
+  }
+
+  .promo-hero-main .promo-button{
+    border-color:rgba(186,230,253,.44);
+    background:rgba(255,255,255,.94);
+    color:#071626;
+  }
+
+  .promo-mark-line{
+    height:20px;
+    background:rgba(255,255,255,.16);
+    box-shadow:0 14px 34px rgba(2,8,23,.22);
+  }
+
+  .promo-summary{
+    gap:18px;
+    margin:18px 0 22px;
+  }
+
+  .promo-stat{
+    min-height:122px;
+    border:2px solid rgba(255,255,255,.34);
+    border-radius:23px;
+    color:#ffffff;
+    box-shadow:0 20px 48px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.24);
+  }
+
+  .promo-stat:nth-child(1){background:linear-gradient(135deg,#20dfc0 0%,#2da9ff 100%)}
+  .promo-stat:nth-child(2){background:linear-gradient(135deg,#84f68b 0%,#16c7d6 100%)}
+  .promo-stat:nth-child(3){background:linear-gradient(135deg,#facc15 0%,#fb7185 100%)}
+  .promo-stat:nth-child(4){background:linear-gradient(135deg,#fb7185 0%,#f97316 100%)}
+  .promo-stat:nth-child(5){background:linear-gradient(135deg,#a78bfa 0%,#f472b6 100%)}
+  .promo-stat:nth-child(6){background:linear-gradient(135deg,#2dd4bf 0%,#84cc16 100%)}
+  .promo-stat:nth-child(7){background:linear-gradient(135deg,#fdba74 0%,#fb7185 54%,#8b5cf6 100%)}
+  .promo-stat::after{background:radial-gradient(circle,rgba(255,255,255,.26),transparent 70%)}
+
+  .promo-stat strong,
+  .promo-stat span{
+    color:#ffffff;
+    letter-spacing:0;
+    text-shadow:0 2px 12px rgba(0,0,0,.30);
+  }
+
+  .promo-stat strong{font-size:34px}
+
+  .promo-panel,
+  .promo-table-panel{
+    border-radius:26px;
+    padding:24px;
+  }
+
+  .promo-layout,
+  .promo-layout>div{
+    gap:22px;
+  }
+
+  .promo-layout>aside{
+    gap:22px;
+  }
+
+  .promo-field-grid,
+  .promo-filter-grid{
+    gap:16px;
+  }
+
+  .promo-field,
+  .promo-field-grid>*,
+  .promo-filter-grid>*{
+    min-width:0;
+  }
+
+  .promo-field label{
+    color:#e0f2fe;
+    font-size:13px;
+    letter-spacing:0;
+  }
+
+  .promo-field input,
+  .promo-field select,
+  .promo-field textarea{
+    max-width:100%;
+    min-height:56px;
+    border:2px solid rgba(153,246,228,.92);
+    border-radius:18px;
+    background:#ffffff;
+    color:#0f2d42;
+    font-weight:900;
+    box-shadow:0 10px 0 rgba(13,148,136,.16),0 16px 34px rgba(0,0,0,.13);
+    box-sizing:border-box;
+  }
+
+  .promo-field textarea{
+    min-height:150px;
+    line-height:1.65;
+  }
+
+  .promo-field input::placeholder,
+  .promo-field textarea::placeholder{
+    color:#6b879d;
+  }
+
+  .promo-field input:focus,
+  .promo-field select:focus,
+  .promo-field textarea:focus{
+    border-color:#facc15;
+    box-shadow:0 0 0 5px rgba(250,204,21,.20),0 12px 0 rgba(8,47,73,.16),0 18px 38px rgba(0,0,0,.16);
+  }
+
+  .promo-live-pill{
+    border:1px solid rgba(253,230,138,.44);
+    background:rgba(15,23,42,.72);
+    color:#fde68a;
+    letter-spacing:0;
+  }
+
+  .promo-live-pill::before{
+    background:#facc15;
+    box-shadow:0 0 0 6px rgba(250,204,21,.14);
+  }
+
+  .promo-preview,
+  .promo-insight,
+  .promo-empty,
+  .promo-health{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:20px;
+    background:rgba(255,255,255,.95);
+    color:#0f2d42;
+    box-shadow:0 14px 36px rgba(0,0,0,.13);
+  }
+
+  .promo-preview .promo-muted,
+  .promo-insight .promo-muted,
+  .promo-empty,
+  .promo-health .promo-muted{
+    color:#5b7184;
+    font-weight:800;
+  }
+
+  .promo-preview-meta strong,
+  .promo-insight h3,
+  .promo-insight a,
+  .promo-health strong{
+    color:#0f2d42;
+  }
+
+  .promo-table-wrap{
+    border:2px solid rgba(186,230,253,.50);
+    border-radius:24px;
+    background:rgba(8,18,36,.56);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  .promo-table th{
+    color:#e0f2fe;
+    background:rgba(15,23,42,.92);
+    border-bottom:1px solid rgba(186,230,253,.22);
+    letter-spacing:0;
+  }
+
+  .promo-table td{
+    color:#0f2d42;
+    background:rgba(255,255,255,.95);
+    border-top:10px solid rgba(8,18,36,.56);
+  }
+
+  .promo-table tbody tr:hover{
+    background:transparent;
+    box-shadow:none;
+  }
+
+  .promo-table tbody tr:hover td{
+    background:linear-gradient(135deg,#ecfeff 0%,#eef2ff 54%,#ffffff 100%);
+  }
+
+  .promo-code strong,
+  .promo-value{
+    color:#0f2d42;
+  }
+
+  .promo-table .promo-muted,
+  .promo-code span{
+    color:#5b7184;
+    font-weight:800;
+  }
+
+  .promo-tag,
+  .promo-status{
+    border-radius:999px;
+    letter-spacing:0;
+  }
+
+  .promo-tag{
+    border:1px solid rgba(14,165,233,.24);
+    background:rgba(14,165,233,.12);
+    color:#075985;
+  }
+
+  .promo-status--green{color:#047857;background:rgba(34,197,94,.14);box-shadow:inset 0 0 0 1px rgba(34,197,94,.22)}
+  .promo-status--cyan{color:#0369a1;background:rgba(14,165,233,.15);box-shadow:inset 0 0 0 1px rgba(14,165,233,.22)}
+  .promo-status--amber{color:#92400e;background:rgba(245,158,11,.17);box-shadow:inset 0 0 0 1px rgba(245,158,11,.24)}
+  .promo-status--rose{color:#be123c;background:rgba(244,63,94,.14);box-shadow:inset 0 0 0 1px rgba(244,63,94,.24)}
+  .promo-status--berry{color:#6d28d9;background:rgba(139,92,246,.14);box-shadow:inset 0 0 0 1px rgba(139,92,246,.24)}
+  .promo-status--slate{color:#334155;background:rgba(100,116,139,.13);box-shadow:inset 0 0 0 1px rgba(100,116,139,.18)}
+
+  .promo-meter{
+    background:rgba(100,116,139,.18);
+  }
+
+  .promo-meter span{
+    background:linear-gradient(90deg,#22d3ee,#a78bfa,#fb7185);
+  }
+
+  .promo-alert{
+    margin:0 0 16px;
+    border:2px solid rgba(186,230,253,.70);
+    background:rgba(255,255,255,.95);
+    color:#0f2d42;
+  }
+
+  .promo-alert--success{
+    background:linear-gradient(135deg,#dcfce7,#ccfbf1);
+    color:#065f46;
+    border-color:rgba(34,197,94,.42);
+  }
+
+  .promo-alert--error{
+    background:linear-gradient(135deg,#ffe4e6,#fee2e2);
+    color:#be123c;
+    border-color:rgba(251,113,133,.44);
+  }
+
+  @media(max-width:1080px){
+    .promo-table tr[data-promo-row]{
+      border:2px solid rgba(186,230,253,.72);
+      background:rgba(255,255,255,.95);
+      box-shadow:0 18px 44px rgba(0,0,0,.16);
+    }
+
+    .promo-table td{
+      background:transparent;
+      border-top:0;
+    }
+
+    .promo-table td::before{
+      color:#075985;
+      letter-spacing:0;
+    }
+  }
+
+  @media(max-width:720px){
+    .promo-home{padding:20px 12px 46px}
+    .promo-hero-main,
+    .promo-panel,
+    .promo-table-panel{border-radius:22px;padding:18px}
+    .promo-hero h1{font-size:42px}
+    .promo-summary{grid-template-columns:1fr;gap:16px}
+    .promo-stat{min-height:126px;padding:20px}
+    .promo-stat span{font-size:13px;line-height:1.25}
+    .promo-button{width:100%}
+  }
 </style>
 
 <main class="promo-home">

@@ -1,0 +1,592 @@
+[
+  {
+    "index": 1,
+    "group": "Giao diện chung",
+    "label": "Trang chủ",
+    "url": "/",
+    "file": "01-giao-dien-chung-trang-chu.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/",
+    "error": ""
+  },
+  {
+    "index": 2,
+    "group": "Giao diện chung",
+    "label": "Trang đăng nhập",
+    "url": "/auth/login",
+    "file": "02-giao-dien-chung-trang-dang-nhap.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/auth/login",
+    "error": ""
+  },
+  {
+    "index": 3,
+    "group": "Giao diện chung",
+    "label": "Trang đăng ký khách hàng",
+    "url": "/auth/register",
+    "file": "03-giao-dien-chung-trang-dang-ky-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/auth/register",
+    "error": ""
+  },
+  {
+    "index": 4,
+    "group": "Giao diện chung",
+    "label": "Tìm phòng online",
+    "url": "/booking/search",
+    "file": "04-giao-dien-chung-tim-phong-online.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/booking/search",
+    "error": ""
+  },
+  {
+    "index": 5,
+    "group": "Giao diện chung",
+    "label": "Đặt nhiều phòng",
+    "url": "/booking/multi",
+    "file": "05-giao-dien-chung-dat-nhieu-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/booking/multi",
+    "error": ""
+  },
+  {
+    "index": 6,
+    "group": "Actor Lễ tân",
+    "label": "Dashboard lễ tân",
+    "url": "/dashboard/letan",
+    "file": "06-actor-le-tan-dashboard-le-tan.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/dashboard/letan",
+    "error": ""
+  },
+  {
+    "index": 7,
+    "group": "Actor Lễ tân",
+    "label": "UC đặt phòng trực tiếp tại quầy",
+    "url": "/frontdesk/direct-booking",
+    "file": "07-actor-le-tan-uc-dat-phong-truc-tiep-tai-quay.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/frontdesk/direct-booking",
+    "error": ""
+  },
+  {
+    "index": 8,
+    "group": "Actor Lễ tân",
+    "label": "UC xác nhận check-in",
+    "url": "/frontdesk/checkin",
+    "file": "08-actor-le-tan-uc-xac-nhan-check-in.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/frontdesk/checkin",
+    "error": ""
+  },
+  {
+    "index": 9,
+    "group": "Actor Lễ tân",
+    "label": "UC hoàn tất check-out",
+    "url": "/frontdesk/checkout-v2",
+    "file": "09-actor-le-tan-uc-hoan-tat-check-out.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/frontdesk/checkout-v2",
+    "error": ""
+  },
+  {
+    "index": 10,
+    "group": "Actor Lễ tân",
+    "label": "UC sửa thông tin đặt phòng",
+    "url": "/frontdesk/edit-booking",
+    "file": "10-actor-le-tan-uc-sua-thong-tin-dat-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/frontdesk/edit-booking",
+    "error": ""
+  },
+  {
+    "index": 11,
+    "group": "Actor Lễ tân",
+    "label": "UC hủy đặt phòng",
+    "url": "/frontdesk/cancel-booking",
+    "file": "11-actor-le-tan-uc-huy-dat-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/frontdesk/cancel-booking",
+    "error": ""
+  },
+  {
+    "index": 12,
+    "group": "Actor Lễ tân",
+    "label": "UC tra cứu hoạt động",
+    "url": "/frontdesk/activity-lookup",
+    "file": "12-actor-le-tan-uc-tra-cuu-hoat-dong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/frontdesk/activity-lookup",
+    "error": ""
+  },
+  {
+    "index": 13,
+    "group": "Actor Lễ tân",
+    "label": "Duyệt eKYC tại quầy",
+    "url": "/ekyc/review",
+    "file": "13-actor-le-tan-duyet-ekyc-tai-quay.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/ekyc/review",
+    "error": ""
+  },
+  {
+    "index": 14,
+    "group": "Actor Khách hàng",
+    "label": "Dashboard khách hàng",
+    "url": "/customer/dashboard",
+    "file": "14-actor-khach-hang-dashboard-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/customer/dashboard",
+    "error": ""
+  },
+  {
+    "index": 15,
+    "group": "Actor Khách hàng",
+    "label": "Quản lý đặt phòng",
+    "url": "/customer/bookings",
+    "file": "15-actor-khach-hang-quan-ly-dat-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/customer/bookings",
+    "error": ""
+  },
+  {
+    "index": 16,
+    "group": "Actor Khách hàng",
+    "label": "Hồ sơ khách hàng",
+    "url": "/customer/profile",
+    "file": "16-actor-khach-hang-ho-so-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/customer/profile",
+    "error": ""
+  },
+  {
+    "index": 17,
+    "group": "Actor Khách hàng",
+    "label": "eKYC khách hàng",
+    "url": "/ekyc",
+    "file": "17-actor-khach-hang-ekyc-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/ekyc",
+    "error": ""
+  },
+  {
+    "index": 18,
+    "group": "Actor Khách hàng",
+    "label": "Dịch vụ bổ sung",
+    "url": "/customer/services",
+    "file": "18-actor-khach-hang-dich-vu-bo-sung.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/customer/services",
+    "error": ""
+  },
+  {
+    "index": 19,
+    "group": "Actor Khách hàng",
+    "label": "Tư vấn và hỗ trợ",
+    "url": "/customer/advisory",
+    "file": "19-actor-khach-hang-tu-van-va-ho-tro.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/customer/advisory",
+    "error": ""
+  },
+  {
+    "index": 20,
+    "group": "Actor Khách hàng",
+    "label": "Gửi phản hồi/đánh giá",
+    "url": "/feedback/new",
+    "file": "20-actor-khach-hang-gui-phan-hoi-danh-gia.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/feedback/new",
+    "error": ""
+  },
+  {
+    "index": 21,
+    "group": "Actor Khách hàng",
+    "label": "Mobile hub khách hàng",
+    "url": "/customer/mobile-hub",
+    "file": "21-actor-khach-hang-mobile-hub-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/customer/mobile-hub",
+    "error": ""
+  },
+  {
+    "index": 22,
+    "group": "Actor Quản lý",
+    "label": "Dashboard quản lý",
+    "url": "/dashboard/quanly",
+    "file": "22-actor-quan-ly-dashboard-quan-ly.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/dashboard/quanly",
+    "error": ""
+  },
+  {
+    "index": 23,
+    "group": "Actor Quản lý",
+    "label": "Quản lý khách hàng",
+    "url": "/manager/customers",
+    "file": "23-actor-quan-ly-quan-ly-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/manager/customers",
+    "error": ""
+  },
+  {
+    "index": 24,
+    "group": "Actor Quản lý",
+    "label": "Quản lý phòng",
+    "url": "/manager/rooms",
+    "file": "24-actor-quan-ly-quan-ly-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/manager/rooms",
+    "error": ""
+  },
+  {
+    "index": 25,
+    "group": "Actor Quản lý",
+    "label": "Quản lý khuyến mãi",
+    "url": "/manager/promotions",
+    "file": "25-actor-quan-ly-quan-ly-khuyen-mai.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/manager/promotions",
+    "error": ""
+  },
+  {
+    "index": 26,
+    "group": "Actor Quản lý",
+    "label": "Duyệt hoàn tiền",
+    "url": "/manager/refunds",
+    "file": "26-actor-quan-ly-duyet-hoan-tien.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/manager/refunds",
+    "error": ""
+  },
+  {
+    "index": 27,
+    "group": "Actor Quản lý",
+    "label": "Duyệt eKYC",
+    "url": "/ekyc/review",
+    "file": "27-actor-quan-ly-duyet-ekyc.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/ekyc/review",
+    "error": ""
+  },
+  {
+    "index": 28,
+    "group": "Actor Quản lý",
+    "label": "Theo dõi phản hồi khách hàng",
+    "url": "/feedback/manage",
+    "file": "28-actor-quan-ly-theo-doi-phan-hoi-khach-hang.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/feedback/manage",
+    "error": ""
+  },
+  {
+    "index": 29,
+    "group": "Actor Quản lý",
+    "label": "Phân tích AI",
+    "url": "/ai/analytics",
+    "file": "29-actor-quan-ly-phan-tich-ai.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/ai/analytics",
+    "error": ""
+  },
+  {
+    "index": 30,
+    "group": "Actor Quản lý",
+    "label": "Room board live",
+    "url": "/service/room-board-live",
+    "file": "30-actor-quan-ly-room-board-live.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/service/room-board-live",
+    "error": ""
+  },
+  {
+    "index": 31,
+    "group": "Actor Quản lý",
+    "label": "Kiểm tra tình trạng phòng",
+    "url": "/service/room-inspection",
+    "file": "31-actor-quan-ly-kiem-tra-tinh-trang-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/service/room-inspection",
+    "error": ""
+  },
+  {
+    "index": 32,
+    "group": "Actor Kế toán",
+    "label": "Dashboard kế toán",
+    "url": "/dashboard/ketoan",
+    "file": "32-actor-ke-toan-dashboard-ke-toan.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/dashboard/ketoan",
+    "error": ""
+  },
+  {
+    "index": 33,
+    "group": "Actor Kế toán",
+    "label": "Tổng quan kế toán",
+    "url": "/accounting",
+    "file": "33-actor-ke-toan-tong-quan-ke-toan.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting",
+    "error": ""
+  },
+  {
+    "index": 34,
+    "group": "Actor Kế toán",
+    "label": "Báo cáo tài chính",
+    "url": "/accounting/reports",
+    "file": "34-actor-ke-toan-bao-cao-tai-chinh.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting/reports",
+    "error": ""
+  },
+  {
+    "index": 35,
+    "group": "Actor Kế toán",
+    "label": "Quản lý doanh thu",
+    "url": "/accounting/revenue",
+    "file": "35-actor-ke-toan-quan-ly-doanh-thu.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting/revenue",
+    "error": ""
+  },
+  {
+    "index": 36,
+    "group": "Actor Kế toán",
+    "label": "Quản lý chi phí",
+    "url": "/accounting/expenses",
+    "file": "36-actor-ke-toan-quan-ly-chi-phi.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting/expenses",
+    "error": ""
+  },
+  {
+    "index": 37,
+    "group": "Actor Kế toán",
+    "label": "Dòng tiền",
+    "url": "/accounting/cashflow",
+    "file": "37-actor-ke-toan-dong-tien.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting/cashflow",
+    "error": ""
+  },
+  {
+    "index": 38,
+    "group": "Actor Kế toán",
+    "label": "Công nợ",
+    "url": "/accounting/debts",
+    "file": "38-actor-ke-toan-cong-no.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting/debts",
+    "error": ""
+  },
+  {
+    "index": 39,
+    "group": "Actor Kế toán",
+    "label": "Xử lý hoàn tiền",
+    "url": "/accounting/refunds",
+    "file": "39-actor-ke-toan-xu-ly-hoan-tien.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/accounting/refunds",
+    "error": ""
+  },
+  {
+    "index": 40,
+    "group": "Actor CSKH",
+    "label": "Dashboard CSKH",
+    "url": "/dashboard/cskh",
+    "file": "40-actor-cskh-dashboard-cskh.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/dashboard/cskh",
+    "error": ""
+  },
+  {
+    "index": 41,
+    "group": "Actor CSKH",
+    "label": "Quản lý phản hồi",
+    "url": "/feedback/manage",
+    "file": "41-actor-cskh-quan-ly-phan-hoi.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/feedback/manage",
+    "error": ""
+  },
+  {
+    "index": 42,
+    "group": "Actor CSKH",
+    "label": "Quản lý tư vấn",
+    "url": "/feedback/advisory/manage",
+    "file": "42-actor-cskh-quan-ly-tu-van.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/feedback/advisory/manage",
+    "error": ""
+  },
+  {
+    "index": 43,
+    "group": "Actor CSKH",
+    "label": "Gửi broadcast",
+    "url": "/feedback/broadcast/manage",
+    "file": "43-actor-cskh-gui-broadcast.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/feedback/broadcast/manage",
+    "error": ""
+  },
+  {
+    "index": 44,
+    "group": "Actor CSKH",
+    "label": "Khuyến mãi hỗ trợ CSKH",
+    "url": "/manager/promotions",
+    "file": "44-actor-cskh-khuyen-mai-ho-tro-cskh.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/manager/promotions",
+    "error": ""
+  },
+  {
+    "index": 45,
+    "group": "Actor Nhân viên dịch vụ",
+    "label": "Dashboard dịch vụ",
+    "url": "/dashboard/dichvu",
+    "file": "45-actor-nhan-vien-dich-vu-dashboard-dich-vu.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/dashboard/dichvu",
+    "error": ""
+  },
+  {
+    "index": 46,
+    "group": "Actor Nhân viên dịch vụ",
+    "label": "Trung tâm dịch vụ",
+    "url": "/service",
+    "file": "46-actor-nhan-vien-dich-vu-trung-tam-dich-vu.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/service",
+    "error": ""
+  },
+  {
+    "index": 47,
+    "group": "Actor Nhân viên dịch vụ",
+    "label": "Quản lý danh mục dịch vụ",
+    "url": "/service/catalog/manage",
+    "file": "47-actor-nhan-vien-dich-vu-quan-ly-danh-muc-dich-vu.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/service/catalog/manage",
+    "error": ""
+  },
+  {
+    "index": 48,
+    "group": "Actor Nhân viên dịch vụ",
+    "label": "Kiểm tra tình trạng phòng",
+    "url": "/service/room-inspection",
+    "file": "48-actor-nhan-vien-dich-vu-kiem-tra-tinh-trang-phong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/service/room-inspection",
+    "error": ""
+  },
+  {
+    "index": 49,
+    "group": "Actor Nhân viên dịch vụ",
+    "label": "Room board live",
+    "url": "/service/room-board-live",
+    "file": "49-actor-nhan-vien-dich-vu-room-board-live.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/service/room-board-live",
+    "error": ""
+  },
+  {
+    "index": 50,
+    "group": "Actor Admin",
+    "label": "Dashboard admin",
+    "url": "/dashboard/admin",
+    "file": "50-actor-admin-dashboard-admin.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/dashboard/admin",
+    "error": ""
+  },
+  {
+    "index": 51,
+    "group": "Actor Admin",
+    "label": "Quản lý người dùng và phân quyền",
+    "url": "/admin/users",
+    "file": "51-actor-admin-quan-ly-nguoi-dung-va-phan-quyen.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/users",
+    "error": ""
+  },
+  {
+    "index": 52,
+    "group": "Actor Admin",
+    "label": "Diagnostics hệ thống",
+    "url": "/admin/diagnostics",
+    "file": "52-actor-admin-diagnostics-he-thong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/diagnostics",
+    "error": ""
+  },
+  {
+    "index": 53,
+    "group": "Actor Admin",
+    "label": "Runtime health",
+    "url": "/admin/runtime-health",
+    "file": "53-actor-admin-runtime-health.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/runtime-health",
+    "error": ""
+  },
+  {
+    "index": 54,
+    "group": "Actor Admin",
+    "label": "System readiness",
+    "url": "/admin/system-readiness",
+    "file": "54-actor-admin-system-readiness.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/system-readiness",
+    "error": ""
+  },
+  {
+    "index": 55,
+    "group": "Actor Admin",
+    "label": "Mobile readiness",
+    "url": "/admin/mobile-readiness",
+    "file": "55-actor-admin-mobile-readiness.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/mobile-readiness",
+    "error": ""
+  },
+  {
+    "index": 56,
+    "group": "Actor Admin",
+    "label": "AI diagnostics",
+    "url": "/admin/ai-diagnostics",
+    "file": "56-actor-admin-ai-diagnostics.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/ai-diagnostics",
+    "error": ""
+  },
+  {
+    "index": 57,
+    "group": "Actor Admin",
+    "label": "Multi-hotel diagnostics",
+    "url": "/admin/multi-hotel-diagnostics",
+    "file": "57-actor-admin-multi-hotel-diagnostics.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/multi-hotel-diagnostics",
+    "error": ""
+  },
+  {
+    "index": 58,
+    "group": "Actor Admin",
+    "label": "Sao lưu dữ liệu",
+    "url": "/admin/backups",
+    "file": "58-actor-admin-sao-luu-du-lieu.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/backups",
+    "error": ""
+  },
+  {
+    "index": 59,
+    "group": "Actor Admin",
+    "label": "Phục hồi hệ thống",
+    "url": "/admin/restore",
+    "file": "59-actor-admin-phuc-hoi-he-thong.png",
+    "status": 200,
+    "finalUrl": "http://127.0.0.1:3010/admin/restore",
+    "error": ""
+  }
+]

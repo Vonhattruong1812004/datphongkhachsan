@@ -1,55 +1,640 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">Multi-Hotel Diagnostics</div>
-    <h2>Schema, module va inventory theo co so</h2>
-    <div class="dashboard-grid">
-      <article class="dashboard-card"><strong><%= payload.summary.ready %></strong><h3>Ready modules</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.partial %></strong><h3>Partial modules</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.blocked %></strong><h3>Blocked modules</h3></article>
-    </div>
-    <div class="nav-links" style="margin-top:16px;">
-      <a class="chip" href="/api/admin/diagnostics/multi-hotel">Multi-hotel JSON</a>
-      <a class="chip" href="/admin/diagnostics">Tổng hợp sức khỏe</a>
-      <a class="chip" href="/dashboard/admin">Về dashboard Admin</a>
-    </div>
-  </section>
-  <section class="panel">
-    <div class="section-eyebrow">Schema Checks</div>
-    <div class="room-grid room-grid--wide">
-      <% Object.entries(payload.schema).forEach(([key, value]) => { %>
-        <article class="room-card">
-          <span class="badge"><%= value ? "ready" : "partial" %></span>
-          <h3><%= key %></h3>
-          <p class="muted"><%= value ? "Da san sang." : "Can bo sung de khoa scope da co so hon." %></p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
-  <section class="panel">
-    <div class="section-eyebrow">Hotels</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.hotels.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge"><%= item.tinhThanh || "N/A" %></span>
-          <h3><%= item.tenKhachSan %></h3>
-          <p class="muted"><%= item.roomCount %> phong</p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
-  <section class="panel">
-    <div class="section-eyebrow">Modules</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.modules.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge"><%= item.status %></span>
-          <h3><%= item.name %></h3>
-          <p class="muted"><%= item.detail %></p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+<%
+  const summary = payload?.summary || {};
+  const schema = payload?.schema || {};
+  const hotels = payload?.hotels || [];
+  const modules = payload?.modules || [];
+  const nextActions = payload?.next_actions || [];
+  const readyCount = Number(summary.ready || 0);
+  const partialCount = Number(summary.partial || 0);
+  const blockedCount = Number(summary.blocked || 0);
+  const totalRooms = hotels.reduce((sum, item) => sum + Number(item.roomCount || 0), 0);
+  const generatedAt = payload?.generatedAt || new Date().toISOString();
+  const shortTime = new Date(generatedAt).toLocaleString("vi-VN", { hour12: false });
+  const schemaEntries = Object.entries(schema);
+  const statusText = (status) => status === "ready" ? "Ready" : (status === "blocked" ? "Blocked" : "Partial");
+  const statusTone = (status, index) => status === "ready" ? ["cyan", "green", "blue"][index % 3] : (status === "blocked" ? "rose" : "amber");
+%>
+<style>
+  .multi-hotel {
+    --mh-ink: #f8fbff;
+    --mh-muted: #bfd4ea;
+    --mh-line: rgba(125, 211, 252, .22);
+    --mh-cyan: #67e8f9;
+    --mh-green: #5eead4;
+    --mh-blue: #60a5fa;
+    --mh-violet: #a78bfa;
+    --mh-amber: #facc15;
+    --mh-rose: #fb7185;
+    --mh-shadow: 0 34px 100px rgba(0, 0, 0, .36);
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100vh - 84px);
+    overflow: hidden;
+    padding: 36px 18px 64px;
+    color: var(--mh-ink);
+    background:
+      radial-gradient(circle at 12% 14%, rgba(96, 165, 250, .22), transparent 30%),
+      radial-gradient(circle at 84% 16%, rgba(94, 234, 212, .20), transparent 34%),
+      radial-gradient(circle at 54% 112%, rgba(250, 204, 21, .12), transparent 42%),
+      linear-gradient(135deg, #03111f 0%, #071634 45%, #131133 76%, #060813 100%);
+  }
+
+  .multi-hotel::before,
+  .multi-hotel::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .multi-hotel::before {
+    inset: 0;
+    opacity: .72;
+    background:
+      radial-gradient(circle, #e0f2fe 0 1px, transparent 2px) 10% 12% / 150px 150px,
+      radial-gradient(circle, #a7f3d0 0 1px, transparent 2px) 42% 30% / 210px 210px,
+      radial-gradient(circle, #fde68a 0 1px, transparent 2px) 78% 8% / 180px 180px,
+      linear-gradient(114deg, transparent 0 50%, rgba(103, 232, 249, .18) 52%, transparent 57% 100%);
+  }
+
+  .multi-hotel::after {
+    right: -15%;
+    bottom: -40%;
+    width: 700px;
+    height: 700px;
+    border-radius: 999px;
+    opacity: .34;
+    background: conic-gradient(from 140deg, rgba(96, 165, 250, .30), rgba(94, 234, 212, .24), rgba(167, 139, 250, .20), rgba(250, 204, 21, .13), rgba(96, 165, 250, .30));
+    filter: blur(10px);
+  }
+
+  .mh-wrap {
+    position: relative;
+    z-index: 1;
+    width: min(1280px, 100%);
+    margin: 0 auto;
+  }
+
+  .mh-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) 360px;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .mh-panel,
+  .mh-map,
+  .mh-stat,
+  .mh-schema,
+  .mh-hotel,
+  .mh-module,
+  .mh-action {
+    border: 1px solid var(--mh-line);
+    background:
+      linear-gradient(145deg, rgba(8, 18, 40, .90), rgba(13, 25, 56, .76)),
+      radial-gradient(circle at 88% 12%, rgba(96, 165, 250, .16), transparent 32%);
+    box-shadow: var(--mh-shadow), inset 0 1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: blur(22px);
+  }
+
+  .mh-panel {
+    position: relative;
+    overflow: hidden;
+    min-height: 344px;
+    border-radius: 34px;
+    padding: clamp(28px, 4vw, 42px);
+  }
+
+  .mh-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .12), transparent 30%),
+      radial-gradient(circle at 84% 16%, rgba(94, 234, 212, .18), transparent 28%);
+  }
+
+  .mh-label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    border-radius: 999px;
+    padding: 8px 13px;
+    color: #dffcff;
+    background: rgba(8, 18, 40, .76);
+    border: 1px solid rgba(125, 211, 252, .30);
+    box-shadow: 0 16px 42px rgba(34, 211, 238, .12);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .mh-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--mh-blue);
+    box-shadow: 0 0 0 7px rgba(96, 165, 250, .16), 0 0 24px rgba(96, 165, 250, .40);
+  }
+
+  .mh-panel h1 {
+    position: relative;
+    z-index: 1;
+    max-width: 840px;
+    margin: 22px 0 12px;
+    color: #fff;
+    font-size: clamp(42px, 5.6vw, 72px);
+    line-height: .94;
+    letter-spacing: 0;
+    text-shadow: 0 14px 38px rgba(0, 0, 0, .30);
+  }
+
+  .mh-panel h1 span {
+    color: transparent;
+    background: linear-gradient(135deg, #67e8f9 0%, #60a5fa 34%, #5eead4 68%, #facc15 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .mh-lead {
+    position: relative;
+    z-index: 1;
+    max-width: 730px;
+    margin: 0;
+    color: var(--mh-muted);
+    font-size: 15.5px;
+    line-height: 1.68;
+  }
+
+  .mh-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .mh-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border: 1px solid rgba(125, 211, 252, .28);
+    border-radius: 999px;
+    padding: 10px 16px;
+    color: #f8fbff;
+    background: rgba(10, 24, 52, .76);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, .20);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .mh-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(103, 232, 249, .56);
+    box-shadow: 0 20px 52px rgba(34, 211, 238, .20);
+  }
+
+  .mh-button--primary {
+    color: #061426;
+    border-color: rgba(255, 255, 255, .22);
+    background: linear-gradient(135deg, #67e8f9, #5eead4 58%, #facc15);
+    box-shadow: 0 20px 54px rgba(34, 211, 238, .28);
+  }
+
+  .mh-map {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    min-height: 344px;
+    border-radius: 34px;
+    padding: 26px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 32% 20%, rgba(94, 234, 212, .18), transparent 30%),
+      linear-gradient(155deg, rgba(8, 18, 40, .92), rgba(18, 12, 45, .84));
+  }
+
+  .mh-orbit {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    border: 1px solid rgba(125, 211, 252, .18);
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 70px rgba(34, 211, 238, .10), 0 24px 76px rgba(34, 211, 238, .16);
+  }
+
+  .mh-orbit::before,
+  .mh-orbit::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(196, 181, 253, .18);
+  }
+
+  .mh-orbit::before {
+    width: 132%;
+    height: 62%;
+    transform: rotate(-18deg);
+  }
+
+  .mh-orbit::after {
+    width: 70%;
+    height: 134%;
+    transform: rotate(24deg);
+  }
+
+  .mh-planet {
+    position: relative;
+    z-index: 1;
+    width: 136px;
+    height: 136px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 36% 30%, rgba(255,255,255,.92) 0 8%, transparent 12%),
+      radial-gradient(circle at 66% 68%, rgba(94,234,212,.44), transparent 28%),
+      linear-gradient(135deg, #2563eb, #0e7490 56%, #071634 100%);
+    box-shadow: inset -28px -22px 42px rgba(0, 0, 0, .46), 0 0 58px rgba(103, 232, 249, .28);
+  }
+
+  .mh-map strong {
+    display: block;
+    margin-top: 22px;
+    color: #fff;
+    font-size: 34px;
+    line-height: 1;
+  }
+
+  .mh-map span {
+    display: block;
+    margin-top: 8px;
+    color: var(--mh-muted);
+    font-size: 13px;
+    font-weight: 950;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .mh-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .mh-stat {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .mh-stat::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 6px;
+    background: linear-gradient(90deg, var(--stat-color), transparent);
+  }
+
+  .mh-stat strong {
+    display: block;
+    color: #fff;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .mh-stat span {
+    display: block;
+    margin-top: 9px;
+    color: var(--mh-muted);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .mh-section {
+    margin-top: 26px;
+  }
+
+  .mh-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .mh-section-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 28px;
+    letter-spacing: 0;
+  }
+
+  .mh-section-head p {
+    margin: 5px 0 0;
+    color: var(--mh-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .mh-schema-grid,
+  .mh-hotel-grid,
+  .mh-module-grid,
+  .mh-action-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .mh-schema,
+  .mh-hotel,
+  .mh-module,
+  .mh-action {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    padding: 18px;
+  }
+
+  .mh-schema::before,
+  .mh-hotel::before,
+  .mh-module::before,
+  .mh-action::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 6px;
+    background: linear-gradient(90deg, var(--tone), transparent);
+  }
+
+  .mh-schema[data-tone="green"],
+  .mh-hotel,
+  .mh-module[data-tone="green"] { --tone: var(--mh-green); }
+  .mh-schema[data-tone="cyan"],
+  .mh-module[data-tone="cyan"] { --tone: var(--mh-cyan); }
+  .mh-module[data-tone="blue"] { --tone: var(--mh-blue); }
+  .mh-module[data-tone="violet"] { --tone: var(--mh-violet); }
+  .mh-schema[data-tone="amber"],
+  .mh-module[data-tone="amber"],
+  .mh-action { --tone: var(--mh-amber); }
+  .mh-module[data-tone="rose"] { --tone: var(--mh-rose); }
+
+  .mh-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: var(--tone);
+    background: rgba(8, 18, 40, .78);
+    border: 1px solid rgba(125, 211, 252, .20);
+    font-size: 11px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .mh-badge::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 18px currentColor;
+  }
+
+  .mh-schema h3,
+  .mh-hotel h3,
+  .mh-module h3 {
+    margin: 18px 0 8px;
+    color: #fff;
+    font-size: 21px;
+    line-height: 1.15;
+    letter-spacing: 0;
+  }
+
+  .mh-schema p,
+  .mh-hotel p,
+  .mh-module p,
+  .mh-action {
+    margin: 0;
+    color: var(--mh-muted);
+    font-size: 13.5px;
+    line-height: 1.58;
+  }
+
+  .mh-hotel strong {
+    display: block;
+    margin-top: 14px;
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .mh-empty {
+    border: 1px dashed rgba(125, 211, 252, .28);
+    border-radius: 24px;
+    padding: 18px;
+    color: var(--mh-muted);
+    background: rgba(8, 18, 40, .55);
+    font-weight: 850;
+  }
+
+  @media (max-width: 1100px) {
+    .mh-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .mh-stats,
+    .mh-schema-grid,
+    .mh-hotel-grid,
+    .mh-module-grid,
+    .mh-action-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .multi-hotel {
+      padding: 24px 12px 54px;
+    }
+
+    .mh-panel,
+    .mh-map,
+    .mh-schema,
+    .mh-hotel,
+    .mh-module {
+      border-radius: 26px;
+    }
+
+    .mh-panel {
+      min-height: auto;
+      padding: 22px;
+    }
+
+    .mh-panel h1 {
+      font-size: 42px;
+    }
+
+    .mh-stats,
+    .mh-schema-grid,
+    .mh-hotel-grid,
+    .mh-module-grid,
+    .mh-action-list {
+      grid-template-columns: 1fr;
+    }
+
+    .mh-section-head {
+      display: block;
+    }
+  }
+</style>
+
+<main class="multi-hotel">
+  <div class="mh-wrap">
+    <section class="mh-hero" aria-label="Multi-hotel diagnostics">
+      <div class="mh-panel">
+        <div class="mh-label">Multi-hotel diagnostics</div>
+        <h1>Schema, module và <span>inventory theo cơ sở</span></h1>
+        <p class="mh-lead">
+          Kiểm tra mức sẵn sàng của dữ liệu đa khách sạn: bảng cơ sở, liên kết phòng,
+          scope nhân viên, dịch vụ, chi phí và khả năng vận hành theo từng cơ sở.
+        </p>
+        <div class="mh-actions">
+          <a class="mh-button mh-button--primary" href="/api/admin/diagnostics/multi-hotel">Multi-hotel JSON</a>
+          <a class="mh-button" href="/admin/diagnostics">Tổng hợp sức khỏe</a>
+          <a class="mh-button" href="/dashboard/admin">Dashboard Admin</a>
+        </div>
+      </div>
+
+      <aside class="mh-map">
+        <div>
+          <div class="mh-orbit" aria-hidden="true">
+            <div class="mh-planet"></div>
+          </div>
+          <strong><%= hotels.length %></strong>
+          <span>Cơ sở đang theo dõi</span>
+          <p class="mh-lead" style="margin-top:10px;">Cập nhật: <%= shortTime %></p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="mh-stats" aria-label="Tổng quan multi-hotel">
+      <article class="mh-stat" style="--stat-color: var(--mh-green)">
+        <strong><%= readyCount %></strong>
+        <span>Module ready</span>
+      </article>
+      <article class="mh-stat" style="--stat-color: var(--mh-amber)">
+        <strong><%= partialCount %></strong>
+        <span>Module partial</span>
+      </article>
+      <article class="mh-stat" style="--stat-color: var(--mh-rose)">
+        <strong><%= blockedCount %></strong>
+        <span>Module blocked</span>
+      </article>
+      <article class="mh-stat" style="--stat-color: var(--mh-cyan)">
+        <strong><%= totalRooms %></strong>
+        <span>Tổng phòng</span>
+      </article>
+    </section>
+
+    <section class="mh-section" aria-label="Schema checks">
+      <div class="mh-section-head">
+        <div>
+          <h2>Schema checks</h2>
+          <p>Các bảng/cột cần có để khóa dữ liệu theo từng cơ sở.</p>
+        </div>
+      </div>
+      <div class="mh-schema-grid">
+        <% schemaEntries.forEach(([key, value], index) => { const tone = value ? (index % 2 ? "cyan" : "green") : "amber"; %>
+          <article class="mh-schema" data-tone="<%= tone %>">
+            <span class="mh-badge"><%= value ? "Ready" : "Partial" %></span>
+            <h3><%= key.replace(/_/g, " ") %></h3>
+            <p><%= value ? "Đã sẵn sàng để phục vụ vận hành đa cơ sở." : "Cần bổ sung để scope dữ liệu theo cơ sở rõ hơn." %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="mh-section" aria-label="Hotels">
+      <div class="mh-section-head">
+        <div>
+          <h2>Hotels</h2>
+          <p>Danh sách cơ sở hiện có và số phòng đang liên kết.</p>
+        </div>
+      </div>
+      <% if (!hotels.length) { %>
+        <div class="mh-empty">Chưa có dữ liệu khách sạn để hiển thị.</div>
+      <% } else { %>
+        <div class="mh-hotel-grid">
+          <% hotels.forEach((item) => { %>
+            <article class="mh-hotel">
+              <span class="mh-badge"><%= item.tinhThanh || "N/A" %></span>
+              <h3><%= item.tenKhachSan %></h3>
+              <p>Mã cơ sở: <%= item.id %></p>
+              <strong><%= item.roomCount %></strong>
+              <p>phòng đang liên kết</p>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="mh-section" aria-label="Modules">
+      <div class="mh-section-head">
+        <div>
+          <h2>Modules</h2>
+          <p>Trạng thái sẵn sàng theo từng cụm nghiệp vụ đa cơ sở.</p>
+        </div>
+      </div>
+      <div class="mh-module-grid">
+        <% modules.forEach((item, index) => { const tone = statusTone(item.status, index); %>
+          <article class="mh-module" data-tone="<%= tone %>">
+            <span class="mh-badge"><%= statusText(item.status) %></span>
+            <h3><%= item.name %></h3>
+            <p><%= item.detail %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="mh-section" aria-label="Gợi ý xử lý multi-hotel">
+      <div class="mh-section-head">
+        <div>
+          <h2>Gợi ý xử lý</h2>
+          <p>Các mục cần làm nếu muốn khóa scope đa cơ sở chặt hơn.</p>
+        </div>
+      </div>
+      <% if (!nextActions.length) { %>
+        <div class="mh-empty">Multi-hotel diagnostics chưa có gợi ý xử lý thêm.</div>
+      <% } else { %>
+        <div class="mh-action-list">
+          <% nextActions.forEach((action) => { %>
+            <div class="mh-action"><%= action %></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
 </main>
 <%- include("../partials/footer") %>

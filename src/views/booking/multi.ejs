@@ -32,6 +32,322 @@
   .capacity-alert{margin-top:12px;border-radius:16px;border:1px solid rgba(239,71,111,.22);background:rgba(255,241,242,.92);color:#be123c;padding:11px;font-size:13px;font-weight:900;line-height:1.45}.capacity-alert[hidden]{display:none}
   .empty{border:1px dashed rgba(19,48,74,.18);border-radius:22px;padding:18px;background:rgba(255,255,255,.58);color:#5f778f}
   @media(max-width:980px){.booking-layout,.online-form-grid,.online-summary,.room-grid{grid-template-columns:1fr}.sticky-total{position:static}}
+
+  /* Customer UC1 visual pass only: galaxy theme, stronger section/input separation */
+  body{
+    background:
+      radial-gradient(circle at 12% 10%,rgba(45,212,191,.18),transparent 28%),
+      radial-gradient(circle at 88% 14%,rgba(139,92,246,.22),transparent 30%),
+      radial-gradient(circle at 48% 112%,rgba(251,191,36,.12),transparent 36%),
+      linear-gradient(135deg,#020617 0%,#071426 46%,#160b2f 100%);
+    color:#f8fafc;
+  }
+  .online-shell{
+    position:relative;
+    isolation:isolate;
+    overflow:hidden;
+    max-width:1280px;
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+  }
+  .online-shell::before,
+  .online-shell::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:-1;
+  }
+  .online-shell::before{
+    background:
+      radial-gradient(circle at 12% 20%,rgba(255,255,255,.86) 0 1px,transparent 2px),
+      radial-gradient(circle at 36% 13%,rgba(186,230,253,.82) 0 1px,transparent 2px),
+      radial-gradient(circle at 70% 28%,rgba(255,255,255,.70) 0 1px,transparent 2px),
+      radial-gradient(circle at 86% 72%,rgba(125,211,252,.74) 0 1px,transparent 2px),
+      radial-gradient(circle at 24% 80%,rgba(255,255,255,.66) 0 1px,transparent 2px);
+    background-size:240px 190px;
+    opacity:.58;
+  }
+  .online-shell::after{
+    background:
+      linear-gradient(90deg,transparent,rgba(125,211,252,.12),transparent) 0 18% / 100% 1px no-repeat,
+      linear-gradient(90deg,transparent,rgba(251,113,133,.10),transparent) 0 68% / 100% 1px no-repeat;
+  }
+  .online-hero,
+  .online-panel{
+    margin-bottom:0;
+    border:1px solid rgba(125,211,252,.30);
+    background:
+      linear-gradient(135deg,rgba(15,23,42,.90),rgba(8,47,73,.78)),
+      radial-gradient(circle at 100% 0%,rgba(45,212,191,.20),transparent 36%);
+    box-shadow:0 26px 70px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .online-hero{
+    border-radius:28px;
+    padding:34px;
+    background:
+      radial-gradient(circle at 12% 0%,rgba(255,255,255,.14),transparent 28%),
+      linear-gradient(135deg,rgba(15,23,42,.94),rgba(14,116,144,.58) 50%,rgba(88,28,135,.58));
+  }
+  .online-hero:after{
+    right:-100px;
+    top:-120px;
+    width:340px;
+    height:340px;
+    opacity:.34;
+    background:conic-gradient(from 140deg,#38bdf8,#2dd4bf,#facc15,#fb7185,#8b5cf6,#38bdf8);
+    filter:blur(1px);
+  }
+  .online-kicker{
+    border:1px solid rgba(125,211,252,.30);
+    background:rgba(15,23,42,.60);
+    color:#ecfeff;
+    letter-spacing:.07em;
+  }
+  .online-hero h1{
+    color:#ffffff;
+    letter-spacing:0;
+    text-shadow:0 16px 44px rgba(0,0,0,.24);
+  }
+  .online-hero h1 span{
+    background:linear-gradient(96deg,#67e8f9 0%,#86efac 34%,#fde68a 66%,#f9a8d4 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .online-muted{
+    color:#dbeafe;
+    font-size:16px;
+    font-weight:800;
+  }
+  .online-clock{
+    border:1px solid rgba(255,255,255,.72);
+    background:rgba(255,255,255,.92);
+    color:#0f2d42;
+    box-shadow:0 12px 26px rgba(0,0,0,.16);
+  }
+  .online-panel{
+    border-radius:26px;
+    padding:22px;
+  }
+  .online-panel:nth-of-type(2n){
+    background:
+      linear-gradient(135deg,rgba(30,41,59,.90),rgba(67,56,202,.62)),
+      radial-gradient(circle at 100% 0%,rgba(251,113,133,.18),transparent 36%);
+  }
+  .online-panel h2{
+    color:#ffffff;
+    font-size:26px;
+    letter-spacing:0;
+    text-shadow:0 2px 14px rgba(15,23,42,.30);
+  }
+  .online-form-grid{
+    gap:16px;
+  }
+  .online-field{
+    gap:9px;
+  }
+  .online-field label{
+    color:#e0f2fe;
+    font-size:13px;
+    letter-spacing:0;
+  }
+  .online-field input,
+  .online-field select,
+  .online-field textarea{
+    min-height:56px;
+    border:2px solid rgba(186,230,253,.90);
+    border-radius:18px;
+    background:#ffffff;
+    color:#0f2d42;
+    font-size:15px;
+    font-weight:900;
+    box-shadow:0 16px 34px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.90);
+  }
+  .online-field textarea{
+    min-height:96px;
+  }
+  .online-field input:focus,
+  .online-field select:focus,
+  .online-field textarea:focus{
+    border-color:#67e8f9;
+    box-shadow:0 0 0 4px rgba(103,232,249,.18),0 16px 34px rgba(0,0,0,.18);
+  }
+  .online-actions{
+    gap:10px;
+  }
+  .online-button{
+    min-height:50px;
+    border-radius:18px;
+    padding:11px 20px;
+    border:1px solid rgba(255,255,255,.62);
+    background:#ffffff;
+    color:#0f2d42;
+    font-size:15px;
+    box-shadow:0 14px 30px rgba(0,0,0,.16);
+  }
+  .online-button--primary{
+    color:#061826;
+    background:linear-gradient(135deg,#facc15 0%,#fb7185 48%,#8b5cf6 100%);
+    box-shadow:0 18px 38px rgba(251,113,133,.24);
+  }
+  .online-summary{
+    gap:18px;
+  }
+  .online-stat{
+    border:2px solid rgba(255,255,255,.42);
+    border-radius:22px;
+    color:#ffffff;
+    box-shadow:0 18px 38px rgba(0,0,0,.20);
+  }
+  .online-stat:nth-child(1){background:linear-gradient(135deg,#38bdf8 0%,#2dd4bf 52%,#22c55e 100%)}
+  .online-stat:nth-child(2){background:linear-gradient(135deg,#facc15 0%,#fb7185 56%,#8b5cf6 100%)}
+  .online-stat:nth-child(3){background:linear-gradient(135deg,#34d399 0%,#22d3ee 52%,#3b82f6 100%)}
+  .online-stat:nth-child(4){background:linear-gradient(135deg,#60a5fa 0%,#818cf8 52%,#c084fc 100%)}
+  .online-stat span,
+  .online-stat strong{
+    color:#ffffff;
+    text-shadow:0 2px 12px rgba(15,23,42,.28);
+  }
+  .online-alert{
+    border:2px solid rgba(251,113,133,.42);
+    background:linear-gradient(135deg,#ffe4e6,#ffffff);
+    color:#9f1239;
+    box-shadow:0 20px 44px rgba(0,0,0,.18);
+  }
+  .booking-layout{
+    gap:24px;
+  }
+  .room-grid{
+    gap:18px;
+  }
+  .room-card{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:24px;
+    background:#ffffff;
+    box-shadow:0 18px 44px rgba(0,0,0,.18);
+  }
+  .room-card.is-selected{
+    border-color:#2dd4bf;
+    box-shadow:0 0 0 5px rgba(45,212,191,.22),0 22px 54px rgba(0,0,0,.22);
+  }
+  .room-card img{
+    height:178px;
+    border-bottom:2px solid rgba(186,230,253,.54);
+  }
+  .room-card h3,
+  .service-name strong,
+  .total-line strong{
+    color:#0f2d42;
+    letter-spacing:0;
+  }
+  .room-card p,
+  .service-name span{
+    color:#587083;
+  }
+  .room-card .online-kicker{
+    background:#ecfeff;
+    border-color:rgba(14,165,233,.24);
+    color:#075985;
+  }
+  .room-price{
+    color:#047857;
+  }
+  .room-check{
+    color:#0f2d42;
+  }
+  .room-check input{
+    accent-color:#14b8a6;
+  }
+  .room-detail-link{
+    border:1px solid rgba(255,255,255,.62);
+    background:linear-gradient(135deg,#67e8f9,#86efac);
+    color:#062338;
+    box-shadow:0 10px 22px rgba(0,0,0,.12);
+  }
+  .service-row{
+    grid-template-columns:minmax(0,1.1fr) 78px minmax(124px,.72fr);
+    gap:10px;
+    margin-bottom:12px;
+    padding:12px;
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:20px;
+    background:linear-gradient(135deg,#ffffff 0%,#effcff 54%,#f8fafc 100%);
+    box-shadow:0 16px 34px rgba(0,0,0,.16);
+  }
+  .service-row:last-child{
+    margin-bottom:0;
+  }
+  .service-row .service-name strong{
+    color:#0f2d42;
+    font-size:16px;
+  }
+  .service-row .service-name{
+    min-width:0;
+  }
+  .service-row .service-name span{
+    color:#047857;
+    font-weight:900;
+  }
+  .service-row .online-field label{
+    color:#0f2d42;
+  }
+  .service-row .online-field input,
+  .service-row .online-field select{
+    min-height:52px;
+    padding-inline:10px;
+    box-shadow:0 10px 22px rgba(12,39,64,.10);
+  }
+  .service-help,
+  .capacity-alert,
+  .empty{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:20px;
+    background:rgba(255,255,255,.94);
+    color:#0f2d42;
+    box-shadow:0 14px 30px rgba(0,0,0,.15);
+  }
+  .capacity-alert{
+    border-color:rgba(251,113,133,.42);
+    background:#ffe4e6;
+    color:#9f1239;
+  }
+  .total-lines{
+    gap:12px;
+  }
+  .total-line{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:18px;
+    padding:12px;
+    background:rgba(255,255,255,.94);
+    color:#587083;
+    box-shadow:0 14px 30px rgba(0,0,0,.12);
+  }
+  .total-line--grand{
+    border-color:rgba(255,255,255,.44);
+    background:linear-gradient(135deg,#38bdf8 0%,#2dd4bf 52%,#22c55e 100%);
+    color:#ffffff;
+  }
+  .total-line--grand:nth-last-child(1){
+    background:linear-gradient(135deg,#facc15 0%,#fb7185 56%,#8b5cf6 100%);
+  }
+  .total-line--grand strong,
+  .total-line--grand span{
+    color:#ffffff;
+    text-shadow:0 2px 12px rgba(15,23,42,.28);
+  }
+  .sticky-total{
+    top:104px;
+  }
+  @media(max-width:980px){
+    .online-shell{gap:20px}
+    .booking-layout{gap:20px}
+    .online-hero,
+    .online-panel{
+      border-radius:22px;
+      padding:20px;
+    }
+  }
 </style>
 
 <main class="online-shell">
@@ -89,6 +405,12 @@
             <div class="online-field"><label>CCCD/CMND</label><input name="cccd" required value="<%= formValues.cccd %>" /></div>
             <div class="online-field"><label>Số điện thoại</label><input name="sdt" required value="<%= formValues.sdt %>" /></div>
             <div class="online-field"><label>Email</label><input name="email" type="email" required value="<%= formValues.email %>" /></div>
+            <div class="online-field" style="grid-column:1/-1">
+              <label style="display:flex;align-items:flex-start;gap:10px;text-transform:none;letter-spacing:0;font-size:13px;line-height:1.45">
+                <input type="checkbox" name="use_existing_customer" value="1" <%= ["1","true","on"].includes(String(formValues.use_existing_customer || "").toLowerCase()) ? "checked" : "" %> style="width:auto;min-height:auto;margin-top:3px" />
+                <span>Tôi là khách hàng cũ, cho phép hệ thống dùng hồ sơ đã lưu nếu CCCD/SĐT/email trùng khớp. Nếu thông tin không khớp, hệ thống sẽ yêu cầu nhập lại để tránh đặt nhầm hồ sơ.</span>
+              </label>
+            </div>
             <div class="online-field"><label>Số khách</label><input name="so_nguoi" id="guestCount" type="number" min="1" required value="<%= formValues.so_nguoi || filters.so_khach || 1 %>" /></div>
             <div class="online-field"><label>Ngày nhận</label><input name="ngay_nhan" id="checkinDate" type="date" required value="<%= formValues.ngay_nhan || filters.ngay_nhan %>" /></div>
             <div class="online-field"><label>Ngày trả</label><input name="ngay_tra" id="checkoutDate" type="date" required value="<%= formValues.ngay_tra || filters.ngay_tra %>" /></div>

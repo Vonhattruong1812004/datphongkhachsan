@@ -1,34 +1,701 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">AI Diagnostics</div>
-    <h2>Concierge, recommendation va analytics</h2>
-    <div class="dashboard-grid">
-      <article class="dashboard-card"><strong><%= payload.summary.overall_score %>%</strong><h3>AI score</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.conciergeCount %></strong><h3>Concierge calls</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.recommendationCount %></strong><h3>Recommendation calls</h3></article>
-    </div>
-    <p class="muted" style="margin-top:16px;">Mode: <%= payload.provider.mode %> · Provider: <%= payload.provider.provider %> · <%= payload.provider.summary %></p>
-    <div class="nav-links" style="margin-top:16px;">
-      <a class="chip" href="/api/admin/diagnostics/ai">AI JSON</a>
-      <a class="chip" href="/ai/analytics">Mở AI Analytics</a>
-      <a class="chip" href="/ai/concierge">Mở AI Concierge</a>
-      <a class="chip" href="/dashboard/admin">Về dashboard Admin</a>
-    </div>
-  </section>
-  <section class="panel">
-    <div class="section-eyebrow">Signals</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.signals.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge">signal</span>
-          <h3><%= item.label %></h3>
-          <strong><%= item.value %></strong>
-          <p class="muted"><%= item.detail %></p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+<%
+  const summary = payload?.summary || {};
+  const provider = payload?.provider || {};
+  const signals = payload?.signals || [];
+  const dailyTrend = payload?.dailyTrend || [];
+  const topServices = payload?.topServices || [];
+  const nextActions = payload?.next_actions || [];
+  const score = Number(summary.overall_score || 0);
+  const totalRequests = Number(summary.totalAiRequests || 0);
+  const conciergeCount = Number(summary.conciergeCount || 0);
+  const recommendationCount = Number(summary.recommendationCount || 0);
+  const generatedAt = payload?.generatedAt || new Date().toISOString();
+  const shortTime = new Date(generatedAt).toLocaleString("vi-VN", { hour12: false });
+  const formatMoney = (value) => Number(value || 0).toLocaleString("vi-VN") + " đ";
+  const maxTrend = Math.max(1, ...dailyTrend.map((item) => Number(item.total || 0)));
+%>
+<style>
+  .ai-diagnostics {
+    --ai-ink: #f8fbff;
+    --ai-muted: #bfd4ea;
+    --ai-line: rgba(125, 211, 252, .22);
+    --ai-cyan: #67e8f9;
+    --ai-green: #5eead4;
+    --ai-blue: #60a5fa;
+    --ai-violet: #a78bfa;
+    --ai-pink: #f472b6;
+    --ai-amber: #facc15;
+    --ai-shadow: 0 34px 100px rgba(0, 0, 0, .36);
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100vh - 84px);
+    overflow: hidden;
+    padding: 36px 18px 64px;
+    color: var(--ai-ink);
+    background:
+      radial-gradient(circle at 12% 14%, rgba(167, 139, 250, .24), transparent 30%),
+      radial-gradient(circle at 84% 16%, rgba(34, 211, 238, .22), transparent 34%),
+      radial-gradient(circle at 54% 112%, rgba(244, 114, 182, .15), transparent 42%),
+      linear-gradient(135deg, #03111f 0%, #071634 45%, #180b2e 76%, #060813 100%);
+  }
+
+  .ai-diagnostics::before,
+  .ai-diagnostics::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .ai-diagnostics::before {
+    inset: 0;
+    opacity: .72;
+    background:
+      radial-gradient(circle, #e0f2fe 0 1px, transparent 2px) 10% 12% / 150px 150px,
+      radial-gradient(circle, #c4b5fd 0 1px, transparent 2px) 42% 30% / 210px 210px,
+      radial-gradient(circle, #f9a8d4 0 1px, transparent 2px) 78% 8% / 180px 180px,
+      linear-gradient(114deg, transparent 0 50%, rgba(103, 232, 249, .18) 52%, transparent 57% 100%);
+  }
+
+  .ai-diagnostics::after {
+    right: -15%;
+    bottom: -40%;
+    width: 700px;
+    height: 700px;
+    border-radius: 999px;
+    opacity: .34;
+    background: conic-gradient(from 140deg, rgba(167, 139, 250, .32), rgba(34, 211, 238, .24), rgba(244, 114, 182, .22), rgba(250, 204, 21, .13), rgba(167, 139, 250, .32));
+    filter: blur(10px);
+  }
+
+  .ai-wrap {
+    position: relative;
+    z-index: 1;
+    width: min(1280px, 100%);
+    margin: 0 auto;
+  }
+
+  .ai-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) 360px;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .ai-panel,
+  .ai-score,
+  .ai-stat,
+  .ai-signal,
+  .ai-trend,
+  .ai-service,
+  .ai-action {
+    border: 1px solid var(--ai-line);
+    background:
+      linear-gradient(145deg, rgba(8, 18, 40, .90), rgba(13, 25, 56, .76)),
+      radial-gradient(circle at 88% 12%, rgba(167, 139, 250, .16), transparent 32%);
+    box-shadow: var(--ai-shadow), inset 0 1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: blur(22px);
+  }
+
+  .ai-panel {
+    position: relative;
+    overflow: hidden;
+    min-height: 344px;
+    border-radius: 34px;
+    padding: clamp(28px, 4vw, 42px);
+  }
+
+  .ai-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .12), transparent 30%),
+      radial-gradient(circle at 84% 16%, rgba(244, 114, 182, .18), transparent 28%);
+  }
+
+  .ai-label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    border-radius: 999px;
+    padding: 8px 13px;
+    color: #f5f3ff;
+    background: rgba(8, 18, 40, .76);
+    border: 1px solid rgba(196, 181, 253, .30);
+    box-shadow: 0 16px 42px rgba(167, 139, 250, .14);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .ai-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--ai-violet);
+    box-shadow: 0 0 0 7px rgba(167, 139, 250, .17), 0 0 24px rgba(167, 139, 250, .40);
+  }
+
+  .ai-panel h1 {
+    position: relative;
+    z-index: 1;
+    max-width: 840px;
+    margin: 22px 0 12px;
+    color: #fff;
+    font-size: clamp(42px, 5.6vw, 72px);
+    line-height: .94;
+    letter-spacing: 0;
+    text-shadow: 0 14px 38px rgba(0, 0, 0, .30);
+  }
+
+  .ai-panel h1 span {
+    color: transparent;
+    background: linear-gradient(135deg, #67e8f9 0%, #a78bfa 38%, #f472b6 70%, #facc15 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .ai-lead {
+    position: relative;
+    z-index: 1;
+    max-width: 740px;
+    margin: 0;
+    color: var(--ai-muted);
+    font-size: 15.5px;
+    line-height: 1.68;
+  }
+
+  .ai-provider {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .ai-provider span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    border-radius: 999px;
+    padding: 8px 12px;
+    color: #dffcff;
+    background: rgba(10, 24, 52, .70);
+    border: 1px solid rgba(125, 211, 252, .22);
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .ai-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .ai-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border: 1px solid rgba(125, 211, 252, .28);
+    border-radius: 999px;
+    padding: 10px 16px;
+    color: #f8fbff;
+    background: rgba(10, 24, 52, .76);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, .20);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .ai-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(103, 232, 249, .56);
+    box-shadow: 0 20px 52px rgba(34, 211, 238, .20);
+  }
+
+  .ai-button--primary {
+    color: #061426;
+    border-color: rgba(255, 255, 255, .22);
+    background: linear-gradient(135deg, #67e8f9, #a78bfa 58%, #facc15);
+    box-shadow: 0 20px 54px rgba(167, 139, 250, .28);
+  }
+
+  .ai-score {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 34px;
+    padding: 26px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 32% 20%, rgba(167, 139, 250, .22), transparent 30%),
+      linear-gradient(155deg, rgba(8, 18, 40, .92), rgba(18, 12, 45, .84));
+  }
+
+  .ai-core {
+    --score: <%= score %>;
+    position: relative;
+    width: 198px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--ai-violet) calc(var(--score) * 1%), rgba(148, 163, 184, .18) 0);
+    box-shadow: inset 0 0 0 15px rgba(8, 18, 40, .70), 0 0 0 1px rgba(196, 181, 253, .18), 0 24px 76px rgba(167, 139, 250, .26);
+  }
+
+  .ai-core::before,
+  .ai-core::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+  }
+
+  .ai-core::before {
+    inset: 30px;
+    border: 1px solid rgba(196, 181, 253, .20);
+    background: linear-gradient(145deg, rgba(8, 18, 40, .96), rgba(15, 23, 42, .88));
+  }
+
+  .ai-core::after {
+    inset: -10px;
+    border: 1px solid rgba(103, 232, 249, .20);
+    transform: rotate(-18deg) scaleY(.58);
+  }
+
+  .ai-core-value {
+    position: relative;
+    z-index: 1;
+  }
+
+  .ai-core-value strong {
+    display: block;
+    color: #fff;
+    font-size: 48px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .ai-core-value span {
+    display: block;
+    margin-top: 7px;
+    color: #c4b5fd;
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .ai-score h2 {
+    margin: 20px 0 6px;
+    color: #fff;
+    font-size: 26px;
+    letter-spacing: 0;
+  }
+
+  .ai-score p {
+    margin: 0;
+    color: var(--ai-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .ai-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .ai-stat {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .ai-stat::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 6px;
+    background: linear-gradient(90deg, var(--stat-color), transparent);
+  }
+
+  .ai-stat strong {
+    display: block;
+    color: #fff;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .ai-stat span {
+    display: block;
+    margin-top: 9px;
+    color: var(--ai-muted);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .ai-section {
+    margin-top: 26px;
+  }
+
+  .ai-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .ai-section-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 28px;
+    letter-spacing: 0;
+  }
+
+  .ai-section-head p {
+    margin: 5px 0 0;
+    color: var(--ai-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .ai-signal-grid,
+  .ai-service-grid,
+  .ai-action-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .ai-signal,
+  .ai-service,
+  .ai-action {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    padding: 18px;
+  }
+
+  .ai-signal::before,
+  .ai-service::before,
+  .ai-action::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 6px;
+    background: linear-gradient(90deg, var(--tone), transparent);
+  }
+
+  .ai-signal:nth-child(1) { --tone: var(--ai-cyan); }
+  .ai-signal:nth-child(2) { --tone: var(--ai-violet); }
+  .ai-signal:nth-child(3) { --tone: var(--ai-pink); }
+  .ai-service { --tone: var(--ai-green); }
+  .ai-action { --tone: var(--ai-amber); }
+
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: var(--tone);
+    background: rgba(8, 18, 40, .78);
+    border: 1px solid rgba(125, 211, 252, .20);
+    font-size: 11px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .ai-badge::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 18px currentColor;
+  }
+
+  .ai-signal h3,
+  .ai-service h3 {
+    margin: 18px 0 8px;
+    color: #fff;
+    font-size: 21px;
+    line-height: 1.15;
+    letter-spacing: 0;
+  }
+
+  .ai-signal strong {
+    display: block;
+    color: #fff;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .ai-signal p,
+  .ai-service p,
+  .ai-action {
+    margin: 8px 0 0;
+    color: var(--ai-muted);
+    font-size: 13.5px;
+    line-height: 1.58;
+  }
+
+  .ai-trend {
+    border-radius: 28px;
+    padding: 20px;
+  }
+
+  .ai-bars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(44px, 72px));
+    justify-content: start;
+    align-items: end;
+    gap: 10px;
+    min-height: 190px;
+  }
+
+  .ai-bar {
+    display: grid;
+    align-items: end;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .ai-bar span:first-child {
+    display: block;
+    min-height: 18px;
+    border-radius: 999px 999px 8px 8px;
+    background: linear-gradient(180deg, var(--ai-cyan), var(--ai-violet));
+    box-shadow: 0 18px 42px rgba(103, 232, 249, .18);
+  }
+
+  .ai-bar small {
+    color: var(--ai-muted);
+    font-size: 10px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ai-empty {
+    border: 1px dashed rgba(125, 211, 252, .28);
+    border-radius: 24px;
+    padding: 18px;
+    color: var(--ai-muted);
+    background: rgba(8, 18, 40, .55);
+    font-weight: 850;
+  }
+
+  @media (max-width: 1100px) {
+    .ai-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-signal-grid,
+    .ai-service-grid,
+    .ai-action-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .ai-diagnostics {
+      padding: 24px 12px 54px;
+    }
+
+    .ai-panel,
+    .ai-score,
+    .ai-signal,
+    .ai-service,
+    .ai-trend {
+      border-radius: 26px;
+    }
+
+    .ai-panel {
+      min-height: auto;
+      padding: 22px;
+    }
+
+    .ai-panel h1 {
+      font-size: 42px;
+    }
+
+    .ai-stats,
+    .ai-signal-grid,
+    .ai-service-grid,
+    .ai-action-list {
+      grid-template-columns: 1fr;
+    }
+
+    .ai-section-head {
+      display: block;
+    }
+  }
+</style>
+
+<main class="ai-diagnostics">
+  <div class="ai-wrap">
+    <section class="ai-hero" aria-label="AI diagnostics">
+      <div class="ai-panel">
+        <div class="ai-label">AI diagnostics</div>
+        <h1>Concierge, gợi ý phòng và <span>analytics AI</span></h1>
+        <p class="ai-lead">
+          Theo dõi lớp AI local heuristic đang dùng cho tư vấn khách hàng, gợi ý phòng
+          và thống kê chuyển đổi dịch vụ trong hệ thống.
+        </p>
+        <div class="ai-provider">
+          <span>Mode: <%= provider.mode || "unknown" %></span>
+          <span>Provider: <%= provider.provider || "unknown" %></span>
+          <span><%= provider.adapter_ready ? "Adapter ready" : "Adapter partial" %></span>
+        </div>
+        <p class="ai-lead" style="margin-top:12px;"><%= provider.summary || "" %></p>
+        <div class="ai-actions">
+          <a class="ai-button ai-button--primary" href="/api/admin/diagnostics/ai">AI JSON</a>
+          <a class="ai-button" href="/ai/analytics">Mở AI Analytics</a>
+          <a class="ai-button" href="/ai/concierge">Mở AI Concierge</a>
+          <a class="ai-button" href="/dashboard/admin">Dashboard Admin</a>
+        </div>
+      </div>
+
+      <aside class="ai-score">
+        <div class="ai-core" aria-label="AI diagnostics score">
+          <div class="ai-core-value">
+            <strong><%= score %></strong>
+            <span>AI score</span>
+          </div>
+        </div>
+        <h2><%= summary.ready ? "Sẵn sàng" : "Cần theo dõi" %></h2>
+        <p>Cập nhật: <%= shortTime %></p>
+      </aside>
+    </section>
+
+    <section class="ai-stats" aria-label="Tổng quan AI">
+      <article class="ai-stat" style="--stat-color: var(--ai-cyan)">
+        <strong><%= totalRequests %></strong>
+        <span>Tổng AI requests</span>
+      </article>
+      <article class="ai-stat" style="--stat-color: var(--ai-violet)">
+        <strong><%= conciergeCount %></strong>
+        <span>Concierge calls</span>
+      </article>
+      <article class="ai-stat" style="--stat-color: var(--ai-pink)">
+        <strong><%= recommendationCount %></strong>
+        <span>Recommendation calls</span>
+      </article>
+    </section>
+
+    <section class="ai-section" aria-label="AI signals">
+      <div class="ai-section-head">
+        <div>
+          <h2>Signals</h2>
+          <p>Các chỉ số AI quan trọng được lấy từ log API và dữ liệu chuyển đổi dịch vụ.</p>
+        </div>
+      </div>
+      <div class="ai-signal-grid">
+        <% signals.forEach((item) => { %>
+          <article class="ai-signal">
+            <span class="ai-badge">Signal</span>
+            <h3><%= item.label %></h3>
+            <strong><%= item.value %></strong>
+            <p><%= item.detail %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="ai-section" aria-label="AI trend">
+      <div class="ai-section-head">
+        <div>
+          <h2>Xu hướng 14 ngày</h2>
+          <p>Số lượt gọi AI concierge và recommendation theo ngày.</p>
+        </div>
+      </div>
+      <% if (!dailyTrend.length) { %>
+        <div class="ai-empty">Chưa có log AI trong 14 ngày gần đây.</div>
+      <% } else { %>
+        <div class="ai-trend">
+          <div class="ai-bars">
+            <% dailyTrend.forEach((item) => {
+              const total = Number(item.total || 0);
+              const height = Math.max(18, Math.round((total / maxTrend) * 160));
+            %>
+              <div class="ai-bar" title="<%= item.day %>: <%= total %> lượt">
+                <span style="height:<%= height %>px"></span>
+                <small><%= item.day %></small>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="ai-section" aria-label="Top service conversions">
+      <div class="ai-section-head">
+        <div>
+          <h2>Top service conversions</h2>
+          <p>Các dịch vụ phát sinh có lượt dùng hoặc doanh thu nổi bật trong dữ liệu hiện tại.</p>
+        </div>
+      </div>
+      <% if (!topServices.length) { %>
+        <div class="ai-empty">Chưa có dữ liệu chuyển đổi dịch vụ để hiển thị.</div>
+      <% } else { %>
+        <div class="ai-service-grid">
+          <% topServices.forEach((item) => { %>
+            <article class="ai-service">
+              <span class="ai-badge">Service</span>
+              <h3><%= item.serviceName %></h3>
+              <p><strong><%= item.total %></strong> lượt dùng · <%= formatMoney(item.revenue) %></p>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="ai-section" aria-label="Gợi ý xử lý AI">
+      <div class="ai-section-head">
+        <div>
+          <h2>Gợi ý xử lý</h2>
+          <p>Các khuyến nghị vận hành hoặc mở rộng lớp AI.</p>
+        </div>
+      </div>
+      <% if (!nextActions.length) { %>
+        <div class="ai-empty">AI diagnostics chưa có gợi ý xử lý thêm.</div>
+      <% } else { %>
+        <div class="ai-action-list">
+          <% nextActions.forEach((action) => { %>
+            <div class="ai-action"><%= action %></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
 </main>
 <%- include("../partials/footer") %>

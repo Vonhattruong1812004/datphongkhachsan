@@ -1,13 +1,18 @@
+import bcrypt from "bcryptjs";
 import dayjs from "dayjs";
 import { z } from "zod";
 import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 import { directBookingHoldStore } from "../../payment/direct-booking-hold-store";
-import { customerBookingHoldStore, type CustomerBookingHold } from "../../payment/customer-booking-hold-store";
+import { customerBookingHoldStore, type CustomerBookingAccount, type CustomerBookingHold } from "../../payment/customer-booking-hold-store";
 import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, parseSepayMetadata, replaceSepayMetadata } from "../../payment/sepay";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
 import { calculatePromotionDiscount, isCustomerCancelableBooking, isCustomerEditableBooking } from "./booking-rules";
+
+const CUSTOMER_ACCOUNT_PASSWORD_HASH_ROUNDS = 12;
+const DEFAULT_ONLINE_CUSTOMER_PASSWORD = "123456";
+const CUSTOMER_CANCEL_GRACE_MINUTES = 120;
 
 function firstFormValue(value: unknown) {
   if (Array.isArray(value)) {
@@ -22,9 +27,33 @@ function emptyToNullFirstFormValue(value: unknown) {
   return normalized === "" || normalized == null ? null : normalized;
 }
 
+function emptyToUndefinedFirstFormValue(value: unknown) {
+  const normalized = firstFormValue(value);
+  if (normalized == null) return undefined;
+
+  return String(normalized).trim() === "" ? undefined : normalized;
+}
+
 const textField = z.preprocess(firstFormValue, z.string().optional().default(""));
 const numberField = z.preprocess(firstFormValue, z.coerce.number().optional().default(0));
 const requiredTextField = z.preprocess(firstFormValue, z.string());
+const bookingServicesFieldSchema = z.preprocess((value) => {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return Array.isArray(value) ? value : [];
+}, z.array(z.object({
+  service_id: z.coerce.number().int().positive(),
+  room_id: z.coerce.number().int().positive().optional(),
+  quantity: z.coerce.number().int().min(1).default(1),
+  note: z.string().optional().default("")
+})).optional().default([]));
 
 function validateBookingDateRange(value: { ngay_nhan: string; ngay_tra: string }, ctx: z.RefinementCtx) {
   const checkin = parseDateOnly(value.ngay_nhan);
@@ -60,7 +89,7 @@ export const searchBookingSchema = z.object({
   gia_den: numberField,
   ngay_nhan: textField,
   ngay_tra: textField,
-  sort_by: z.preprocess(firstFormValue, z.enum(["ai", "price_asc", "price_desc", "capacity_fit"]).optional().default("ai"))
+  sort_by: z.preprocess(emptyToUndefinedFirstFormValue, z.enum(["ai", "price_asc", "price_desc", "capacity_fit"]).optional().default("ai"))
 });
 
 export type SearchBookingInput = z.infer<typeof searchBookingSchema>;
@@ -74,7 +103,12 @@ const bookingPreviewBaseSchema = z.object({
   so_nguoi: z.preprocess(firstFormValue, z.coerce.number().int("Số người phải là số nguyên.").min(1, "Số người phải lớn hơn hoặc bằng 1.")),
   ngay_nhan: requiredTextField.pipe(z.string().trim().min(10, "Vui lòng chọn ngày nhận phòng.")),
   ngay_tra: requiredTextField.pipe(z.string().trim().min(10, "Vui lòng chọn ngày trả phòng.")),
-  ma_km: z.preprocess(emptyToNullFirstFormValue, z.coerce.number().int("Khuyến mãi không hợp lệ.").optional().nullable())
+  ma_km: z.preprocess(emptyToNullFirstFormValue, z.coerce.number().int("Khuyến mãi không hợp lệ.").optional().nullable()),
+  use_existing_customer: z.preprocess((value) => {
+    const raw = String(firstFormValue(value) ?? "").trim().toLowerCase();
+    return ["1", "true", "on", "yes"].includes(raw);
+  }, z.boolean().optional().default(false)),
+  services: bookingServicesFieldSchema
 });
 
 export const bookingPreviewSchema = bookingPreviewBaseSchema.superRefine(validateBookingDateRange);
@@ -85,23 +119,7 @@ export const bookingMultiRoomSchema = bookingPreviewBaseSchema.omit({ room_id: t
   room_ids: z.preprocess((value) => {
     const raw = Array.isArray(value) ? value : (value ? [value] : []);
     return raw.map((item) => Number(item)).filter((item) => Number.isFinite(item) && item > 0);
-  }, z.array(z.number().int().positive()).min(1, "Vui lòng chọn ít nhất một phòng.")),
-  services: z.preprocess((value) => {
-    if (typeof value === "string") {
-      try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return Array.isArray(value) ? value : [];
-  }, z.array(z.object({
-    service_id: z.coerce.number().int().positive(),
-    room_id: z.coerce.number().int().positive(),
-    quantity: z.coerce.number().int().min(1).default(1),
-    note: z.string().optional().default("")
-  })).optional().default([]))
+  }, z.array(z.number().int().positive()).min(1, "Vui lòng chọn ít nhất một phòng."))
 }).superRefine(validateBookingDateRange);
 
 export type BookingMultiRoomInput = z.infer<typeof bookingMultiRoomSchema>;
@@ -304,14 +322,26 @@ interface EditableBookingRow {
 export interface BookingPreviewPayload {
   room: SearchRoomRow;
   booking: BookingPreviewInput;
+  services: Array<{
+    service_id: number;
+    room_id: number;
+    quantity: number;
+    note: string;
+    name: string;
+    unitPrice: number;
+    amount: number;
+    amountFormatted: string;
+  }>;
   summary: {
     nights: number;
     unitPrice: number;
     subtotal: number;
+    serviceAmount: number;
     discount: number;
     total: number;
     depositAmount: number;
     subtotalFormatted: string;
+    serviceAmountFormatted: string;
     discountFormatted: string;
     totalFormatted: string;
     depositAmountFormatted: string;
@@ -778,6 +808,57 @@ export class BookingService {
     }));
   }
 
+  private async resolveSelectedServices(
+    items: BookingPreviewInput["services"] | BookingMultiRoomInput["services"],
+    allowedRoomIds: Set<number>,
+    fallbackRoomId?: number
+  ) {
+    const services = [];
+    let serviceAmount = 0;
+
+    for (const item of items || []) {
+      const roomId = Number(item.room_id || fallbackRoomId || 0);
+      if (!allowedRoomIds.has(roomId)) {
+        throw new HttpError(422, "Dich vu phai gan voi mot phong da chon.");
+      }
+
+      const serviceResult = await query<{
+        id: number;
+        tenDichVu: string;
+        giaDichVu: number;
+      }>(
+        `
+          SELECT madichvu AS id, tendichvu AS "tenDichVu", giadichvu AS "giaDichVu"
+          FROM dichvu
+          WHERE madichvu = $1
+            AND trangthai = 'HoatDong'
+          LIMIT 1
+        `,
+        [Number(item.service_id)]
+      );
+      const service = serviceResult.rows[0];
+      if (!service) {
+        throw new HttpError(422, `Dich vu ${item.service_id} khong hop le.`);
+      }
+
+      const quantity = Math.max(1, Number(item.quantity || 1));
+      const amount = Number(service.giaDichVu || 0) * quantity;
+      serviceAmount += amount;
+      services.push({
+        service_id: Number(item.service_id),
+        room_id: roomId,
+        quantity,
+        note: item.note || "",
+        name: service.tenDichVu,
+        unitPrice: Number(service.giaDichVu || 0),
+        amount,
+        amountFormatted: formatMoney(amount)
+      });
+    }
+
+    return { services, serviceAmount };
+  }
+
   async previewBooking(rawInput: unknown): Promise<BookingPreviewPayload> {
     const booking = bookingPreviewSchema.parse(rawInput);
     const room = await this.getRoomById(booking.room_id);
@@ -801,23 +882,30 @@ export class BookingService {
 
     const nights = nightsBetween(booking.ngay_nhan, booking.ngay_tra);
     const subtotal = Number(room.gia) * nights;
+    const { services, serviceAmount } = await this.resolveSelectedServices(booking.services, new Set([Number(room.id)]), Number(room.id));
     const promotion = booking.ma_km ? await this.getPromotionById(booking.ma_km) : null;
-    const discount = calculatePromotionDiscount(subtotal, promotion);
-    const total = Math.max(0, subtotal - discount);
+    const discount = calculatePromotionDiscount(subtotal + serviceAmount, promotion);
+    const total = Math.max(0, subtotal + serviceAmount - discount);
     const depositAmount = Math.ceil(total * 0.5);
 
     return {
       room,
-      booking,
+      booking: {
+        ...booking,
+        services
+      },
+      services,
       promotion,
       summary: {
         nights,
         unitPrice: Number(room.gia),
         subtotal,
+        serviceAmount,
         discount,
         total,
         depositAmount,
         subtotalFormatted: formatMoney(subtotal),
+        serviceAmountFormatted: formatMoney(serviceAmount),
         discountFormatted: formatMoney(discount),
         totalFormatted: formatMoney(total),
         depositAmountFormatted: formatMoney(depositAmount),
@@ -847,44 +935,7 @@ export class BookingService {
 
     const nights = nightsBetween(booking.ngay_nhan, booking.ngay_tra);
     const serviceRoomIds = new Set(roomIds);
-    const services = [];
-    let serviceAmount = 0;
-
-    for (const item of booking.services || []) {
-      if (!serviceRoomIds.has(Number(item.room_id))) {
-        throw new HttpError(422, "Dich vu phai gan voi mot phong da chon.");
-      }
-
-      const serviceResult = await query<{
-        id: number;
-        tenDichVu: string;
-        giaDichVu: number;
-      }>(
-        `
-          SELECT madichvu AS id, tendichvu AS "tenDichVu", giadichvu AS "giaDichVu"
-          FROM dichvu
-          WHERE madichvu = $1
-            AND trangthai = 'HoatDong'
-          LIMIT 1
-        `,
-        [Number(item.service_id)]
-      );
-      const service = serviceResult.rows[0];
-      if (!service) {
-        throw new HttpError(422, `Dich vu ${item.service_id} khong hop le.`);
-      }
-
-      const quantity = Math.max(1, Number(item.quantity || 1));
-      const amount = Number(service.giaDichVu || 0) * quantity;
-      serviceAmount += amount;
-      services.push({
-        ...item,
-        name: service.tenDichVu,
-        unitPrice: Number(service.giaDichVu || 0),
-        amount,
-        amountFormatted: formatMoney(amount)
-      });
-    }
+    const { services, serviceAmount } = await this.resolveSelectedServices(booking.services, serviceRoomIds);
 
     const roomAmount = rooms.reduce((sum, room) => sum + Number(room.gia || 0) * nights, 0);
     const promotion = booking.ma_km ? await this.getPromotionById(booking.ma_km) : null;
@@ -893,7 +944,10 @@ export class BookingService {
     const depositAmount = Math.ceil(total * 0.5);
 
     return {
-      booking,
+      booking: {
+        ...booking,
+        services
+      },
       rooms: rooms.map((room) => ({
         ...room,
         priceFormatted: formatMoney(room.gia),
@@ -922,8 +976,14 @@ export class BookingService {
 
   async createCustomerBookingPaymentHold(rawInput: unknown, preferredCustomerId = 0) {
     const preview = await this.previewBooking(rawInput);
-    const hold = customerBookingHoldStore.create(preview.booking, preferredCustomerId, {
+    const customerDecision = await this.prepareGuestBookingCustomer(preview.booking, preferredCustomerId);
+    const previewForHold = {
+      ...preview,
+      booking: customerDecision.booking as BookingPreviewInput
+    };
+    const hold = customerBookingHoldStore.create(previewForHold.booking, customerDecision.preferredCustomerId, {
       roomAmount: preview.summary.subtotal,
+      serviceAmount: preview.summary.serviceAmount,
       discountAmount: preview.summary.discount,
       total: preview.summary.total,
       depositAmount: preview.summary.depositAmount
@@ -937,7 +997,7 @@ export class BookingService {
       expiresAt: hold.expiresAt,
       paymentPending: true,
       paymentTransfer: buildSepayTransferPayload(hold.id, preview.summary.depositAmount),
-      preview,
+      preview: previewForHold,
       total: preview.summary.total,
       depositAmount: preview.summary.depositAmount,
       totalFormatted: preview.summary.totalFormatted,
@@ -948,7 +1008,12 @@ export class BookingService {
 
   async createCustomerMultiRoomPaymentHold(rawInput: unknown, preferredCustomerId = 0) {
     const preview = await this.previewMultiRoomBooking(rawInput);
-    const hold = customerBookingHoldStore.createMulti(preview.booking, preferredCustomerId, {
+    const customerDecision = await this.prepareGuestBookingCustomer(preview.booking, preferredCustomerId);
+    const previewForHold = {
+      ...preview,
+      booking: customerDecision.booking as BookingMultiRoomInput
+    };
+    const hold = customerBookingHoldStore.createMulti(previewForHold.booking, customerDecision.preferredCustomerId, {
       roomAmount: preview.summary.roomAmount,
       serviceAmount: preview.summary.serviceAmount,
       discountAmount: preview.summary.discount,
@@ -964,7 +1029,7 @@ export class BookingService {
       expiresAt: hold.expiresAt,
       paymentPending: true,
       paymentTransfer: buildSepayTransferPayload(hold.id, preview.summary.depositAmount),
-      preview,
+      preview: previewForHold,
       total: preview.summary.total,
       depositAmount: preview.summary.depositAmount,
       totalFormatted: preview.summary.totalFormatted,
@@ -993,6 +1058,7 @@ export class BookingService {
       depositAmount: hold.summary.depositAmount,
       totalFormatted: formatMoney(hold.summary.total),
       depositAmountFormatted: formatMoney(hold.summary.depositAmount),
+      customerAccount: hold.status === "PAID" ? (hold.createdAccount || null) : null,
       message: hold.status === "PAID"
         ? "Thanh toan coc thanh cong. Booking da duoc tao."
         : hold.status === "EXPIRED"
@@ -1034,16 +1100,18 @@ export class BookingService {
     const isMultiRoomHold = Array.isArray((hold.input as BookingMultiRoomInput).room_ids)
       && (hold.input as BookingMultiRoomInput).room_ids.length > 0;
     const detail = isMultiRoomHold
-      ? await this.createMultiRoomBooking(hold.input, hold.preferredCustomerId, {
-          paymentMethod: "ChuyenKhoan",
-          note
-        })
-      : await this.createBooking(hold.input, hold.preferredCustomerId, {
-          paymentMethod: "ChuyenKhoan",
-          note
-        });
+        ? await this.createMultiRoomBooking(hold.input, hold.preferredCustomerId, {
+            paymentMethod: "ChuyenKhoan",
+            note,
+            autoCreateCustomerAccount: true
+          })
+        : await this.createBooking(hold.input, hold.preferredCustomerId, {
+            paymentMethod: "ChuyenKhoan",
+            note,
+            autoCreateCustomerAccount: true
+          });
 
-    customerBookingHoldStore.completeSnapshot(hold, detail.id, detail.bookingCode || "");
+    customerBookingHoldStore.completeSnapshot(hold, detail.id, detail.bookingCode || "", detail.customerAccount || null);
 
     realtimeHub.publish({
       type: "customer_booking_created_after_deposit",
@@ -1068,14 +1136,16 @@ export class BookingService {
       depositAmount: hold.summary.depositAmount,
       totalFormatted: detail.totalFormatted,
       depositAmountFormatted: formatMoney(hold.summary.depositAmount),
+      customerAccount: detail.customerAccount || null,
       message: "Deposit paid and customer booking created."
     };
   }
 
-  async createBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string } = {}) {
+  async createBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string; autoCreateCustomerAccount?: boolean } = {}) {
     const preview = await this.previewBooking(rawInput);
     const paymentMethod = options.paymentMethod || "ChuaThanhToan";
     const bookingNote = options.note || "Booking online tao tu Node.js";
+    let createdAccount: CustomerBookingAccount | null = null;
 
     const bookingId = await withTransaction(async (client) => {
       const lockedRoom = await client.query(
@@ -1107,6 +1177,9 @@ export class BookingService {
       }
 
       const maKhachHang = await this.resolveCustomer(client, preferredCustomerId, preview.booking);
+      if (options.autoCreateCustomerAccount) {
+        createdAccount = await this.ensureOnlineCustomerAccount(client, maKhachHang, preview.booking, "booking online");
+      }
       const bookingCode = this.generateBookingCode();
 
       const giaoDichResult = await client.query(
@@ -1164,7 +1237,7 @@ export class BookingService {
           preview.booking.ngay_nhan,
           preview.booking.ngay_tra,
           preview.room.gia,
-          preview.summary.total,
+          preview.summary.subtotal,
           preview.booking.ten_khach,
           preview.booking.cccd,
           preview.booking.sdt,
@@ -1211,6 +1284,51 @@ export class BookingService {
         [preview.room.id, maGiaoDich, "Booking online duoc tao tu Node.js"]
       );
 
+      for (const service of preview.services) {
+        await client.query(
+          `
+            INSERT INTO chitietdichvu (
+              magiaodich,
+              maphong,
+              madichvu,
+              soluong,
+              giaban,
+              thanhtien,
+              ghichu,
+              trangthaidichvu
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'ChuaSuDung')
+          `,
+          [
+            maGiaoDich,
+            service.room_id,
+            service.service_id,
+            service.quantity,
+            service.unitPrice,
+            service.amount,
+            service.note || null
+          ]
+        );
+      }
+
+      await this.insertCustomerActivityAudit(client, maKhachHang, "CREATE", null, {
+        maGiaoDich,
+        bookingCode,
+        source: "customer_homepage_booking",
+        roomIds: [preview.room.id],
+        checkin: preview.booking.ngay_nhan,
+        checkout: preview.booking.ngay_tra,
+        guestCount: preview.booking.so_nguoi,
+        total: preview.summary.total,
+        depositAmount: Math.ceil(preview.summary.total * 0.5),
+        services: preview.services.map((service) => ({
+          serviceId: service.service_id,
+          roomId: service.room_id,
+          quantity: service.quantity,
+          amount: service.amount
+        }))
+      }, `Khách hàng đặt phòng online tại trang chủ. GD ${maGiaoDich}.`);
+
       return maGiaoDich;
     });
 
@@ -1244,17 +1362,24 @@ export class BookingService {
       }
     });
 
-    return detail;
+    return {
+      ...detail,
+      customerAccount: createdAccount
+    };
   }
 
-  async createMultiRoomBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string } = {}) {
+  async createMultiRoomBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string; autoCreateCustomerAccount?: boolean } = {}) {
     const preview = await this.previewMultiRoomBooking(rawInput);
     const paymentMethod = options.paymentMethod || "ChuaThanhToan";
     const bookingNote = options.note || "Booking online nhieu phong tao tu Node.js";
     const guestByRoom = distributeGuests(preview.booking.so_nguoi, preview.rooms);
+    let createdAccount: CustomerBookingAccount | null = null;
 
     const bookingId = await withTransaction(async (client) => {
       const maKhachHang = await this.resolveCustomer(client, preferredCustomerId, preview.booking);
+      if (options.autoCreateCustomerAccount) {
+        createdAccount = await this.ensureOnlineCustomerAccount(client, maKhachHang, preview.booking, "booking online nhieu phong");
+      }
       const bookingCode = this.generateBookingCode();
 
       const giaoDichResult = await client.query(
@@ -1417,6 +1542,24 @@ export class BookingService {
         );
       }
 
+      await this.insertCustomerActivityAudit(client, maKhachHang, "CREATE", null, {
+        maGiaoDich,
+        bookingCode,
+        source: "customer_homepage_multi_booking",
+        roomIds: preview.rooms.map((room) => room.id),
+        checkin: preview.booking.ngay_nhan,
+        checkout: preview.booking.ngay_tra,
+        guestCount: preview.booking.so_nguoi,
+        total: preview.summary.total,
+        depositAmount: Math.ceil(preview.summary.total * 0.5),
+        services: preview.services.map((service) => ({
+          serviceId: service.service_id,
+          roomId: service.room_id,
+          quantity: service.quantity,
+          amount: service.amount
+        }))
+      }, `Khách hàng đặt nhiều phòng online tại trang chủ. GD ${maGiaoDich}.`);
+
       return maGiaoDich;
     });
 
@@ -1454,7 +1597,10 @@ export class BookingService {
       }
     });
 
-    return detail;
+    return {
+      ...detail,
+      customerAccount: createdAccount
+    };
   }
 
   async getBookingDetail(maGiaoDich: number) {
@@ -1940,6 +2086,35 @@ export class BookingService {
         [maGiaoDich, input.ma_km ?? null, updateNote]
       );
 
+      await this.insertCustomerActivityAudit(client, maKhachHang, "UPDATE", {
+        maGiaoDich,
+        maCtGd: current.maCtGd,
+        roomId: current.maPhong,
+        customerName: current.tenKhach,
+        cccd: current.cccd,
+        phone: current.sdt,
+        email: current.email,
+        guestCount: current.soNguoi,
+        checkin: current.ngayNhanDuKien,
+        checkout: current.ngayTraDuKien,
+        promotionId: current.maKhuyenMai,
+        amount: current.thanhTienPhong
+      }, {
+        maGiaoDich,
+        maCtGd: current.maCtGd,
+        roomId: current.maPhong,
+        customerName: input.ten_khach,
+        cccd: input.cccd,
+        phone: input.sdt,
+        email: input.email,
+        guestCount: input.so_nguoi,
+        checkin: input.ngay_nhan,
+        checkout: input.ngay_tra,
+        promotionId: input.ma_km ?? null,
+        amount: roomTotal,
+        source: "customer_update_booking"
+      }, `Khách hàng tự chỉnh sửa booking online. GD ${maGiaoDich}.`);
+
       return maGiaoDich;
     });
 
@@ -1969,7 +2144,8 @@ export class BookingService {
 
     return {
       room,
-      promotions: await this.getActivePromotions()
+      promotions: await this.getActivePromotions(),
+      services: await this.getActiveServices()
     };
   }
 
@@ -2033,7 +2209,7 @@ export class BookingService {
           INNER JOIN phong p ON p.maphong = ct.maphong
           INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
           WHERE gd.magiaodich = $1
-            AND gd.makhachhang = $2
+            AND gd.makhachhang = $2::int
           ORDER BY ct.mactgd ASC
           FOR UPDATE
         `,
@@ -2094,15 +2270,18 @@ export class BookingService {
 
       const reason = input.reason.trim();
       const cancelNote = `Khách hàng hủy booking online lúc ${formatDate(new Date(), "YYYY-MM-DD HH:mm:ss")}; Lý do: ${reason}`;
-      const refundCode = refundQuote.refundAmount > 0 ? `RF-${header.maGiaoDich}-${Date.now().toString(36).toUpperCase()}` : "";
+      const refundCode = `RF-${header.maGiaoDich}-${Date.now().toString(36).toUpperCase()}`;
+      const requestBankName = refundQuote.refundAmount > 0 ? refundBankName : (refundBankName || "KHONG_AP_DUNG");
+      const requestAccountNo = refundQuote.refundAmount > 0 ? refundAccountNo : (refundAccountNo || "0000");
+      const requestAccountName = refundQuote.refundAmount > 0 ? refundAccountName : (refundAccountName || "KHONG_AP_DUNG");
 
       await client.query(
         `
           UPDATE chitietgiaodich
           SET trangthai = 'Cancelled',
               ghichu = CASE
-                WHEN COALESCE(ghichu, '') = '' THEN $2
-                ELSE CONCAT(ghichu, ' | ', $2)
+                WHEN COALESCE(ghichu, '') = '' THEN $2::text
+                ELSE CONCAT(ghichu, ' | ', $2::text)
               END
           WHERE magiaodich = $1
             AND trangthai = 'Booked'
@@ -2125,8 +2304,8 @@ export class BookingService {
           SET trangthai = 'DaHuy',
               tongtien = $3,
               ghichu = CASE
-                WHEN COALESCE(ghichu, '') = '' THEN $2
-                ELSE CONCAT(ghichu, ' | ', $2)
+                WHEN COALESCE(ghichu, '') = '' THEN $2::text
+                ELSE CONCAT(ghichu, ' | ', $2::text)
               END
           WHERE magiaodich = $1
         `,
@@ -2168,74 +2347,127 @@ export class BookingService {
         );
       }
 
-      if (refundQuote.refundAmount > 0) {
-        await client.query(
-          `
-            INSERT INTO refund_requests (
-              magiaodich,
-              refund_code,
-              scope,
-              room_ids,
-              customer_name,
-              customer_phone,
-              customer_email,
-              bank_name,
-              bank_account_no,
-              bank_account_name,
-              reason,
-              note,
-              deposit_paid,
-              retained_deposit,
-              already_requested,
-              refundable_base,
-              refund_rate,
-              hours_before_checkin,
-              cancellation_policy_key,
-              cancellation_policy_label,
-              cancellation_policy_note,
-              amount_requested,
-              status,
-              created_by_role
-            )
-            VALUES ($1,$2,'all',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,'ChoQuanLyDuyet','KhachHang')
-          `,
-          [
-            header.maGiaoDich,
-            refundCode,
-            bookingRows.rows.map((item) => item.maPhong).join(","),
-            header.customerName || "",
-            header.customerPhone || "",
-            header.customerEmail || "",
-            refundBankName,
-            refundAccountNo,
-            refundAccountName,
+      await client.query(
+        `
+          INSERT INTO refund_requests (
+            magiaodich,
+            refund_code,
+            scope,
+            room_ids,
+            customer_name,
+            customer_phone,
+            customer_email,
+            bank_name,
+            bank_account_no,
+            bank_account_name,
             reason,
-            refundNote || `Yêu cầu hoàn tiền tạo từ UC khách hàng hủy booking. ${refundQuote.policy.label}: ${formatMoney(refundQuote.refundAmount)}.`,
-            refundQuote.paidDeposit,
-            refundQuote.retainedDeposit,
-            refundQuote.alreadyRequested,
-            refundQuote.refundableBase,
-            refundQuote.policy.ratePercent,
-            refundQuote.policy.hoursBeforeCheckIn,
-            refundQuote.policy.key,
-            refundQuote.policy.label,
-            refundQuote.policy.note,
-            refundQuote.refundAmount
-          ]
-        );
+            note,
+            deposit_paid,
+            retained_deposit,
+            already_requested,
+            refundable_base,
+            refund_rate,
+            hours_before_checkin,
+            cancellation_policy_key,
+            cancellation_policy_label,
+            cancellation_policy_note,
+            amount_requested,
+            status,
+            created_by_role
+          )
+          VALUES (
+            $1::int,
+            $2::text,
+            'all'::text,
+            $3::text,
+            $4::text,
+            $5::text,
+            $6::text,
+            $7::text,
+            $8::text,
+            $9::text,
+            $10::text,
+            $11::text,
+            $12::numeric,
+            $13::numeric,
+            $14::numeric,
+            $15::numeric,
+            $16::numeric,
+            $17::numeric,
+            $18::text,
+            $19::text,
+            $20::text,
+            $21::numeric,
+            'ChoQuanLyDuyet'::text,
+            'KhachHang'::text
+          )
+        `,
+        [
+          header.maGiaoDich,
+          refundCode,
+          bookingRows.rows.map((item) => item.maPhong).join(","),
+          header.customerName || "",
+          header.customerPhone || "",
+          header.customerEmail || "",
+          requestBankName,
+          requestAccountNo,
+          requestAccountName,
+          reason,
+          refundNote || (refundQuote.refundAmount > 0
+            ? `Yêu cầu hoàn tiền tạo từ UC khách hàng hủy booking. ${refundQuote.policy.label}: ${formatMoney(refundQuote.refundAmount)}.`
+            : `Hồ sơ hủy booking tạo từ UC khách hàng. Chính sách hiện tính ${formatMoney(0)} hoàn; chờ quản lý xác nhận/từ chối.`),
+          refundQuote.paidDeposit,
+          refundQuote.retainedDeposit,
+          refundQuote.alreadyRequested,
+          refundQuote.refundableBase,
+          refundQuote.policy.ratePercent,
+          refundQuote.policy.hoursBeforeCheckIn,
+          refundQuote.policy.key,
+          refundQuote.policy.label,
+          refundQuote.policy.note,
+          refundQuote.refundAmount
+        ]
+      );
 
-        await client.query(
-          `
-            UPDATE giaodich
-            SET ghichu = CASE
-              WHEN COALESCE(ghichu, '') = '' THEN $2
-              ELSE ghichu || ' | ' || $2
-            END
-            WHERE magiaodich = $1
-          `,
-          [header.maGiaoDich, `[REFUND_REQUEST code=${refundCode} amount=${refundQuote.refundAmount} status=ChoQuanLyDuyet source=KhachHang]`]
-        );
-      }
+      await client.query(
+        `
+          UPDATE giaodich
+          SET ghichu = CASE
+            WHEN COALESCE(ghichu, '') = '' THEN $2::text
+            ELSE ghichu || ' | ' || $2::text
+          END
+          WHERE magiaodich = $1
+        `,
+        [header.maGiaoDich, `[REFUND_REQUEST code=${refundCode} amount=${refundQuote.refundAmount} status=ChoQuanLyDuyet source=KhachHang]`]
+      );
+
+      await this.insertCustomerActivityAudit(client, maKhachHang, "DELETE", {
+        maGiaoDich: header.maGiaoDich,
+        bookingCode: header.maDatCho,
+        status: header.trangThai,
+        total: Number(header.tongTien || 0),
+        rooms: bookingRows.rows.map((item) => ({
+          detailId: item.maCtGd,
+          roomId: item.maPhong,
+          roomNumber: item.soPhong,
+          status: item.trangThaiChiTiet,
+          checkin: item.ngayNhanDuKien,
+          checkout: item.ngayTraDuKien,
+          amount: item.thanhTienPhong
+        }))
+      }, {
+        maGiaoDich: header.maGiaoDich,
+        bookingCode: header.maDatCho,
+        status: "DaHuy",
+        reason,
+        source: "customer_cancel_booking",
+        refundCode,
+        refundAmount: refundQuote.refundAmount,
+        refundStatus: refundQuote.refundAmount > 0 ? "ChoQuanLyDuyet" : "KhongPhatSinhHoan",
+        retainedDeposit: refundQuote.retainedDeposit
+      }, refundQuote.refundAmount > 0
+        ? `Khách hàng hủy booking, tạo yêu cầu hoàn ${formatMoney(refundQuote.refundAmount)}. GD ${header.maGiaoDich}.`
+        : `Khách hàng hủy booking, không phát sinh hoàn tiền. GD ${header.maGiaoDich}.`);
 
       return {
         id: header.maGiaoDich,
@@ -2292,8 +2524,8 @@ export class BookingService {
       ...cancellation,
       totalFormatted: formatMoney(cancellation.total),
       message: cancellation.refund.refundAmount > 0
-        ? `Đã hủy booking và tạo yêu cầu hoàn tiền ${cancellation.refund.refundAmountFormatted} chờ quản lý duyệt.`
-        : "Đã hủy booking. Booking không phát sinh khoản hoàn tiền tự động theo chính sách hiện tại."
+        ? `Đã hủy booking và tạo yêu cầu hoàn tiền ${cancellation.refund.refundAmountFormatted} chờ quản lý duyệt. Sau khi quản lý duyệt, kế toán sẽ chuyển khoản hoàn theo STK đã nhập.`
+        : "Đã hủy booking và tạo hồ sơ hủy/hoàn tiền 0 đ chờ quản lý xác nhận theo chính sách."
     };
   }
 
@@ -2303,9 +2535,7 @@ export class BookingService {
     alreadyRequested = 0
   ) {
     const sepayMeta = parseSepayMetadata(note);
-    const paidDeposit = sepayMeta?.status === "PAID"
-      ? Math.max(0, Math.round(sepayMeta.paidAmount || sepayMeta.depositAmount || 0))
-      : 0;
+    const paidDeposit = this.getPaidDepositFromBookingNote(note);
     const policy = this.getCustomerCancelPolicy(rooms, note);
     const availableDeposit = Math.max(0, paidDeposit - Math.max(0, alreadyRequested));
     const refundableBase = Math.min(availableDeposit, paidDeposit);
@@ -2329,8 +2559,10 @@ export class BookingService {
       retainedDepositFormatted: formatMoney(retainedDeposit),
       refundAmountFormatted: formatMoney(refundAmount),
       statusText: paidDeposit > 0
-        ? (refundAmount > 0 ? "Có cọc SePay, hủy sẽ tạo yêu cầu hoàn tiền chờ quản lý duyệt." : "Có cọc SePay nhưng không còn khoản hoàn tự động theo chính sách.")
-        : "Chưa ghi nhận cọc SePay nên hủy không tạo yêu cầu hoàn tiền."
+        ? (refundAmount > 0
+            ? "Có cọc SePay, hủy sẽ tạo yêu cầu hoàn tiền chờ quản lý duyệt. Sau khi quản lý duyệt, kế toán sẽ xử lý chuyển khoản hoàn."
+            : "Có cọc SePay nhưng chính sách hiện tính 0 đ hoàn; hệ thống vẫn tạo hồ sơ để quản lý xác nhận/từ chối.")
+        : "Chưa ghi nhận cọc SePay; hệ thống vẫn ghi nhận hồ sơ hủy để quản lý kiểm soát."
     };
   }
 
@@ -2348,6 +2580,19 @@ export class BookingService {
     rooms: Array<{ ngayNhanDuKien?: string | null }>,
     note: string | null | undefined
   ) {
+    if (this.isWithinCustomerCancelGracePeriod(note)) {
+      return {
+        key: "REFUND_100_GRACE",
+        label: "Hoàn 100%",
+        rate: 1,
+        ratePercent: 100,
+        hoursBeforeCheckIn: null as number | null,
+        daysBeforeCheckIn: null as number | null,
+        noRefund: false,
+        note: `Hủy trong vòng ${CUSTOMER_CANCEL_GRACE_MINUTES} phút sau khi đặt và đã có cọc SePay nên hoàn 100% cọc.`
+      };
+    }
+
     const checkInAt = this.getCustomerPolicyCheckIn(rooms, note);
     if (!checkInAt) {
       return {
@@ -2418,6 +2663,34 @@ export class BookingService {
     }
     const parsed = new Date(raw);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private getPaidDepositFromBookingNote(note: string | null | undefined) {
+    const sepayMeta = parseSepayMetadata(note);
+    if (sepayMeta?.status === "PAID") {
+      return Math.max(0, Math.round(sepayMeta.paidAmount || sepayMeta.depositAmount || 0));
+    }
+
+    const raw = String(note || "");
+    let paid = 0;
+    const paidRegex = /\[SEPAY_PAID\s+[^\]]*amount=(\d+)[^\]]*\]/gi;
+    let match: RegExpExecArray | null;
+    while ((match = paidRegex.exec(raw))) {
+      paid += Number(match[1] || 0);
+    }
+
+    return Math.max(0, Math.round(paid));
+  }
+
+  private isWithinCustomerCancelGracePeriod(note: string | null | undefined) {
+    const raw = String(note || "");
+    const paidAtMatch = raw.match(/\[SEPAY_PAID\s+[^\]]*at=([^\]\s]+)[^\]]*\]/i);
+    const paidAt = paidAtMatch?.[1] ? new Date(paidAtMatch[1]) : null;
+    if (!paidAt || Number.isNaN(paidAt.getTime())) {
+      return false;
+    }
+
+    return Date.now() - paidAt.getTime() <= CUSTOMER_CANCEL_GRACE_MINUTES * 60 * 1000;
   }
 
   private buildCustomerEditPolicyNote(oldCheckin: string | null | undefined, oldCheckout: string | null | undefined, newCheckin: string, newCheckout: string) {
@@ -2647,6 +2920,220 @@ export class BookingService {
     if (Number(result.rows[0]?.count || 0) > 0) {
       throw new HttpError(409, "Phòng này đã bị trùng lịch hoặc đang bảo trì trong khoảng ngày mới.");
     }
+  }
+
+  private async prepareGuestBookingCustomer<T extends BookingPreviewInput | BookingMultiRoomInput>(
+    booking: T,
+    preferredCustomerId: number
+  ): Promise<{ booking: T; preferredCustomerId: number }> {
+    if (preferredCustomerId > 0) {
+      return { booking, preferredCustomerId };
+    }
+
+    const existing = await this.findExistingCustomerByIdentity(booking);
+    if (!existing) {
+      return { booking, preferredCustomerId: 0 };
+    }
+
+    const conflicts = this.getCustomerIdentityConflicts(booking, existing);
+    if (conflicts.length > 0) {
+      throw new HttpError(
+        409,
+        `Thông tin khách đã tồn tại trong CSDL nhưng không khớp ${conflicts.join(", ")}. Có thể bạn nhập lộn CCCD/SĐT/email; vui lòng nhập lại đúng thông tin hoặc đăng nhập tài khoản khách hàng cũ.`
+      );
+    }
+
+    if (!booking.use_existing_customer) {
+      throw new HttpError(
+        409,
+        "Thông tin CCCD/SĐT/email đã có trong CSDL. Nếu nhập nhầm, vui lòng sửa lại. Nếu bạn là khách hàng cũ, hãy tick ô xác nhận dùng hồ sơ cũ rồi bấm tạo QR lại."
+      );
+    }
+
+    return {
+      preferredCustomerId: Number(existing.maKhachHang),
+      booking: {
+        ...booking,
+        ten_khach: existing.tenKhach || booking.ten_khach,
+        cccd: existing.cccd || booking.cccd,
+        sdt: existing.sdt || booking.sdt,
+        email: existing.email || booking.email,
+        use_existing_customer: true
+      }
+    };
+  }
+
+  private async insertCustomerActivityAudit(
+    client: any,
+    maKhachHang: number,
+    action: "CREATE" | "UPDATE" | "DELETE",
+    before: unknown,
+    after: unknown,
+    note: string
+  ) {
+    if (!maKhachHang) return;
+
+    await client.query(
+      `
+        INSERT INTO audit_log_khachhang (
+          makhachhang,
+          hanhdong,
+          dulieucu,
+          dulieumoi,
+          manhanvien,
+          usernamethuchien,
+          ghichu
+        )
+        VALUES ($1::int, $2::audit_log_khachhang_hanhdong, $3::text, $4::text, NULL, 'customer_online'::text, $5::text)
+      `,
+      [
+        maKhachHang,
+        action,
+        before ? JSON.stringify(before) : null,
+        after ? JSON.stringify(after) : null,
+        note.slice(0, 255)
+      ]
+    );
+  }
+
+  private async findExistingCustomerByIdentity(booking: BookingPreviewInput | BookingMultiRoomInput) {
+    const result = await query<{
+      maKhachHang: number;
+      tenKhach: string | null;
+      cccd: string | null;
+      sdt: string | null;
+      email: string | null;
+    }>(
+      `
+        SELECT
+          makhachhang AS "maKhachHang",
+          tenkh AS "tenKhach",
+          cccd,
+          sdt,
+          email
+        FROM khachhang
+        WHERE ($1 <> '' AND cccd = $1)
+           OR ($2 <> '' AND regexp_replace(COALESCE(sdt, ''), '[^0-9]', '', 'g') IN ($2, $3))
+           OR ($4 <> '' AND lower(COALESCE(email, '')) = lower($4))
+        ORDER BY
+          CASE
+            WHEN cccd = $1 THEN 0
+            WHEN regexp_replace(COALESCE(sdt, ''), '[^0-9]', '', 'g') IN ($2, $3) THEN 1
+            ELSE 2
+          END,
+          makhachhang DESC
+        LIMIT 1
+      `,
+      [
+        String(booking.cccd || "").trim(),
+        this.normalizePhoneForCompare(booking.sdt),
+        this.normalizePhoneNationalForCompare(booking.sdt),
+        String(booking.email || "").trim().toLowerCase()
+      ]
+    );
+
+    return result.rows[0] || null;
+  }
+
+  private getCustomerIdentityConflicts(
+    booking: BookingPreviewInput | BookingMultiRoomInput,
+    customer: { cccd?: string | null; sdt?: string | null; email?: string | null }
+  ) {
+    const conflicts: string[] = [];
+    const inputCccd = String(booking.cccd || "").trim();
+    const dbCccd = String(customer.cccd || "").trim();
+    const inputPhone = this.normalizePhoneForCompare(booking.sdt);
+    const dbPhone = this.normalizePhoneForCompare(customer.sdt || "");
+    const inputEmail = String(booking.email || "").trim().toLowerCase();
+    const dbEmail = String(customer.email || "").trim().toLowerCase();
+
+    if (inputCccd && dbCccd && inputCccd !== dbCccd) conflicts.push("CCCD");
+    if (inputPhone && dbPhone && inputPhone !== dbPhone) conflicts.push("SĐT");
+    if (inputEmail && dbEmail && inputEmail !== dbEmail) conflicts.push("email");
+
+    return conflicts;
+  }
+
+  private normalizePhoneForCompare(value: unknown) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (digits.startsWith("84") && digits.length >= 10) {
+      return `0${digits.slice(2)}`;
+    }
+    return digits;
+  }
+
+  private normalizePhoneNationalForCompare(value: unknown) {
+    const normalized = this.normalizePhoneForCompare(value);
+    return normalized.startsWith("0") ? `84${normalized.slice(1)}` : normalized;
+  }
+
+  private async ensureOnlineCustomerAccount(
+    client: any,
+    maKhachHang: number,
+    booking: BookingPreviewInput | BookingMultiRoomInput,
+    sourceLabel: string
+  ): Promise<CustomerBookingAccount | null> {
+    const existing = await client.query(
+      "SELECT matk FROM taikhoan WHERE makhachhang = $1 ORDER BY matk ASC LIMIT 1",
+      [maKhachHang]
+    ) as { rows: Array<{ matk: number }> };
+
+    if (existing.rows[0]) {
+      return null;
+    }
+
+    const username = await this.generateUniqueCustomerUsername(client, maKhachHang, booking);
+    const password = this.generateCustomerTemporaryPassword();
+    const passwordHash = await bcrypt.hash(password, CUSTOMER_ACCOUNT_PASSWORD_HASH_ROUNDS);
+    const account = await client.query(
+      `
+        INSERT INTO taikhoan (username, password, mavaitro, trangthai, makhachhang, motaquyen)
+        VALUES ($1, $2, 7, 'HoatDong', $3, $4)
+        RETURNING matk
+      `,
+      [username, passwordHash, maKhachHang, `Tai khoan khach hang tu dong tao sau ${sourceLabel}`]
+    ) as { rows: Array<{ matk: number }> };
+
+    await client.query(
+      "UPDATE khachhang SET matk = $2 WHERE makhachhang = $1",
+      [maKhachHang, account.rows[0].matk]
+    );
+
+    return { username, password };
+  }
+
+  private async generateUniqueCustomerUsername(client: any, maKhachHang: number, booking: BookingPreviewInput | BookingMultiRoomInput) {
+    const phone = this.normalizePhoneForCompare(booking.sdt);
+    const emailPrefix = String(booking.email || "").split("@")[0] || "";
+    const identitySeed = phone || emailPrefix || String(maKhachHang);
+    const normalizedSeed = identitySeed
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_]/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 24) || String(maKhachHang);
+    const baseUsername = (phone || `kh_${normalizedSeed}`).slice(0, 32);
+    let username = baseUsername;
+    let suffix = 1;
+
+    while (true) {
+      const exists = await client.query(
+        "SELECT 1 FROM taikhoan WHERE lower(username) = lower($1) LIMIT 1",
+        [username]
+      ) as { rows: Array<Record<string, unknown>> };
+
+      if (!exists.rows[0]) {
+        return username;
+      }
+
+      suffix += 1;
+      username = `${baseUsername}_${suffix}`.slice(0, 40);
+    }
+  }
+
+  private generateCustomerTemporaryPassword() {
+    return DEFAULT_ONLINE_CUSTOMER_PASSWORD;
   }
 
   private async resolveCustomer(client: any, preferredCustomerId: number, booking: BookingPreviewInput | BookingMultiRoomInput) {

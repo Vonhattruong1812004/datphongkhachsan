@@ -29,6 +29,12 @@
   .book-field input:focus,.book-field select:focus{border-color:rgba(14,165,233,.36);box-shadow:0 0 0 4px rgba(14,165,233,.10)}
   .book-field input.is-invalid,.book-field select.is-invalid{border-color:rgba(239,71,111,.72);background:rgba(255,241,242,.94);box-shadow:0 0 0 4px rgba(239,71,111,.10)}
   .book-error-msg{min-height:16px;color:#be123c;font-size:12px;font-weight:800;line-height:1.35}
+  .book-service-box{margin-top:18px;border-radius:22px;border:1px solid rgba(14,165,233,.14);background:rgba(255,255,255,.66);padding:16px;display:grid;gap:12px}
+  .book-service-row{display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:10px;align-items:end;border-bottom:1px dashed rgba(19,48,74,.12);padding-bottom:12px}
+  .book-service-row:last-child{border-bottom:0;padding-bottom:0}
+  .book-service-name strong{display:block;color:#102033}
+  .book-service-name span{display:block;color:#0f766e;font-size:13px;font-weight:900}
+  .book-service-help{border-radius:16px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.14);padding:11px;color:#0c4a6e;font-size:13px;font-weight:800;line-height:1.45}
   .book-alert{border-radius:18px;padding:13px 15px;margin-bottom:16px;background:rgba(239,71,111,.10);border:1px solid rgba(239,71,111,.20);color:#be123c}
   .book-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
   .book-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-size:14px;font-weight:900;text-decoration:none;cursor:pointer;box-shadow:0 14px 32px rgba(12,39,64,.08)}
@@ -69,6 +75,7 @@
             <input type="hidden" name="<%= key %>" value="<%= value %>" />
           <% } %>
         <% }) %>
+        <input type="hidden" name="services_json" id="servicesJson" value="<%= formValues.services_json || "[]" %>" />
         <div class="book-grid">
           <div class="book-field">
             <label for="ten_khach">Họ tên *</label>
@@ -89,6 +96,12 @@
             <label for="email">Email *</label>
             <input id="email" name="email" type="email" required value="<%= formValues.email %>" placeholder="email@domain.com" autocomplete="email" />
             <div class="book-error-msg" id="err_email"></div>
+          </div>
+          <div class="book-field" style="grid-column:1/-1">
+            <label style="display:flex;align-items:flex-start;gap:10px;text-transform:none;letter-spacing:0;font-size:13px;line-height:1.45">
+              <input type="checkbox" name="use_existing_customer" value="1" <%= ["1","true","on"].includes(String(formValues.use_existing_customer || "").toLowerCase()) ? "checked" : "" %> style="width:auto;min-height:auto;margin-top:3px" />
+              <span>Tôi là khách hàng cũ, cho phép hệ thống dùng hồ sơ đã lưu nếu CCCD/SĐT/email trùng khớp. Nếu thông tin không khớp, hệ thống sẽ yêu cầu nhập lại để tránh đặt nhầm hồ sơ.</span>
+            </label>
           </div>
           <div class="book-field">
             <label for="so_nguoi">Số người *</label>
@@ -116,6 +129,26 @@
             <div class="book-error-msg" id="err_ngay_tra"></div>
           </div>
         </div>
+        <section class="book-service-box">
+          <h2 style="margin:0">Dịch vụ đi kèm</h2>
+          <% if (!services.length) { %>
+            <div class="book-service-help">Hiện chưa có dịch vụ hoạt động để đặt kèm. Bạn vẫn có thể đặt phòng bình thường.</div>
+          <% } else { %>
+            <div class="book-service-help">Nếu cần, chọn số lượng dịch vụ để hệ thống cộng vào tổng tiền và gán cho phòng này ngay khi thanh toán cọc thành công.</div>
+            <% services.forEach((service) => { %>
+              <div class="book-service-row" data-service-row data-service-id="<%= service.id %>" data-service-name="<%= service.tenDichVu %>" data-service-price="<%= service.giaDichVu %>">
+                <div class="book-service-name">
+                  <strong><%= service.tenDichVu %></strong>
+                  <span><%= service.giaDichVuFormatted %> / lần</span>
+                </div>
+                <div class="book-field">
+                  <label>Số lượng</label>
+                  <input type="number" min="0" value="0" data-service-qty />
+                </div>
+              </div>
+            <% }) %>
+          <% } %>
+        </section>
         <div class="book-actions">
           <button class="book-button book-button--primary" type="submit" name="btn_action" value="review">Xem tóm tắt & tính tiền</button>
           <a class="book-button" href="<%= backSearchUrl %>">Quay lại tìm phòng</a>
@@ -169,6 +202,9 @@ document.addEventListener("DOMContentLoaded", function () {
     ngay_tra: document.getElementById("err_ngay_tra")
   };
   const maxGuests = Number(fields.so_nguoi?.getAttribute("max") || "<%= room.soKhachToiDa %>" || 1);
+  const servicesJson = document.getElementById("servicesJson");
+  const serviceRows = Array.from(document.querySelectorAll("[data-service-row]"));
+  const roomId = Number("<%= room.id %>");
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayValue = [
@@ -179,6 +215,36 @@ document.addEventListener("DOMContentLoaded", function () {
 
   fields.ngay_nhan?.setAttribute("min", todayValue);
   fields.ngay_tra?.setAttribute("min", todayValue);
+
+  try {
+    const selectedServices = JSON.parse(servicesJson?.value || "[]");
+    for (const item of selectedServices) {
+      const row = serviceRows.find((serviceRow) => Number(serviceRow.dataset.serviceId) === Number(item.service_id));
+      const qty = row?.querySelector("[data-service-qty]");
+      if (qty) qty.value = String(Math.max(0, Number(item.quantity || 0)));
+    }
+  } catch {}
+
+  function syncSelectedServices() {
+    if (!servicesJson) return;
+    const selected = serviceRows
+      .map((row) => {
+        const quantity = Number(row.querySelector("[data-service-qty]")?.value || 0);
+        return {
+          service_id: Number(row.dataset.serviceId),
+          room_id: roomId,
+          quantity,
+          note: ""
+        };
+      })
+      .filter((item) => item.service_id > 0 && item.quantity > 0);
+    servicesJson.value = JSON.stringify(selected);
+  }
+
+  serviceRows.forEach((row) => {
+    row.querySelector("[data-service-qty]")?.addEventListener("input", syncSelectedServices);
+  });
+  syncSelectedServices();
 
   function parseDate(value) {
     if (!value) return null;
@@ -266,6 +332,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   form.addEventListener("submit", (event) => {
+    syncSelectedServices();
     const ok = Object.keys(fields).every((name) => validateField(name, true));
     if (!ok) {
       event.preventDefault();

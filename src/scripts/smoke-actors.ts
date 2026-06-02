@@ -242,6 +242,20 @@ async function assertRoute(baseUrl: string, session: ActorSession, route: string
     });
   }
 
+  if (expected === "allowed" && response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location") || "";
+    if (!location || location.startsWith("/auth/login")) {
+      throw new Error(`${session.roleName} (${session.username}) should open ${route}, redirected to ${location || "unknown"}`);
+    }
+
+    response = await fetch(`${baseUrl}${location}`, {
+      headers: {
+        Cookie: session.cookieJar
+      },
+      redirect: "manual"
+    });
+  }
+
   if (expected === "allowed" && response.status !== 200) {
     throw new Error(`${session.roleName} (${session.username}) should open ${route}, got ${response.status}`);
   }

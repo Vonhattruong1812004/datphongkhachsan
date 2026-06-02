@@ -82,6 +82,7 @@
     (() => {
       const standalone = window.matchMedia?.("(display-mode: standalone)")?.matches
         || window.navigator.standalone === true;
+      const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
       const state = window.__abcPwaState = {
         supported: "serviceWorker" in navigator,
         installed: standalone,
@@ -143,6 +144,14 @@
       }
 
       window.addEventListener("load", () => {
+        if (isLocalHost) {
+          navigator.serviceWorker.getRegistrations?.()
+            .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+            .catch(() => {});
+          emitState();
+          return;
+        }
+
         navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
           const trackWaitingWorker = (worker) => {
             if (!worker) return;

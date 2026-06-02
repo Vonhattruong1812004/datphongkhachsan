@@ -27,6 +27,7 @@
   .pay-flow span{display:block;color:#0f766e;font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em}
   .pay-flow strong{display:block;margin-top:5px;color:#102033;font-size:13px;line-height:1.25}
   .pay-copy{border-radius:16px;border:1px solid rgba(14,165,233,.14);background:rgba(14,165,233,.08);padding:11px;color:#0c4a6e;font-size:12px;font-weight:800;line-height:1.45}
+  .pay-account{margin-top:14px;border:1px solid rgba(34,197,94,.22);border-radius:22px;background:rgba(255,255,255,.78);padding:16px;display:grid;gap:10px}.pay-account[hidden]{display:none}.pay-account-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed rgba(19,48,74,.12);padding-bottom:9px;color:#5f778f}.pay-account-row:last-child{border-bottom:0;padding-bottom:0}.pay-account code{font-weight:1000;color:#102033;background:rgba(20,184,166,.10);border-radius:10px;padding:4px 8px;overflow-wrap:anywhere}
   @media(max-width:860px){.pay-grid,.pay-flow{grid-template-columns:1fr}}
 </style>
 
@@ -47,9 +48,17 @@
     <span class="pay-chip">Thanh toán thành công</span>
     <h2>Booking đã được tạo</h2>
     <p class="pay-muted" id="successText">SePay đã xác nhận cọc. Bạn có thể xem hóa đơn và lịch sử booking.</p>
+    <div class="pay-account" id="accountBox" hidden>
+      <strong>Tài khoản khách hàng đã được tạo tự động</strong>
+      <div class="pay-account-row"><span>Tên đăng nhập</span><code id="accountUsername"></code></div>
+      <div class="pay-account-row"><span>Mật khẩu tạm</span><code id="accountPassword"></code></div>
+      <p class="pay-muted" style="margin:0">Tài khoản mặc định dùng để theo dõi booking sau khi đặt ở trang chủ: tên đăng nhập là SĐT, mật khẩu mặc định là <strong>123456</strong>. Hệ thống đã tự đăng nhập phiên này.</p>
+    </div>
     <div class="pay-actions">
       <a class="pay-button pay-button--primary" id="invoiceLink" href="#">Xem hóa đơn</a>
       <a class="pay-button" href="/customer/bookings">Lịch sử booking</a>
+      <a class="pay-button" href="/customer/dashboard">Trang khách hàng</a>
+      <a class="pay-button" href="/auth/login">Đăng nhập lần sau</a>
     </div>
   </section>
 
@@ -61,6 +70,7 @@
         <div class="pay-line"><span>Khách</span><strong><%= booking.ten_khach %></strong></div>
         <div class="pay-line"><span>Thời gian</span><strong><%= summary.checkinLabel %> → <%= summary.checkoutLabel %></strong></div>
         <div class="pay-line"><span>Tiền phòng</span><strong><%= summary.subtotalFormatted %></strong></div>
+        <div class="pay-line"><span>Dịch vụ</span><strong><%= summary.serviceAmountFormatted %></strong></div>
         <div class="pay-line"><span>Khuyến mãi</span><strong>-<%= summary.discountFormatted %></strong></div>
         <div class="pay-line pay-line--total"><span>Tổng hóa đơn</span><strong><%= summary.totalFormatted %></strong></div>
         <div class="pay-line pay-line--total"><span>Cọc 50%</span><strong><%= summary.depositAmountFormatted %></strong></div>
@@ -99,6 +109,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const pending = document.getElementById("payPending");
   const success = document.getElementById("paySuccess");
   const invoiceLink = document.getElementById("invoiceLink");
+  const successText = document.getElementById("successText");
+  const accountBox = document.getElementById("accountBox");
+  const accountUsername = document.getElementById("accountUsername");
+  const accountPassword = document.getElementById("accountPassword");
   let done = false;
 
   function renderCountdown() {
@@ -120,6 +134,12 @@ document.addEventListener("DOMContentLoaded", function () {
         pending?.classList.add("is-hide");
         success?.classList.add("is-show");
         if (invoiceLink) invoiceLink.href = `/booking/invoice/${data.transactionId}`;
+        if (data.customerAccount?.username && data.customerAccount?.password) {
+          if (successText) successText.textContent = "SePay đã xác nhận cọc. Booking và tài khoản khách hàng đã được tạo. Tên đăng nhập là SĐT, mật khẩu mặc định 123456.";
+          if (accountUsername) accountUsername.textContent = data.customerAccount.username;
+          if (accountPassword) accountPassword.textContent = data.customerAccount.password;
+          if (accountBox) accountBox.hidden = false;
+        }
         return;
       }
       if (data.status === "EXPIRED" || Date.now() >= expiresAt) {

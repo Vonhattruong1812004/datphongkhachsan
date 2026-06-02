@@ -296,6 +296,7 @@ async function renderCancelBookingState(
     success?: string;
     error?: string;
     payload?: unknown;
+    cancellationResult?: unknown;
   } = {}
 ) {
   const keyword = readText(options.keyword ?? req.query.keyword);
@@ -314,6 +315,7 @@ async function renderCancelBookingState(
     title: "Hủy đặt phòng",
     keyword,
     payload,
+    cancellationResult: options.cancellationResult ?? (payload as any)?.cancellationResult ?? null,
     notice: {
       success: readText(options.success ?? req.query.success),
       error
@@ -913,8 +915,9 @@ export async function submitCancelBookingPage(req: Request, res: Response) {
 
     return renderCancelBookingState(req, res, {
       keyword: keyword || readText(req.body.ma_giao_dich || req.body.transaction_id),
-      success: "Hủy đặt phòng thành công.",
-      payload
+      success: (payload as any)?.cancellationResult?.message || "Hủy đặt phòng thành công.",
+      payload,
+      cancellationResult: (payload as any)?.cancellationResult
     });
   } catch (error: any) {
     return renderCancelBookingState(req, res, {

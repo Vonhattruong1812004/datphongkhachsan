@@ -905,26 +905,24 @@ async function main() {
       throw new Error(`Partial multi-room checkout closed transaction too early or lost total: ${JSON.stringify(partialCheckoutRow || null)}`);
     }
 
-    const finalMultiCheckout = await requestJson(`${baseUrl}/api/frontdesk/checkout`, {
-      method: "POST",
+    const finalMultiPreview = await requestJson(`${baseUrl}/api/frontdesk/checkout-preview?transaction_id=${multiCheckoutTransactionId}&room_id=${multiCheckoutRoomIds[1]}&room_condition=Tot`, {
       headers: {
-        "Content-Type": "application/json",
         Accept: "application/json",
-        Cookie: frontdesk.cookieJar,
-        "x-csrf-token": csrfToken
-      },
-      body: JSON.stringify({
-        transaction_id: multiCheckoutTransactionId,
-        room_id: multiCheckoutRoomIds[1],
-        payment_method: "ChuyenKhoan",
-        payment_status: "paid",
-        room_condition: "Tot",
-        note: "Smoke final checkout"
-      })
+        Cookie: frontdesk.cookieJar
+      }
     });
-    if (finalMultiCheckout.response.status !== 200) {
-      throw new Error(`Final multi-room checkout failed: ${finalMultiCheckout.response.status} ${finalMultiCheckout.text}`);
+    if (
+      finalMultiPreview.response.status !== 200 ||
+      !finalMultiPreview.json?.data?.paymentTransfer?.content ||
+      Number(finalMultiPreview.json?.data?.summary?.total || 0) < 0
+    ) {
+      throw new Error(`Final multi-room checkout preview failed: ${finalMultiPreview.response.status} ${finalMultiPreview.text}`);
     }
+    await paySepayCheckout(
+      baseUrl,
+      finalMultiPreview.json.data.paymentTransfer.content,
+      Number(finalMultiPreview.json.data.summary.total)
+    );
 
     const finalMultiCheckoutCheck = await query<{
       transactionStatus: string;

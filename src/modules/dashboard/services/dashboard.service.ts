@@ -142,6 +142,7 @@ const actionsByScope: Record<string, DashboardActionLink[]> = {
   letan: [
     { label: "Đặt phòng tại quầy", href: "/frontdesk/direct-booking", note: "Tạo booking trực tiếp, chọn phòng, gắn khách, dịch vụ, khuyến mãi và tổng tiền." },
     { label: "Xác nhận check-in", href: "/frontdesk/checkin", note: "Tra cứu giao dịch, kiểm tra eKYC/giấy tờ và xác nhận nhận phòng." },
+    { label: "Tra cứu hoạt động", href: "/frontdesk/activity-lookup", note: "Xem booking gần đây, phòng quá hạn check-in và phòng tới hạn check-out trong một màn." },
     { label: "Hoàn tất check-out", href: "/frontdesk/checkout-v2", note: "Kiểm tiền phòng, dịch vụ, bồi thường, VietQR và hoàn tất trả phòng." },
     { label: "Sửa thông tin đặt phòng", href: "/frontdesk/edit-booking", note: "Cập nhật trưởng đoàn, ngày ở, phòng, số người và tổng tiền realtime." },
     { label: "Hủy đặt phòng", href: "/frontdesk/cancel-booking", note: "Hủy booking hợp lệ, bắt buộc lý do và đồng bộ trạng thái phòng." },

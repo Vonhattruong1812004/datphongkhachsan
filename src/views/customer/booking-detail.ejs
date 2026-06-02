@@ -51,7 +51,7 @@
   .detail-cancel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
   .detail-cancel-field{display:grid;gap:6px}
   .detail-cancel-field label{font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em;color:#173651}
-  .detail-cancel-field input,.detail-cancel-field textarea{width:100%;box-sizing:border-box;min-height:43px;border-radius:14px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.92);padding:9px 12px;color:#102033;font:inherit}
+  .detail-cancel-field input,.detail-cancel-field textarea,.detail-cancel-field select{width:100%;box-sizing:border-box;min-height:43px;border-radius:14px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.92);padding:9px 12px;color:#102033;font:inherit}
   .detail-cancel-field textarea{min-height:82px;resize:vertical}
   @keyframes detail-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,20px,0) rotate(14deg)}}
   @media(max-width:980px){.detail-layout{grid-template-columns:1fr}.detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.detail-cancel-grid{grid-template-columns:1fr}}
@@ -155,7 +155,7 @@
             <div class="detail-box"><span>Cọc đã ghi nhận</span><strong><%= cancel.paidDepositFormatted || "0 đ" %></strong></div>
             <div class="detail-box"><span>Dự kiến hoàn</span><strong><%= cancel.refundAmountFormatted || "0 đ" %></strong></div>
           </div>
-          <p class="detail-muted"><%= cancel.policy?.note || "" %> <%= cancel.statusText || "" %></p>
+          <p class="detail-muted"><%= cancel.policy?.note || "" %> <%= cancel.statusText || "" %> Luồng xử lý: khách nhập tài khoản nhận hoàn → quản lý duyệt → kế toán chuyển khoản hoàn tiền.</p>
           <form method="post" action="/customer/bookings/<%= booking.id %>/cancel" onsubmit="return confirm('Bạn xác nhận hủy booking <%= booking.bookingCode || `GD-${booking.id}` %>?');">
             <div class="detail-cancel-grid">
               <div class="detail-cancel-field" style="grid-column:1/-1">
@@ -165,7 +165,19 @@
               <% if (cancel.needsBankInfo) { %>
                 <div class="detail-cancel-field">
                   <label>Ngân hàng nhận hoàn *</label>
-                  <input name="refund_bank_name" required placeholder="VD: Vietcombank" />
+                  <select name="refund_bank_name" required>
+                    <option value="">Chọn ngân hàng</option>
+                    <option value="Vietcombank">Vietcombank</option>
+                    <option value="VietinBank">VietinBank</option>
+                    <option value="BIDV">BIDV</option>
+                    <option value="Agribank">Agribank</option>
+                    <option value="Techcombank">Techcombank</option>
+                    <option value="MB Bank">MB Bank</option>
+                    <option value="ACB">ACB</option>
+                    <option value="Sacombank">Sacombank</option>
+                    <option value="VPBank">VPBank</option>
+                    <option value="TPBank">TPBank</option>
+                  </select>
                 </div>
                 <div class="detail-cancel-field">
                   <label>Số tài khoản *</label>

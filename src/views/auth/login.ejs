@@ -1225,6 +1225,9 @@
         <%- include("../partials/flash") %>
 
         <form method="post" action="/auth/login" autocomplete="on">
+          <% if (typeof nextUrl !== "undefined" && nextUrl) { %>
+            <input type="hidden" name="next" value="<%= nextUrl %>" />
+          <% } %>
           <div class="travel-auth__grid">
             <div class="travel-auth__field travel-auth__field--full">
               <label for="username">Tên đăng nhập</label>

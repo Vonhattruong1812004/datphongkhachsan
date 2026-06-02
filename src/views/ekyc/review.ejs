@@ -460,9 +460,309 @@
     .ekyc-actions { justify-content: flex-start; }
     .ekyc-review-actions { grid-template-columns: 1fr; }
   }
+
+  /* Quan ly UC3: galaxy theme only, keep eKYC review logic untouched. */
+  .ekyc-shell.is-quanly {
+    --ekyc-bg: #020617;
+    --ekyc-ink: #102033;
+    --ekyc-strong: #0f2b42;
+    --ekyc-muted: #5f6f83;
+    --ekyc-soft: #f8fcff;
+    --ekyc-chip: #e9f8ff;
+    --ekyc-line: rgba(125, 211, 252, .22);
+    --ekyc-table-line: rgba(15, 43, 66, .10);
+    --ekyc-blue: #38bdf8;
+    --ekyc-sky: #22d3ee;
+    --ekyc-teal: #14b8a6;
+    --ekyc-mint: #34d399;
+    --ekyc-coral: #fb7185;
+    --ekyc-violet: #a78bfa;
+    --ekyc-yellow: #fbbf24;
+    --ekyc-shadow: 0 30px 96px rgba(34, 211, 238, .18);
+    --ekyc-card-shadow: 0 22px 70px rgba(0, 0, 0, .24);
+    width: 100%;
+    max-width: none;
+    min-height: calc(100vh - 84px);
+    margin: 0;
+    padding: 24px 18px 54px;
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    color: #f8fbff;
+    background:
+      radial-gradient(ellipse at 50% 118%, rgba(34,211,238,.14), transparent 42%),
+      radial-gradient(ellipse at 13% 14%, rgba(37,99,235,.30), transparent 34%),
+      radial-gradient(ellipse at 86% 10%, rgba(168,85,247,.22), transparent 32%),
+      radial-gradient(ellipse at 74% 82%, rgba(20,184,166,.12), transparent 34%),
+      linear-gradient(180deg, #020617 0%, #071126 48%, #140a2f 78%, #020617 100%);
+  }
+  .ekyc-shell.is-quanly::before,
+  .ekyc-shell.is-quanly::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .ekyc-shell.is-quanly::before {
+    inset: -18%;
+    opacity: .46;
+    background:
+      radial-gradient(circle, rgba(255,255,255,.92) 0 .8px, transparent 1.8px),
+      radial-gradient(circle, rgba(125,211,252,.62) 0 1px, transparent 2.2px),
+      radial-gradient(circle, rgba(196,181,253,.48) 0 .8px, transparent 1.9px);
+    background-size: 118px 118px, 196px 196px, 310px 310px;
+    animation: ekyc-star-drift 130s linear infinite;
+  }
+  .ekyc-shell.is-quanly::after {
+    inset: -10%;
+    opacity: .28;
+    background:
+      radial-gradient(ellipse at 18% 24%, rgba(59,130,246,.30), transparent 29%),
+      radial-gradient(ellipse at 72% 18%, rgba(168,85,247,.24), transparent 30%),
+      radial-gradient(ellipse at 70% 78%, rgba(20,184,166,.16), transparent 34%),
+      radial-gradient(ellipse at 48% 52%, rgba(255,255,255,.12), transparent 18%);
+    filter: blur(2px);
+    animation: ekyc-nebula-breathe 22s ease-in-out infinite alternate;
+  }
+  .ekyc-shell.is-quanly > * {
+    max-width: 1320px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+  }
+  .ekyc-shell.is-quanly .ekyc-topbar {
+    min-height: 260px;
+    border-color: rgba(125,211,252,.24);
+    background:
+      radial-gradient(circle at 84% 18%, rgba(34,211,238,.22), transparent 32%),
+      radial-gradient(circle at 18% 88%, rgba(168,85,247,.18), transparent 30%),
+      linear-gradient(145deg, rgba(8,13,31,.92), rgba(15,23,42,.74));
+    box-shadow: var(--ekyc-shadow);
+    overflow: hidden;
+  }
+  .ekyc-shell.is-quanly .ekyc-topbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 20% 18%, rgba(255,255,255,.76) 0 1px, transparent 2px),
+      radial-gradient(circle at 68% 34%, rgba(125,211,252,.68) 0 1px, transparent 2px),
+      radial-gradient(circle at 88% 74%, rgba(196,181,253,.70) 0 1px, transparent 2px);
+    background-size: 160px 130px, 210px 170px, 250px 210px;
+    opacity: .54;
+  }
+  .ekyc-shell.is-quanly .ekyc-topbar::after {
+    content: "";
+    position: absolute;
+    right: 38px;
+    bottom: 30px;
+    width: min(320px, 28vw);
+    height: 156px;
+    border-radius: 8px;
+    border: 1px solid rgba(125,211,252,.18);
+    background:
+      radial-gradient(circle at 50% 52%, #67e8f9 0 12%, #2563eb 44%, #020617 76%),
+      rgba(2,6,23,.36);
+    box-shadow: 0 0 38px rgba(34,211,238,.28), inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .ekyc-shell.is-quanly .ekyc-title-block,
+  .ekyc-shell.is-quanly .ekyc-actions {
+    position: relative;
+    z-index: 1;
+  }
+  .ekyc-shell.is-quanly .ekyc-title-block::before {
+    border-color: rgba(125,211,252,.28);
+    background: rgba(15,23,42,.72);
+    color: #e6fbff;
+  }
+  .ekyc-shell.is-quanly .ekyc-title-block h1 {
+    font-size: clamp(42px, 6vw, 70px);
+    line-height: .98;
+    color: #fff;
+    text-shadow: 0 0 30px rgba(103,232,249,.16);
+  }
+  .ekyc-shell.is-quanly .ekyc-title-block p {
+    color: #cfe8ff;
+    font-size: 16px;
+  }
+  .ekyc-shell.is-quanly .ekyc-btn {
+    border-radius: 999px;
+    border-color: rgba(125,211,252,.22);
+    background: rgba(15,23,42,.72);
+    color: #eef6ff;
+    box-shadow: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-btn--primary {
+    color: #031827;
+    border-color: transparent;
+    background: linear-gradient(135deg, #67e8f9, #38bdf8 48%, #a78bfa);
+    box-shadow: 0 16px 38px rgba(56,189,248,.20);
+  }
+  .ekyc-shell.is-quanly .ekyc-metric {
+    color: #fff;
+    border-color: rgba(255,255,255,.24);
+    background: linear-gradient(135deg, #2dd4bf 0%, #0ea5e9 56%, #2563eb 100%);
+    box-shadow: 0 22px 64px rgba(14,165,233,.22), 0 18px 70px rgba(0,0,0,.20);
+  }
+  .ekyc-shell.is-quanly .ekyc-metric:nth-child(2) { background: linear-gradient(135deg, #fbbf24 0%, #fb7185 54%, #db2777 100%); }
+  .ekyc-shell.is-quanly .ekyc-metric:nth-child(3) { background: linear-gradient(135deg, #fde68a 0%, #fb923c 48%, #ef4444 100%); }
+  .ekyc-shell.is-quanly .ekyc-metric:nth-child(4) { background: linear-gradient(135deg, #86efac 0%, #22c55e 46%, #14b8a6 100%); }
+  .ekyc-shell.is-quanly .ekyc-metric:nth-child(5) { background: linear-gradient(135deg, #c084fc 0%, #6366f1 52%, #06b6d4 100%); }
+  .ekyc-shell.is-quanly .ekyc-metric::after { background: rgba(255,255,255,.72); }
+  .ekyc-shell.is-quanly .ekyc-metric span { color: rgba(255,255,255,.88); }
+  .ekyc-shell.is-quanly .ekyc-metric strong,
+  .ekyc-shell.is-quanly .ekyc-metric strong[style] {
+    color: #ffffff !important;
+  }
+  .ekyc-shell.is-quanly .ekyc-panel {
+    border-color: rgba(125,211,252,.22);
+    background: rgba(8,13,31,.82);
+    box-shadow: 0 28px 90px rgba(0,0,0,.34);
+    backdrop-filter: blur(24px);
+  }
+  .ekyc-shell.is-quanly .ekyc-panel--queue,
+  .ekyc-shell.is-quanly .ekyc-panel:not(.ekyc-panel--queue) {
+    background: rgba(8,13,31,.82);
+  }
+  .ekyc-shell.is-quanly .ekyc-panel > .ekyc-row strong,
+  .ekyc-shell.is-quanly .ekyc-panel h2 {
+    color: #fff;
+  }
+  .ekyc-shell.is-quanly .ekyc-field label {
+    color: #e6fbff;
+  }
+  .ekyc-shell.is-quanly .ekyc-field input,
+  .ekyc-shell.is-quanly .ekyc-field select,
+  .ekyc-shell.is-quanly .ekyc-field textarea {
+    min-height: 46px;
+    border: 2px solid rgba(15,23,42,.12);
+    background: #ffffff;
+    color: #102033;
+    box-shadow: 0 12px 28px rgba(2,6,23,.16);
+  }
+  .ekyc-shell.is-quanly .ekyc-field textarea {
+    min-height: 118px;
+  }
+  .ekyc-shell.is-quanly .ekyc-field input:focus,
+  .ekyc-shell.is-quanly .ekyc-field select:focus,
+  .ekyc-shell.is-quanly .ekyc-field textarea:focus {
+    border-color: rgba(34,211,238,.70);
+    box-shadow: 0 0 0 4px rgba(34,211,238,.16), 0 16px 34px rgba(2,6,23,.18);
+  }
+  .ekyc-shell.is-quanly .ekyc-queue-item,
+  .ekyc-shell.is-quanly .ekyc-image-box,
+  .ekyc-shell.is-quanly .ekyc-info-box,
+  .ekyc-shell.is-quanly .ekyc-detail-head {
+    border-color: rgba(125,211,252,.20);
+    background: #ffffff;
+    color: #102033;
+    box-shadow: 0 18px 48px rgba(2,6,23,.16);
+  }
+  .ekyc-shell.is-quanly .ekyc-queue-item:nth-child(n):not(.is-active),
+  .ekyc-shell.is-quanly .ekyc-image-box:nth-child(n) {
+    background: #ffffff;
+  }
+  .ekyc-shell.is-quanly .ekyc-queue-item.is-active {
+    border-color: rgba(34,211,238,.55);
+    background:
+      linear-gradient(90deg, rgba(34,211,238,.18) 0 7px, transparent 7px),
+      #ffffff;
+  }
+  .ekyc-shell.is-quanly .ekyc-name,
+  .ekyc-shell.is-quanly .ekyc-detail-head h2,
+  .ekyc-shell.is-quanly .ekyc-image-box strong,
+  .ekyc-shell.is-quanly .ekyc-info-box > strong {
+    color: #0f2b42;
+  }
+  .ekyc-shell.is-quanly .ekyc-muted,
+  .ekyc-shell.is-quanly .ekyc-kv strong {
+    color: #5f6f83;
+  }
+  .ekyc-shell.is-quanly .ekyc-chip {
+    background: #e9f8ff;
+    color: #075985;
+    border-color: rgba(14,165,233,.18);
+  }
+  .ekyc-shell.is-quanly .ekyc-chip--warn {
+    background: #fff7ed;
+    color: #9a3412;
+    border-color: #fdba74;
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions .ekyc-btn--ok {
+    color: #fff;
+    background: linear-gradient(135deg, #22c55e, #10b981, #059669);
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions .ekyc-btn--bad {
+    color: #fff;
+    background: linear-gradient(135deg, #fb7185, #ef4444, #b91c1c);
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions .ekyc-btn--wait {
+    color: #78350f;
+    background: linear-gradient(135deg, #fde68a, #fef3c7);
+  }
+  @keyframes ekyc-star-drift { from { transform: translate3d(0,0,0); } to { transform: translate3d(-120px,90px,0); } }
+  @keyframes ekyc-nebula-breathe { from { transform: scale(.98); opacity: .18; } to { transform: scale(1.04); opacity: .34; } }
+  @media (max-width: 1080px) {
+    .ekyc-shell.is-quanly .ekyc-topbar::after { display: none; }
+  }
+  @media (max-width: 760px) {
+    .ekyc-shell.is-quanly { padding-left: 12px; padding-right: 12px; }
+    .ekyc-shell.is-quanly .ekyc-topbar { min-height: auto; }
+    .ekyc-shell.is-quanly .ekyc-title-block h1 { font-size: 42px; }
+  }
+
+  /* eKYC review cleanup: use the fixed system galaxy only, no page-local moving stars. */
+  .ekyc-shell.is-quanly {
+    overflow: visible !important;
+    background:
+      linear-gradient(135deg, rgba(3,17,31,.86) 0%, rgba(7,22,52,.80) 48%, rgba(22,13,51,.84) 100%) !important;
+  }
+
+  .ekyc-shell.is-quanly::before,
+  .ekyc-shell.is-quanly::after,
+  .ekyc-shell.is-quanly .ekyc-topbar::before,
+  .ekyc-shell.is-quanly .ekyc-topbar::after {
+    display: none !important;
+    content: none !important;
+    animation: none !important;
+  }
+
+  .ekyc-shell.is-quanly .ekyc-topbar {
+    min-height: auto !important;
+    padding: 30px;
+    background:
+      radial-gradient(circle at 88% 16%, rgba(34,211,238,.18), transparent 30%),
+      linear-gradient(145deg, rgba(8,13,31,.94), rgba(15,23,42,.82)) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .ekyc-shell.is-quanly .ekyc-panel,
+  .ekyc-shell.is-quanly .ekyc-metric,
+  .ekyc-shell.is-quanly .ekyc-queue-item,
+  .ekyc-shell.is-quanly .ekyc-image-box,
+  .ekyc-shell.is-quanly .ekyc-info-box,
+  .ekyc-shell.is-quanly .ekyc-detail-head {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    will-change: auto !important;
+  }
+
+  .ekyc-shell.is-quanly .ekyc-panel {
+    background: linear-gradient(180deg, rgba(8,13,31,.92), rgba(9,20,40,.88)) !important;
+  }
+
+  .ekyc-shell.is-quanly .ekyc-detail-head,
+  .ekyc-shell.is-quanly .ekyc-queue-item,
+  .ekyc-shell.is-quanly .ekyc-image-box,
+  .ekyc-shell.is-quanly .ekyc-info-box {
+    border-color: rgba(125,211,252,.20);
+    background: linear-gradient(180deg, #ffffff 0%, #f3fbff 100%) !important;
+  }
 </style>
 
-<main class="container ekyc-shell">
+<main class="container ekyc-shell <%= roleId === 6 ? "is-quanly" : "" %>">
   <section class="ekyc-topbar">
     <div class="ekyc-title-block">
       <h1>Duyệt eKYC</h1>

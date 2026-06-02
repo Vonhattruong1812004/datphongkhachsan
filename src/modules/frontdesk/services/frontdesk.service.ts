@@ -46,12 +46,14 @@ const TRANSFER_BANK_CODE = "ICB";
 const TRANSFER_BANK_NAME = "VietinBank";
 const TRANSFER_ACCOUNT_NO = "108875396650";
 const TRANSFER_ACCOUNT_NAME = "VO NHAT TRUONG";
+const DIRECT_BOOKING_DEFAULT_CUSTOMER_PASSWORD = "123456";
 const CANCEL_POLICY_TIERS = [
   { minHours: 168, key: "REFUND_100_7D", label: "Hoàn 100%", rate: 1, note: "Hủy trước ngày nhận phòng từ 7 ngày trở lên." },
   { minHours: 72, key: "REFUND_70_3D", label: "Hoàn 70%", rate: 0.7, note: "Hủy trước ngày nhận phòng từ 3 đến dưới 7 ngày." },
   { minHours: 24, key: "REFUND_50_24H", label: "Hoàn 50%", rate: 0.5, note: "Hủy trước ngày nhận phòng từ 24 giờ đến dưới 3 ngày." },
   { minHours: 0, key: "NO_REFUND_24H", label: "Không hoàn cọc", rate: 0, note: "Hủy trong vòng 24 giờ trước giờ nhận phòng hoặc đã qua giờ nhận phòng." }
 ];
+const CANCEL_GRACE_MINUTES = 30;
 
 interface TransactionLookupRow {
   maGiaoDich: number;
@@ -463,6 +465,44 @@ export class FrontdeskService {
                 OR COALESCE(ct.ghichu, '') ILIKE $3)
               AND TRIM(n.note) <> ''
               AND (n.note ILIKE '%hủy%' OR n.note ILIKE '%huy%' OR n.note ILIKE '%cập nhật%' OR n.note ILIKE '%cap nhat%' OR n.note ILIKE '%sửa%' OR n.note ILIKE '%sua%')
+          ), customer_audit_events AS (
+            SELECT
+              ('customer-audit-' || al.maaudit)::text AS id,
+              'customer_audit'::text AS category,
+              CASE
+                WHEN al.hanhdong::text = 'CREATE' THEN CONCAT('Khách đặt phòng · ', COALESCE(NULLIF(kh.tenkh, ''), 'Khách hàng'))
+                WHEN al.hanhdong::text = 'UPDATE' THEN CONCAT('Khách chỉnh sửa booking · ', COALESCE(NULLIF(kh.tenkh, ''), 'Khách hàng'))
+                WHEN al.hanhdong::text = 'DELETE' THEN CONCAT('Khách hủy booking · ', COALESCE(NULLIF(kh.tenkh, ''), 'Khách hàng'))
+                ELSE CONCAT('Audit khách hàng · ', COALESCE(NULLIF(kh.tenkh, ''), 'Khách hàng'))
+              END AS title,
+              CONCAT(
+                COALESCE(NULLIF(al.ghichu, ''), 'Ghi nhận audit khách hàng.'),
+                CASE
+                  WHEN COALESCE(al.dulieumoi, '') <> '' THEN ' · Dữ liệu mới: ' || LEFT(al.dulieumoi, 220)
+                  ELSE ''
+                END
+              ) AS detail,
+              CASE
+                WHEN al.hanhdong::text = 'CREATE' THEN 'Khách hàng đặt phòng'
+                WHEN al.hanhdong::text = 'UPDATE' THEN 'Khách hàng chỉnh sửa'
+                WHEN al.hanhdong::text = 'DELETE' THEN 'Khách hàng hủy đơn'
+                ELSE 'Audit khách hàng'
+              END AS source,
+              al.thoigian AS "happenedAt"
+            FROM audit_log_khachhang al
+            LEFT JOIN khachhang kh ON kh.makhachhang = al.makhachhang
+            WHERE al.thoigian >= NOW() - ($1::int * INTERVAL '1 day')
+              AND COALESCE(al.usernamethuchien, '') = 'customer_online'
+              AND ($2 = ''
+                OR al.maaudit::text ILIKE $3
+                OR al.hanhdong::text ILIKE $3
+                OR COALESCE(al.ghichu, '') ILIKE $3
+                OR COALESCE(al.dulieucu, '') ILIKE $3
+                OR COALESCE(al.dulieumoi, '') ILIKE $3
+                OR COALESCE(kh.tenkh, '') ILIKE $3
+                OR COALESCE(kh.sdt, '') ILIKE $3
+                OR COALESCE(kh.cccd, '') ILIKE $3
+                OR COALESCE(kh.email, '') ILIKE $3)
           ), room_events AS (
             SELECT
               ('room-' || rsl.malog)::text AS id,
@@ -490,7 +530,11 @@ export class FrontdeskService {
               'booking'::text AS category,
               CONCAT('Booking ', COALESCE(NULLIF(bs.madatcho, ''), '#' || bs.magiaodich)) AS title,
               CONCAT(bs.trangthai::text, ' · ', COALESCE(NULLIF(bs.customer_name, ''), 'Khách hàng'), CASE WHEN bs.room_summary <> '' THEN ' · P' || bs.room_summary ELSE '' END) AS detail,
-              COALESCE(NULLIF(bs.nguondat::text, ''), 'Booking') AS source,
+              CASE
+                WHEN COALESCE(bs.nguondat::text, '') = 'Web' THEN 'Khách hàng đặt phòng'
+                WHEN COALESCE(bs.nguondat::text, '') ILIKE '%LeTan%' OR COALESCE(bs.nguondat::text, '') ILIKE '%Frontdesk%' THEN 'Lễ tân đặt phòng'
+                ELSE COALESCE(NULLIF(bs.nguondat::text, ''), 'Booking')
+              END AS source,
               bs.ngaygiaodich AS "happenedAt"
             FROM booking_scope bs
           )
@@ -503,10 +547,12 @@ export class FrontdeskService {
             SELECT * FROM note_events
             UNION ALL
             SELECT * FROM detail_note_events
+            UNION ALL
+            SELECT * FROM customer_audit_events
           ) events
           WHERE "happenedAt" >= NOW() - ($1::int * INTERVAL '1 day')
           ORDER BY "happenedAt" DESC
-          LIMIT 24
+          LIMIT 80
         `,
         [days, keyword, search]
       )
@@ -1773,7 +1819,7 @@ export class FrontdeskService {
       }
     }
 
-    await withTransaction(async (client) => {
+    const cancellation = await withTransaction(async (client) => {
       await this.ensureRefundRequestTable(client);
       const updateResult = await client.query(
         `
@@ -1844,16 +1890,17 @@ export class FrontdeskService {
 
       const hasRemainingDetails = Number(remaining.rows[0]?.active_count || 0) > 0;
       const nextStatus = hasRemainingDetails ? payload.transaction.trangThai : "DaHuy";
+      const refundQuoteInTx = await this.calculateCancelRefundQuote(payload, targetRoomIds, paidDeposit, client);
       const totals = hasRemainingDetails
         ? await this.recalculateTransactionWithPromotion(client, input.transactionId, payload.transaction.maKhuyenMai)
-        : { total: 0 };
-      const refundQuoteInTx = await this.calculateCancelRefundQuote(payload, targetRoomIds, paidDeposit, client);
+        : { total: refundQuoteInTx.retainedDeposit };
       const alreadyRequested = refundQuoteInTx.alreadyRequested;
       const retainedDeposit = refundQuoteInTx.retainedDeposit;
       const refundAmount = refundQuoteInTx.refundAmount;
-      const refundCode = refundAmount > 0 ? `RF-${input.transactionId}-${Date.now().toString(36).toUpperCase()}` : "";
-      const refundRequestNote = refundAmount > 0
-        ? `Yeu cau hoan tien ${refundCode}: ${formatMoney(refundAmount)}; ${refundQuoteInTx.policy.label}; STK ${refundBankName} ${refundAccountNo} ${refundAccountName}`
+      const shouldCreateRefundRequest = paidDeposit > 0;
+      const refundCode = shouldCreateRefundRequest ? `RF-${input.transactionId}-${Date.now().toString(36).toUpperCase()}` : "";
+      const refundRequestNote = shouldCreateRefundRequest
+        ? `Yeu cau hoan tien ${refundCode}: ${formatMoney(refundAmount)}; ${refundQuoteInTx.policy.label}; STK ${refundBankName || "chua nhap"} ${refundAccountNo || "chua nhap"} ${refundAccountName || "chua nhap"}`
         : "";
 
       await client.query(
@@ -1870,7 +1917,7 @@ export class FrontdeskService {
         [input.transactionId, nextStatus, note, totals.total]
       );
 
-      if (refundAmount > 0) {
+      if (shouldCreateRefundRequest) {
         await client.query(
           `
             INSERT INTO refund_requests (
@@ -1936,9 +1983,21 @@ export class FrontdeskService {
             END
             WHERE magiaodich = $1
           `,
-          [input.transactionId, `[REFUND_REQUEST code=${refundCode} amount=${refundAmount} status=ChoQuanLyDuyet]`]
+          [input.transactionId, `[REFUND_REQUEST code=${refundCode} amount=${refundAmount} status=ChoQuanLyDuyet source=LeTan]`]
         );
       }
+
+      return {
+        refundRequestCreated: shouldCreateRefundRequest,
+        refundCode,
+        refundAmount,
+        retainedDeposit,
+        paidDeposit,
+        policy: refundQuoteInTx.policy,
+        bankName: refundBankName,
+        bankAccountNo: refundAccountNo,
+        bankAccountName: refundAccountName
+      };
     });
 
     realtimeHub.publish({
@@ -1952,7 +2011,21 @@ export class FrontdeskService {
       }
     });
 
-    return this.getCancelBookingPayload(String(input.transactionId));
+    const refreshed = await this.getCancelBookingPayload(String(input.transactionId));
+    return {
+      ...(refreshed || payload),
+      cancellationResult: {
+        ...cancellation,
+        refundAmountFormatted: formatMoney(cancellation.refundAmount),
+        retainedDepositFormatted: formatMoney(cancellation.retainedDeposit),
+        paidDepositFormatted: formatMoney(cancellation.paidDeposit),
+        message: cancellation.refundRequestCreated
+          ? (cancellation.refundAmount > 0
+            ? `Da huy dat phong va tao yeu cau hoan tien ${formatMoney(cancellation.refundAmount)} cho quan ly duyet.`
+            : "Da huy dat phong va tao ho so hoan tien 0 d cho quan ly kiem tra/tu choi theo chinh sach.")
+          : "Da huy dat phong. Giao dich chua ghi nhan coc SePay nen khong tao yeu cau hoan tien."
+      }
+    };
   }
 
   async updateBookedRoom(
@@ -2073,13 +2146,8 @@ export class FrontdeskService {
     ngay_di?: string;
     so_nguoi?: number;
   }) {
-    const ngayDen = String(rawFilters.ngay_den || "");
-    const ngayDi = String(rawFilters.ngay_di || "");
+    const { ngayDen, ngayDi } = this.validateDirectBookingDates(rawFilters.ngay_den, rawFilters.ngay_di);
     const soNguoi = Math.max(1, Number(rawFilters.so_nguoi || 1));
-
-    if (!ngayDen || !ngayDi || new Date(ngayDi).getTime() <= new Date(ngayDen).getTime()) {
-      throw new HttpError(422, "Ngay den va ngay di khong hop le.");
-    }
 
     const result = await query<DirectBookingSearchRow>(
       `
@@ -2373,13 +2441,8 @@ export class FrontdeskService {
         }))
         .filter((item) => Number(item.service_id) > 0 && Number(item.quantity) > 0)
     };
-    const ngayDen = String(input.ngay_den || "");
-    const ngayDi = String(input.ngay_di || "");
+    const { ngayDen, ngayDi } = this.validateDirectBookingDates(input.ngay_den, input.ngay_di);
     const roomIds = input.room_ids || [];
-
-    if (!ngayDen || !ngayDi || new Date(ngayDi).getTime() <= new Date(ngayDen).getTime()) {
-      throw new HttpError(422, "Ngay den va ngay di khong hop le.");
-    }
     if (!roomIds.length) {
       throw new HttpError(422, "Chua chon phong.");
     }
@@ -2452,7 +2515,7 @@ export class FrontdeskService {
     };
     if (!leader.tenKhach) throw new HttpError(422, "Thieu ten truong doan.");
     if (!/^\d{9,12}$/.test(leader.cccd)) throw new HttpError(422, "CCCD truong doan khong hop le.");
-    if (leader.sdt && !/^(0|\+84)\d{8,10}$/.test(leader.sdt)) throw new HttpError(422, "SDT truong doan khong hop le.");
+    if (!leader.sdt || !/^(0|\+84)\d{8,10}$/.test(leader.sdt)) throw new HttpError(422, "SDT truong doan khong hop le.");
     if (!leader.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leader.email)) throw new HttpError(422, "Email truong doan khong hop le.");
 
     const usedCccds = new Set<string>([leader.cccd]);
@@ -2491,17 +2554,106 @@ export class FrontdeskService {
       }
     }
 
-    const existingCustomer = await query<{ total: number }>(
+    await this.assertDirectBookingIdentifiersAvailable({
+      leader,
+      roomGuests: input.room_guests || [],
+      members: input.members || [],
+      excludedCustomerId: useExistingCustomer ? existingCustomerId : 0
+    });
+  }
+
+  private async assertDirectBookingIdentifiersAvailable(input: {
+    leader: { cccd?: string; sdt?: string; email?: string };
+    roomGuests?: Array<{ cccd?: string; sdt?: string; email?: string }>;
+    members?: Array<{ cccd?: string; sdt?: string; email?: string }>;
+    excludedCustomerId?: number;
+  }) {
+    const excludedCustomerId = Math.max(0, Number(input.excludedCustomerId || 0));
+    const people = [input.leader, ...(input.roomGuests || []), ...(input.members || [])];
+    const cccds = new Set<string>();
+    const phones = new Set<string>();
+    const emails = new Set<string>();
+
+    for (const person of people) {
+      const cccd = String(person?.cccd || "").trim();
+      const phone = this.normalizePhoneForCompare(person?.sdt || "");
+      const email = String(person?.email || "").trim().toLowerCase();
+
+      if (cccd) {
+        if (cccds.has(cccd)) {
+          throw new HttpError(422, `CCCD bi trung trong form: ${cccd}`);
+        }
+        cccds.add(cccd);
+      }
+      if (phone) {
+        if (phones.has(phone)) {
+          throw new HttpError(422, `So dien thoai bi trung trong form: ${phone}`);
+        }
+        phones.add(phone);
+      }
+      if (email) {
+        if (emails.has(email)) {
+          throw new HttpError(422, `Email bi trung trong form: ${email}`);
+        }
+        emails.add(email);
+      }
+    }
+
+    const conflicts = await query<{
+      makhachhang: number;
+      tenkh: string | null;
+      cccd: string | null;
+      sdt: string | null;
+      email: string | null;
+    }>(
       `
-        SELECT COUNT(*)::int AS total
+        SELECT makhachhang, tenkh, cccd, sdt, email
         FROM khachhang
-        WHERE cccd = ANY($1::varchar[])
-          AND ($2::int = 0 OR makhachhang <> $2::int)
+        WHERE ($1::int = 0 OR makhachhang <> $1::int)
+          AND (
+            (cardinality($2::varchar[]) > 0 AND cccd = ANY($2::varchar[]))
+            OR (cardinality($3::varchar[]) > 0 AND regexp_replace(COALESCE(sdt, ''), '[^0-9]', '', 'g') = ANY($3::varchar[]))
+            OR (cardinality($4::varchar[]) > 0 AND lower(COALESCE(email, '')) = ANY($4::varchar[]))
+          )
+        LIMIT 5
       `,
-      [[...usedCccds], useExistingCustomer ? existingCustomerId : 0]
+      [excludedCustomerId, [...cccds], [...phones], [...emails]]
     );
-    if (Number(existingCustomer.rows[0]?.total ?? 0) > 0) {
-      throw new HttpError(409, "Mot trong cac CCCD da ton tai trong he thong.");
+
+    if (conflicts.rows.length) {
+      const conflictLabels = new Set<string>();
+      for (const row of conflicts.rows) {
+        if (row.cccd && cccds.has(String(row.cccd))) conflictLabels.add(`CCCD ${row.cccd}`);
+        const phone = this.normalizePhoneForCompare(row.sdt || "");
+        if (phone && phones.has(phone)) conflictLabels.add(`SĐT ${row.sdt}`);
+        const email = String(row.email || "").trim().toLowerCase();
+        if (email && emails.has(email)) conflictLabels.add(`email ${row.email}`);
+      }
+
+      throw new HttpError(
+        409,
+        `Thông tin khách mới đã tồn tại trong CSDL (${[...conflictLabels].join(", ") || "CCCD/SĐT/email"}). Vui lòng nhập lại thông tin mới hoặc chuyển sang tab Khách hàng cũ.`
+      );
+    }
+
+    const usernameCandidates = [...phones];
+    if (!excludedCustomerId && usernameCandidates.length) {
+      const accountConflicts = await query<{ username: string }>(
+        `
+          SELECT username
+          FROM taikhoan
+          WHERE lower(username) = ANY($1::varchar[])
+          LIMIT 5
+        `,
+        [usernameCandidates.map((item) => item.toLowerCase())]
+      );
+
+      if (accountConflicts.rows.length) {
+        throw new HttpError(
+          409,
+          `Số điện thoại ${accountConflicts.rows.map((item) => item.username).join(", ")} đã được dùng làm tên đăng nhập. Vui lòng nhập lại SĐT mới hoặc chọn Khách hàng cũ.`
+        );
+      }
     }
   }
 
@@ -2526,8 +2678,7 @@ export class FrontdeskService {
   }) {
     const existingCustomerId = Math.max(0, Number(rawInput.existing_customer_id || 0));
     const useExistingCustomer = String(rawInput.customer_mode || "") === "existing" && existingCustomerId > 0;
-    const ngayDen = String(rawInput.ngay_den || "");
-    const ngayDi = String(rawInput.ngay_di || "");
+    const { ngayDen, ngayDi } = this.validateDirectBookingDates(rawInput.ngay_den, rawInput.ngay_di);
     const soNguoi = Math.max(1, Number(rawInput.so_nguoi || 1));
     const roomIds = Array.from(new Set((rawInput.room_ids || []).map(Number).filter(Boolean)));
     const leader = {
@@ -2563,9 +2714,8 @@ export class FrontdeskService {
 
     if (!leader.tenKhach) throw new HttpError(422, "Thieu ten truong doan.");
     if (!/^\d{9,12}$/.test(leader.cccd)) throw new HttpError(422, "CCCD truong doan khong hop le.");
-    if (leader.sdt && !/^(0|\+84)\d{8,10}$/.test(leader.sdt)) throw new HttpError(422, "SDT truong doan khong hop le.");
+    if (!leader.sdt || !/^(0|\+84)\d{8,10}$/.test(leader.sdt)) throw new HttpError(422, "SDT truong doan khong hop le.");
     if (!leader.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(leader.email)) throw new HttpError(422, "Email truong doan khong hop le.");
-    if (!ngayDen || !ngayDi || new Date(ngayDi).getTime() <= new Date(ngayDen).getTime()) throw new HttpError(422, "Ngay den va ngay di khong hop le.");
     if (!roomIds.length) throw new HttpError(422, "Chua chon phong.");
 
     const usedCccds = new Set<string>([leader.cccd]);
@@ -2632,18 +2782,12 @@ export class FrontdeskService {
       }
     }
 
-    const existingCustomer = await query<{ total: number }>(
-      `
-        SELECT COUNT(*)::int AS total
-        FROM khachhang
-        WHERE cccd = ANY($1::varchar[])
-          AND ($2::int = 0 OR makhachhang <> $2::int)
-      `,
-      [[...usedCccds], useExistingCustomer ? existingCustomerId : 0]
-    );
-    if (Number(existingCustomer.rows[0]?.total ?? 0) > 0) {
-      throw new HttpError(409, "Mot trong cac CCCD da ton tai trong he thong.");
-    }
+    await this.assertDirectBookingIdentifiersAvailable({
+      leader,
+      roomGuests,
+      members,
+      excludedCustomerId: useExistingCustomer ? existingCustomerId : 0
+    });
 
     const roomSearch = await this.searchDirectBookingRooms({ ngay_den: ngayDen, ngay_di: ngayDi, so_nguoi: soNguoi });
     const roomMap = new Map(roomSearch.items.map((item) => [item.id, item]));
@@ -2856,7 +3000,11 @@ export class FrontdeskService {
 
       const accountPrefix = maDoan ? `D${String(maDoan).padStart(3, "0")}` : `GD${maGiaoDich}`;
       const createdAccounts = [];
-      const leaderAccount = await this.ensureCustomerAccount(client, maKhachHang, `${accountPrefix}_Leader`);
+      const leaderAccount = await this.ensureCustomerAccount(
+        client,
+        maKhachHang,
+        this.normalizePhoneForCompare(leader.sdt) || `${accountPrefix}_Leader`
+      );
       if (leaderAccount) {
         createdAccounts.push({ hoTen: leader.tenKhach, vaiTro: useExistingCustomer ? "Truong doan (khach cu, cap tai khoan moi)" : "Truong doan", ...leaderAccount });
       }
@@ -4081,7 +4229,7 @@ export class FrontdeskService {
       : 0;
     const availableDeposit = Math.max(0, paidDeposit - alreadyRequested);
     const refundableBase = Math.min(availableDeposit, Math.round(paidDeposit * selectedRatio));
-    const policy = this.getCancelRefundPolicy(selectedRooms);
+    const policy = this.getCancelRefundPolicy(selectedRooms, snapshot.transaction.ngayGiaoDich);
     const refundAmount = Math.min(availableDeposit, Math.max(0, Math.round(refundableBase * policy.rate)));
     const retainedDeposit = Math.max(0, refundableBase - refundAmount);
 
@@ -4103,7 +4251,24 @@ export class FrontdeskService {
     }, 0);
   }
 
-  private getCancelRefundPolicy(rooms: Array<Pick<RoomStayRow, "ngayNhanDuKien">>): CancelRefundPolicy {
+  private getCancelRefundPolicy(rooms: Array<Pick<RoomStayRow, "ngayNhanDuKien">>, createdAt?: string | null): CancelRefundPolicy {
+    const createdDate = createdAt ? new Date(createdAt) : null;
+    if (createdDate && !Number.isNaN(createdDate.getTime())) {
+      const minutesSinceBooking = (Date.now() - createdDate.getTime()) / (1000 * 60);
+      if (minutesSinceBooking >= 0 && minutesSinceBooking <= CANCEL_GRACE_MINUTES) {
+        return {
+          key: "REFUND_100_GRACE",
+          label: "Hoàn 100% trong thời gian vừa đặt",
+          rate: 1,
+          ratePercent: 100,
+          hoursBeforeCheckIn: null,
+          daysBeforeCheckIn: null,
+          noRefund: false,
+          note: `Booking vừa tạo trong ${CANCEL_GRACE_MINUTES} phút nên được hoàn 100% tiền cọc nếu đã thanh toán.`
+        };
+      }
+    }
+
     const checkInAt = this.getEarliestPolicyCheckIn(rooms);
     if (!checkInAt) {
       return {
@@ -4328,6 +4493,51 @@ export class FrontdeskService {
     return `DIR-${Date.now().toString().slice(-6)}-${chunk}`;
   }
 
+  private validateDirectBookingDates(rawNgayDen: unknown, rawNgayDi: unknown) {
+    const ngayDen = String(rawNgayDen || "").trim();
+    const ngayDi = String(rawNgayDi || "").trim();
+
+    if (!this.isValidInputDate(ngayDen)) {
+      throw new HttpError(422, "Ngày đến không hợp lệ. Vui lòng chọn đúng ngày theo định dạng YYYY-MM-DD.");
+    }
+    if (!this.isValidInputDate(ngayDi)) {
+      throw new HttpError(422, "Ngày đi không hợp lệ. Vui lòng chọn đúng ngày theo định dạng YYYY-MM-DD.");
+    }
+
+    const today = this.toInputDate(new Date());
+    if (ngayDen < today) {
+      throw new HttpError(422, "Ngày đến không được nhỏ hơn ngày hiện tại.");
+    }
+    if (ngayDi <= ngayDen) {
+      throw new HttpError(422, "Ngày đi phải lớn hơn ngày đến.");
+    }
+
+    return { ngayDen, ngayDi };
+  }
+
+  private isValidInputDate(value: string) {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return false;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  }
+
+  private normalizePhoneForCompare(value: string | null | undefined) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (!digits) return "";
+    if (digits.startsWith("84") && digits.length >= 11 && digits.length <= 12) {
+      return `0${digits.slice(2)}`;
+    }
+    if (digits.startsWith("0") && digits.length >= 9 && digits.length <= 11) {
+      return digits;
+    }
+    return "";
+  }
+
   private async ensureCustomerAccount(client: any, maKhachHang: number, usernameSeed: string) {
     const existing = await client.query(
       "SELECT username FROM taikhoan WHERE makhachhang = $1 ORDER BY matk ASC LIMIT 1",
@@ -4342,7 +4552,7 @@ export class FrontdeskService {
   }
 
   private async createCustomerAccount(client: any, maKhachHang: number, usernameSeed: string) {
-    const baseUsername = usernameSeed.replace(/[^a-zA-Z0-9_]/g, "_");
+    const baseUsername = this.normalizePhoneForCompare(usernameSeed) || usernameSeed.replace(/[^a-zA-Z0-9_]/g, "_");
     let username = baseUsername;
     let suffix = 1;
 
@@ -4360,7 +4570,7 @@ export class FrontdeskService {
       username = `${baseUsername}_${suffix}`;
     }
 
-    const rawPassword = crypto.randomBytes(4).toString("hex");
+    const rawPassword = DIRECT_BOOKING_DEFAULT_CUSTOMER_PASSWORD;
     const passwordHash = await bcrypt.hash(rawPassword, 10);
     const account = await client.query(
       `

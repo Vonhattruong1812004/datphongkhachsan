@@ -1239,3 +1239,84 @@ a {
     align-items: stretch;
   }
 }
+
+/* Runtime performance guard:
+   Mobile/PWA devices repaint very slowly when fixed blurred backgrounds,
+   backdrop-filter cards and infinite galaxy animations stay active while
+   scrolling. Keep the same content/layout, but switch heavy visuals to a
+   static lightweight mode on small/coarse-pointer screens and when the user
+   prefers reduced motion. */
+@media (max-width: 1024px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at 18% 10%, rgba(37, 99, 235, 0.22), transparent 34%),
+      radial-gradient(ellipse at 84% 16%, rgba(168, 85, 247, 0.16), transparent 30%),
+      linear-gradient(180deg, #020617 0%, #071126 48%, #120a2b 100%) !important;
+  }
+
+  body::before,
+  body::after,
+  .system-galaxy-background,
+  .system-galaxy-milkyway,
+  .system-galaxy-comet,
+  [class*="comet"],
+  [class*="milkyway"],
+  [class*="nebula"],
+  [class*="orbit"],
+  [class*="blob"] {
+    display: none !important;
+    content: none !important;
+    animation: none !important;
+    filter: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .site-header,
+  .global-floating-clock,
+  .header-search__panel,
+  .floating-assist__drawer,
+  .panel,
+  .hero-copy,
+  .hero-highlight-card,
+  .room-card,
+  .dashboard-card,
+  .auth-card,
+  .dashboard-hero,
+  [class*="panel"],
+  [class*="card"],
+  [class*="hero"],
+  [class*="visual"],
+  [class*="stage"],
+  [class*="scene"],
+  [class*="word"],
+  [class*="chip"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    will-change: auto !important;
+    filter: none !important;
+  }
+
+  .panel,
+  .hero-copy,
+  .hero-highlight-card,
+  .room-card,
+  .dashboard-card,
+  .auth-card,
+  .dashboard-hero,
+  [class*="panel"],
+  [class*="card"] {
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.22) !important;
+  }
+}

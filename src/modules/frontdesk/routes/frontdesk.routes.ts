@@ -31,7 +31,7 @@ import {
 export const frontdeskRouter = Router();
 export const frontdeskApiRouter = Router();
 
-frontdeskRouter.get("/", requireRole([ROLE.LE_TAN]), asyncHandler(renderFrontdeskPage));
+frontdeskRouter.get("/", requireRole([ROLE.LE_TAN]), (_req, res) => res.redirect("/dashboard/letan"));
 frontdeskRouter.get("/activity-lookup", requireRole([ROLE.LE_TAN]), asyncHandler(renderActivityLookupPage));
 frontdeskRouter.get("/direct-booking", requireRole([ROLE.LE_TAN]), asyncHandler(renderDirectBookingPage));
 frontdeskRouter.post("/direct-booking", requireRole([ROLE.LE_TAN]), asyncHandler(submitDirectBookingPage));

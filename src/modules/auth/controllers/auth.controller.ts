@@ -5,9 +5,10 @@ import { loginSchema, registerSchema } from "../validators/auth.validator";
 
 const authService = new AuthService();
 
-export async function renderLogin(_req: Request, res: Response) {
+export async function renderLogin(req: Request, res: Response) {
   return res.render("auth/login", {
-    title: "Dang nhap"
+    title: "Dang nhap",
+    nextUrl: sanitizeLoginNext(req.query.next)
   });
 }
 
@@ -16,7 +17,23 @@ export async function submitLogin(req: Request, res: Response) {
   const user = await authService.login(payload.username, payload.password);
 
   req.session.user = user;
-  return res.redirect(ROLE_REDIRECTS[user.maVaiTro] ?? "/");
+  const requestedNext = sanitizeLoginNext(req.body.next || req.query.next);
+  return res.redirect(requestedNext || ROLE_REDIRECTS[user.maVaiTro] || "/");
+}
+
+function sanitizeLoginNext(value: unknown) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const next = typeof raw === "string" ? raw.trim() : "";
+
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/api/")) {
+    return "";
+  }
+
+  if (next.startsWith("/auth/login") || next.startsWith("/auth/logout")) {
+    return "";
+  }
+
+  return next;
 }
 
 export async function renderRegister(_req: Request, res: Response) {

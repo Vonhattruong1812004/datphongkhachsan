@@ -3,6 +3,8 @@ import { query, withTransaction } from "../../../config/database";
 import type { SessionUser } from "../../../shared/auth/session-user";
 import { HttpError } from "../../../shared/http/http-error";
 
+const PASSWORD_HASH_ROUNDS = 12;
+
 interface AccountRow {
   maTaiKhoan: number;
   username: string;
@@ -34,7 +36,7 @@ export class AuthService {
     }
 
     if (account.passwordHash === password) {
-      const nextHash = await bcrypt.hash(password, 10);
+      const nextHash = await bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
       await query("UPDATE taikhoan SET password = $1 WHERE matk = $2", [nextHash, account.maTaiKhoan]);
     }
 
@@ -65,26 +67,64 @@ export class AuthService {
       throw new HttpError(409, "Ten dang nhap da ton tai.");
     }
 
-    const existingIdentity = await query(
-      "SELECT 1 FROM khachhang WHERE lower(email) = lower($1) OR cccd = $2 LIMIT 1",
-      [input.email, input.cccd]
+    const existingIdentity = await query<{
+      emailUsed: boolean;
+      phoneUsed: boolean;
+      cccdUsed: boolean;
+    }>(
+      `
+        SELECT
+          EXISTS (SELECT 1 FROM khachhang WHERE lower(email) = lower($1)) AS "emailUsed",
+          EXISTS (
+            SELECT 1
+            FROM khachhang
+            WHERE
+              CASE
+                WHEN replace(replace(replace(sdt, ' ', ''), '.', ''), '-', '') LIKE '+84%'
+                  THEN '0' || substring(replace(replace(replace(sdt, ' ', ''), '.', ''), '-', '') from 4)
+                WHEN replace(replace(replace(sdt, ' ', ''), '.', ''), '-', '') LIKE '84%'
+                  THEN '0' || substring(replace(replace(replace(sdt, ' ', ''), '.', ''), '-', '') from 3)
+                ELSE replace(replace(replace(sdt, ' ', ''), '.', ''), '-', '')
+              END = $2
+          ) AS "phoneUsed",
+          EXISTS (
+            SELECT 1
+            FROM khachhang
+            WHERE replace(replace(replace(cccd, ' ', ''), '.', ''), '-', '') = $3
+          ) AS "cccdUsed"
+      `,
+      [input.email, input.sdt, input.cccd]
     );
-    if (existingIdentity.rowCount) {
-      throw new HttpError(409, "Email hoac CCCD da duoc su dung.");
+    const identity = existingIdentity.rows[0];
+    if (identity?.emailUsed) {
+      throw new HttpError(409, "Email da duoc su dung.");
+    }
+    if (identity?.phoneUsed) {
+      throw new HttpError(409, "So dien thoai da duoc su dung.");
+    }
+    if (identity?.cccdUsed) {
+      throw new HttpError(409, "CCCD/CMND da duoc su dung.");
     }
 
-    return withTransaction(async (client) => {
-      const maKhachHang = await this.insertCustomer(client, input);
-      const hashedPassword = await bcrypt.hash(input.password, 10);
-      const maTaiKhoan = await this.insertAccount(client, input.username, hashedPassword, maKhachHang);
+    try {
+      return await withTransaction(async (client) => {
+        const maKhachHang = await this.insertCustomer(client, input);
+        const hashedPassword = await bcrypt.hash(input.password, PASSWORD_HASH_ROUNDS);
+        const maTaiKhoan = await this.insertAccount(client, input.username, hashedPassword, maKhachHang);
 
-      await client.query(
-        "UPDATE khachhang SET matk = $1 WHERE makhachhang = $2",
-        [maTaiKhoan, maKhachHang]
-      );
+        await client.query(
+          "UPDATE khachhang SET matk = $1 WHERE makhachhang = $2",
+          [maTaiKhoan, maKhachHang]
+        );
 
-      return { maKhachHang, maTaiKhoan };
-    });
+        return { maKhachHang, maTaiKhoan };
+      });
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        throw new HttpError(409, "Thong tin dang ky da ton tai trong he thong.");
+      }
+      throw error;
+    }
   }
 
   private async findByUsername(username: string) {
@@ -159,5 +199,9 @@ export class AuthService {
     ) as { rows: Array<{ matk: number }> };
 
     return result.rows[0].matk;
+  }
+
+  private isUniqueViolation(error: unknown) {
+    return typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "23505";
   }
 }

@@ -178,6 +178,404 @@
   @media (max-width: 1080px) { .guest-hero { grid-template-columns: 1fr; } .guest-live-card { min-height: 320px; } .guest-bento, .guest-booking-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 760px) { .guest-home { padding: 20px 12px 42px; } .guest-hero-card { min-height: auto; padding: 24px; border-radius: 30px; } .guest-hero h1 { font-size: 44px; } .guest-mini-stats, .guest-focus-card, .guest-bento, .guest-booking-grid { grid-template-columns: 1fr; } .guest-live-card { min-height: 280px; } .guest-uc-card { min-height: 220px; } .guest-section-head { display: block; } }
   @media (prefers-reduced-motion: reduce) { .guest-home::before, .guest-home::after, .guest-pulse, .guest-live-ring, .guest-live-core, .guest-live-word, .guest-uc-card { animation: none; } .guest-uc-card { transform: none; opacity: 1; } }
+
+  /* Customer actor home visual pass: align with galaxy dashboards */
+  body {
+    background:
+      radial-gradient(circle at 12% 10%, rgba(45, 212, 191, .18), transparent 28%),
+      radial-gradient(circle at 88% 14%, rgba(139, 92, 246, .22), transparent 30%),
+      radial-gradient(circle at 48% 112%, rgba(251, 191, 36, .12), transparent 36%),
+      linear-gradient(135deg, #020617 0%, #071426 46%, #160b2f 100%);
+  }
+
+  .guest-home {
+    --guest-ink: #0f2d42;
+    --guest-muted: #587083;
+    --guest-line: rgba(125, 211, 252, .24);
+    --guest-shadow: 0 30px 90px rgba(0, 0, 0, .28);
+    background:
+      radial-gradient(circle at 7% 8%, rgba(45, 212, 191, .16), transparent 24%),
+      radial-gradient(circle at 88% 10%, rgba(139, 92, 246, .20), transparent 28%),
+      radial-gradient(circle at 52% 105%, rgba(251, 191, 36, .10), transparent 34%),
+      linear-gradient(135deg, rgba(2, 6, 23, .88) 0%, rgba(8, 20, 38, .90) 46%, rgba(23, 11, 48, .90) 100%);
+  }
+
+  .guest-home::before {
+    inset: 0;
+    width: auto;
+    height: auto;
+    right: auto;
+    top: auto;
+    border-radius: 0;
+    opacity: .58;
+    background:
+      radial-gradient(circle at 12% 20%, rgba(255, 255, 255, .86) 0 1px, transparent 2px),
+      radial-gradient(circle at 36% 13%, rgba(186, 230, 253, .82) 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 28%, rgba(255, 255, 255, .70) 0 1px, transparent 2px),
+      radial-gradient(circle at 86% 72%, rgba(125, 211, 252, .74) 0 1px, transparent 2px),
+      radial-gradient(circle at 24% 80%, rgba(255, 255, 255, .66) 0 1px, transparent 2px);
+    background-size: 240px 190px;
+    animation: none;
+  }
+
+  .guest-home::after {
+    inset: 0;
+    width: auto;
+    height: auto;
+    left: auto;
+    bottom: auto;
+    border-radius: 0;
+    opacity: 1;
+    background:
+      linear-gradient(90deg, transparent, rgba(125, 211, 252, .12), transparent) 0 18% / 100% 1px no-repeat,
+      linear-gradient(90deg, transparent, rgba(251, 113, 133, .10), transparent) 0 68% / 100% 1px no-repeat;
+    animation: none;
+  }
+
+  .guest-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  .guest-hero,
+  .guest-focus-card,
+  .guest-section {
+    margin-bottom: 0;
+    margin-top: 0;
+  }
+
+  .guest-hero {
+    grid-template-columns: minmax(0, 1.08fr) 430px;
+    gap: 24px;
+  }
+
+  .guest-hero-card {
+    border-radius: 28px;
+    padding: 34px;
+    border: 1px solid rgba(125, 211, 252, .28);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .14), transparent 28%),
+      linear-gradient(135deg, rgba(15, 23, 42, .94), rgba(14, 116, 144, .58) 50%, rgba(88, 28, 135, .58));
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .10);
+  }
+
+  .guest-hero-card::before {
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .16), transparent 34%),
+      radial-gradient(circle at 88% 16%, rgba(45, 212, 191, .26), transparent 28%),
+      radial-gradient(circle at 16% 92%, rgba(251, 113, 133, .18), transparent 30%);
+  }
+
+  .guest-chip {
+    color: #ecfeff;
+    border-color: rgba(125, 211, 252, .30);
+    background: rgba(15, 23, 42, .60);
+  }
+
+  .guest-hero h1 {
+    color: #ffffff;
+    letter-spacing: 0;
+    text-shadow: 0 16px 44px rgba(0, 0, 0, .24);
+  }
+
+  .guest-hero h1 span {
+    background: linear-gradient(96deg, #67e8f9 0%, #86efac 34%, #fde68a 66%, #f9a8d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .guest-lead {
+    color: #dbeafe;
+    font-size: 17px;
+  }
+
+  .guest-tag {
+    border: 1px solid rgba(255, 255, 255, .72);
+    background: rgba(255, 255, 255, .92);
+    color: #0f2d42;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, .16);
+  }
+
+  .guest-tag--ekyc {
+    color: #065f46;
+    background: #ccfbf1;
+  }
+
+  .guest-button {
+    min-height: 50px;
+    border-radius: 18px;
+    padding: 11px 20px;
+    border: 1px solid rgba(255, 255, 255, .62);
+    background: #ffffff;
+    color: #0f2d42;
+    font-size: 15px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .16);
+  }
+
+  .guest-button--primary {
+    color: #061826;
+    background: linear-gradient(135deg, #facc15 0%, #fb7185 48%, #8b5cf6 100%);
+    box-shadow: 0 18px 38px rgba(251, 113, 133, .24);
+  }
+
+  .guest-mini-stats {
+    gap: 18px;
+  }
+
+  .guest-mini-stat {
+    border: 2px solid rgba(255, 255, 255, .44);
+    border-radius: 24px;
+    color: #ffffff;
+    box-shadow: 0 22px 48px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .18);
+  }
+
+  .guest-mini-stat:nth-child(1) { background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 52%, #22c55e 100%); }
+  .guest-mini-stat:nth-child(2) { background: linear-gradient(135deg, #facc15 0%, #fb7185 56%, #8b5cf6 100%); }
+  .guest-mini-stat:nth-child(3) { background: linear-gradient(135deg, #34d399 0%, #22d3ee 52%, #3b82f6 100%); }
+
+  .guest-mini-stat strong,
+  .guest-mini-stat span {
+    color: #ffffff;
+    letter-spacing: 0;
+    text-shadow: 0 2px 12px rgba(15, 23, 42, .28);
+  }
+
+  .guest-live-card {
+    min-height: 360px;
+    border: 1px solid rgba(125, 211, 252, .22);
+    background: linear-gradient(160deg, rgba(15, 23, 42, .90), rgba(49, 46, 129, .64));
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .guest-live-card::before {
+    inset: 24px;
+    border: 1px solid rgba(125, 211, 252, .18);
+    border-radius: 32px;
+    background:
+      radial-gradient(circle at 50% 48%, rgba(14, 165, 233, .24), transparent 28%),
+      radial-gradient(circle at 22% 18%, rgba(255, 255, 255, .92) 0 1px, transparent 2px),
+      radial-gradient(circle at 74% 20%, rgba(186, 230, 253, .82) 0 1px, transparent 2px),
+      radial-gradient(circle at 85% 66%, rgba(255, 255, 255, .76) 0 1px, transparent 2px),
+      radial-gradient(circle at 18% 72%, rgba(125, 211, 252, .82) 0 1px, transparent 2px),
+      linear-gradient(145deg, rgba(2, 6, 23, .96), rgba(15, 23, 42, .86) 48%, rgba(30, 27, 75, .76) 100%);
+  }
+
+  .guest-galaxy-nebula {
+    position: absolute;
+    z-index: 1;
+    inset: 16% 6% auto 8%;
+    height: 50%;
+    border-radius: 999px;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(45, 212, 191, .22), transparent 58%),
+      radial-gradient(ellipse at 70% 50%, rgba(139, 92, 246, .20), transparent 60%);
+    filter: blur(14px);
+    opacity: .82;
+    transform: rotate(-16deg);
+    animation: guest-nebula-breathe 9s ease-in-out infinite alternate;
+  }
+
+  .guest-earth-3d {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    top: 53%;
+    width: min(72%, 330px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 999px;
+    filter: drop-shadow(0 28px 42px rgba(0, 0, 0, .34));
+    animation: guest-earth-float 8s ease-in-out infinite;
+  }
+
+  .guest-earth-3d::before,
+  .guest-earth-3d::after {
+    content: "";
+    position: absolute;
+    inset: 6%;
+    border-radius: 999px;
+    border: 1px solid rgba(125, 211, 252, .24);
+    transform: rotate(-12deg) scaleX(1.38);
+    pointer-events: none;
+  }
+
+  .guest-earth-3d::after {
+    inset: -6%;
+    border-color: rgba(255, 255, 255, .14);
+    transform: rotate(18deg) scaleX(1.58);
+  }
+
+  .guest-earth-3d canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .guest-galaxy-moon {
+    position: absolute;
+    right: 14%;
+    top: 30%;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    z-index: 4;
+    background:
+      radial-gradient(circle at 34% 30%, #fff 0 10%, transparent 11%),
+      radial-gradient(circle at 40% 38%, #f8fafc 0%, #cbd5e1 52%, #64748b 100%);
+    box-shadow: 0 0 28px rgba(226, 232, 240, .42);
+    animation: guest-moon-float 6.8s ease-in-out infinite;
+  }
+
+  .guest-comet {
+    position: absolute;
+    z-index: 4;
+    width: 96px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .96), rgba(125, 211, 252, .70));
+    filter: drop-shadow(0 0 8px rgba(125, 211, 252, .68));
+    opacity: .86;
+  }
+
+  .guest-comet--one { left: -18%; top: 22%; animation: guest-comet-horizontal 7.8s linear infinite; }
+  .guest-comet--two { right: -18%; bottom: 24%; transform: rotate(180deg); animation: guest-comet-horizontal-reverse 8.8s linear infinite 1.2s; }
+  .guest-comet--three { left: 28%; top: -14%; transform: rotate(90deg); animation: guest-comet-fall 9s linear infinite 2s; }
+
+  .guest-focus-card {
+    border: 1px solid rgba(125, 211, 252, .30);
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, .90), rgba(8, 47, 73, .78)),
+      radial-gradient(circle at 100% 0%, rgba(45, 212, 191, .20), transparent 36%);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, .30), inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .guest-focus-card strong,
+  .guest-section-head h2 {
+    color: #ffffff;
+    letter-spacing: 0;
+    text-shadow: 0 2px 14px rgba(15, 23, 42, .30);
+  }
+
+  .guest-focus-card span,
+  .guest-section-head p {
+    color: #dbeafe;
+    font-weight: 800;
+  }
+
+  .guest-flow a {
+    border: 1px solid rgba(255, 255, 255, .72);
+    background: rgba(255, 255, 255, .94);
+    color: #0f2d42;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .12);
+  }
+
+  .guest-bento,
+  .guest-booking-grid {
+    gap: 18px;
+  }
+
+  .guest-uc-card {
+    min-height: 250px;
+    border: 2px solid rgba(255, 255, 255, .42);
+    color: #ffffff;
+    box-shadow: 0 22px 48px rgba(0, 0, 0, .22);
+  }
+
+  .guest-uc-card:nth-child(1) { background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 52%, #22c55e 100%); }
+  .guest-uc-card:nth-child(2) { background: linear-gradient(135deg, #facc15 0%, #fb7185 56%, #8b5cf6 100%); }
+  .guest-uc-card:nth-child(3) { background: linear-gradient(135deg, #60a5fa 0%, #818cf8 52%, #c084fc 100%); }
+  .guest-uc-card:nth-child(4) { background: linear-gradient(135deg, #34d399 0%, #22d3ee 52%, #3b82f6 100%); }
+  .guest-uc-card:nth-child(5) { background: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 52%, #2563eb 100%); }
+  .guest-uc-card:nth-child(6) { background: linear-gradient(135deg, #86efac 0%, #22c55e 46%, #14b8a6 100%); }
+
+  .guest-uc-card::before {
+    background: rgba(255, 255, 255, .20);
+  }
+
+  .guest-uc-card::after {
+    background: rgba(255, 255, 255, .78);
+  }
+
+  .guest-uc-code {
+    background: rgba(255, 255, 255, .88);
+    border-color: rgba(255, 255, 255, .68);
+    color: #0f2d42;
+  }
+
+  .guest-uc-orb {
+    background: rgba(255, 255, 255, .26);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, .16);
+  }
+
+  .guest-uc-card h3,
+  .guest-uc-card p,
+  .guest-open {
+    color: #ffffff;
+    letter-spacing: 0;
+    text-shadow: 0 2px 12px rgba(15, 23, 42, .30);
+  }
+
+  .guest-booking-card,
+  .guest-empty {
+    border: 2px solid rgba(186, 230, 253, .72);
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .15);
+  }
+
+  .guest-booking-card h3,
+  .guest-booking-card strong {
+    color: #0f2d42;
+    letter-spacing: 0;
+  }
+
+  .guest-booking-card p,
+  .guest-empty {
+    color: #587083;
+  }
+
+  .guest-badge {
+    background: #ccfbf1;
+    color: #065f46;
+  }
+
+  @keyframes guest-nebula-breathe { from { transform: rotate(-16deg) scale(.96); opacity: .62; } to { transform: rotate(-12deg) scale(1.06); opacity: .92; } }
+  @keyframes guest-earth-float { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -54%) scale(1.035); } }
+  @keyframes guest-moon-float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(-12px, 10px, 0); } }
+  @keyframes guest-comet-horizontal { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(620%, 0, 0); } }
+  @keyframes guest-comet-horizontal-reverse { from { transform: translate3d(0, 0, 0) rotate(180deg); } to { transform: translate3d(-620%, 0, 0) rotate(180deg); } }
+  @keyframes guest-comet-fall { from { transform: translate3d(0, 0, 0) rotate(90deg); } to { transform: translate3d(0, 520%, 0) rotate(90deg); } }
+
+  @media (max-width: 1080px) {
+    .guest-hero {
+      grid-template-columns: 1fr;
+    }
+    .guest-wrap {
+      gap: 22px;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .guest-wrap {
+      gap: 20px;
+    }
+    .guest-hero-card,
+    .guest-focus-card,
+    .guest-live-card,
+    .guest-uc-card,
+    .guest-booking-card {
+      border-radius: 22px;
+      padding: 20px;
+    }
+    .guest-live-card {
+      min-height: 330px;
+    }
+    .guest-uc-card {
+      min-height: 230px;
+    }
+  }
 </style>
 
 <main class="guest-home">
@@ -211,28 +609,16 @@
         </div>
       </div>
 
-      <aside class="guest-live-card" aria-label="Minh họa hành trình khách hàng">
-        <div class="guest-live-ring"></div>
-        <div class="guest-live-core"></div>
-        <span class="guest-live-word">Search</span>
-        <span class="guest-live-word">Booking</span>
-        <span class="guest-live-word">Advisory</span>
-        <span class="guest-live-word">CSKH</span>
+      <aside class="guest-live-card" aria-label="Minh họa vũ trụ khách hàng">
+        <span class="guest-galaxy-nebula"></span>
+        <span class="guest-comet guest-comet--one"></span>
+        <span class="guest-comet guest-comet--two"></span>
+        <span class="guest-comet guest-comet--three"></span>
+        <div class="guest-earth-3d" data-earth-3d>
+          <canvas aria-label="Trái Đất 3D xoay"></canvas>
+        </div>
+        <span class="guest-galaxy-moon"></span>
       </aside>
-    </section>
-
-    <section class="guest-focus-card">
-      <div>
-        <strong>Luồng ưu tiên cho khách hàng</strong>
-        <span>Tìm phòng, quản lý đặt phòng, hoàn thiện eKYC, mở tư vấn nhanh và kết nối sang CSKH trong một nơi.</span>
-      </div>
-      <div class="guest-flow" aria-label="Luồng nghiệp vụ khách hàng">
-        <a href="/booking/multi">Đặt phòng online</a>
-        <a href="/customer/bookings">Quản lý đặt phòng</a>
-        <a href="/customer/advisory">Tư vấn</a>
-        <a href="/customer/profile">Hồ sơ</a>
-        <a href="/feedback/new">Phản hồi</a>
-      </div>
     </section>
 
     <section class="guest-section" aria-label="Nghiệp vụ khách hàng">
@@ -340,4 +726,5 @@
   </div>
 </main>
 
+<script type="module" src="/js/home-galaxy-earth.js"></script>
 <%- include("../partials/footer") %>

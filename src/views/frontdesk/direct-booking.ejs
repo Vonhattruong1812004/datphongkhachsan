@@ -339,6 +339,24 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       color: #92400e;
     }
 
+    .payment-qr-block {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+    }
+
+    .payment-qr-image {
+      width: 220px;
+      height: 220px;
+      border-radius: 22px;
+      background: #ffffff;
+      border: 1px solid rgba(15, 23, 42, 0.14);
+      padding: 10px;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.14);
+    }
+
     .grid {
       display: grid;
       grid-template-columns: minmax(0, 3fr) minmax(0, 2.35fr);
@@ -1779,6 +1797,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
       .button-row { align-items: stretch; }
       .button-group { width: 100%; }
       .button, .button-secondary, .button-link { width: 100%; }
+      .payment-qr-block { grid-template-columns: 1fr; }
+      .payment-qr-image { width: min(100%, 260px); height: auto; aspect-ratio: 1 / 1; justify-self: center; }
       table { display: block; overflow-x: auto; white-space: nowrap; }
       .service-room-list { overflow-x: auto; }
       .service-table { min-width: 560px; }
@@ -1836,8 +1856,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         <% if (result) { %>
           <div><%= paymentPending ? `Mã giữ chỗ #${result.holdId}` : `Mã giao dịch #${result.transactionId}` %> · Tổng tiền <%= result.totalFormatted %></div>
           <% if (result.paymentTransfer) { %>
-            <div id="paymentQrBlock" style="margin-top:12px;display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center;">
-              <img src="<%= result.paymentTransfer.qrImageUrl %>" alt="QR cọc SePay" style="width:112px;height:112px;border-radius:16px;background:#fff;border:1px solid rgba(15,23,42,.12);padding:6px;" />
+            <div id="paymentQrBlock" class="payment-qr-block">
+              <img class="payment-qr-image" src="<%= result.paymentTransfer.qrImageUrl %>" alt="QR cọc SePay" />
               <div>
                 <div><strong>Tiền phòng:</strong> <%= result.roomAmountFormatted %> · <strong>Dịch vụ:</strong> <%= result.serviceAmountFormatted %></div>
                 <div><strong>Khuyến mãi:</strong> - <%= result.discountAmountFormatted %> · <strong>Tổng hóa đơn:</strong> <%= result.totalFormatted %></div>
@@ -1860,7 +1880,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
           <h2 class="card-title">Tài khoản vừa tạo</h2>
           <div class="card-tag">Hoàn tất</div>
         </div>
-        <p class="caption">Hệ thống đã tạo tài khoản cho trưởng đoàn và các thành viên đi cùng trong booking này.</p>
+        <p class="caption">Hệ thống đã tạo tài khoản sau khi cọc thành công. Tài khoản trưởng đoàn dùng SĐT làm username, mật khẩu mặc định là <strong>123456</strong>.</p>
         <div class="room-list">
           <table>
             <thead>
@@ -1927,7 +1947,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
 
           <div class="customer-mode-panel <%= form.customer_mode !== 'existing' ? 'is-active' : '' %>" id="newCustomerPanel">
             <div class="section-title">Khách hàng mới <span>Nhập hồ sơ mới, hệ thống sẽ tạo khách/tài khoản sau khi thanh toán cọc</span></div>
-            <p class="caption">Nếu khách đã từng lưu trú, hãy chuyển sang tab khách hàng cũ để tránh trùng CCCD, email hoặc tài khoản.</p>
+            <p class="caption">Nếu khách đã từng lưu trú, hãy chuyển sang tab khách hàng cũ để tránh trùng CCCD, SĐT, email hoặc tài khoản.</p>
           </div>
 
           <div class="field">
@@ -2260,6 +2280,33 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         so_nguoi: false
       };
 
+      const todayInputDate = (() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, "0");
+        const day = String(now.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      })();
+
+      function isValidDateInput(value) {
+        const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return false;
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const parsed = new Date(year, month - 1, day);
+        return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
+      }
+
+      function syncDateLimits() {
+        if (fields.ngay_den) fields.ngay_den.min = todayInputDate;
+        if (fields.ngay_di) fields.ngay_di.min = fields.ngay_den?.value && fields.ngay_den.value >= todayInputDate
+          ? fields.ngay_den.value
+          : todayInputDate;
+      }
+
+      syncDateLimits();
+
       function setError(name, message) {
         if (!fields[name]) return;
         fields[name].classList.add("input-error");
@@ -2451,6 +2498,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
               <div><strong>Cọc đã thanh toán:</strong> ${escapeHtml(data.depositAmountFormatted || "")}</div>
               <div><strong>Trạng thái:</strong> Đã tạo đoàn, tài khoản khách hàng và giao dịch thật.</div>
             </div>
+            ${accounts.length ? `<p class="caption" style="margin-top:10px;">Tài khoản trưởng đoàn dùng SĐT làm username, mật khẩu mặc định là <strong>123456</strong>.</p>` : ""}
             ${accountRows}
           `;
           paymentSuccessDetails.style.display = "block";
@@ -2567,9 +2615,13 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
             const ngayDi = fields.ngay_di.value;
             clearError("ngay_den");
             clearError("ngay_di");
+            syncDateLimits();
             if (!ngayDen) setError("ngay_den", "Vui lòng chọn ngày đến.");
+            else if (!isValidDateInput(ngayDen)) setError("ngay_den", "Ngày đến không hợp lệ.");
+            else if (ngayDen < todayInputDate) setError("ngay_den", "Ngày đến không được nhỏ hơn ngày hiện tại.");
             if (!ngayDi) setError("ngay_di", "Vui lòng chọn ngày đi.");
-            if (ngayDen && ngayDi && new Date(ngayDi).getTime() <= new Date(ngayDen).getTime()) {
+            else if (!isValidDateInput(ngayDi)) setError("ngay_di", "Ngày đi không hợp lệ.");
+            if (ngayDen && ngayDi && isValidDateInput(ngayDen) && isValidDateInput(ngayDi) && ngayDi <= ngayDen) {
               setError("ngay_di", "Ngày đi phải lớn hơn ngày đến.");
             }
             calcSoDem();
@@ -2591,6 +2643,7 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
         fields[name].addEventListener("input", () => {
           if (touched[name]) validateField(name, false);
           if (name === "ngay_den" || name === "ngay_di") {
+            syncDateLimits();
             calcTotalMoney();
           }
         });

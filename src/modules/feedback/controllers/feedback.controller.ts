@@ -42,7 +42,7 @@ export async function renderBroadcastCenter(req: Request, res: Response) {
   return res.render("feedback/broadcast", {
     title: "Gửi tin nhắn hàng loạt",
     payload,
-    successMessage: req.query.success ? "Chiến dịch đã được đưa vào outbound queue của CSKH." : "",
+    successMessage: req.query.success ? broadcastSuccessText(req.query) : "",
     errorMessage: req.query.error ? errorText(req.query.error) : ""
   });
 }
@@ -104,7 +104,9 @@ export async function createBroadcastCampaignAction(req: Request, res: Response)
 
   try {
     const result = await feedbackService.createBroadcastCampaign(req.body, employeeId);
-    return res.redirect(`/feedback/broadcast/manage?success=1&id=${result.id}`);
+    const sent = Number(result.deliveryOutcome?.sent || 0);
+    const failed = Number(result.deliveryOutcome?.failed || 0);
+    return res.redirect(`/feedback/broadcast/manage?success=1&id=${result.id}&sent=${sent}&failed=${failed}`);
   } catch (error) {
     const payload = await feedbackService.getBroadcastCenterPayload(req.body as Record<string, unknown>);
 
@@ -115,6 +117,15 @@ export async function createBroadcastCampaignAction(req: Request, res: Response)
       errorMessage: extractErrorMessage(error)
     });
   }
+}
+
+function broadcastSuccessText(query: Request["query"]) {
+  const sent = Number(query.sent || 0);
+  const failed = Number(query.failed || 0);
+  if (failed > 0) {
+    return `Chiến dịch đã được hệ thống xử lý tự động: gửi thành công ${sent.toLocaleString("vi-VN")} khách, lỗi ${failed.toLocaleString("vi-VN")} khách.`;
+  }
+  return `Chiến dịch đã được hệ thống gửi tự động cho ${sent.toLocaleString("vi-VN")} khách.`;
 }
 
 export async function replyFeedbackAction(req: Request, res: Response) {

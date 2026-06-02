@@ -709,6 +709,391 @@
       display: block;
     }
   }
+
+  /* UC1 visual separation pass: keep logic intact, make sections easier to scan */
+  body {
+    background:
+      radial-gradient(circle at 12% 12%, rgba(45, 212, 191, .18), transparent 28%),
+      radial-gradient(circle at 88% 16%, rgba(139, 92, 246, .20), transparent 30%),
+      radial-gradient(circle at 52% 110%, rgba(251, 191, 36, .12), transparent 36%),
+      linear-gradient(135deg, #020617 0%, #071426 46%, #160b2f 100%);
+  }
+
+  .report-home {
+    --report-ink: #0f2d42;
+    --report-muted: #587083;
+    --report-line: rgba(125, 211, 252, .24);
+    --report-shadow: 0 30px 90px rgba(0, 0, 0, .28);
+    --report-card-shadow: 0 22px 54px rgba(0, 0, 0, .24);
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 8% 8%, rgba(45, 212, 191, .16), transparent 24%),
+      radial-gradient(circle at 86% 10%, rgba(139, 92, 246, .20), transparent 28%),
+      radial-gradient(circle at 46% 104%, rgba(251, 191, 36, .10), transparent 34%),
+      linear-gradient(135deg, rgba(2, 6, 23, .88) 0%, rgba(8, 20, 38, .90) 46%, rgba(23, 11, 48, .90) 100%);
+  }
+
+  .report-home::before,
+  .report-home::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .report-home::before {
+    background:
+      radial-gradient(circle at 12% 22%, rgba(255, 255, 255, .86) 0 1px, transparent 2px),
+      radial-gradient(circle at 34% 12%, rgba(186, 230, 253, .82) 0 1px, transparent 2px),
+      radial-gradient(circle at 68% 28%, rgba(255, 255, 255, .70) 0 1px, transparent 2px),
+      radial-gradient(circle at 84% 72%, rgba(125, 211, 252, .74) 0 1px, transparent 2px),
+      radial-gradient(circle at 22% 78%, rgba(255, 255, 255, .66) 0 1px, transparent 2px);
+    background-size: 240px 190px;
+    opacity: .58;
+  }
+
+  .report-home::after {
+    background:
+      linear-gradient(90deg, transparent, rgba(125, 211, 252, .12), transparent) 0 18% / 100% 1px no-repeat,
+      linear-gradient(90deg, transparent, rgba(251, 113, 133, .10), transparent) 0 68% / 100% 1px no-repeat;
+  }
+
+  .report-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  .report-hero,
+  .report-form-card,
+  .report-warning,
+  .report-kpis,
+  .report-insights,
+  .report-chart-grid,
+  .report-table-card {
+    margin-bottom: 0;
+  }
+
+  .report-hero {
+    border-radius: 28px;
+    padding: 34px;
+    border: 1px solid rgba(125, 211, 252, .28);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .14), transparent 28%),
+      linear-gradient(135deg, rgba(15, 23, 42, .94), rgba(14, 116, 144, .58) 50%, rgba(88, 28, 135, .58));
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .10);
+  }
+
+  .report-hero::before {
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .16), transparent 34%),
+      radial-gradient(circle at 88% 16%, rgba(45, 212, 191, .26), transparent 28%),
+      radial-gradient(circle at 16% 92%, rgba(251, 113, 133, .18), transparent 30%);
+  }
+
+  .report-chip {
+    color: #ecfeff;
+    border-color: rgba(125, 211, 252, .30);
+    background: rgba(15, 23, 42, .60);
+  }
+
+  .report-hero h1 {
+    color: #fff;
+    text-shadow: 0 16px 44px rgba(0, 0, 0, .24);
+  }
+
+  .report-hero h1 span {
+    background: linear-gradient(96deg, #67e8f9 0%, #86efac 34%, #fde68a 66%, #f9a8d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .report-lead {
+    color: #dbeafe;
+    font-size: 17px;
+  }
+
+  .report-form-card {
+    border-radius: 26px;
+    padding: 22px;
+    border: 1px solid rgba(125, 211, 252, .32);
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, .88), rgba(8, 47, 73, .78)),
+      radial-gradient(circle at 100% 0%, rgba(45, 212, 191, .22), transparent 36%);
+    box-shadow: 0 26px 70px rgba(0, 0, 0, .30), inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .report-filter-bar {
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .report-filter-title {
+    min-height: 56px;
+    border-radius: 18px;
+    border-color: rgba(255, 255, 255, .34);
+    background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 52%, #22c55e 100%);
+    color: #062338;
+    box-shadow: 0 16px 34px rgba(45, 212, 191, .22);
+  }
+
+  .report-filter-control {
+    min-height: 56px;
+    border-radius: 18px;
+    border: 2px solid rgba(186, 230, 253, .90);
+    background: #ffffff;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, .18), inset 0 0 0 1px rgba(255, 255, 255, .90);
+  }
+
+  .report-filter-control label {
+    min-width: 72px;
+    justify-content: center;
+    padding: 0 13px;
+    border-right: 1px solid rgba(14, 116, 144, .18);
+    background: linear-gradient(180deg, #e0f2fe, #ccfbf1);
+    color: #075985;
+    font-size: 12px;
+  }
+
+  .report-filter-control select,
+  .report-filter-control input {
+    height: 54px;
+    background: #ffffff;
+    color: #0f2d42;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .report-filter-control select {
+    max-width: 230px;
+  }
+
+  .report-filter-control.is-search {
+    flex-basis: 340px;
+  }
+
+  .report-form-actions {
+    gap: 10px;
+  }
+
+  .report-button {
+    min-height: 50px;
+    border-radius: 18px;
+    padding: 11px 20px;
+    border: 1px solid rgba(255, 255, 255, .60);
+    background: #ffffff;
+    color: #0f2d42;
+    font-size: 15px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .16);
+  }
+
+  .report-button--primary {
+    color: #061826;
+    background: linear-gradient(135deg, #facc15 0%, #fb7185 48%, #8b5cf6 100%);
+    box-shadow: 0 18px 38px rgba(251, 113, 133, .24);
+  }
+
+  .report-warning {
+    border-radius: 22px;
+    border: 1px solid rgba(251, 191, 36, .40);
+    background: linear-gradient(135deg, #fef3c7, #ffffff);
+    box-shadow: 0 20px 44px rgba(0, 0, 0, .18);
+  }
+
+  .report-chart-grid {
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .report-chart-stack {
+    gap: 24px;
+  }
+
+  .report-chart-card {
+    border-radius: 28px;
+    padding: 24px;
+    border: 2px solid rgba(255, 255, 255, .42);
+    background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 52%, #22c55e 100%);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .18);
+  }
+
+  .report-chart-grid > .report-chart-card:nth-child(2),
+  .report-chart-stack > .report-chart-card:nth-child(2) {
+    background: linear-gradient(135deg, #facc15 0%, #fb7185 56%, #8b5cf6 100%);
+  }
+
+  .report-chart-grid.is-even > .report-chart-card:nth-child(1) {
+    background: linear-gradient(135deg, #60a5fa 0%, #818cf8 52%, #c084fc 100%);
+  }
+
+  .report-chart-grid.is-even > .report-chart-card:nth-child(2) {
+    background: linear-gradient(135deg, #34d399 0%, #22d3ee 52%, #3b82f6 100%);
+  }
+
+  .report-chart-grid.is-three > .report-chart-card:nth-child(1) {
+    background: linear-gradient(135deg, #2dd4bf 0%, #38bdf8 52%, #2563eb 100%);
+  }
+
+  .report-chart-grid.is-three > .report-chart-card:nth-child(2) {
+    background: linear-gradient(135deg, #fbbf24 0%, #fb7185 52%, #a855f7 100%);
+  }
+
+  .report-chart-grid.is-three > .report-chart-card:nth-child(3) {
+    background: linear-gradient(135deg, #86efac 0%, #22c55e 46%, #14b8a6 100%);
+  }
+
+  .report-chart-card h2,
+  .report-chart-card h3 {
+    color: #ffffff;
+    font-size: 25px;
+    line-height: 1.12;
+    text-shadow: 0 2px 14px rgba(15, 23, 42, .30);
+  }
+
+  .report-chart-card p {
+    color: rgba(255, 255, 255, .88);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .report-chart-box {
+    min-height: 340px;
+    margin-top: 18px;
+    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, .82);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(248, 250, 252, .92)),
+      linear-gradient(rgba(15, 23, 42, .045) 1px, transparent 1px) 0 0 / 100% 25%;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .96), 0 16px 34px rgba(15, 23, 42, .18);
+  }
+
+  .report-chart-box.is-compact {
+    min-height: 250px;
+  }
+
+  .report-chart-box.is-mini {
+    min-height: 220px;
+  }
+
+  .report-legend-item,
+  .report-chart-note span {
+    border: 1px solid rgba(255, 255, 255, .72);
+    background: rgba(255, 255, 255, .92);
+    color: #0f2d42;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, .12);
+  }
+
+  .report-ai-insight {
+    margin-top: 18px;
+    border-radius: 20px;
+    border: 2px solid rgba(255, 255, 255, .72);
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .16);
+  }
+
+  .report-ai-insight__tone {
+    background: #e0f2fe;
+    color: #075985;
+  }
+
+  .report-ai-insight strong {
+    color: #0f2d42;
+  }
+
+  .report-ai-insight ul,
+  .report-ai-insight__action {
+    color: #50687a;
+  }
+
+  @media (max-width: 1080px) {
+    .report-chart-grid,
+    .report-chart-grid.is-even,
+    .report-chart-grid.is-three {
+      gap: 22px;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .report-wrap {
+      gap: 20px;
+    }
+
+    .report-hero,
+    .report-form-card,
+    .report-chart-card {
+      border-radius: 22px;
+      padding: 20px;
+    }
+
+    .report-filter-control label {
+      min-width: 92px;
+    }
+
+    .report-chart-box {
+      min-height: 270px;
+    }
+
+    .report-chart-box.is-compact,
+    .report-chart-box.is-mini {
+      min-height: 230px;
+    }
+  }
+
+  /* Accounting reports cleanup: stars live only in the fixed system galaxy. */
+  .report-home {
+    overflow: visible !important;
+    background:
+      linear-gradient(135deg, rgba(3,17,31,.86) 0%, rgba(7,22,52,.80) 48%, rgba(22,13,51,.84) 100%) !important;
+  }
+
+  .report-home::before,
+  .report-home::after {
+    display: none !important;
+    content: none !important;
+    animation: none !important;
+  }
+
+  .report-hero,
+  .report-card,
+  .report-form-card,
+  .report-table-card,
+  .report-warning,
+  .report-chart-card {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    will-change: auto !important;
+  }
+
+  .report-hero {
+    background:
+      radial-gradient(circle at 88% 16%, rgba(45,212,191,.16), transparent 30%),
+      linear-gradient(145deg, rgba(8,13,31,.95), rgba(15,23,42,.84)) !important;
+  }
+
+  .report-form-card {
+    background: linear-gradient(180deg, rgba(8,13,31,.94), rgba(9,20,40,.90)) !important;
+  }
+
+  .report-filter-control,
+  .report-chart-box,
+  .report-ai-insight,
+  .report-empty {
+    background: #ffffff !important;
+  }
+
+  .report-table td {
+    background: #ffffff !important;
+  }
+
+  .report-table tbody tr:nth-child(odd) td {
+    background: #effafe !important;
+  }
+
+  .report-table tbody tr:nth-child(even) td {
+    background: #f8fffb !important;
+  }
 </style>
 
 <main class="report-home">

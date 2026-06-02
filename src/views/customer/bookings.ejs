@@ -64,12 +64,248 @@
   .history-cancel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
   .history-cancel-field{display:grid;gap:6px}
   .history-cancel-field label{font-size:11px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em;color:#173651}
-  .history-cancel-field input,.history-cancel-field textarea{width:100%;box-sizing:border-box;min-height:42px;border-radius:14px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);padding:9px 12px;color:#102033;font:inherit}
+  .history-cancel-field input,.history-cancel-field textarea,.history-cancel-field select{width:100%;box-sizing:border-box;min-height:42px;border-radius:14px;border:1px solid rgba(18,48,71,.12);background:rgba(255,255,255,.92);padding:9px 12px;color:#102033;font:inherit}
   .history-cancel-field textarea{min-height:76px;resize:vertical}
   @keyframes history-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(28px,24px,0) rotate(14deg)}}
   @keyframes history-sun{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-8px) scale(1.04)}}
   @media(max-width:980px){.history-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.history-filter{grid-template-columns:1fr 1fr}.history-grid{grid-template-columns:1fr}.history-cancel-grid{grid-template-columns:1fr}}
   @media(max-width:640px){.history-shell{padding:22px 12px 48px}.history-hero,.history-panel,.history-card{border-radius:26px;padding:20px}.history-summary,.history-filter,.history-lines{grid-template-columns:1fr}.history-hero::before{width:82px;height:82px;right:18px}}
+
+  /* Customer UC2 color pass only: galaxy theme with stronger content separation */
+  body{
+    background:
+      radial-gradient(circle at 10% 8%,rgba(45,212,191,.18),transparent 28%),
+      radial-gradient(circle at 88% 12%,rgba(139,92,246,.24),transparent 32%),
+      radial-gradient(circle at 48% 112%,rgba(251,191,36,.12),transparent 36%),
+      linear-gradient(135deg,#020617 0%,#071426 48%,#160b2f 100%);
+    color:#f8fafc;
+  }
+  .history-shell{
+    isolation:isolate;
+    max-width:1280px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+  }
+  .history-shell::before,
+  .history-shell::after{
+    width:auto;
+    height:auto;
+    border-radius:0;
+    inset:0;
+    animation:none;
+    opacity:1;
+    background:
+      radial-gradient(circle at 12% 20%,rgba(255,255,255,.78) 0 1px,transparent 2px),
+      radial-gradient(circle at 38% 12%,rgba(186,230,253,.74) 0 1px,transparent 2px),
+      radial-gradient(circle at 74% 24%,rgba(255,255,255,.66) 0 1px,transparent 2px),
+      radial-gradient(circle at 84% 76%,rgba(125,211,252,.70) 0 1px,transparent 2px),
+      radial-gradient(circle at 22% 84%,rgba(255,255,255,.60) 0 1px,transparent 2px);
+    background-size:250px 190px;
+    z-index:-2;
+  }
+  .history-shell::after{
+    z-index:-1;
+    opacity:.9;
+    background:
+      radial-gradient(circle at 85% 10%,rgba(251,191,36,.20),transparent 16%),
+      radial-gradient(circle at 8% 72%,rgba(14,165,233,.16),transparent 24%),
+      linear-gradient(90deg,transparent,rgba(125,211,252,.13),transparent) 0 22% / 100% 1px no-repeat,
+      linear-gradient(90deg,transparent,rgba(251,113,133,.10),transparent) 0 70% / 100% 1px no-repeat;
+  }
+  .history-hero,
+  .history-panel{
+    margin-bottom:0;
+    border:1px solid rgba(125,211,252,.32);
+    background:
+      linear-gradient(135deg,rgba(15,23,42,.92),rgba(8,47,73,.78)),
+      radial-gradient(circle at 100% 0%,rgba(45,212,191,.22),transparent 36%);
+    box-shadow:0 26px 70px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .history-hero{
+    border-radius:28px;
+    padding:34px;
+    background:
+      radial-gradient(circle at 12% 0%,rgba(255,255,255,.14),transparent 28%),
+      linear-gradient(135deg,rgba(15,23,42,.94),rgba(14,116,144,.58) 50%,rgba(88,28,135,.58));
+  }
+  .history-hero::before{
+    right:-72px;
+    top:-92px;
+    width:260px;
+    height:260px;
+    background:conic-gradient(from 140deg,#38bdf8,#2dd4bf,#facc15,#fb7185,#8b5cf6,#38bdf8);
+    opacity:.34;
+    box-shadow:none;
+    filter:blur(1px);
+  }
+  .history-kicker{
+    border:1px solid rgba(125,211,252,.32);
+    background:rgba(15,23,42,.62);
+    color:#ecfeff;
+    letter-spacing:.07em;
+  }
+  .history-hero h1{
+    color:#ffffff;
+    letter-spacing:0;
+    text-shadow:0 16px 44px rgba(0,0,0,.24);
+  }
+  .history-hero h1 span{
+    background:linear-gradient(96deg,#67e8f9 0%,#86efac 34%,#fde68a 66%,#f9a8d4 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+  }
+  .history-muted{
+    color:#dbeafe;
+    font-size:15px;
+    font-weight:800;
+  }
+  .history-button{
+    min-height:48px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.64);
+    background:#ffffff;
+    color:#0f2d42;
+    font-size:14px;
+    box-shadow:0 14px 30px rgba(0,0,0,.16);
+  }
+  .history-button--primary{
+    color:#061826;
+    background:linear-gradient(135deg,#facc15 0%,#fb7185 50%,#8b5cf6 100%);
+    box-shadow:0 18px 38px rgba(251,113,133,.24);
+  }
+  .history-summary{
+    gap:18px;
+    margin:0;
+  }
+  .history-stat{
+    border:2px solid rgba(255,255,255,.42);
+    border-radius:22px;
+    color:#ffffff;
+    box-shadow:0 18px 38px rgba(0,0,0,.20);
+  }
+  .history-stat:nth-child(1){background:linear-gradient(135deg,#38bdf8 0%,#2dd4bf 52%,#22c55e 100%)}
+  .history-stat:nth-child(2){background:linear-gradient(135deg,#facc15 0%,#fb7185 56%,#8b5cf6 100%)}
+  .history-stat:nth-child(3){background:linear-gradient(135deg,#34d399 0%,#22d3ee 52%,#3b82f6 100%)}
+  .history-stat:nth-child(4){background:linear-gradient(135deg,#fb7185 0%,#f97316 54%,#facc15 100%)}
+  .history-stat:nth-child(5){background:linear-gradient(135deg,#60a5fa 0%,#818cf8 52%,#c084fc 100%)}
+  .history-stat span,
+  .history-stat strong{
+    color:#ffffff;
+    text-shadow:0 2px 12px rgba(15,23,42,.28);
+  }
+  .history-panel{
+    border-radius:26px;
+    padding:22px;
+  }
+  .history-field label{
+    color:#e0f2fe;
+    letter-spacing:0;
+  }
+  .history-field input,
+  .history-field select,
+  .history-cancel-field input,
+  .history-cancel-field textarea,
+  .history-cancel-field select{
+    min-height:54px;
+    border:2px solid rgba(186,230,253,.90);
+    border-radius:18px;
+    background:#ffffff;
+    color:#0f2d42;
+    font-weight:900;
+    box-shadow:0 16px 34px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.90);
+  }
+  .history-field input:focus,
+  .history-field select:focus,
+  .history-cancel-field input:focus,
+  .history-cancel-field textarea:focus,
+  .history-cancel-field select:focus{
+    border-color:#67e8f9;
+    box-shadow:0 0 0 4px rgba(103,232,249,.18),0 16px 34px rgba(0,0,0,.18);
+    outline:none;
+  }
+  .history-grid{
+    gap:20px;
+  }
+  .history-card{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:26px;
+    background:linear-gradient(135deg,#ffffff 0%,#f0fdff 54%,#f8fafc 100%);
+    box-shadow:0 20px 50px rgba(0,0,0,.18);
+  }
+  .history-card:hover{
+    border-color:#2dd4bf;
+    box-shadow:0 0 0 5px rgba(45,212,191,.18),0 28px 60px rgba(0,0,0,.22);
+  }
+  .history-card::before{
+    background:radial-gradient(circle,rgba(14,165,233,.18),transparent 68%);
+  }
+  .history-code,
+  .history-line strong{
+    color:#0f2d42;
+    letter-spacing:0;
+  }
+  .history-meta,
+  .history-line span{
+    color:#587083;
+  }
+  .history-total{
+    color:#047857!important;
+    text-shadow:none;
+  }
+  .history-badge{
+    border:1px solid rgba(14,165,233,.22);
+    background:#ecfeff;
+  }
+  .history-lines{
+    gap:12px;
+  }
+  .history-line{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:18px;
+    background:#ffffff;
+    box-shadow:0 12px 26px rgba(12,39,64,.09);
+  }
+  .history-cancel{
+    border:2px solid rgba(251,113,133,.32);
+    background:linear-gradient(135deg,#fff1f2,#ffffff);
+    box-shadow:0 14px 30px rgba(0,0,0,.12);
+  }
+  .history-cancel summary{
+    color:#9f1239;
+  }
+  .history-cancel .history-muted{
+    color:#475569;
+  }
+  .history-cancel-field label{
+    color:#0f2d42;
+    letter-spacing:0;
+  }
+  .history-alert,
+  .history-empty{
+    border:2px solid rgba(186,230,253,.72);
+    border-radius:22px;
+    background:rgba(255,255,255,.94);
+    color:#0f2d42;
+    box-shadow:0 16px 34px rgba(0,0,0,.16);
+  }
+  .history-alert--success{
+    color:#047857;
+    border-color:rgba(45,212,191,.50);
+  }
+  .history-alert--error{
+    color:#9f1239;
+    border-color:rgba(251,113,133,.46);
+  }
+  @media(max-width:980px){
+    .history-shell{gap:20px}
+    .history-hero,
+    .history-panel,
+    .history-card{
+      border-radius:22px;
+      padding:20px;
+    }
+  }
 </style>
 
 <main class="history-shell">
@@ -171,7 +407,7 @@
           <% if (booking.cancelable) { const cancel = booking.cancelPreview || {}; %>
             <details class="history-cancel" id="cancel-<%= booking.id %>">
               <summary>Chính sách hủy: <%= cancel.policy?.label || "Đang tính" %> · dự kiến hoàn <%= cancel.refundAmountFormatted || "0 đ" %></summary>
-              <p class="history-muted"><%= cancel.policy?.note || "" %> <%= cancel.statusText || "" %></p>
+              <p class="history-muted"><%= cancel.policy?.note || "" %> <%= cancel.statusText || "" %> Luồng xử lý: khách nhập tài khoản nhận hoàn → quản lý duyệt → kế toán chuyển khoản hoàn tiền.</p>
               <form method="post" action="/customer/bookings/<%= booking.id %>/cancel" onsubmit="return confirm('Bạn xác nhận hủy booking <%= booking.bookingCode || `GD-${booking.id}` %>?');">
                 <div class="history-cancel-grid">
                   <div class="history-cancel-field" style="grid-column:1/-1">
@@ -181,7 +417,19 @@
                   <% if (cancel.needsBankInfo) { %>
                     <div class="history-cancel-field">
                       <label>Ngân hàng nhận hoàn *</label>
-                      <input name="refund_bank_name" required placeholder="VD: Vietcombank" />
+                      <select name="refund_bank_name" required>
+                        <option value="">Chọn ngân hàng</option>
+                        <option value="Vietcombank">Vietcombank</option>
+                        <option value="VietinBank">VietinBank</option>
+                        <option value="BIDV">BIDV</option>
+                        <option value="Agribank">Agribank</option>
+                        <option value="Techcombank">Techcombank</option>
+                        <option value="MB Bank">MB Bank</option>
+                        <option value="ACB">ACB</option>
+                        <option value="Sacombank">Sacombank</option>
+                        <option value="VPBank">VPBank</option>
+                        <option value="TPBank">TPBank</option>
+                      </select>
                     </div>
                     <div class="history-cancel-field">
                       <label>Số tài khoản *</label>

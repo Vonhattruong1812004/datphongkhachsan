@@ -5,6 +5,7 @@
   const rooms = payload?.rooms || [];
   const cancel = payload?.cancel || null;
   const refund = cancel?.refund || null;
+  const cancellationResultView = (typeof cancellationResult !== "undefined" ? cancellationResult : null) || payload?.cancellationResult || null;
   const cancelableRooms = rooms.filter((room) => room.trangThai === "Booked");
 %>
 <style>
@@ -43,11 +44,11 @@
   .cancel-search-actions{display:flex;align-items:center;justify-content:flex-start;gap:10px;min-width:244px;padding-bottom:16px}
   .cancel-field{display:flex;flex-direction:column;gap:6px}
   .cancel-field label{font-size:13px;font-weight:800;color:#cbd5e1}
-  .cancel-field input,.cancel-field textarea{width:100%;border:1px solid rgba(148,163,184,.28);border-radius:16px;padding:12px 14px;background:rgba(2,6,23,.72);color:var(--ux-heading);font:inherit;outline:none;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
-  .cancel-field input{height:46px}
+  .cancel-field input,.cancel-field select,.cancel-field textarea{width:100%;border:1px solid rgba(148,163,184,.28);border-radius:16px;padding:12px 14px;background:rgba(2,6,23,.72);color:var(--ux-heading);font:inherit;outline:none;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+  .cancel-field input,.cancel-field select{height:46px}
   .cancel-field textarea{min-height:96px;resize:vertical}
-  .cancel-field input:focus,.cancel-field textarea:focus{border-color:rgba(103,200,255,.62);box-shadow:0 0 0 3px rgba(103,200,255,.12);background:rgba(2,6,23,.9)}
-  .cancel-field input[disabled]{background:rgba(15,23,42,.72);color:#cbd5e1}
+  .cancel-field input:focus,.cancel-field select:focus,.cancel-field textarea:focus{border-color:rgba(103,200,255,.62);box-shadow:0 0 0 3px rgba(103,200,255,.12);background:rgba(2,6,23,.9)}
+  .cancel-field input[disabled],.cancel-field select[disabled]{background:rgba(15,23,42,.72);color:#cbd5e1}
   .cancel-error-msg{font-size:12px;color:#fda4af;min-height:16px}
   .input-error{border-color:rgba(251,113,133,.78)!important;background:rgba(127,29,29,.22)!important}
   .cancel-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px}
@@ -147,8 +148,8 @@
   .cancel-card h2{color:var(--ux-heading);font-size:24px;letter-spacing:-.04em}
   .cancel-tag{background:rgba(14,165,233,.1);border-color:rgba(14,165,233,.16);color:#0c6e90}
   .cancel-field label{color:#173651}
-  .cancel-field input,.cancel-field textarea{background:rgba(255,255,255,.92);border-color:rgba(19,48,74,.12);color:var(--ux-heading)}
-  .cancel-field input[disabled]{background:rgba(255,255,255,.74);color:var(--ux-muted)}
+  .cancel-field input,.cancel-field select,.cancel-field textarea{background:rgba(255,255,255,.92);border-color:rgba(19,48,74,.12);color:var(--ux-heading)}
+  .cancel-field input[disabled],.cancel-field select[disabled]{background:rgba(255,255,255,.74);color:var(--ux-muted)}
   .cancel-summary .cancel-stat,.cancel-scope label,.cancel-table-wrap{background:rgba(255,255,255,.7);border-color:var(--ux-border)}
   .cancel-stat strong{color:var(--ux-heading)}
   .cancel-table{color:var(--ux-text)}
@@ -161,6 +162,229 @@
   .cancel-badge--slate{background:rgba(148,163,184,.12);border-color:rgba(148,163,184,.18);color:#475569}
   .cancel-scope label:has(input:checked){border-color:rgba(239,71,111,.24);background:rgba(239,71,111,.06)}
   .cancel-empty{background:rgba(255,255,255,.72);border-color:rgba(19,48,74,.14);color:var(--ux-muted)}
+  /* UC5 visual-only pass: separate cancellation work zones from fields */
+  .cancel-shell{
+    background:transparent;
+    overflow:visible;
+    border-radius:0;
+  }
+  .cancel-shell::before{display:none}
+  .cancel-title{
+    margin-bottom:24px;
+  }
+  #formSearch.cancel-card{
+    background:
+      radial-gradient(circle at 8% 0%,rgba(255,255,255,.30),transparent 24%),
+      linear-gradient(135deg,#2dd4bf 0%,#0ea5e9 48%,#2563eb 100%) !important;
+    border-color:rgba(186,230,253,.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.38),
+      0 26px 60px rgba(14,165,233,.24),
+      0 14px 30px rgba(15,23,42,.18);
+  }
+  #formCancel.cancel-card{
+    background:
+      radial-gradient(circle at 8% 0%,rgba(255,255,255,.28),transparent 24%),
+      linear-gradient(135deg,#facc15 0%,#fb7185 48%,#8b5cf6 100%) !important;
+    border-color:rgba(254,240,138,.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.38),
+      0 26px 60px rgba(251,113,133,.22),
+      0 14px 30px rgba(15,23,42,.18);
+  }
+  #formSearch.cancel-card h2,
+  #formSearch.cancel-card > .cancel-muted,
+  #formSearch.cancel-card .cancel-field label,
+  #formCancel.cancel-card > h2,
+  #formCancel.cancel-card > .cancel-row .cancel-field label,
+  #formCancel.cancel-card > .cancel-row .cancel-muted,
+  #formCancel.cancel-card > .cancel-row .cancel-muted strong{
+    color:#fff;
+    text-shadow:0 2px 12px rgba(15,23,42,.30);
+  }
+  .cancel-tag{
+    color:#083344;
+    background:rgba(255,255,255,.86);
+    border-color:rgba(255,255,255,.72);
+    text-shadow:none;
+  }
+  .cancel-field input,
+  .cancel-field select,
+  .cancel-field textarea{
+    min-height:54px;
+    background:#ffffff !important;
+    border:2px solid rgba(8,47,73,.55);
+    color:#102a3d;
+    box-shadow:
+      0 0 0 4px rgba(255,255,255,.68),
+      0 10px 0 rgba(8,47,73,.14),
+      0 20px 34px rgba(8,47,73,.18);
+  }
+  .cancel-field textarea{
+    min-height:118px;
+  }
+  .cancel-field input[disabled],
+  .cancel-field select[disabled]{
+    background:#f8fbff !important;
+    border-color:rgba(8,47,73,.46);
+    color:#26465c;
+  }
+  .cancel-field input:focus,
+  .cancel-field select:focus,
+  .cancel-field textarea:focus{
+    border-color:#facc15;
+    background:#fff !important;
+    box-shadow:
+      0 0 0 4px rgba(250,204,21,.32),
+      0 10px 0 rgba(8,47,73,.16),
+      0 20px 34px rgba(8,47,73,.20);
+  }
+  .cancel-shell .button:not(.button--primary):not(.button--danger){
+    background:rgba(255,255,255,.88);
+    color:#0f2d42;
+    border-color:rgba(255,255,255,.72);
+  }
+  .cancel-shell .button--primary{
+    background:linear-gradient(135deg,#facc15,#fb7185 48%,#8b5cf6);
+    color:#0f172a;
+    border-color:rgba(255,255,255,.36);
+    box-shadow:0 18px 36px rgba(15,23,42,.24);
+  }
+  .cancel-shell .button--danger{
+    background:linear-gradient(135deg,#ef4444,#be123c 52%,#7f1d1d);
+    border-color:rgba(255,255,255,.40);
+    box-shadow:0 18px 36px rgba(127,29,29,.28);
+  }
+  .cancel-summary .cancel-stat{
+    background:#ffffff;
+    border:2px solid rgba(8,47,73,.16);
+    box-shadow:
+      0 0 0 4px rgba(255,255,255,.52),
+      0 16px 30px rgba(8,47,73,.14);
+  }
+  .cancel-summary .cancel-stat strong{
+    color:#102a3d;
+  }
+  .cancel-summary .cancel-stat span{
+    color:#4b6b80;
+  }
+  .cancel-table-wrap{
+    background:#ffffff;
+    border:2px solid rgba(8,47,73,.20);
+    box-shadow:
+      0 0 0 5px rgba(255,255,255,.56),
+      0 18px 38px rgba(8,47,73,.16);
+  }
+  .cancel-table{
+    color:#123149;
+    background:#ffffff;
+  }
+  .cancel-table th{
+    background:linear-gradient(135deg,#dff3ff,#c7f9ee);
+    color:#16384f;
+  }
+  .cancel-table td{
+    background:#ffffff;
+    border-bottom-color:rgba(8,47,73,.10);
+  }
+  .cancel-table tbody tr:hover td{
+    background:#f1fbff;
+  }
+  .cancel-table input[type="checkbox"],
+  .cancel-scope input[type="radio"]{
+    accent-color:#e11d48;
+  }
+  .cancel-badge{
+    background:#e0f2fe;
+    border-color:rgba(14,165,233,.20);
+    color:#075985;
+  }
+  .cancel-badge--green{
+    background:#dcfce7;
+    border-color:rgba(22,163,74,.22);
+    color:#166534;
+  }
+  .cancel-badge--red{
+    background:#ffe4e6;
+    border-color:rgba(225,29,72,.22);
+    color:#9f1239;
+  }
+  .cancel-badge--amber{
+    background:#fef3c7;
+    border-color:rgba(217,119,6,.24);
+    color:#92400e;
+  }
+  .cancel-badge--slate{
+    background:#f1f5f9;
+    border-color:rgba(71,85,105,.18);
+    color:#475569;
+  }
+  .cancel-scope label{
+    background:linear-gradient(135deg,#fef3c7 0%,#fb7185 100%);
+    border:2px solid rgba(255,255,255,.58);
+    color:#102a3d;
+    box-shadow:
+      inset 7px 0 0 rgba(255,255,255,.62),
+      0 16px 28px rgba(15,23,42,.14);
+  }
+  .cancel-scope label:nth-child(2){
+    background:linear-gradient(135deg,#ccfbf1 0%,#60a5fa 100%);
+  }
+  .cancel-scope label:has(input:checked){
+    outline:3px solid rgba(255,255,255,.72);
+    border-color:#ffffff;
+  }
+  .cancel-scope strong{
+    color:#102a3d;
+  }
+  .cancel-scope .cancel-muted{
+    color:#334b5f;
+    text-shadow:none;
+  }
+  .cancel-refund{
+    background:
+      radial-gradient(circle at 10% 0%,rgba(255,255,255,.28),transparent 24%),
+      linear-gradient(135deg,#22c55e 0%,#14b8a6 48%,#0ea5e9 100%);
+    border:2px solid rgba(187,247,208,.72);
+    box-shadow:0 18px 38px rgba(15,23,42,.18);
+  }
+  .cancel-refund__head strong,
+  .cancel-refund > .cancel-muted{
+    color:#fff;
+    text-shadow:0 2px 12px rgba(15,23,42,.30);
+  }
+  .cancel-policy__hero,
+  .cancel-policy__step,
+  .cancel-refund__metric,
+  .cancel-refund__notice{
+    background:#ffffff;
+    border:2px solid rgba(8,47,73,.16);
+    box-shadow:0 0 0 4px rgba(255,255,255,.42),0 14px 28px rgba(8,47,73,.12);
+  }
+  .cancel-policy__hero span,
+  .cancel-policy__hero p,
+  .cancel-policy__step span,
+  .cancel-refund__metric span{
+    color:#526d80;
+  }
+  .cancel-policy__hero strong,
+  .cancel-policy__step b,
+  .cancel-refund__metric b{
+    color:#102a3d;
+  }
+  .cancel-policy__step.is-active{
+    background:linear-gradient(135deg,#fef3c7 0%,#ccfbf1 100%);
+    border-color:rgba(8,47,73,.20);
+  }
+  .cancel-refund__notice{
+    color:#92400e;
+  }
+  .cancel-empty{
+    background:#ffffff;
+    border:2px dashed rgba(8,47,73,.24);
+    color:#536b80;
+    box-shadow:0 0 0 5px rgba(255,255,255,.56);
+  }
 </style>
 
 <main class="cancel-shell">
@@ -178,6 +402,29 @@
   <% } %>
   <% if (notice?.success) { %>
     <div class="cancel-alert cancel-alert--success"><%= notice.success %></div>
+  <% } %>
+  <% if (cancellationResultView) { %>
+    <section class="cancel-card">
+      <h2>Kết quả hủy đặt phòng <span class="cancel-tag">Đã ghi nhận</span></h2>
+      <div class="cancel-summary">
+        <div class="cancel-stat"><strong><%= cancellationResultView.paidDepositFormatted || "0 đ" %></strong><span>Cọc đã thu</span></div>
+        <div class="cancel-stat"><strong><%= cancellationResultView.refundAmountFormatted || "0 đ" %></strong><span>Số tiền đề nghị hoàn</span></div>
+        <div class="cancel-stat"><strong><%= cancellationResultView.retainedDepositFormatted || "0 đ" %></strong><span>Số tiền giữ lại</span></div>
+        <div class="cancel-stat"><strong><%= cancellationResultView.refundCode || "Không tạo" %></strong><span>Mã yêu cầu hoàn</span></div>
+      </div>
+      <div class="cancel-refund__notice" style="margin-top:12px">
+        <% if (cancellationResultView.refundRequestCreated) { %>
+          Yêu cầu hoàn tiền đã chuyển sang UC Quản lý duyệt hoàn tiền với trạng thái <strong>Chờ quản lý duyệt</strong>.
+          <% if (Number(cancellationResultView.refundAmount || 0) > 0) { %>
+            Vui lòng kiểm tra lại thông tin STK: <strong><%= cancellationResultView.bankName || "Chưa nhập" %> · <%= cancellationResultView.bankAccountNo || "Chưa nhập" %> · <%= cancellationResultView.bankAccountName || "Chưa nhập" %></strong>.
+          <% } else { %>
+            Chính sách hiện tại không phát sinh số tiền hoàn; quản lý vẫn thấy hồ sơ để xác nhận/từ chối theo quy trình.
+          <% } %>
+        <% } else { %>
+          Giao dịch chưa ghi nhận cọc SePay nên hệ thống không tạo yêu cầu hoàn tiền.
+        <% } %>
+      </div>
+    </section>
   <% } %>
   <div id="clientErrors" class="cancel-alert cancel-alert--error" style="display:none">
     <strong>Có lỗi xảy ra:</strong>
@@ -330,7 +577,7 @@
             <p><%= refund?.policy?.note || "Chưa đủ dữ liệu policy." %></p>
           </div>
           <div class="cancel-policy__steps">
-            <div class="cancel-policy__step <%= refund?.policy?.key === "REFUND_100_7D" ? "is-active" : "" %>"><b>100%</b><span>Từ 7 ngày trước check-in</span></div>
+            <div class="cancel-policy__step <%= ["REFUND_100_7D","REFUND_100_GRACE"].includes(refund?.policy?.key) ? "is-active" : "" %>"><b>100%</b><span>Từ 7 ngày trước check-in hoặc vừa đặt</span></div>
             <div class="cancel-policy__step <%= refund?.policy?.key === "REFUND_70_3D" ? "is-active" : "" %>"><b>70%</b><span>Từ 3 đến dưới 7 ngày</span></div>
             <div class="cancel-policy__step <%= refund?.policy?.key === "REFUND_50_24H" ? "is-active" : "" %>"><b>50%</b><span>Từ 24 giờ đến dưới 3 ngày</span></div>
             <div class="cancel-policy__step <%= refund?.policy?.noRefund ? "is-active" : "" %>"><b>0%</b><span>Trong 24 giờ hoặc quá giờ nhận</span></div>
@@ -350,7 +597,29 @@
           <div class="cancel-row">
             <div class="cancel-field">
               <label for="refund_bank_name">Ngân hàng nhận hoàn <span style="color:#fda4af">*</span></label>
-              <input id="refund_bank_name" name="refund_bank_name" placeholder="VD: VietinBank" />
+              <select id="refund_bank_name" name="refund_bank_name">
+                <option value="">-- Chọn ngân hàng --</option>
+                <option value="Vietcombank">Vietcombank</option>
+                <option value="VietinBank">VietinBank</option>
+                <option value="BIDV">BIDV</option>
+                <option value="Agribank">Agribank</option>
+                <option value="Techcombank">Techcombank</option>
+                <option value="MB Bank">MB Bank</option>
+                <option value="ACB">ACB</option>
+                <option value="Sacombank">Sacombank</option>
+                <option value="VPBank">VPBank</option>
+                <option value="TPBank">TPBank</option>
+                <option value="HDBank">HDBank</option>
+                <option value="SHB">SHB</option>
+                <option value="VIB">VIB</option>
+                <option value="MSB">MSB</option>
+                <option value="OCB">OCB</option>
+                <option value="Eximbank">Eximbank</option>
+                <option value="SeABank">SeABank</option>
+                <option value="LienVietPostBank">LienVietPostBank</option>
+                <option value="Nam A Bank">Nam A Bank</option>
+                <option value="PVcomBank">PVcomBank</option>
+              </select>
               <div class="cancel-error-msg" id="err_refund_bank_name"></div>
             </div>
             <div class="cancel-field">
@@ -480,8 +749,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const accountName = (refundAccountName?.value || "").trim();
 
       if (!bankName) {
-        showFieldError(refundBankName, refundBankErr, "Vui lòng nhập ngân hàng.");
-        errors.push("Vui lòng nhập ngân hàng nhận hoàn tiền.");
+        showFieldError(refundBankName, refundBankErr, "Vui lòng chọn ngân hàng.");
+        errors.push("Vui lòng chọn ngân hàng nhận hoàn tiền.");
       }
       if (!accountNo) {
         showFieldError(refundAccountNo, refundAccountNoErr, "Vui lòng nhập số tài khoản.");
@@ -514,7 +783,7 @@ document.addEventListener("DOMContentLoaded", function () {
   search?.addEventListener("input", () => validateSearch(false));
   search?.addEventListener("blur", () => validateSearch(false));
   reason?.addEventListener("input", () => clearFieldError(reason, reasonErr));
-  refundBankName?.addEventListener("input", () => clearFieldError(refundBankName, refundBankErr));
+  refundBankName?.addEventListener("change", () => clearFieldError(refundBankName, refundBankErr));
   refundAccountNo?.addEventListener("input", () => clearFieldError(refundAccountNo, refundAccountNoErr));
   refundAccountName?.addEventListener("input", () => clearFieldError(refundAccountName, refundAccountNameErr));
   document.querySelectorAll("input[name='cancel_scope']").forEach((radio) => {

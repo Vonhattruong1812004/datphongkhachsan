@@ -1010,6 +1010,41 @@
   .role-dash.is-letan .dash-hero.is-compact{
     margin-bottom:34px;
   }
+  .role-dash.is-letan .dash-hero h1{
+    max-width:780px;
+    margin:28px 0 8px;
+    color:#f8fbff;
+    font-size:clamp(50px,7.6vw,96px);
+    line-height:.88;
+    letter-spacing:-.06em;
+    text-shadow:
+      0 0 18px rgba(103,232,249,.24),
+      0 18px 48px rgba(0,0,0,.38);
+  }
+  .role-dash.is-letan .dash-hero h1::first-letter{
+    color:transparent;
+    background:linear-gradient(135deg,#67e8f9,#5eead4 44%,#facc15);
+    -webkit-background-clip:text;
+    background-clip:text;
+    text-shadow:none;
+  }
+  .role-dash.is-letan .dash-hero-main.is-compact{
+    min-height:330px;
+    padding:38px;
+  }
+  .role-dash.is-letan .dash-hero-main.is-compact::after{
+    content:"";
+    position:absolute;
+    z-index:0;
+    left:38px;
+    right:38px;
+    bottom:34px;
+    height:7px;
+    border-radius:999px;
+    background:linear-gradient(90deg,#67e8f9,#5eead4,#facc15,rgba(255,255,255,.18),transparent);
+    box-shadow:0 0 28px rgba(103,232,249,.28);
+    pointer-events:none;
+  }
   .role-dash.is-letan .dash-section.is-compact{
     margin-top:36px;
   }
@@ -1220,25 +1255,83 @@
     color:#ffffff !important;
     text-shadow:0 0 24px var(--card-glow);
   }
+  /* Frontdesk dashboard balance: 7 UC cards should read as 3 + 4, not one oversized feature card. */
+  .role-dash.is-letan .dash-section.is-compact{
+    margin-top:22px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact{
+    gap:18px;
+    align-items:stretch;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3){
+    grid-column:span 4;
+    min-height:210px;
+    padding:24px;
+    border-radius:28px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6),
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(7){
+    grid-column:span 3;
+    min-height:192px;
+    padding:22px;
+    border-radius:26px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1){
+    padding-right:24px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::before{
+    width:66px;
+    height:66px;
+    right:24px;
+    top:22px;
+    border-radius:22px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::after{
+    left:24px;
+    right:24px;
+    bottom:20px;
+    height:5px;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action h3,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) h3{
+    max-width:calc(100% - 78px);
+    margin:52px 0 10px;
+    font-size:26px;
+    line-height:1.08;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-action p,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) p{
+    max-width:100%;
+    font-size:14px;
+    line-height:1.52;
+  }
+  .role-dash.is-letan .dash-grid.is-compact .dash-open,
+  .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1) .dash-open{
+    right:22px;
+    bottom:20px;
+    min-width:72px;
+    min-height:34px;
+    padding:7px 12px;
+    font-size:13px;
+  }
   @media(max-width:1080px){
     .role-dash.is-letan .dash-grid.is-compact .dash-action,
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(2),
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
-    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(7){
       grid-column:span 6;
     }
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1){
-      grid-column:1 / -1;
-      padding-right:260px;
-    }
-    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::before{
-      width:190px;
-      right:28px;
-    }
-    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(1)::after{
-      right:260px;
+      grid-column:span 6;
+      padding-right:24px;
     }
   }
   @media(max-width:720px){
@@ -1254,7 +1347,8 @@
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(3),
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(4),
     .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(5),
-    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6){
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(6),
+    .role-dash.is-letan .dash-grid.is-compact .dash-action:nth-child(7){
       grid-column:1 / -1;
       min-height:210px;
       padding:24px;
@@ -2200,13 +2294,15 @@
           <% if (actions[2]) { %><a class="dash-button" href="<%= actions[2].href %>"><%= actions[2].label %></a><% } %>
         </div>
         <% } %>
+        <% if (!isLetan) { %>
         <div class="dash-pulse-grid <%= isCommandCenter ? 'is-compact' : '' %>">
-          <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào nhanh</span></div>
-          <div class="dash-pulse"><strong><%= isLetan ? "Core" : (isAdmin ? "Admin" : (isKetoan ? "Finance" : cards.length)) %></strong><span><%= isLetan ? "Màn hình gọn" : (isAdmin ? "Quyền hệ thống" : (isKetoan ? "Nghiệp vụ" : "Trọng tâm")) %></span></div>
+            <div class="dash-pulse"><strong><%= primaryActions.length %></strong><span>Lối vào nhanh</span></div>
+            <div class="dash-pulse"><strong><%= isAdmin ? "Admin" : (isKetoan ? "Finance" : cards.length) %></strong><span><%= isAdmin ? "Quyền hệ thống" : (isKetoan ? "Nghiệp vụ" : "Trọng tâm") %></span></div>
           <% if (!isLetan && !isAdmin && !isKetoan) { %>
           <div class="dash-pulse"><strong><%= isAdmin ? "Control" : (enableRoomBoard ? "Live" : "Focus") %></strong><span>Chế độ</span></div>
           <% } %>
         </div>
+        <% } %>
       </div>
       <aside class="dash-orbit <%= isCommandCenter ? 'is-compact' : '' %>" aria-label="Minh họa scope dashboard">
         <div class="dash-orbit-stage">
@@ -2257,12 +2353,14 @@
 
     <% if (showActionSection) { %>
     <section class="dash-section <%= isCommandCenter ? 'is-compact' : '' %>">
+      <% if (!isLetan) { %>
       <div class="dash-section-head">
         <div>
           <h2><%= (isLetan || isCskh || isAdmin || isKetoan) ? "Tác vụ chính" : "Lối vào nhanh" %></h2>
           <p><%= isLetan ? "Các thao tác lễ tân dùng nhiều nhất." : (isCskh ? "Mở nhanh phản hồi, tư vấn và eKYC." : (isAdmin ? "Các UC Admin cần dùng, không trộn nghiệp vụ chi tiết của actor khác." : (isKetoan ? "Mở đúng UC kế toán cần xử lý; số liệu chi tiết nằm trong màn nghiệp vụ tương ứng." : "Nhấn thẳng vào tác vụ cần xử lý."))) %></p>
         </div>
       </div>
+      <% } %>
       <div class="dash-grid <%= isCommandCenter ? 'is-compact' : '' %>">
         <% primaryActions.forEach((item, index) => { %>
           <a class="dash-action" href="<%= item.href %>">

@@ -493,6 +493,354 @@
       border-radius: 24px;
     }
   }
+
+  /* CSKH UC3 visual pass only: broadcast workspace color separation. */
+  body {
+    background:
+      radial-gradient(circle at 12% 14%, rgba(34, 211, 238, .18), transparent 28%),
+      radial-gradient(circle at 80% 8%, rgba(168, 85, 247, .22), transparent 32%),
+      linear-gradient(135deg, #04111f 0%, #11153c 48%, #210c35 100%);
+    color: #f8fafc;
+  }
+
+  .care-broadcast {
+    --care-ink: #f8fafc;
+    --care-muted: #dbeafe;
+    --care-line: rgba(125, 211, 252, .36);
+    --care-panel: rgba(8, 18, 36, .92);
+    --care-shadow: 0 28px 78px rgba(0, 0, 0, .36);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 8% 22%, rgba(255, 255, 255, .70) 0 1px, transparent 2px),
+      radial-gradient(circle at 30% 64%, rgba(125, 211, 252, .72) 0 1px, transparent 2px),
+      radial-gradient(circle at 54% 18%, rgba(255, 255, 255, .64) 0 1px, transparent 2px),
+      radial-gradient(circle at 76% 36%, rgba(253, 230, 138, .72) 0 1px, transparent 2px),
+      radial-gradient(circle at 92% 76%, rgba(255, 255, 255, .66) 0 1px, transparent 2px),
+      radial-gradient(circle at 12% 12%, rgba(34, 211, 238, .18), transparent 30%),
+      radial-gradient(circle at 84% 10%, rgba(168, 85, 247, .20), transparent 34%),
+      radial-gradient(circle at 74% 92%, rgba(251, 113, 133, .14), transparent 34%),
+      linear-gradient(135deg, #04111f 0%, #101843 52%, #220d35 100%);
+  }
+
+  .care-broadcast::after {
+    content: "";
+    position: absolute;
+    right: -260px;
+    bottom: -380px;
+    z-index: -1;
+    width: 780px;
+    height: 780px;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle at 42% 45%, rgba(103, 232, 249, .24), transparent 0 24%, rgba(167, 139, 250, .18) 25% 42%, transparent 43%),
+      conic-gradient(from 140deg, rgba(34, 211, 238, .24), rgba(251, 113, 133, .18), rgba(250, 204, 21, .14), rgba(34, 211, 238, .24));
+    opacity: .46;
+  }
+
+  .care-broadcast__wrap {
+    max-width: 1280px;
+  }
+
+  .care-broadcast__hero,
+  .care-broadcast__section {
+    gap: 22px;
+  }
+
+  .care-broadcast__card,
+  .care-broadcast__panel,
+  .care-broadcast__side {
+    border: 1px solid rgba(125, 211, 252, .36);
+    background:
+      radial-gradient(circle at 10% 15%, rgba(34, 211, 238, .17), transparent 28%),
+      radial-gradient(circle at 88% 10%, rgba(168, 85, 247, .18), transparent 32%),
+      linear-gradient(145deg, rgba(8, 18, 36, .96), rgba(18, 20, 54, .90));
+    box-shadow: 0 26px 72px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: blur(22px);
+  }
+
+  .care-broadcast__card {
+    border-radius: 28px;
+    padding: 34px;
+  }
+
+  .care-broadcast__card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .12), transparent 25%),
+      radial-gradient(circle at 86% 24%, rgba(253, 230, 138, .18), transparent 28%);
+  }
+
+  .care-broadcast__card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .care-broadcast__eyebrow {
+    border: 1px solid rgba(253, 230, 138, .48);
+    background: rgba(15, 23, 42, .74);
+    color: #fde68a;
+    letter-spacing: 0;
+    box-shadow: 0 16px 34px rgba(250, 204, 21, .12);
+  }
+
+  .care-broadcast__pulse {
+    background: #facc15;
+    box-shadow: 0 0 0 7px rgba(250, 204, 21, .16);
+  }
+
+  .care-broadcast__card h1 {
+    max-width: 760px;
+    color: #ffffff;
+    text-shadow: 0 12px 34px rgba(0, 0, 0, .38);
+  }
+
+  .care-broadcast__card h1 span {
+    background: linear-gradient(96deg, #67e8f9 0%, #86efac 34%, #fde68a 66%, #f9a8d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .care-broadcast__lead,
+  .care-broadcast__side p,
+  .care-broadcast__meta,
+  .care-broadcast__hint,
+  .care-broadcast__panel p {
+    color: #dbeafe;
+    font-weight: 800;
+  }
+
+  .care-broadcast__button {
+    min-height: 48px;
+    border: 1px solid rgba(186, 230, 253, .44);
+    background: rgba(255, 255, 255, .94);
+    color: #071626;
+    font-weight: 1000;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .18);
+  }
+
+  .care-broadcast__button--primary {
+    color: #061826;
+    background: linear-gradient(135deg, #22d3ee 0%, #a78bfa 48%, #fb7185 100%);
+    box-shadow: 0 20px 54px rgba(103, 232, 249, .24);
+  }
+
+  .care-broadcast__chips,
+  .care-broadcast__stats {
+    gap: 14px;
+  }
+
+  .care-broadcast__chip,
+  .care-broadcast__mini {
+    border: 2px solid rgba(186, 230, 253, .70);
+    background: rgba(255, 255, 255, .94);
+    color: #0f2d42;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .14);
+  }
+
+  .care-broadcast__stat,
+  .care-broadcast__metric {
+    border: 2px solid rgba(255, 255, 255, .34);
+    color: #ffffff;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .24);
+  }
+
+  .care-broadcast__stat:nth-child(1),
+  .care-broadcast__metric:nth-child(1) {
+    background: linear-gradient(135deg, #20dfc0 0%, #2da9ff 100%);
+  }
+
+  .care-broadcast__stat:nth-child(2),
+  .care-broadcast__metric:nth-child(2) {
+    background: linear-gradient(135deg, #84f68b 0%, #16c7d6 100%);
+  }
+
+  .care-broadcast__stat:nth-child(3),
+  .care-broadcast__metric:nth-child(3) {
+    background: linear-gradient(135deg, #fb7185 0%, #f97316 100%);
+  }
+
+  .care-broadcast__metric:nth-child(4) {
+    background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
+  }
+
+  .care-broadcast__stat span,
+  .care-broadcast__metric span,
+  .care-broadcast__stat strong,
+  .care-broadcast__metric strong {
+    color: #ffffff;
+    letter-spacing: 0;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, .30);
+  }
+
+  .care-broadcast__panel,
+  .care-broadcast__side {
+    border-radius: 26px;
+    padding: 24px;
+  }
+
+  .care-broadcast__side h2,
+  .care-broadcast__panel h2,
+  .care-broadcast__section h2 {
+    color: #ffffff;
+    letter-spacing: 0;
+    text-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+  }
+
+  .care-broadcast__grid,
+  .care-broadcast__template-grid {
+    gap: 16px;
+  }
+
+  .care-broadcast__field,
+  .care-broadcast__grid > * {
+    min-width: 0;
+  }
+
+  .care-broadcast__field label {
+    color: #e0f2fe;
+    font-size: 13px;
+    letter-spacing: 0;
+  }
+
+  .care-broadcast__field input,
+  .care-broadcast__field select,
+  .care-broadcast__field textarea {
+    max-width: 100%;
+    min-height: 56px;
+    border: 2px solid rgba(153, 246, 228, .92);
+    border-radius: 18px;
+    background: #ffffff;
+    color: #0f2d42;
+    font-weight: 900;
+    box-shadow: 0 10px 0 rgba(13, 148, 136, .16), 0 16px 34px rgba(0, 0, 0, .13);
+    box-sizing: border-box;
+  }
+
+  .care-broadcast__field textarea {
+    min-height: 168px;
+    line-height: 1.65;
+  }
+
+  .care-broadcast__field input:focus,
+  .care-broadcast__field select:focus,
+  .care-broadcast__field textarea:focus {
+    border-color: #facc15;
+    outline: none;
+    box-shadow: 0 0 0 5px rgba(250, 204, 21, .20), 0 12px 0 rgba(8, 47, 73, .16), 0 18px 38px rgba(0, 0, 0, .16);
+  }
+
+  .care-broadcast__template {
+    min-height: 150px;
+    border: 2px solid rgba(255, 255, 255, .34);
+    color: #ffffff;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .22);
+  }
+
+  .care-broadcast__template:nth-child(1) { background: linear-gradient(135deg, #20dfc0 0%, #2da9ff 100%); }
+  .care-broadcast__template:nth-child(2) { background: linear-gradient(135deg, #facc15 0%, #fb7185 100%); }
+  .care-broadcast__template:nth-child(3) { background: linear-gradient(135deg, #84f68b 0%, #16c7d6 100%); }
+  .care-broadcast__template:nth-child(4) { background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%); }
+  .care-broadcast__template:nth-child(5) { background: linear-gradient(135deg, #fdba74 0%, #fb7185 54%, #8b5cf6 100%); }
+
+  .care-broadcast__template:hover,
+  .care-broadcast__template.is-active {
+    border-color: #fef08a;
+    box-shadow: 0 24px 58px rgba(250, 204, 21, .20), inset 0 1px 0 rgba(255, 255, 255, .26);
+  }
+
+  .care-broadcast__template strong,
+  .care-broadcast__template span,
+  .care-broadcast__template small {
+    color: #ffffff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, .30);
+  }
+
+  .care-broadcast__template small {
+    background: rgba(15, 23, 42, .24);
+    border: 1px solid rgba(255, 255, 255, .28);
+  }
+
+  .care-broadcast__list {
+    border: 2px solid rgba(186, 230, 253, .50);
+    background: rgba(8, 18, 36, .56);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .care-broadcast__recipient,
+  .care-broadcast__campaign,
+  .care-broadcast__empty {
+    border: 2px solid rgba(186, 230, 253, .72);
+    background: rgba(255, 255, 255, .95);
+    color: #0f2d42;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, .13);
+  }
+
+  .care-broadcast__recipient .care-broadcast__meta,
+  .care-broadcast__campaign .care-broadcast__meta,
+  .care-broadcast__empty {
+    color: #5b7184;
+    font-weight: 800;
+  }
+
+  .care-broadcast__recipient strong,
+  .care-broadcast__campaign strong {
+    color: #0f2d42;
+  }
+
+  .care-broadcast__badge {
+    background: rgba(14, 165, 233, .15);
+    color: #075985;
+    border: 1px solid rgba(14, 165, 233, .24);
+    letter-spacing: 0;
+  }
+
+  .care-broadcast__token {
+    border: 1px solid rgba(34, 211, 238, .28);
+    background: rgba(34, 211, 238, .16);
+    color: #cffafe;
+  }
+
+  .care-broadcast__count {
+    color: #dbeafe;
+  }
+
+  .care-broadcast__flash {
+    margin: 0 0 16px;
+    border: 2px solid rgba(186, 230, 253, .70);
+    background: rgba(255, 255, 255, .95);
+    color: #0f2d42;
+  }
+
+  @media (max-width: 860px) {
+    .care-broadcast {
+      padding: 20px 12px 46px;
+    }
+
+    .care-broadcast__hero,
+    .care-broadcast__section {
+      gap: 18px;
+    }
+
+    .care-broadcast__card,
+    .care-broadcast__side,
+    .care-broadcast__panel {
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .care-broadcast__card h1 {
+      font-size: 42px;
+    }
+
+    .care-broadcast__button {
+      width: 100%;
+    }
+  }
 </style>
 
 <main class="care-broadcast">
@@ -509,7 +857,7 @@
         <div class="care-broadcast__eyebrow"><span class="care-broadcast__pulse"></span> Broadcast CSKH</div>
         <h1>Gửi <span>tin nhắn hàng loạt</span> để giữ chân khách</h1>
         <p class="care-broadcast__lead">
-          Chọn đúng tệp khách, đúng kênh liên hệ và tạo outbound queue cho các tình huống trước lưu trú,
+          Chọn đúng tệp khách, đúng kênh liên hệ và gửi tự động cho các tình huống trước lưu trú,
           sau lưu trú, xác nhận booking hoặc chăm sóc lại khách cũ.
         </p>
 
@@ -554,7 +902,7 @@
         <div class="care-broadcast__preview-head">
           <div>
             <h2>Soạn chiến dịch gửi hàng loạt</h2>
-            <p class="care-broadcast__meta">Mẫu, tệp khách và kênh gửi quyết định số khách được đưa vào queue.</p>
+            <p class="care-broadcast__meta">Mẫu, tệp khách và kênh gửi quyết định số khách được hệ thống gửi tự động.</p>
           </div>
         </div>
 
@@ -607,8 +955,8 @@
           <div class="care-broadcast__field">
             <label for="send_timing">Nhịp gửi</label>
             <select id="send_timing" name="send_timing">
-              <option value="now" <%= form.send_timing === "now" ? "selected" : "" %>>Đưa vào queue ngay</option>
-              <option value="shift" <%= form.send_timing === "shift" ? "selected" : "" %>>Để ca CSKH xử lý trong ca</option>
+              <option value="now" <%= form.send_timing === "now" ? "selected" : "" %>>Gửi tự động ngay</option>
+              <option value="shift" <%= form.send_timing === "shift" ? "selected" : "" %>>Gửi tự động theo ca</option>
             </select>
           </div>
 
@@ -652,7 +1000,7 @@
           <div class="care-broadcast__field care-broadcast__field--full">
             <div class="care-broadcast__actions">
               <button class="care-broadcast__button" type="submit" formmethod="get" formaction="/feedback/broadcast/manage">Cập nhật preview</button>
-              <button class="care-broadcast__button care-broadcast__button--primary" type="submit">Đưa vào outbound queue</button>
+              <button class="care-broadcast__button care-broadcast__button--primary" type="submit">Gửi tự động</button>
             </div>
           </div>
         </form>
@@ -696,7 +1044,7 @@
 
         <div style="margin-top:16px">
           <h2>Lịch sử chiến dịch gần đây</h2>
-          <p class="care-broadcast__meta">Không hiển thị dữ liệu smoke test; khuyến mãi tự động được gom nhãn riêng.</p>
+          <p class="care-broadcast__meta">Không hiển thị dữ liệu smoke test; chiến dịch lưu trạng thái gửi tự động để CSKH đối soát.</p>
         </div>
 
         <div class="care-broadcast__list" style="margin-top:12px">

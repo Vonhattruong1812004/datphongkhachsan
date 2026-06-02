@@ -2,11 +2,13 @@ import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { HttpError } from "../../../shared/http/http-error";
 import { AIService } from "../../ai/services/ai.service";
+import { AuthService } from "../../auth/services/auth.service";
 import { FeedbackService } from "../../feedback/services/feedback.service";
 import { BookingService, type SearchBookingInput } from "../services/booking.service";
 
 const bookingService = new BookingService();
 const aiService = new AIService();
+const authService = new AuthService();
 const feedbackService = new FeedbackService();
 
 export async function renderSearchPage(req: Request, res: Response) {
@@ -78,7 +80,8 @@ export async function renderMultiRoomBookingPage(req: Request, res: Response) {
       ngay_tra: readText(req.query.ngay_tra),
       ma_km: readText(req.query.ma_km),
       room_ids: readTextArray(req.query.room_ids),
-      services_json: "[]"
+      services_json: "[]",
+      use_existing_customer: readText(req.query.use_existing_customer)
     },
     errorMessage: ""
   });
@@ -117,7 +120,8 @@ export async function submitMultiRoomBooking(req: Request, res: Response) {
     ngay_tra: readText(req.body.ngay_tra),
     ma_km: readText(req.body.ma_km),
     room_ids: readTextArray(req.body.room_ids),
-    services_json: readText(req.body.services_json, "[]")
+    services_json: readText(req.body.services_json, "[]"),
+    use_existing_customer: readText(req.body.use_existing_customer)
   };
   const bookingInput = {
     room_ids: formValues.room_ids,
@@ -129,7 +133,8 @@ export async function submitMultiRoomBooking(req: Request, res: Response) {
     ngay_nhan: formValues.ngay_nhan,
     ngay_tra: formValues.ngay_tra,
     ma_km: formValues.ma_km || null,
-    services: formValues.services_json
+    services: formValues.services_json,
+    use_existing_customer: formValues.use_existing_customer
   };
 
   try {
@@ -209,6 +214,10 @@ export async function customerBookingHoldStatusApi(req: Request, res: Response) 
   const payload = bookingService.getCustomerBookingHoldStatus(holdId);
   if (payload.status === "PAID" && payload.transactionId) {
     req.session.recentBookingId = payload.transactionId;
+
+    if (!req.session.user && payload.customerAccount?.username && payload.customerAccount?.password) {
+      req.session.user = await authService.login(payload.customerAccount.username, payload.customerAccount.password);
+    }
   }
 
   return res.json({
@@ -259,6 +268,7 @@ export async function renderBookingFormPage(req: Request, res: Response) {
     title: `Dat phong P${payload.room.soPhong}`,
     room: payload.room,
     promotions: payload.promotions,
+    services: payload.services,
     user: req.session.user,
     filters,
     formValues: {
@@ -269,7 +279,9 @@ export async function renderBookingFormPage(req: Request, res: Response) {
       so_nguoi: Number(readText(req.query.so_khach, "1") || 1),
       ngay_nhan: readText(req.query.ngay_nhan),
       ngay_tra: readText(req.query.ngay_tra),
-      ma_km: readText(req.query.ma_km)
+      ma_km: readText(req.query.ma_km),
+      use_existing_customer: readText(req.query.use_existing_customer),
+      services_json: "[]"
     },
     errorMessage: ""
   });
@@ -305,7 +317,9 @@ export async function submitBookingForm(req: Request, res: Response) {
     so_nguoi: Number(readText(req.body.so_nguoi, "1") || 1),
     ngay_nhan: readText(req.body.ngay_nhan),
     ngay_tra: readText(req.body.ngay_tra),
-    ma_km: readText(req.body.ma_km)
+    ma_km: readText(req.body.ma_km),
+    use_existing_customer: readText(req.body.use_existing_customer),
+    services_json: readText(req.body.services_json, "[]")
   };
   const bookingInput = {
     room_id: roomId,
@@ -316,7 +330,9 @@ export async function submitBookingForm(req: Request, res: Response) {
     so_nguoi: formValues.so_nguoi,
     ngay_nhan: formValues.ngay_nhan,
     ngay_tra: formValues.ngay_tra,
-    ma_km: formValues.ma_km || null
+    ma_km: formValues.ma_km || null,
+    use_existing_customer: formValues.use_existing_customer,
+    services: formValues.services_json
   };
 
   try {
@@ -347,6 +363,7 @@ export async function submitBookingForm(req: Request, res: Response) {
       title: `Dat phong P${payload.room.soPhong}`,
       room: payload.room,
       promotions: payload.promotions,
+      services: payload.services,
       user: req.session.user,
       filters,
       formValues,
@@ -423,16 +440,20 @@ function searchParamsFromRequest(source: Record<string, unknown>) {
 
   return keys.reduce<Record<string, string>>((acc, key) => {
     const value = source[key];
-    acc[key] = readText(value);
+    acc[key] = key === "sort_by" ? normalizeSearchSortBy(readText(value)) : readText(value);
     return acc;
   }, {});
 }
 
+function normalizeSearchSortBy(value: string): SearchBookingInput["sort_by"] {
+  return ["ai", "price_asc", "price_desc", "capacity_fit"].includes(value)
+    ? value as SearchBookingInput["sort_by"]
+    : "ai";
+}
+
 function searchFiltersFromRequest(source: Record<string, unknown>): SearchBookingInput {
   const values = searchParamsFromRequest(source);
-  const sortBy = ["ai", "price_asc", "price_desc", "capacity_fit"].includes(values.sort_by)
-    ? values.sort_by as SearchBookingInput["sort_by"]
-    : "ai";
+  const sortBy = normalizeSearchSortBy(values.sort_by);
 
   return {
     loai_phong: values.loai_phong,

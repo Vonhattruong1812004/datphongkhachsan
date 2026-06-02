@@ -3942,6 +3942,132 @@
     }
   }
 
+  /* Home performance pass: one static star field, four directional comets. */
+  .system-galaxy-background {
+    display: none;
+  }
+
+  .galaxy-background::before,
+  .galaxy-background::after,
+  .galaxy-deep-field,
+  .galaxy-near-field,
+  .galaxy-dust,
+  .galaxy-lens-field,
+  .galaxy-nebula,
+  .galaxy-milkyway,
+  .galaxy-star-cluster,
+  .galaxy-constellation i {
+    animation: none !important;
+  }
+
+  .galaxy-nebula {
+    opacity: 0.26;
+    filter: blur(42px);
+  }
+
+  .galaxy-background::before,
+  .galaxy-background::after {
+    transform: none !important;
+  }
+
+  .travel-scene-card::before,
+  .travel-scene-card::after,
+  .cosmic-asteroid-belt,
+  .solar-light-ray,
+  .cosmic-core,
+  .solar-orbit,
+  .moon-orbit,
+  .cosmic-earth {
+    animation: none !important;
+  }
+
+  .galaxy-comet {
+    animation-duration: 14s;
+    will-change: transform, opacity;
+  }
+
+  .galaxy-comet--one {
+    top: 16%;
+    left: -12%;
+    animation-duration: 10.5s;
+    animation-delay: -1s;
+  }
+
+  .galaxy-comet--two {
+    top: 40%;
+    left: 78%;
+    animation-duration: 12s;
+    animation-delay: -5.2s;
+  }
+
+  .galaxy-comet--three {
+    top: -16%;
+    left: 72%;
+    animation-duration: 13.5s;
+    animation-delay: -3s;
+  }
+
+  .galaxy-comet--five {
+    top: auto;
+    bottom: -16%;
+    left: 24%;
+    animation-duration: 14.5s;
+    animation-delay: -7.4s;
+  }
+
+  /* Keep the hero illustration alive while the background star field stays static. */
+  .cosmic-asteroid-belt {
+    animation: galaxy-belt-drift 58s linear infinite !important;
+  }
+
+  .solar-light-ray {
+    animation: galaxy-sun-rays 26s linear infinite !important;
+  }
+
+  .cosmic-core {
+    animation: galaxy-sun-pulse 6.4s ease-in-out infinite !important;
+  }
+
+  .solar-orbit--mercury {
+    animation: galaxy-solar-orbit 24s linear infinite -5s !important;
+  }
+
+  .solar-orbit--venus {
+    animation: galaxy-solar-orbit 34s linear infinite reverse -12s !important;
+  }
+
+  .solar-orbit--mars {
+    animation: galaxy-solar-orbit 44s linear infinite -19s !important;
+  }
+
+  .solar-orbit--jupiter {
+    animation: galaxy-solar-orbit 66s linear infinite reverse -28s !important;
+  }
+
+  .solar-orbit--saturn {
+    animation: galaxy-solar-orbit 82s linear infinite -43s !important;
+  }
+
+  .cosmic-earth {
+    animation: galaxy-earth-center-drift 10s ease-in-out infinite !important;
+  }
+
+  .moon-orbit {
+    animation: galaxy-moon-orbit 18s linear infinite !important;
+  }
+
+  .travel-room-badge {
+    color: #102033;
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(15, 23, 42, 0.18);
+    text-shadow: none;
+  }
+
+  .travel-room-price {
+    color: #0f766e;
+    background: rgba(255, 255, 255, 0.94);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .galaxy-background::before,
     .galaxy-background::after,
@@ -3982,35 +4108,7 @@
     <span class="galaxy-comet galaxy-comet--one"></span>
     <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--two"></span>
     <span class="galaxy-comet galaxy-comet--fall galaxy-comet--three"></span>
-    <span class="galaxy-comet galaxy-comet--four"></span>
     <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--five"></span>
-    <span class="galaxy-comet galaxy-comet--six"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--seven"></span>
-    <span class="galaxy-comet galaxy-comet--eight"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--nine"></span>
-    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--ten"></span>
-    <span class="galaxy-comet galaxy-comet--eleven"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--twelve"></span>
-    <span class="galaxy-comet galaxy-comet--thirteen"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--fourteen"></span>
-    <span class="galaxy-comet galaxy-comet--fifteen"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--sixteen"></span>
-    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--seventeen"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--eighteen"></span>
-    <span class="galaxy-comet galaxy-comet--nineteen"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twenty"></span>
-    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--twentyone"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twentytwo"></span>
-    <span class="galaxy-comet galaxy-comet--twentythree"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--twentyfour"></span>
-    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--twentyfive"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twentysix"></span>
-    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--twentyseven"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--twentyeight"></span>
-    <span class="galaxy-comet galaxy-comet--twentynine"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--thirty"></span>
-    <span class="galaxy-comet galaxy-comet--reverse galaxy-comet--thirtyone"></span>
-    <span class="galaxy-comet galaxy-comet--fall galaxy-comet--rise galaxy-comet--thirtytwo"></span>
   </div>
   <div class="travel-shell">
     <section class="travel-hero">

@@ -1,14 +1,36 @@
 import * as THREE from "/vendor/three.module.min.js";
 
 const earthRoots = Array.from(document.querySelectorAll("[data-earth-3d]"));
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+function runWhenVisible(root, setup) {
+  if (!("IntersectionObserver" in window)) {
+    window.requestAnimationFrame(setup);
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    window.requestAnimationFrame(setup);
+  }, { rootMargin: "220px 0px" });
+
+  observer.observe(root);
+}
+
+if (earthRoots.length && !reduceMotion) {
   earthRoots.forEach((root) => {
+    runWhenVisible(root, () => {
     const canvas = root.querySelector("canvas");
     if (!canvas) return;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.12));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
@@ -44,7 +66,7 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
     });
 
     const earth = new THREE.Mesh(
-      new THREE.SphereGeometry(2.42, 64, 40),
+      new THREE.SphereGeometry(2.42, 48, 32),
       new THREE.MeshPhongMaterial({
         color: 0x5aa7e8,
         map: earthMap,
@@ -59,7 +81,7 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
     scene.add(earth);
 
     const daylightOverlay = new THREE.Mesh(
-      new THREE.SphereGeometry(2.425, 64, 40),
+      new THREE.SphereGeometry(2.425, 48, 32),
       new THREE.MeshBasicMaterial({
         map: earthMap,
         transparent: true,
@@ -72,7 +94,7 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
     scene.add(daylightOverlay);
 
     const clouds = new THREE.Mesh(
-      new THREE.SphereGeometry(2.47, 64, 40),
+      new THREE.SphereGeometry(2.47, 48, 32),
       new THREE.MeshLambertMaterial({
         map: cloudMap,
         transparent: true,
@@ -84,7 +106,7 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
     scene.add(clouds);
 
     const atmosphere = new THREE.Mesh(
-      new THREE.SphereGeometry(2.54, 64, 40),
+      new THREE.SphereGeometry(2.54, 48, 32),
       new THREE.MeshBasicMaterial({
         color: 0x6ee7ff,
         transparent: true,
@@ -97,7 +119,7 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
     scene.add(atmosphere);
 
     const starGeometry = new THREE.BufferGeometry();
-    const starCount = 36;
+    const starCount = 18;
     const starPositions = new Float32Array(starCount * 3);
     for (let index = 0; index < starCount; index += 1) {
       const radius = 9 + Math.random() * 13;
@@ -135,6 +157,11 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
 
     const startTime = performance.now();
     function animate() {
+      if (document.hidden) {
+        requestAnimationFrame(animate);
+        return;
+      }
+
       const time = (performance.now() - startTime) / 1000;
       earth.rotation.y = -0.54 + time * 0.075;
       daylightOverlay.rotation.y = earth.rotation.y;
@@ -149,12 +176,13 @@ if (earthRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").
     }
 
     animate();
+    });
   });
 }
 
 const planetRoots = Array.from(document.querySelectorAll("[data-planet-3d-active]"));
 
-if (planetRoots.length && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+if (planetRoots.length && !reduceMotion) {
   const makeTexture = (palette, variant = "bands") => {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;

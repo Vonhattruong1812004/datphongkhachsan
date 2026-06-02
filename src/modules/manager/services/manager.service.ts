@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query, withTransaction } from "../../../config/database";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney } from "../../../shared/utils/format";
+import { parseSepayMetadata } from "../../payment/sepay";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 
 const CUSTOMER_NAME_REGEX = /^(?=.*\p{L})[\p{L}\d\s'.-]{2,80}$/u;
@@ -232,6 +233,7 @@ function normalizeRoomViewValue(value: string | null | undefined) {
 export class ManagerService {
   async listRefundApprovals(rawFilters: unknown = {}) {
     await this.ensureRefundRequestTable();
+    await this.backfillMissingCustomerRefundRequests();
     const filters = this.normalizeRefundApprovalFilters(rawFilters);
     const params: unknown[] = [filters.tu_ngay, filters.den_ngay];
     const where = [
@@ -430,8 +432,18 @@ export class ManagerService {
       }
 
       const amount = Math.max(0, Math.round(Number(refund.amount_requested || 0)));
-      if (amount <= 0) {
-        throw new HttpError(422, "So tien hoan khong hop le.");
+      if (input.action === "approve" && amount <= 0) {
+        throw new HttpError(422, "Yeu cau hoan 0 d chi duoc tu choi/ghi nhan khong hoan, khong chuyen sang ke toan.");
+      }
+      if (
+        input.action === "approve"
+        && (
+          String(refund.bank_name || "").includes("CAN_BO_SUNG")
+          || String(refund.bank_account_no || "") === "0000"
+          || String(refund.bank_account_name || "").includes("CAN_BO_SUNG")
+        )
+      ) {
+        throw new HttpError(422, "Yeu cau nay chua co thong tin ngan hang hop le. Vui long lien he khach bo sung STK truoc khi duyet sang ke toan.");
       }
 
       const nextStatus = input.action === "approve" ? "ChoXuLy" : "TuChoi";
@@ -2228,6 +2240,110 @@ export class ManagerService {
       page: Math.max(1, Number(source.page || 1) || 1),
       limit: Math.min(100, Math.max(5, Number(source.limit || 20) || 20))
     };
+  }
+
+  private async backfillMissingCustomerRefundRequests() {
+    const result = await query<{
+      maGiaoDich: number;
+      maDatCho: string | null;
+      ghiChu: string | null;
+      customerName: string | null;
+      customerPhone: string | null;
+      customerEmail: string | null;
+      roomIds: string | null;
+    }>(
+      `
+        SELECT
+          gd.magiaodich AS "maGiaoDich",
+          gd.madatcho AS "maDatCho",
+          gd.ghichu AS "ghiChu",
+          kh.tenkh AS "customerName",
+          kh.sdt AS "customerPhone",
+          kh.email AS "customerEmail",
+          COALESCE(room_info.room_ids, '') AS "roomIds"
+        FROM giaodich gd
+        LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
+        LEFT JOIN LATERAL (
+          SELECT string_agg(DISTINCT ct.maphong::text, ',' ORDER BY ct.maphong::text) AS room_ids
+          FROM chitietgiaodich ct
+          WHERE ct.magiaodich = gd.magiaodich
+        ) room_info ON TRUE
+        LEFT JOIN refund_requests rr ON rr.magiaodich = gd.magiaodich
+        WHERE gd.trangthai::text = 'DaHuy'
+          AND rr.id IS NULL
+          AND (
+            COALESCE(gd.ghichu, '') ILIKE '%SEPAY_PAID%'
+            OR COALESCE(gd.ghichu, '') ILIKE '%status=PAID%'
+          )
+        ORDER BY gd.magiaodich DESC
+        LIMIT 30
+      `
+    );
+
+    for (const row of result.rows) {
+      const paidDeposit = this.getPaidDepositFromNote(row.ghiChu);
+      if (paidDeposit <= 0) continue;
+
+      await query(
+        `
+          INSERT INTO refund_requests (
+            magiaodich,
+            refund_code,
+            scope,
+            room_ids,
+            customer_name,
+            customer_phone,
+            customer_email,
+            bank_name,
+            bank_account_no,
+            bank_account_name,
+            reason,
+            note,
+            deposit_paid,
+            retained_deposit,
+            already_requested,
+            refundable_base,
+            refund_rate,
+            hours_before_checkin,
+            cancellation_policy_key,
+            cancellation_policy_label,
+            cancellation_policy_note,
+            amount_requested,
+            status,
+            created_by_role
+          )
+          VALUES ($1,$2,'all',$3,$4,$5,$6,'CAN_BO_SUNG_NGAN_HANG','0000','CAN_BO_SUNG_CHU_TK',$7,$8,$9,0,0,$9,100,NULL,'BACKFILL_CUSTOMER_CANCEL','Cần quản lý xác minh','Yêu cầu được tạo bù vì booking đã hủy có cọc SePay nhưng chưa có hồ sơ hoàn tiền. Cần liên hệ khách bổ sung STK trước khi chuyển kế toán.',$9,'ChoQuanLyDuyet','SystemBackfill')
+          ON CONFLICT (refund_code) DO NOTHING
+        `,
+        [
+          row.maGiaoDich,
+          `RF-BF-${row.maGiaoDich}`,
+          row.roomIds || "",
+          row.customerName || "",
+          row.customerPhone || "",
+          row.customerEmail || "",
+          `Booking ${row.maDatCho || `GD-${row.maGiaoDich}`} đã hủy nhưng thiếu hồ sơ hoàn tiền.`,
+          "Backfill tự động cho UC hoàn tiền: đã phát hiện cọc SePay nhưng chưa có yêu cầu chờ quản lý. Cần bổ sung tài khoản nhận hoàn nếu quản lý muốn chuyển kế toán.",
+          paidDeposit
+        ]
+      );
+    }
+  }
+
+  private getPaidDepositFromNote(note: string | null | undefined) {
+    const meta = parseSepayMetadata(note);
+    if (meta?.status === "PAID") {
+      return Math.max(0, Math.round(meta.paidAmount || meta.depositAmount || 0));
+    }
+
+    const raw = String(note || "");
+    let total = 0;
+    const regex = /\[SEPAY_PAID\s+[^\]]*amount=(\d+)[^\]]*\]/gi;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(raw))) {
+      total += Number(match[1] || 0);
+    }
+    return Math.max(0, Math.round(total));
   }
 
   private decorateRefundApprovalRow(row: any) {

@@ -9,6 +9,11 @@ export interface CustomerBookingHoldSummary {
   depositAmount: number;
 }
 
+export interface CustomerBookingAccount {
+  username: string;
+  password: string;
+}
+
 export interface CustomerBookingHold {
   id: number;
   content: string;
@@ -23,6 +28,7 @@ export interface CustomerBookingHold {
   status: "PENDING" | "PAID" | "EXPIRED";
   transactionId?: number;
   bookingCode?: string;
+  createdAccount?: CustomerBookingAccount | null;
   settledAt?: string;
 }
 
@@ -69,12 +75,13 @@ class CustomerBookingHoldStore {
     return this.holds.get(id) ?? null;
   }
 
-  completeSnapshot(hold: CustomerBookingHold, transactionId: number, bookingCode = "") {
+  completeSnapshot(hold: CustomerBookingHold, transactionId: number, bookingCode = "", createdAccount: CustomerBookingAccount | null = null) {
     const completed: CustomerBookingHold = {
       ...hold,
       status: "PAID",
       transactionId,
       bookingCode,
+      createdAccount,
       settledAt: new Date().toISOString()
     };
     this.holds.set(hold.id, completed);

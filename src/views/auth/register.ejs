@@ -591,51 +591,671 @@
       transform: scale(0.8) rotate(-12deg);
     }
   }
+
+  /* Register galaxy refresh: UI only, keep form fields and submit logic unchanged. */
+  .travel-auth {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    color: #f8fbff;
+    background:
+      radial-gradient(circle at 18% 14%, rgba(56, 189, 248, 0.22), transparent 25%),
+      radial-gradient(circle at 88% 9%, rgba(168, 85, 247, 0.22), transparent 28%),
+      radial-gradient(circle at 52% 110%, rgba(20, 184, 166, 0.15), transparent 38%),
+      linear-gradient(145deg, #020611 0%, #07152d 46%, #130821 100%);
+  }
+
+  .travel-auth::before {
+    inset: -90px;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    filter: none;
+    opacity: 0.72;
+    background:
+      radial-gradient(circle at 8% 16%, rgba(255,255,255,.88) 0 1px, transparent 2px),
+      radial-gradient(circle at 18% 72%, rgba(255,255,255,.70) 0 1px, transparent 2px),
+      radial-gradient(circle at 29% 38%, rgba(165,243,252,.80) 0 1px, transparent 2px),
+      radial-gradient(circle at 41% 82%, rgba(255,255,255,.76) 0 1px, transparent 2px),
+      radial-gradient(circle at 57% 24%, rgba(255,255,255,.82) 0 1px, transparent 2px),
+      radial-gradient(circle at 68% 66%, rgba(191,219,254,.76) 0 1px, transparent 2px),
+      radial-gradient(circle at 81% 34%, rgba(255,255,255,.84) 0 1px, transparent 2px),
+      radial-gradient(circle at 94% 76%, rgba(255,255,255,.72) 0 1px, transparent 2px);
+    background-size: 260px 260px, 310px 310px, 220px 220px, 360px 360px, 280px 280px, 330px 330px, 240px 240px, 390px 390px;
+  }
+
+  .travel-auth::after {
+    inset: -140px;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    filter: blur(0.2px);
+    opacity: 0.46;
+    background:
+      radial-gradient(ellipse at 18% 72%, rgba(34, 211, 238, .18), transparent 42%),
+      radial-gradient(ellipse at 78% 18%, rgba(244, 114, 182, .16), transparent 40%),
+      radial-gradient(ellipse at 50% 48%, rgba(99, 102, 241, .16), transparent 50%),
+      linear-gradient(120deg, transparent 0 35%, rgba(125, 211, 252, .08) 46%, transparent 58% 100%);
+    animation: travel-auth-nebula 24s ease-in-out infinite alternate;
+  }
+
+  .travel-auth__shell {
+    position: relative;
+    z-index: 1;
+    width: min(1540px, calc(100vw - 72px));
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: clamp(28px, 4.4vh, 54px) 0;
+    align-items: center;
+  }
+
+  .travel-auth__back {
+    position: absolute;
+    left: 0;
+    top: clamp(18px, 2.4vh, 30px);
+    color: #dff8ff;
+    width: max-content;
+    padding: 8px 12px;
+    border: 1px solid rgba(125, 211, 252, .18);
+    border-radius: 999px;
+    background: rgba(3, 10, 24, .38);
+    backdrop-filter: blur(14px);
+  }
+
+  .travel-auth__layout {
+    grid-template-columns: minmax(560px, .96fr) minmax(540px, .78fr);
+    gap: clamp(32px, 4vw, 58px);
+    align-items: center;
+  }
+
+  .travel-auth__hero,
+  .travel-auth__card {
+    border-color: rgba(148, 190, 255, .22);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .36);
+  }
+
+  .travel-auth__hero--scene-only {
+    min-height: clamp(620px, 76vh, 820px);
+    max-height: 860px;
+    padding: 0;
+    background: transparent;
+  }
+
+  .travel-auth__hero--scene-only::before {
+    display: none;
+  }
+
+  .travel-auth .travel-scene-card {
+    position: absolute;
+    inset: 0;
+    min-height: 100%;
+    border-radius: 32px;
+    overflow: hidden;
+    border: 1px solid rgba(125, 211, 252, 0.24);
+    background:
+      radial-gradient(ellipse at 46% 42%, rgba(30, 64, 175, 0.26), transparent 34%),
+      radial-gradient(ellipse at 18% 18%, rgba(14, 116, 144, 0.2), transparent 28%),
+      radial-gradient(ellipse at 86% 80%, rgba(88, 28, 135, 0.2), transparent 34%),
+      linear-gradient(180deg, #01030b 0%, #040718 48%, #090416 100%);
+    box-shadow:
+      inset 0 0 80px rgba(0, 0, 0, 0.38),
+      0 34px 110px rgba(2, 6, 23, 0.46),
+      0 0 80px rgba(103, 232, 249, 0.12);
+  }
+
+  .travel-auth .travel-scene-card::before,
+  .travel-auth .travel-scene-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .travel-auth .travel-scene-card::before {
+    z-index: 0;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.92) 0 1px, transparent 2px),
+      radial-gradient(circle at 28% 64%, rgba(125, 211, 252, 0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 86% 72%, rgba(196, 181, 253, 0.82) 0 1px, transparent 2px);
+    background-size: 120px 120px, 160px 160px, 96px 96px, 140px 140px;
+  }
+
+  .travel-auth .travel-scene-card::after {
+    z-index: 2;
+    background:
+      radial-gradient(ellipse at 50% 50%, transparent 0 42%, rgba(2, 6, 23, 0.28) 72%, rgba(0, 0, 0, 0.58) 100%),
+      linear-gradient(112deg, rgba(255,255,255,0.08), transparent 26% 74%, rgba(56,189,248,0.08));
+    opacity: 0.78;
+  }
+
+  .travel-auth .cosmic-scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .travel-auth .cosmic-scene::before,
+  .travel-auth .cosmic-scene::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .travel-auth .cosmic-scene::before {
+    z-index: 0;
+    background:
+      radial-gradient(circle at 18% 22%, rgba(255,255,255,0.9) 0 1px, transparent 2px),
+      radial-gradient(circle at 34% 18%, rgba(125,211,252,0.55) 0 1px, transparent 2px),
+      radial-gradient(circle at 68% 32%, rgba(255,255,255,0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 84% 70%, rgba(186,230,253,0.72) 0 1px, transparent 2px),
+      radial-gradient(ellipse at 50% 62%, rgba(30, 64, 175, 0.18), transparent 38%);
+    background-size: 150px 130px, 220px 190px, 180px 160px, 260px 220px, 100% 100%;
+    opacity: 0.78;
+  }
+
+  .travel-auth .cosmic-scene::after {
+    z-index: 3;
+    background:
+      radial-gradient(ellipse at 35% 35%, rgba(255,255,255,0.08), transparent 18%),
+      radial-gradient(ellipse at 50% 50%, transparent 0 54%, rgba(0,0,0,0.38) 100%);
+    mix-blend-mode: screen;
+  }
+
+  .travel-auth .cosmic-depth-plane,
+  .travel-auth .cosmic-star-dust,
+  .travel-auth .cosmic-asteroid-belt,
+  .travel-auth .solar-light-ray,
+  .travel-auth .cosmic-core,
+  .travel-auth .solar-orbit,
+  .travel-auth .moon-orbit,
+  .travel-auth .cosmic-asteroid {
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .travel-auth .cosmic-depth-plane {
+    left: 50%;
+    top: 50%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(-10deg);
+    z-index: 0;
+  }
+
+  .travel-auth .cosmic-depth-plane--one {
+    width: 86%;
+    height: 56%;
+    border: 1px solid rgba(125, 211, 252, 0.12);
+    box-shadow: inset 0 0 44px rgba(59, 130, 246, 0.08);
+  }
+
+  .travel-auth .cosmic-depth-plane--two {
+    width: 112%;
+    height: 72%;
+    border: 1px solid rgba(196, 181, 253, 0.1);
+    transform: translate(-50%, -50%) rotate(12deg);
+  }
+
+  .travel-auth .cosmic-depth-plane--three {
+    width: 132%;
+    height: 88%;
+    border: 1px solid rgba(148, 163, 184, 0.08);
+    transform: translate(-50%, -50%) rotate(-22deg);
+  }
+
+  .travel-auth .cosmic-star-dust {
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 12% 38%, rgba(255,255,255,0.78) 0 1px, transparent 2px),
+      radial-gradient(circle at 23% 72%, rgba(125,211,252,0.55) 0 1px, transparent 2px),
+      radial-gradient(circle at 44% 18%, rgba(255,255,255,0.7) 0 1px, transparent 2px),
+      radial-gradient(circle at 58% 86%, rgba(196,181,253,0.62) 0 1px, transparent 2px),
+      radial-gradient(circle at 82% 46%, rgba(255,255,255,0.74) 0 1px, transparent 2px);
+    background-size: 180px 150px, 240px 190px, 160px 130px, 220px 170px, 280px 230px;
+    opacity: 0.8;
+  }
+
+  .travel-auth .cosmic-asteroid-belt {
+    left: 50%;
+    top: 50%;
+    width: 76%;
+    height: 48%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(-16deg);
+    z-index: 1;
+    background:
+      radial-gradient(circle at 8% 50%, rgba(226,232,240,0.65) 0 2px, transparent 3px),
+      radial-gradient(circle at 18% 36%, rgba(148,163,184,0.52) 0 1px, transparent 2px),
+      radial-gradient(circle at 32% 68%, rgba(226,232,240,0.48) 0 1px, transparent 2px),
+      radial-gradient(circle at 48% 30%, rgba(148,163,184,0.54) 0 2px, transparent 3px),
+      radial-gradient(circle at 63% 72%, rgba(226,232,240,0.5) 0 1px, transparent 2px),
+      radial-gradient(circle at 78% 40%, rgba(148,163,184,0.58) 0 1px, transparent 2px),
+      radial-gradient(circle at 92% 55%, rgba(226,232,240,0.52) 0 2px, transparent 3px);
+    border-top: 1px solid rgba(226, 232, 240, 0.08);
+    opacity: 0.62;
+    animation: galaxy-belt-drift 42s linear infinite;
+  }
+
+  .travel-auth .solar-light-ray {
+    left: 76%;
+    top: 28%;
+    width: 42%;
+    height: 42%;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    background:
+      radial-gradient(circle, rgba(251,191,36,0.24), transparent 46%),
+      conic-gradient(from 20deg, transparent 0 10%, rgba(251,191,36,0.12) 12%, transparent 18% 36%, rgba(250,204,21,0.1) 40%, transparent 46% 70%, rgba(249,115,22,0.1) 74%, transparent 82% 100%);
+    filter: blur(1px);
+    mix-blend-mode: screen;
+    animation: galaxy-sun-rays 18s linear infinite;
+  }
+
+  .travel-auth .cosmic-core {
+    left: 76%;
+    top: 28%;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    background:
+      radial-gradient(circle at 36% 30%, #fff 0 7%, #fff7c2 12%, transparent 18%),
+      radial-gradient(circle at 42% 44%, #fff7ad 0 19%, #f97316 43%, #9a3412 70%, #1c0b04 100%);
+    box-shadow:
+      inset -18px -14px 28px rgba(67, 20, 7, 0.34),
+      0 0 48px rgba(251, 191, 36, 0.72),
+      0 0 116px rgba(249, 115, 22, 0.34);
+    animation: galaxy-sun-pulse 5.5s ease-in-out infinite;
+  }
+
+  .travel-auth .solar-orbit {
+    left: 50%;
+    top: 50%;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
+    transform-origin: center;
+    z-index: 1;
+    animation: galaxy-solar-orbit 28s linear infinite;
+  }
+
+  .travel-auth .solar-orbit--mercury { width: 190px; height: 124px; animation-duration: 20s; animation-delay: -5s; }
+  .travel-auth .solar-orbit--venus { width: 270px; height: 174px; animation-duration: 28s; animation-direction: reverse; animation-delay: -12s; }
+  .travel-auth .solar-orbit--mars { width: 350px; height: 232px; animation-duration: 36s; animation-delay: -19s; }
+  .travel-auth .solar-orbit--jupiter { width: 468px; height: 310px; animation-duration: 52s; animation-direction: reverse; animation-delay: -28s; }
+  .travel-auth .solar-orbit--saturn { width: 584px; height: 390px; animation-duration: 68s; animation-delay: -43s; }
+
+  .travel-auth .solar-planet {
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    box-shadow:
+      inset -12px -9px 18px rgba(2, 6, 23, 0.58),
+      inset 5px 4px 10px rgba(255, 255, 255, 0.16),
+      0 0 18px rgba(125, 211, 252, 0.12);
+  }
+
+  .travel-auth .solar-planet--mercury { width: 20px; height: 20px; background: linear-gradient(135deg, #9ca3af, #475569); }
+  .travel-auth .solar-planet--venus { width: 34px; height: 34px; background: repeating-linear-gradient(165deg, rgba(254,243,199,0.18) 0 5px, rgba(161,98,7,0.18) 5px 12px), linear-gradient(135deg, #facc15, #a16207 58%, #3f2206); }
+  .travel-auth .solar-planet--mars { width: 30px; height: 30px; background: radial-gradient(circle at 62% 64%, rgba(69,10,10,0.52), transparent 32%), linear-gradient(135deg, #f87171, #991b1b 62%, #2a0505); }
+  .travel-auth .solar-planet--jupiter { width: 58px; height: 58px; right: -18px; background: repeating-linear-gradient(172deg, rgba(254,243,199,0.22) 0 5px, rgba(180,83,9,0.28) 5px 12px, rgba(69,26,3,0.18) 12px 18px), linear-gradient(135deg, #fbbf24, #92400e 62%, #2b1204); }
+  .travel-auth .solar-planet--saturn { width: 48px; height: 48px; right: -16px; background: repeating-linear-gradient(170deg, rgba(254,243,199,0.18) 0 5px, rgba(146,64,14,0.22) 5px 11px), linear-gradient(135deg, #fde68a, #92400e 62%, #241004); }
+
+  .travel-auth .solar-planet--saturn::before {
+    content: "";
+    position: absolute;
+    left: -18px;
+    right: -18px;
+    top: 42%;
+    height: 18%;
+    border-radius: 50%;
+    border-top: 4px solid rgba(254, 243, 199, 0.5);
+    border-bottom: 2px solid rgba(146, 64, 14, 0.42);
+    transform: rotate(-13deg);
+  }
+
+  .travel-auth .cosmic-earth {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: clamp(170px, 17vw, 260px);
+    height: clamp(170px, 17vw, 260px);
+    border-radius: 50%;
+    z-index: 5;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 42% 42%, rgba(14, 165, 233, 0.18), rgba(2, 6, 23, 0.08) 70%);
+    box-shadow: 0 0 52px rgba(56, 189, 248, 0.28), 0 0 120px rgba(14, 165, 233, 0.16);
+    animation: galaxy-earth-center-drift 10s ease-in-out infinite;
+  }
+
+  .travel-auth .cosmic-earth::before,
+  .travel-auth .cosmic-earth::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .travel-auth .cosmic-earth::before {
+    inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, transparent 58%, rgba(103, 232, 249, 0.18) 68%, transparent 74%);
+    filter: blur(2px);
+  }
+
+  .travel-auth .cosmic-earth::after {
+    left: -22px;
+    right: -22px;
+    top: 52px;
+    height: 36px;
+    border-radius: 50%;
+    border-top: 3px solid rgba(191, 219, 254, 0.42);
+    transform: rotate(-14deg);
+    opacity: 0.5;
+  }
+
+  .travel-auth .cosmic-earth canvas {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .travel-auth .moon-orbit {
+    left: 50%;
+    top: 50%;
+    width: 250px;
+    height: 164px;
+    border: 1px solid rgba(226, 232, 240, 0.18);
+    border-radius: 50%;
+    z-index: 4;
+    transform: translate(-50%, -50%) rotate(-18deg);
+    animation: galaxy-moon-orbit 15s linear infinite;
+  }
+
+  .travel-auth .cosmic-moon {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, #f8fafc, #94a3b8 68%, #334155);
+    box-shadow: inset -8px -6px 12px rgba(15, 23, 42, 0.34), 0 0 18px rgba(226, 232, 240, 0.36);
+  }
+
+  .travel-auth .cosmic-asteroid {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    z-index: 2;
+    opacity: 0.82;
+    background: #cbd5e1;
+    box-shadow: 0 0 10px rgba(203, 213, 225, 0.52);
+  }
+
+  .travel-auth .cosmic-asteroid--one { left: 17%; top: 24%; }
+  .travel-auth .cosmic-asteroid--two { left: 31%; top: 76%; transform: scale(0.72); }
+  .travel-auth .cosmic-asteroid--three { left: 78%; top: 58%; transform: scale(1.2); }
+  .travel-auth .cosmic-asteroid--four { left: 88%; top: 37%; transform: scale(0.82); }
+  .travel-auth .cosmic-asteroid--five { left: 22%; top: 58%; transform: scale(0.58); }
+  .travel-auth .cosmic-asteroid--six { left: 68%; top: 79%; transform: scale(0.68); }
+
+  .travel-auth__card {
+    justify-self: center;
+    width: 100%;
+    max-width: 680px;
+    padding: clamp(30px, 3vw, 44px);
+    border-radius: 28px;
+    background:
+      linear-gradient(180deg, rgba(10, 22, 50, .90), rgba(5, 11, 28, .82)),
+      radial-gradient(circle at 100% 0%, rgba(103, 232, 249, .14), transparent 36%);
+    color: #f8fbff;
+    border-color: rgba(148, 190, 255, .20);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .08),
+      0 28px 90px rgba(0, 0, 0, .42),
+      0 0 54px rgba(103, 232, 249, .08);
+  }
+
+  .travel-auth__card::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, .08), transparent 30%),
+      radial-gradient(circle at 14% 0%, rgba(103, 232, 249, .12), transparent 28%);
+  }
+
+  .travel-auth__card h2,
+  .travel-auth__field label,
+  .travel-auth__trust-item strong {
+    color: #f8fbff;
+  }
+
+  .travel-auth__card h2 {
+    position: relative;
+    z-index: 1;
+    margin-top: 0;
+    letter-spacing: 0;
+  }
+
+  .travel-auth__card p,
+  .travel-auth__hint,
+  .travel-auth__trust-item span {
+    color: rgba(214, 226, 255, .78);
+  }
+
+  .travel-auth .section-eyebrow {
+    position: relative;
+    z-index: 1;
+    width: max-content;
+    margin: 0 0 18px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(253, 230, 138, .22);
+    background: rgba(253, 230, 138, .08);
+    color: #fde68a;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: .16em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .travel-auth form,
+  .travel-auth__trust {
+    position: relative;
+    z-index: 1;
+  }
+
+  .travel-auth__grid {
+    gap: 16px;
+  }
+
+  .travel-auth__field {
+    gap: 9px;
+  }
+
+  .travel-auth__field label {
+    font-size: 11px;
+    font-weight: 850;
+    letter-spacing: .06em;
+    color: rgba(226, 232, 240, .90);
+  }
+
+  .travel-auth__field input {
+    min-height: 56px;
+    border-radius: 16px;
+    border-color: rgba(148, 190, 255, .22);
+    background: rgba(2, 8, 23, .58);
+    color: #f8fbff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+
+  .travel-auth__field input:focus {
+    border-color: rgba(103, 232, 249, .56);
+    box-shadow: 0 0 0 4px rgba(103, 232, 249, .12);
+  }
+
+  .travel-auth__button {
+    color: #06101f;
+    background: linear-gradient(135deg, #67e8f9, #fde68a);
+    box-shadow: 0 18px 42px rgba(103, 232, 249, .22);
+    min-width: 170px;
+  }
+
+  .travel-auth__link {
+    color: #eef7ff;
+    border-color: rgba(148, 190, 255, .22);
+    background: rgba(3, 10, 24, .42);
+    min-width: 150px;
+  }
+
+  .travel-auth__button:hover,
+  .travel-auth__link:hover {
+    transform: translateY(-2px);
+  }
+
+  .travel-auth__trust {
+    margin-top: 18px;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .travel-auth__trust-item {
+    background: rgba(2, 8, 23, .42);
+    border: 1px solid rgba(148, 190, 255, .18);
+  }
+
+  @keyframes travel-auth-nebula {
+    from { transform: scale(.98); opacity: .30; }
+    to { transform: scale(1.04); opacity: .50; }
+  }
+
+  @keyframes galaxy-sun-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.12); }
+  }
+
+  @keyframes galaxy-sun-rays {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes galaxy-belt-drift {
+    to { transform: translate(-50%, -50%) rotate(344deg); }
+  }
+
+  @keyframes galaxy-solar-orbit {
+    to { transform: translate(-50%, -50%) rotate(348deg); }
+  }
+
+  @keyframes galaxy-moon-orbit {
+    to { transform: translate(-50%, -50%) rotate(342deg); }
+  }
+
+  @keyframes galaxy-earth-center-drift {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -51.5%) scale(1.025); }
+  }
+
+  @media (max-width: 1180px) {
+    .travel-auth__shell {
+      width: min(100vw - 36px, 980px);
+      padding-top: 74px;
+    }
+
+    .travel-auth__back {
+      top: 24px;
+    }
+
+    .travel-auth__layout {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .travel-auth__hero--scene-only {
+      min-height: 430px;
+      max-height: 520px;
+    }
+
+    .travel-auth__card {
+      max-width: 760px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .travel-auth__shell {
+      width: min(100vw - 24px, 100%);
+      padding-top: 66px;
+    }
+
+    .travel-auth__hero--scene-only {
+      min-height: 320px;
+    }
+
+    .travel-auth__card {
+      padding: 24px;
+    }
+
+    .travel-auth__trust {
+      grid-template-columns: 1fr;
+    }
+
+    .travel-auth__actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .travel-auth__button,
+    .travel-auth__link {
+      width: 100%;
+    }
+  }
 </style>
 
 <main class="travel-auth">
   <div class="travel-auth__shell">
     <a class="travel-auth__back" href="/">← Về trang chủ</a>
     <section class="travel-auth__layout">
-      <article class="travel-auth__hero">
-        <div class="travel-auth__eyebrow">
-          <span class="travel-auth__eyebrow-dot"></span>
-          New guest journey
-        </div>
-        <h1>Tạo tài khoản để bắt đầu kỳ nghỉ thật mượt mà.</h1>
-        <p>
-          Tài khoản khách hàng giúp bạn đặt phòng nhanh hơn, xem lịch sử lưu trú, nhận ưu đãi thành viên
-          và đồng bộ trải nghiệm từ đặt phòng đến check-in trong hệ thống resort.
-        </p>
-
-        <div class="travel-auth__chips">
-          <span class="travel-auth__chip">Đặt phòng online chuẩn nghiệp vụ</span>
-          <span class="travel-auth__chip">Quản lý hồ sơ & lưu trú</span>
-          <span class="travel-auth__chip">Ưu đãi riêng cho khách thành viên</span>
-        </div>
-
-        <div class="travel-auth__mini-grid">
-          <span class="travel-auth__mini">Cầu vồng nhỏ</span>
-          <span class="travel-auth__mini">Biển xanh</span>
-          <span class="travel-auth__mini">Cá heo vui</span>
-          <span class="travel-auth__mini">Dễ dùng trên mobile</span>
-        </div>
-
-        <div class="travel-auth__scene" aria-hidden="true">
-          <div class="travel-auth__sun"></div>
-          <div class="travel-auth__cloud travel-auth__cloud--one"></div>
-          <div class="travel-auth__cloud travel-auth__cloud--two"></div>
-          <div class="travel-auth__rainbow"></div>
-          <div class="travel-auth__mountain travel-auth__mountain--one"></div>
-          <div class="travel-auth__mountain travel-auth__mountain--two"></div>
-          <div class="travel-auth__island"></div>
-          <div class="travel-auth__palm travel-auth__palm--left"></div>
-          <div class="travel-auth__palm travel-auth__palm--right"></div>
-          <div class="travel-auth__dolphin"></div>
-          <div class="travel-auth__wave travel-auth__wave--one"></div>
-          <div class="travel-auth__wave travel-auth__wave--two"></div>
-          <div class="travel-auth__wave travel-auth__wave--three"></div>
-        </div>
+      <article class="travel-auth__hero travel-auth__hero--scene-only">
+        <aside class="travel-scene-card" aria-label="Minh họa ngân hà Bento Resort">
+          <div class="cosmic-scene" aria-hidden="true">
+            <span class="cosmic-star-dust"></span>
+            <span class="cosmic-depth-plane cosmic-depth-plane--one"></span>
+            <span class="cosmic-depth-plane cosmic-depth-plane--two"></span>
+            <span class="cosmic-depth-plane cosmic-depth-plane--three"></span>
+            <span class="cosmic-asteroid-belt"></span>
+            <span class="solar-light-ray"></span>
+            <div class="cosmic-core"></div>
+            <div class="solar-orbit solar-orbit--mercury"><span class="solar-planet solar-planet--mercury"></span></div>
+            <div class="solar-orbit solar-orbit--venus"><span class="solar-planet solar-planet--venus"></span></div>
+            <div class="solar-orbit solar-orbit--mars"><span class="solar-planet solar-planet--mars"></span></div>
+            <div class="solar-orbit solar-orbit--jupiter"><span class="solar-planet solar-planet--jupiter"></span></div>
+            <div class="solar-orbit solar-orbit--saturn"><span class="solar-planet solar-planet--saturn"></span></div>
+            <div class="cosmic-earth" data-earth-3d>
+              <canvas aria-label="Trái Đất 3D dùng texture vệ tinh"></canvas>
+            </div>
+            <div class="moon-orbit"><span class="cosmic-moon"></span></div>
+            <span class="cosmic-asteroid cosmic-asteroid--one"></span>
+            <span class="cosmic-asteroid cosmic-asteroid--two"></span>
+            <span class="cosmic-asteroid cosmic-asteroid--three"></span>
+            <span class="cosmic-asteroid cosmic-asteroid--four"></span>
+            <span class="cosmic-asteroid cosmic-asteroid--five"></span>
+            <span class="cosmic-asteroid cosmic-asteroid--six"></span>
+          </div>
+        </aside>
       </article>
 
       <article class="travel-auth__card">
@@ -651,12 +1271,12 @@
         <form method="post" action="/auth/register" class="travel-auth__grid" autocomplete="on">
           <div class="travel-auth__field travel-auth__field--full">
             <label for="fullname">Họ và tên</label>
-            <input id="fullname" name="fullname" autocomplete="name" required />
+            <input id="fullname" name="fullname" autocomplete="name" minlength="5" maxlength="80" required />
           </div>
 
           <div class="travel-auth__field">
             <label for="username">Tên đăng nhập</label>
-            <input id="username" name="username" autocomplete="username" required />
+            <input id="username" name="username" autocomplete="username" minlength="5" maxlength="30" pattern="[A-Za-z][A-Za-z0-9_]{4,29}" title="Tên đăng nhập dài 5-30 ký tự, bắt đầu bằng chữ và chỉ gồm chữ, số hoặc dấu gạch dưới." required />
           </div>
 
           <div class="travel-auth__field">
@@ -666,22 +1286,22 @@
 
           <div class="travel-auth__field">
             <label for="sdt">Số điện thoại</label>
-            <input id="sdt" name="sdt" inputmode="tel" autocomplete="tel" required />
+            <input id="sdt" name="sdt" inputmode="tel" autocomplete="tel" pattern="(0|\+84|84)(3|5|7|8|9)[0-9]{8}" title="Số điện thoại Việt Nam gồm 10 số, bắt đầu bằng 03, 05, 07, 08 hoặc 09. Có thể nhập dạng +84." required />
           </div>
 
           <div class="travel-auth__field">
             <label for="cccd">CCCD / CMND</label>
-            <input id="cccd" name="cccd" inputmode="numeric" required />
+            <input id="cccd" name="cccd" inputmode="numeric" pattern="([0-9]{9}|[0-9]{12})" title="CCCD/CMND phải gồm đúng 9 hoặc 12 chữ số." required />
           </div>
 
           <div class="travel-auth__field">
             <label for="password">Mật khẩu</label>
-            <input id="password" name="password" type="password" autocomplete="new-password" required />
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,72}" title="Mật khẩu 8-72 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt." required />
           </div>
 
           <div class="travel-auth__field">
             <label for="repass">Nhập lại mật khẩu</label>
-            <input id="repass" name="repass" type="password" autocomplete="new-password" required />
+            <input id="repass" name="repass" type="password" autocomplete="new-password" minlength="8" maxlength="72" required />
           </div>
 
           <div class="travel-auth__field travel-auth__field--full">
@@ -698,19 +1318,10 @@
           </div>
         </form>
 
-        <div class="travel-auth__trust">
-          <div class="travel-auth__trust-item">
-            <strong>Đăng ký nhanh, thông tin rõ ràng</strong>
-            <span>Form giữ đúng logic đăng ký khách hàng để không lệch nghiệp vụ hiện tại của resort.</span>
-          </div>
-          <div class="travel-auth__trust-item">
-            <strong>Sẵn sàng cho booking, mobile hub và dịch vụ phát sinh</strong>
-            <span>Tài khoản sau khi tạo có thể dùng xuyên suốt cho các bước đặt phòng và chăm sóc khách hàng.</span>
-          </div>
-        </div>
       </article>
     </section>
   </div>
 </main>
 
+<script type="module" src="/js/home-galaxy-earth.js"></script>
 <%- include("../partials/footer") %>

@@ -1,0 +1,393 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="7200" height="9800" viewBox="0 0 7200 9800">
+<defs><marker id="arrow" markerWidth="18" markerHeight="18" refX="16" refY="9" orient="auto" markerUnits="strokeWidth"><path d="M2,2 L16,9 L2,16" fill="none" stroke="#000" stroke-width="2.8"/></marker></defs>
+<rect x="0" y="0" width="100%" height="100%" fill="#fff"/>
+<text x="3600.0" y="95" text-anchor="middle" font-family="Arial" font-size="52" font-weight="700" fill="#000">CLASS DIAGRAM - HỆ THỐNG ĐẶT PHÒNG KHÁCH SẠN</text>
+<text x="3600.0" y="150" text-anchor="middle" font-family="Arial" font-size="30" fill="#000">Bản dọc trắng đen, chia ít bảng mỗi hàng để in ra dễ đọc</text>
+<text x="220" y="230" font-family="Arial" font-size="30" font-weight="700" fill="#000">Chú thích: [PK] khóa chính, [FK] khóa ngoại, mũi tên chỉ về bảng được tham chiếu.</text>
+<rect x="120" y="350" width="6960" height="940" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="316" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="355" font-family="Arial" font-size="28" font-weight="700" fill="#000">Tài khoản - phân quyền - người dùng</text>
+<rect x="120" y="1430" width="6960" height="920" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="1396" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="1435" font-family="Arial" font-size="28" font-weight="700" fill="#000">Nhật ký - phiên - eKYC</text>
+<rect x="120" y="2550" width="6960" height="920" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="2516" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="2555" font-family="Arial" font-size="28" font-weight="700" fill="#000">Khách sạn - phòng - realtime</text>
+<rect x="120" y="3670" width="6960" height="940" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="3636" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="3675" font-family="Arial" font-size="28" font-weight="700" fill="#000">Đặt phòng - giao dịch</text>
+<rect x="120" y="4790" width="6960" height="940" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="4756" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="4795" font-family="Arial" font-size="28" font-weight="700" fill="#000">Thanh toán - hoàn tiền - kế toán</text>
+<rect x="120" y="5910" width="6960" height="940" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="5876" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="5915" font-family="Arial" font-size="28" font-weight="700" fill="#000">Dịch vụ - khuyến mãi - kiểm toán</text>
+<rect x="120" y="7030" width="6960" height="940" fill="none" stroke="#777" stroke-width="3" stroke-dasharray="18 14"/>
+<rect x="180" y="6996" width="760" height="58" fill="#fff" stroke="#000" stroke-width="3"/>
+<text x="205" y="7035" font-family="Arial" font-size="28" font-weight="700" fill="#000">CSKH - phản hồi - broadcast</text>
+<path d="M5571.4,4860.0 C5571.4,4000.0 1582.9,4000.0 1582.9,3140.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M2730.0,5980.0 C2730.0,5168.0 2730.0,5168.0 2730.0,4356.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M2730.0,5980.0 C2730.0,4584.0 2730.0,4584.0 2730.0,3188.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1980.0,6233.1 L1730.0,6222.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3730.0,4061.7 L3480.0,4058.3" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3982.6,3740.0 C3982.6,3464.0 3155.5,3464.0 3155.5,3188.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1980.0,7329.1 L1730.0,7342.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M2779.4,7100.0 C2779.4,3972.0 4424.3,3972.0 4424.3,844.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M2936.1,4860.0 C2936.1,2924.0 6004.9,2924.0 6004.9,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5480.0,7356.6 L5230.0,7363.4" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1358.7,3740.0 C1358.7,2364.0 5774.3,2364.0 5774.3,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1380.2,1500.0 C1380.2,1244.0 2248.4,1244.0 2248.4,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5480.0,4010.3 L3480.0,4037.7" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M6230.0,3740.0 C6230.0,2364.0 6230.0,2364.0 6230.0,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5480.0,3765.1 C5480.0,3452.0 3480.0,3452.0 3480.0,3138.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M4480.0,4404.0 C4480.0,5192.0 4480.0,5192.0 4480.0,5980.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M6230.0,1500.0 C6230.0,1244.0 6230.0,1244.0 6230.0,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5480.0,704.0 L3480.0,704.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1980.0,2893.7 L1730.0,2890.3" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5480.0,3130.3 C5480.0,3464.0 3480.0,3464.0 3480.0,3797.7" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5480.0,2885.1 L3480.0,2898.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3052.4,3740.0 C3052.4,2364.0 5932.8,2364.0 5932.8,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1980.0,4017.1 L1730.0,4006.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M2887.8,3740.0 C2887.8,2292.0 4371.4,2292.0 4371.4,844.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M2975.9,4356.0 C2975.9,5168.0 4272.4,5168.0 4272.4,5980.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1433.5,4860.0 C1433.5,4608.0 2238.2,4608.0 2238.2,4356.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1315.8,4860.0 C1315.8,2924.0 5894.2,2924.0 5894.2,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1200.3,4860.0 C1200.3,2852.0 4315.5,2852.0 4315.5,844.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M6065.6,5980.0 C6065.6,3484.0 2909.6,3484.0 2909.6,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3730.0,616.6 L1730.0,575.4" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1203.2,7100.0 C1203.2,4044.0 6006.8,4044.0 6006.8,988.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M5230.0,5144.0 L5480.0,5144.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M4026.5,4860.0 C4026.5,4608.0 3221.8,4608.0 3221.8,4356.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M1980.0,642.3 L1730.0,621.7" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3480.0,704.0 L5480.0,704.0" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3480.0,673.1 L3730.0,662.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<path d="M3730.0,2849.1 L3480.0,2862.9" fill="none" stroke="#000" stroke-width="4" marker-end="url(#arrow)" opacity="0.72"/>
+<rect x="230" y="420" width="1500" height="280" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="420" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="502" x2="1730" y2="502" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="473" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">vaitro</text>
+<text x="274" y="552" font-family="Arial" font-size="29" fill="#000">[PK] mavaitro: integer</text>
+<text x="274" y="600" font-family="Arial" font-size="29" fill="#000">    tenvaitro: varchar(50)</text>
+<text x="274" y="648" font-family="Arial" font-size="29" fill="#000">    mota: text</text>
+<rect x="1980" y="420" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="420" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="502" x2="3480" y2="502" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="473" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">taikhoan</text>
+<text x="2024" y="552" font-family="Arial" font-size="29" fill="#000">[PK] matk: integer</text>
+<text x="2024" y="600" font-family="Arial" font-size="29" fill="#000">    username: varchar(100)</text>
+<text x="2024" y="648" font-family="Arial" font-size="29" fill="#000">    password: varchar(255)</text>
+<text x="2024" y="696" font-family="Arial" font-size="29" fill="#000">[FK] mavaitro: integer</text>
+<text x="2024" y="744" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="2024" y="792" font-family="Arial" font-size="29" fill="#000">[FK] manhanvien: integer</text>
+<text x="2024" y="840" font-family="Arial" font-size="29" fill="#000">    trangthai: taikhoan_trangthai</text>
+<text x="2024" y="888" font-family="Arial" font-size="29" fill="#000">    ngaytao: timestamptz</text>
+<text x="2024" y="936" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="3730" y="420" width="1500" height="424" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="420" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="502" x2="5230" y2="502" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="473" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">nhanvien</text>
+<text x="3774" y="552" font-family="Arial" font-size="29" fill="#000">[PK] manhanvien: integer</text>
+<text x="3774" y="600" font-family="Arial" font-size="29" fill="#000">    tennv: varchar(100)</text>
+<text x="3774" y="648" font-family="Arial" font-size="29" fill="#000">    sdt: varchar(20)</text>
+<text x="3774" y="696" font-family="Arial" font-size="29" fill="#000">    email: varchar(100)</text>
+<text x="3774" y="744" font-family="Arial" font-size="29" fill="#000">    chucvu: varchar(50)</text>
+<text x="3774" y="792" font-family="Arial" font-size="29" fill="#000">[FK] mavaitro: integer</text>
+<rect x="5480" y="420" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="420" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="502" x2="6980" y2="502" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="473" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">khachhang</text>
+<text x="5524" y="552" font-family="Arial" font-size="29" fill="#000">[PK] makhachhang: integer</text>
+<text x="5524" y="600" font-family="Arial" font-size="29" fill="#000">[FK] matk: integer</text>
+<text x="5524" y="648" font-family="Arial" font-size="29" fill="#000">    tenkh: varchar(100)</text>
+<text x="5524" y="696" font-family="Arial" font-size="29" fill="#000">    sdt: varchar(20)</text>
+<text x="5524" y="744" font-family="Arial" font-size="29" fill="#000">    email: varchar(100)</text>
+<text x="5524" y="792" font-family="Arial" font-size="29" fill="#000">    cccd: varchar(20)</text>
+<text x="5524" y="840" font-family="Arial" font-size="29" fill="#000">    diachi: varchar(200)</text>
+<text x="5524" y="888" font-family="Arial" font-size="29" fill="#000">    trangthaiekyc: khachhang_trangthaiekyc</text>
+<text x="5524" y="936" font-family="Arial" font-size="29" fill="#000">    ... 2 cột khác</text>
+<rect x="230" y="1500" width="1500" height="472" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="1500" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="1582" x2="1730" y2="1582" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="1553" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">api_request_log</text>
+<text x="274" y="1632" font-family="Arial" font-size="29" fill="#000">[PK] malog: integer</text>
+<text x="274" y="1680" font-family="Arial" font-size="29" fill="#000">    endpoint: varchar(255)</text>
+<text x="274" y="1728" font-family="Arial" font-size="29" fill="#000">    method: varchar(10)</text>
+<text x="274" y="1776" font-family="Arial" font-size="29" fill="#000">[FK] matk: integer</text>
+<text x="274" y="1824" font-family="Arial" font-size="29" fill="#000">    thietbi: api_request_log_thietbi</text>
+<text x="274" y="1872" font-family="Arial" font-size="29" fill="#000">    requestat: timestamptz</text>
+<text x="274" y="1920" font-family="Arial" font-size="29" fill="#000">    statuscode: integer</text>
+<rect x="1980" y="1500" width="1500" height="472" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="1500" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="1582" x2="3480" y2="1582" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="1553" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">audit_log_khachhang</text>
+<text x="2024" y="1632" font-family="Arial" font-size="29" fill="#000">[PK] maaudit: integer</text>
+<text x="2024" y="1680" font-family="Arial" font-size="29" fill="#000">    makhachhang: integer</text>
+<text x="2024" y="1728" font-family="Arial" font-size="29" fill="#000">    hanhdong: audit_log_khachhang_hanhdong</text>
+<text x="2024" y="1776" font-family="Arial" font-size="29" fill="#000">    manhanvien: integer</text>
+<text x="2024" y="1824" font-family="Arial" font-size="29" fill="#000">    thoigian: timestamptz</text>
+<text x="2024" y="1872" font-family="Arial" font-size="29" fill="#000">    ghichu: varchar(255)</text>
+<text x="2024" y="1920" font-family="Arial" font-size="29" fill="#000">    ... 3 cột khác</text>
+<rect x="3730" y="1500" width="1500" height="280" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="1500" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="1582" x2="5230" y2="1582" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="1553" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">node_sessions</text>
+<text x="3774" y="1632" font-family="Arial" font-size="29" fill="#000">[PK] sid: varchar</text>
+<text x="3774" y="1680" font-family="Arial" font-size="29" fill="#000">    sess: json</text>
+<text x="3774" y="1728" font-family="Arial" font-size="29" fill="#000">    expire: timestamp(6) without time zone</text>
+<rect x="5480" y="1500" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="1500" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="1582" x2="6980" y2="1582" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="1553" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">ekyc_verification</text>
+<text x="5524" y="1632" font-family="Arial" font-size="29" fill="#000">[PK] maekyc: integer</text>
+<text x="5524" y="1680" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="5524" y="1728" font-family="Arial" font-size="29" fill="#000">    sogiayto: varchar(20)</text>
+<text x="5524" y="1776" font-family="Arial" font-size="29" fill="#000">    loaigiayto: ekyc_verification_loaigiayto</text>
+<text x="5524" y="1824" font-family="Arial" font-size="29" fill="#000">    ketquaxacthuc: ekyc_verification_ketquaxacthuc</text>
+<text x="5524" y="1872" font-family="Arial" font-size="29" fill="#000">    dotincay: decimal(5,2)</text>
+<text x="5524" y="1920" font-family="Arial" font-size="29" fill="#000">    thoigiangui: timestamptz</text>
+<text x="5524" y="1968" font-family="Arial" font-size="29" fill="#000">    thoigianxacthuc: timestamptz</text>
+<text x="5524" y="2016" font-family="Arial" font-size="29" fill="#000">    ... 4 cột khác</text>
+<rect x="230" y="2620" width="1500" height="520" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="2620" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="2702" x2="1730" y2="2702" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="2673" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">khachsan</text>
+<text x="274" y="2752" font-family="Arial" font-size="29" fill="#000">[PK] makhachsan: integer</text>
+<text x="274" y="2800" font-family="Arial" font-size="29" fill="#000">    tenkhachsan: varchar(150)</text>
+<text x="274" y="2848" font-family="Arial" font-size="29" fill="#000">    tinhthanh: varchar(100)</text>
+<text x="274" y="2896" font-family="Arial" font-size="29" fill="#000">    quanhuyen: varchar(100)</text>
+<text x="274" y="2944" font-family="Arial" font-size="29" fill="#000">    diachi: varchar(255)</text>
+<text x="274" y="2992" font-family="Arial" font-size="29" fill="#000">    sodienthoai: varchar(20)</text>
+<text x="274" y="3040" font-family="Arial" font-size="29" fill="#000">    trangthai: khachsan_trangthai</text>
+<text x="274" y="3088" font-family="Arial" font-size="29" fill="#000">    ... 4 cột khác</text>
+<rect x="1980" y="2620" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="2620" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="2702" x2="3480" y2="2702" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="2673" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">phong</text>
+<text x="2024" y="2752" font-family="Arial" font-size="29" fill="#000">[PK] maphong: integer</text>
+<text x="2024" y="2800" font-family="Arial" font-size="29" fill="#000">[FK] makhachsan: integer</text>
+<text x="2024" y="2848" font-family="Arial" font-size="29" fill="#000">    sophong: varchar(10)</text>
+<text x="2024" y="2896" font-family="Arial" font-size="29" fill="#000">    loaiphong: varchar(50)</text>
+<text x="2024" y="2944" font-family="Arial" font-size="29" fill="#000">    gia: decimal(12,2)</text>
+<text x="2024" y="2992" font-family="Arial" font-size="29" fill="#000">    trangthai: phong_trangthai</text>
+<text x="2024" y="3040" font-family="Arial" font-size="29" fill="#000">    trangthairealtime: phong_trangthairealtime</text>
+<text x="2024" y="3088" font-family="Arial" font-size="29" fill="#000">    tinhtrangphong: phong_tinhtrangphong</text>
+<text x="2024" y="3136" font-family="Arial" font-size="29" fill="#000">    ... 8 cột khác</text>
+<rect x="3730" y="2620" width="1500" height="376" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="2620" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="2702" x2="5230" y2="2702" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="2673" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">thietbi</text>
+<text x="3774" y="2752" font-family="Arial" font-size="29" fill="#000">[PK] mathietbi: integer</text>
+<text x="3774" y="2800" font-family="Arial" font-size="29" fill="#000">    tenthietbi: varchar(100)</text>
+<text x="3774" y="2848" font-family="Arial" font-size="29" fill="#000">    soluong: integer</text>
+<text x="3774" y="2896" font-family="Arial" font-size="29" fill="#000">    tinhtrang: varchar(50)</text>
+<text x="3774" y="2944" font-family="Arial" font-size="29" fill="#000">[FK] maphong: integer</text>
+<rect x="5480" y="2620" width="1500" height="520" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="2620" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="2702" x2="6980" y2="2702" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="2673" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">room_status_log</text>
+<text x="5524" y="2752" font-family="Arial" font-size="29" fill="#000">[PK] malog: integer</text>
+<text x="5524" y="2800" font-family="Arial" font-size="29" fill="#000">[FK] maphong: integer</text>
+<text x="5524" y="2848" font-family="Arial" font-size="29" fill="#000">[FK] magiaodich: integer</text>
+<text x="5524" y="2896" font-family="Arial" font-size="29" fill="#000">    trangthaicu: varchar(30)</text>
+<text x="5524" y="2944" font-family="Arial" font-size="29" fill="#000">    trangthaimoi: varchar(30)</text>
+<text x="5524" y="2992" font-family="Arial" font-size="29" fill="#000">    nguonthaydoi: room_status_log_nguonthaydoi</text>
+<text x="5524" y="3040" font-family="Arial" font-size="29" fill="#000">    thoidiem: timestamptz</text>
+<text x="5524" y="3088" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="230" y="3740" width="1500" height="472" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="3740" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="3822" x2="1730" y2="3822" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="3793" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">doan</text>
+<text x="274" y="3872" font-family="Arial" font-size="29" fill="#000">[PK] madoan: integer</text>
+<text x="274" y="3920" font-family="Arial" font-size="29" fill="#000">    tendoan: varchar(150)</text>
+<text x="274" y="3968" font-family="Arial" font-size="29" fill="#000">[FK] matruongdoan: integer</text>
+<text x="274" y="4016" font-family="Arial" font-size="29" fill="#000">    songuoi: integer</text>
+<text x="274" y="4064" font-family="Arial" font-size="29" fill="#000">    ngayden: date</text>
+<text x="274" y="4112" font-family="Arial" font-size="29" fill="#000">    ngaydi: date</text>
+<text x="274" y="4160" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="1980" y="3740" width="1500" height="616" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="3740" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="3822" x2="3480" y2="3822" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="3793" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">giaodich</text>
+<text x="2024" y="3872" font-family="Arial" font-size="29" fill="#000">[PK] magiaodich: integer</text>
+<text x="2024" y="3920" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="2024" y="3968" font-family="Arial" font-size="29" fill="#000">[FK] madoan: integer</text>
+<text x="2024" y="4016" font-family="Arial" font-size="29" fill="#000">[FK] manhanvien: integer</text>
+<text x="2024" y="4064" font-family="Arial" font-size="29" fill="#000">[FK] makhuyenmai: integer</text>
+<text x="2024" y="4112" font-family="Arial" font-size="29" fill="#000">    madatcho: varchar(30)</text>
+<text x="2024" y="4160" font-family="Arial" font-size="29" fill="#000">    tongtien: decimal(14,2)</text>
+<text x="2024" y="4208" font-family="Arial" font-size="29" fill="#000">    trangthai: giaodich_trangthai</text>
+<text x="2024" y="4256" font-family="Arial" font-size="29" fill="#000">    phuongthucthanhtoan: giaodich_phuongthucthanhtoan</text>
+<text x="2024" y="4304" font-family="Arial" font-size="29" fill="#000">    ... 4 cột khác</text>
+<rect x="3730" y="3740" width="1500" height="664" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="3740" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="3822" x2="5230" y2="3822" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="3793" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">chitietgiaodich</text>
+<text x="3774" y="3872" font-family="Arial" font-size="29" fill="#000">[FK] makhuyenmai: integer</text>
+<text x="3774" y="3920" font-family="Arial" font-size="29" fill="#000">[PK] mactgd: integer</text>
+<text x="3774" y="3968" font-family="Arial" font-size="29" fill="#000">[FK] magiaodich: integer</text>
+<text x="3774" y="4016" font-family="Arial" font-size="29" fill="#000">[FK] maphong: integer</text>
+<text x="3774" y="4064" font-family="Arial" font-size="29" fill="#000">    songuoi: integer</text>
+<text x="3774" y="4112" font-family="Arial" font-size="29" fill="#000">    ngaynhandukien: timestamptz</text>
+<text x="3774" y="4160" font-family="Arial" font-size="29" fill="#000">    ngaytradukien: timestamptz</text>
+<text x="3774" y="4208" font-family="Arial" font-size="29" fill="#000">    ngaycheckin: timestamptz</text>
+<text x="3774" y="4256" font-family="Arial" font-size="29" fill="#000">    ngaycheckout: timestamptz</text>
+<text x="3774" y="4304" font-family="Arial" font-size="29" fill="#000">    trangthai: chitietgiaodich_trangthai</text>
+<text x="3774" y="4352" font-family="Arial" font-size="29" fill="#000">    ... 9 cột khác</text>
+<rect x="5480" y="3740" width="1500" height="520" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="3740" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="3822" x2="6980" y2="3822" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="3793" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">booking_history</text>
+<text x="5524" y="3872" font-family="Arial" font-size="29" fill="#000">[PK] malichsu: integer</text>
+<text x="5524" y="3920" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="5524" y="3968" font-family="Arial" font-size="29" fill="#000">[FK] maphong: integer</text>
+<text x="5524" y="4016" font-family="Arial" font-size="29" fill="#000">[FK] magiaodich: integer</text>
+<text x="5524" y="4064" font-family="Arial" font-size="29" fill="#000">    ngaydat: timestamptz</text>
+<text x="5524" y="4112" font-family="Arial" font-size="29" fill="#000">    dongia: decimal(12,2)</text>
+<text x="5524" y="4160" font-family="Arial" font-size="29" fill="#000">    ketqua: booking_history_ketqua</text>
+<text x="5524" y="4208" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="230" y="4860" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="4860" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="4942" x2="1730" y2="4942" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="4913" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">hoadon</text>
+<text x="274" y="4992" font-family="Arial" font-size="29" fill="#000">[PK] mahoadon: integer</text>
+<text x="274" y="5040" font-family="Arial" font-size="29" fill="#000">[FK] magiaodich: integer</text>
+<text x="274" y="5088" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="274" y="5136" font-family="Arial" font-size="29" fill="#000">[FK] manhanvien: integer</text>
+<text x="274" y="5184" font-family="Arial" font-size="29" fill="#000">    ngaylap: timestamptz</text>
+<text x="274" y="5232" font-family="Arial" font-size="29" fill="#000">    tongtien: decimal(14,2)</text>
+<text x="274" y="5280" font-family="Arial" font-size="29" fill="#000">    phuongthucthanhtoan: hoadon_phuongthucthanhtoan</text>
+<text x="274" y="5328" font-family="Arial" font-size="29" fill="#000">    trangthai: hoadon_trangthai</text>
+<text x="274" y="5376" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="1980" y="4860" width="1500" height="520" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="4860" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="4942" x2="3480" y2="4942" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="4913" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">congnophaithu</text>
+<text x="2024" y="4992" font-family="Arial" font-size="29" fill="#000">[PK] macongno: integer</text>
+<text x="2024" y="5040" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="2024" y="5088" font-family="Arial" font-size="29" fill="#000">    magiaodich: integer</text>
+<text x="2024" y="5136" font-family="Arial" font-size="29" fill="#000">    sotiengoc: decimal(14,2)</text>
+<text x="2024" y="5184" font-family="Arial" font-size="29" fill="#000">    sotiendathu: decimal(14,2)</text>
+<text x="2024" y="5232" font-family="Arial" font-size="29" fill="#000">    ngaydenhan: date</text>
+<text x="2024" y="5280" font-family="Arial" font-size="29" fill="#000">    trangthaithanhtoan: congnophaithu_trangthaithanhtoan</text>
+<text x="2024" y="5328" font-family="Arial" font-size="29" fill="#000">    ... 4 cột khác</text>
+<rect x="3730" y="4860" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="4860" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="4942" x2="5230" y2="4942" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="4913" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">refund_requests</text>
+<text x="3774" y="4992" font-family="Arial" font-size="29" fill="#000">[PK] id: integer</text>
+<text x="3774" y="5040" font-family="Arial" font-size="29" fill="#000">[FK] magiaodich: integer</text>
+<text x="3774" y="5088" font-family="Arial" font-size="29" fill="#000">    refund_code: text</text>
+<text x="3774" y="5136" font-family="Arial" font-size="29" fill="#000">    status: text</text>
+<text x="3774" y="5184" font-family="Arial" font-size="29" fill="#000">[FK] expense_id: integer</text>
+<text x="3774" y="5232" font-family="Arial" font-size="29" fill="#000">    refund_rate: decimal(5,2)</text>
+<text x="3774" y="5280" font-family="Arial" font-size="29" fill="#000">    processed_at: timestamptz</text>
+<text x="3774" y="5328" font-family="Arial" font-size="29" fill="#000">    refund_paid_at: timestamptz</text>
+<text x="3774" y="5376" font-family="Arial" font-size="29" fill="#000">    ... 30 cột khác</text>
+<rect x="5480" y="4860" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="4860" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="4942" x2="6980" y2="4942" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="4913" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">chiphi</text>
+<text x="5524" y="4992" font-family="Arial" font-size="29" fill="#000">[PK] macp: integer</text>
+<text x="5524" y="5040" font-family="Arial" font-size="29" fill="#000">    tenchiphi: varchar(100)</text>
+<text x="5524" y="5088" font-family="Arial" font-size="29" fill="#000">    ngaychi: date</text>
+<text x="5524" y="5136" font-family="Arial" font-size="29" fill="#000">    sotien: decimal(14,2)</text>
+<text x="5524" y="5184" font-family="Arial" font-size="29" fill="#000">    trangthai: chiphi_trangthai</text>
+<text x="5524" y="5232" font-family="Arial" font-size="29" fill="#000">[FK] makhachsan: integer</text>
+<text x="5524" y="5280" font-family="Arial" font-size="29" fill="#000">    loaichiphi: varchar(40)</text>
+<text x="5524" y="5328" font-family="Arial" font-size="29" fill="#000">    phuongthucchi: varchar(40)</text>
+<text x="5524" y="5376" font-family="Arial" font-size="29" fill="#000">    ... 4 cột khác</text>
+<rect x="230" y="5980" width="1500" height="424" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="5980" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="6062" x2="1730" y2="6062" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="6033" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">dichvu</text>
+<text x="274" y="6112" font-family="Arial" font-size="29" fill="#000">[PK] madichvu: integer</text>
+<text x="274" y="6160" font-family="Arial" font-size="29" fill="#000">    tendichvu: varchar(150)</text>
+<text x="274" y="6208" font-family="Arial" font-size="29" fill="#000">    giadichvu: decimal(12,2)</text>
+<text x="274" y="6256" font-family="Arial" font-size="29" fill="#000">    trangthai: dichvu_trangthai</text>
+<text x="274" y="6304" font-family="Arial" font-size="29" fill="#000">    hinhanh: varchar(255)</text>
+<text x="274" y="6352" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="1980" y="5980" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="5980" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="6062" x2="3480" y2="6062" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="6033" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">chitietdichvu</text>
+<text x="2024" y="6112" font-family="Arial" font-size="29" fill="#000">[PK] mactdv: integer</text>
+<text x="2024" y="6160" font-family="Arial" font-size="29" fill="#000">[FK] magiaodich: integer</text>
+<text x="2024" y="6208" font-family="Arial" font-size="29" fill="#000">[FK] maphong: integer</text>
+<text x="2024" y="6256" font-family="Arial" font-size="29" fill="#000">[FK] madichvu: integer</text>
+<text x="2024" y="6304" font-family="Arial" font-size="29" fill="#000">    soluong: integer</text>
+<text x="2024" y="6352" font-family="Arial" font-size="29" fill="#000">    giaban: decimal(12,2)</text>
+<text x="2024" y="6400" font-family="Arial" font-size="29" fill="#000">    thanhtien: decimal(12,2)</text>
+<text x="2024" y="6448" font-family="Arial" font-size="29" fill="#000">    trangthaidichvu: chitietdichvu_trangthaidichvu</text>
+<text x="2024" y="6496" font-family="Arial" font-size="29" fill="#000">    ... 3 cột khác</text>
+<rect x="3730" y="5980" width="1500" height="520" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="5980" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="6062" x2="5230" y2="6062" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="6033" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">khuyenmai</text>
+<text x="3774" y="6112" font-family="Arial" font-size="29" fill="#000">[PK] makhuyenmai: integer</text>
+<text x="3774" y="6160" font-family="Arial" font-size="29" fill="#000">    tenchuongtrinh: varchar(150)</text>
+<text x="3774" y="6208" font-family="Arial" font-size="29" fill="#000">    ngaybatdau: date</text>
+<text x="3774" y="6256" font-family="Arial" font-size="29" fill="#000">    ngayketthuc: date</text>
+<text x="3774" y="6304" font-family="Arial" font-size="29" fill="#000">    mucuudai: decimal(5,2)</text>
+<text x="3774" y="6352" font-family="Arial" font-size="29" fill="#000">    doituong: text</text>
+<text x="3774" y="6400" font-family="Arial" font-size="29" fill="#000">    trangthai: khuyenmai_trangthai</text>
+<text x="3774" y="6448" font-family="Arial" font-size="29" fill="#000">    ... 1 cột khác</text>
+<rect x="5480" y="5980" width="1500" height="520" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="5980" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="6062" x2="6980" y2="6062" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="6033" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">kiem_toan_dem</text>
+<text x="5524" y="6112" font-family="Arial" font-size="29" fill="#000">[PK] maktd: integer</text>
+<text x="5524" y="6160" font-family="Arial" font-size="29" fill="#000">    ngayktd: date</text>
+<text x="5524" y="6208" font-family="Arial" font-size="29" fill="#000">[FK] mataikhoan: integer</text>
+<text x="5524" y="6256" font-family="Arial" font-size="29" fill="#000">    tongdoanhthu: decimal(14,2)</text>
+<text x="5524" y="6304" font-family="Arial" font-size="29" fill="#000">    tongchiphi: decimal(14,2)</text>
+<text x="5524" y="6352" font-family="Arial" font-size="29" fill="#000">    loinhuan: decimal(14,2)</text>
+<text x="5524" y="6400" font-family="Arial" font-size="29" fill="#000">    trangthai: kiem_toan_dem_trangthai</text>
+<text x="5524" y="6448" font-family="Arial" font-size="29" fill="#000">    ... 5 cột khác</text>
+<rect x="230" y="7100" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="230" y="7100" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="230" y1="7182" x2="1730" y2="7182" stroke="#000" stroke-width="4"/>
+<text x="980.0" y="7153" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">phanhoi</text>
+<text x="274" y="7232" font-family="Arial" font-size="29" fill="#000">[PK] maph: integer</text>
+<text x="274" y="7280" font-family="Arial" font-size="29" fill="#000">[FK] makhachhang: integer</text>
+<text x="274" y="7328" font-family="Arial" font-size="29" fill="#000">    loaidichvu: varchar(255)</text>
+<text x="274" y="7376" font-family="Arial" font-size="29" fill="#000">    mucdohailong: integer</text>
+<text x="274" y="7424" font-family="Arial" font-size="29" fill="#000">    hotenkh: varchar(150)</text>
+<text x="274" y="7472" font-family="Arial" font-size="29" fill="#000">    email: varchar(100)</text>
+<text x="274" y="7520" font-family="Arial" font-size="29" fill="#000">    tinhtrang: phanhoi_tinhtrang</text>
+<text x="274" y="7568" font-family="Arial" font-size="29" fill="#000">    sentiment: phanhoi_sentiment</text>
+<text x="274" y="7616" font-family="Arial" font-size="29" fill="#000">    ... 5 cột khác</text>
+<rect x="1980" y="7100" width="1500" height="376" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="1980" y="7100" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="1980" y1="7182" x2="3480" y2="7182" stroke="#000" stroke-width="4"/>
+<text x="2730.0" y="7153" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#000">chitietphanhoi</text>
+<text x="2024" y="7232" font-family="Arial" font-size="29" fill="#000">[PK] mactphanhoi: integer</text>
+<text x="2024" y="7280" font-family="Arial" font-size="29" fill="#000">[FK] maphanhoi: integer</text>
+<text x="2024" y="7328" font-family="Arial" font-size="29" fill="#000">[FK] manhanvien: integer</text>
+<text x="2024" y="7376" font-family="Arial" font-size="29" fill="#000">    ngaytraloi: timestamptz</text>
+<text x="2024" y="7424" font-family="Arial" font-size="29" fill="#000">    noidungtraloi: varchar(500)</text>
+<rect x="3730" y="7100" width="1500" height="568" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="3730" y="7100" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="3730" y1="7182" x2="5230" y2="7182" stroke="#000" stroke-width="4"/>
+<text x="4480.0" y="7153" text-anchor="middle" font-family="Arial" font-size="29" font-weight="700" fill="#000">cskh_broadcast_campaign</text>
+<text x="3774" y="7232" font-family="Arial" font-size="29" fill="#000">[PK] id: bigint</text>
+<text x="3774" y="7280" font-family="Arial" font-size="29" fill="#000">    title: varchar(140)</text>
+<text x="3774" y="7328" font-family="Arial" font-size="29" fill="#000">    template_key: varchar(40)</text>
+<text x="3774" y="7376" font-family="Arial" font-size="29" fill="#000">    audience_key: varchar(40)</text>
+<text x="3774" y="7424" font-family="Arial" font-size="29" fill="#000">    channel: varchar(12)</text>
+<text x="3774" y="7472" font-family="Arial" font-size="29" fill="#000">    status: varchar(20)</text>
+<text x="3774" y="7520" font-family="Arial" font-size="29" fill="#000">    recipient_count: integer</text>
+<text x="3774" y="7568" font-family="Arial" font-size="29" fill="#000">    created_by: integer</text>
+<text x="3774" y="7616" font-family="Arial" font-size="29" fill="#000">    ... 5 cột khác</text>
+<rect x="5480" y="7100" width="1500" height="472" fill="#fff" stroke="#000" stroke-width="5"/>
+<rect x="5480" y="7100" width="1500" height="82" fill="#e6e6e6" stroke="none"/>
+<line x1="5480" y1="7182" x2="6980" y2="7182" stroke="#000" stroke-width="4"/>
+<text x="6230.0" y="7153" text-anchor="middle" font-family="Arial" font-size="29" font-weight="700" fill="#000">cskh_broadcast_recipient</text>
+<text x="5524" y="7232" font-family="Arial" font-size="29" fill="#000">[PK] id: bigint</text>
+<text x="5524" y="7280" font-family="Arial" font-size="29" fill="#000">[FK] campaign_id: bigint</text>
+<text x="5524" y="7328" font-family="Arial" font-size="29" fill="#000">    customer_id: integer</text>
+<text x="5524" y="7376" font-family="Arial" font-size="29" fill="#000">    booking_id: integer</text>
+<text x="5524" y="7424" font-family="Arial" font-size="29" fill="#000">    delivery_channel: varchar(12)</text>
+<text x="5524" y="7472" font-family="Arial" font-size="29" fill="#000">    delivery_status: varchar(20)</text>
+<text x="5524" y="7520" font-family="Arial" font-size="29" fill="#000">    ... 6 cột khác</text>
+<text x="220" y="9685" font-family="Arial" font-size="28" fill="#000">Nguồn: src/db/schema.sql - schema PostgreSQL abc_resort1. Thiết kế nền trắng, nét đen, chữ lớn để in tài liệu.</text>
+</svg>

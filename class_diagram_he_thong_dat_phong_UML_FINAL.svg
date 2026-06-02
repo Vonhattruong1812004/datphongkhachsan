@@ -1,0 +1,225 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4200" height="2400" viewBox="0 0 4200 2400">
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="2100" y="86" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="900" text-anchor="middle" fill="#111">UML CLASS DIAGRAM</text>
+<text x="2100" y="134" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="600" text-anchor="middle" fill="#111">He thong dat phong khach san Bento Resort</text>
+<text x="90" y="205" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="400" text-anchor="start" fill="#111">Ky hieu: moi class gom ten, thuoc tinh, phuong thuc; quan he the hien bang bo so 1, 0..1, 0..*.</text>
+<line x1="610" y1="380" x2="760" y2="380" stroke="#111" stroke-width="3"/>
+<rect x="595" y="354" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="685" y="377" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="1280" y1="380" x2="1430" y2="380" stroke="#111" stroke-width="3"/>
+<rect x="1265" y="354" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1355" y="377" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..1</text>
+<line x1="1280" y1="380" x2="2100" y2="380" stroke="#111" stroke-width="3"/>
+<rect x="1600" y="354" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1690" y="377" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..1</text>
+<line x1="3290" y1="380" x2="3440" y2="380" stroke="#111" stroke-width="3"/>
+<rect x="3275" y="354" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="3365" y="377" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="1690" y1="500" x2="1020" y2="860" stroke="#111" stroke-width="3"/>
+<rect x="1265" y="654" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1355" y="677" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="2360" y1="500" x2="1020" y2="860" stroke="#111" stroke-width="3"/>
+<rect x="1600" y="654" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1690" y="677" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">0..1 - 0..*</text>
+<line x1="610" y1="980" x2="760" y2="980" stroke="#111" stroke-width="3"/>
+<rect x="595" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="685" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">0..1 - 0..*</text>
+<line x1="1280" y1="980" x2="1430" y2="980" stroke="#111" stroke-width="3"/>
+<rect x="1265" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1355" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 1..*</text>
+<line x1="1950" y1="980" x2="3440" y2="380" stroke="#111" stroke-width="3"/>
+<rect x="2605" y="654" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="2695" y="677" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">0..* - 1</text>
+<line x1="1280" y1="980" x2="2100" y2="980" stroke="#111" stroke-width="3"/>
+<rect x="1600" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1690" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..1</text>
+<line x1="1020" y1="1100" x2="2360" y2="1460" stroke="#111" stroke-width="3"/>
+<rect x="1600" y="1254" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1690" y="1277" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="1020" y1="1100" x2="3030" y2="1460" stroke="#111" stroke-width="3"/>
+<rect x="1935" y="1254" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="2025" y="1277" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">0..1 - 0..*</text>
+<line x1="3290" y1="980" x2="3440" y2="980" stroke="#111" stroke-width="3"/>
+<rect x="3275" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="3365" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="3700" y1="500" x2="3700" y2="860" stroke="#111" stroke-width="3"/>
+<rect x="3610" y="654" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="3700" y="677" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">0..1 - 0..*</text>
+<line x1="3700" y1="500" x2="3700" y2="1460" stroke="#111" stroke-width="3"/>
+<rect x="3610" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="3700" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="1690" y1="500" x2="350" y2="1460" stroke="#111" stroke-width="3"/>
+<rect x="930" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1020" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="1690" y1="500" x2="1020" y2="1460" stroke="#111" stroke-width="3"/>
+<rect x="1265" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1355" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="1280" y1="1580" x2="1430" y2="1580" stroke="#111" stroke-width="3"/>
+<rect x="1265" y="1554" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="1355" y="1577" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<line x1="2360" y1="500" x2="1690" y2="1460" stroke="#111" stroke-width="3"/>
+<rect x="1935" y="954" width="180" height="34" rx="8" fill="#fff" stroke="#999" stroke-width="1"/>
+<text x="2025" y="977" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="800" text-anchor="middle" fill="#111">1 - 0..*</text>
+<rect x="90" y="260" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="90" y="260" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="90" y1="320" x2="610" y2="320" stroke="#111" stroke-width="3"/>
+<line x1="90" y1="425" x2="610" y2="425" stroke="#111" stroke-width="3"/>
+<text x="350" y="301" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">VaiTro</text>
+<text x="116" y="354" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maVaiTro: int</text>
+<text x="116" y="388" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- tenVaiTro: string</text>
+<text x="116" y="422" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- moTa: text</text>
+<text x="116" y="459" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ capQuyen()</text>
+<rect x="760" y="260" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="760" y="260" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="760" y1="320" x2="1280" y2="320" stroke="#111" stroke-width="3"/>
+<line x1="760" y1="425" x2="1280" y2="425" stroke="#111" stroke-width="3"/>
+<text x="1020" y="301" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">TaiKhoan</text>
+<text x="786" y="354" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maTK: int</text>
+<text x="786" y="388" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- username: string</text>
+<text x="786" y="422" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThai: enum</text>
+<text x="786" y="459" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ dangNhap()</text>
+<rect x="1430" y="260" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="1430" y="260" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="1430" y1="320" x2="1950" y2="320" stroke="#111" stroke-width="3"/>
+<line x1="1430" y1="425" x2="1950" y2="425" stroke="#111" stroke-width="3"/>
+<text x="1690" y="301" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">KhachHang</text>
+<text x="1456" y="354" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maKhachHang: int</text>
+<text x="1456" y="388" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- hoTen: string</text>
+<text x="1456" y="422" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThaiEkyc: enum</text>
+<text x="1456" y="459" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ datPhong()</text>
+<rect x="2100" y="260" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="2100" y="260" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="2100" y1="320" x2="2620" y2="320" stroke="#111" stroke-width="3"/>
+<line x1="2100" y1="425" x2="2620" y2="425" stroke="#111" stroke-width="3"/>
+<text x="2360" y="301" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">NhanVien</text>
+<text x="2126" y="354" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maNhanVien: int</text>
+<text x="2126" y="388" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- hoTen: string</text>
+<text x="2126" y="422" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- chucVu: string</text>
+<text x="2126" y="459" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ xuLyNghiepVu()</text>
+<rect x="2770" y="260" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="2770" y="260" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="2770" y1="320" x2="3290" y2="320" stroke="#111" stroke-width="3"/>
+<line x1="2770" y1="425" x2="3290" y2="425" stroke="#111" stroke-width="3"/>
+<text x="3030" y="301" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">KhachSan</text>
+<text x="2796" y="354" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maKhachSan: int</text>
+<text x="2796" y="388" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- tenKhachSan: string</text>
+<text x="2796" y="422" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- diaChi: string</text>
+<text x="2796" y="459" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ quanLyPhong()</text>
+<rect x="3440" y="260" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="3440" y="260" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="3440" y1="320" x2="3960" y2="320" stroke="#111" stroke-width="3"/>
+<line x1="3440" y1="425" x2="3960" y2="425" stroke="#111" stroke-width="3"/>
+<text x="3700" y="301" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">Phong</text>
+<text x="3466" y="354" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maPhong: int</text>
+<text x="3466" y="388" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- soPhong: string</text>
+<text x="3466" y="422" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThaiRT: enum</text>
+<text x="3466" y="459" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ capNhatTrangThai()</text>
+<rect x="90" y="860" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="90" y="860" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="90" y1="920" x2="610" y2="920" stroke="#111" stroke-width="3"/>
+<line x1="90" y1="1025" x2="610" y2="1025" stroke="#111" stroke-width="3"/>
+<text x="350" y="901" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">KhuyenMai</text>
+<text x="116" y="954" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maKhuyenMai: int</text>
+<text x="116" y="988" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- mucUuDai: decimal</text>
+<text x="116" y="1022" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThai: enum</text>
+<text x="116" y="1059" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ kiemTraHieuLuc()</text>
+<rect x="760" y="860" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="760" y="860" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="760" y1="920" x2="1280" y2="920" stroke="#111" stroke-width="3"/>
+<line x1="760" y1="1025" x2="1280" y2="1025" stroke="#111" stroke-width="3"/>
+<text x="1020" y="901" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">GiaoDich</text>
+<text x="786" y="954" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maGiaoDich: int</text>
+<text x="786" y="988" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- tongTien: decimal</text>
+<text x="786" y="1022" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThai: enum</text>
+<text x="786" y="1059" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ xacNhanThanhToan()</text>
+<rect x="1430" y="860" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="1430" y="860" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="1430" y1="920" x2="1950" y2="920" stroke="#111" stroke-width="3"/>
+<line x1="1430" y1="1025" x2="1950" y2="1025" stroke="#111" stroke-width="3"/>
+<text x="1690" y="901" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">ChiTietGiaoDich</text>
+<text x="1456" y="954" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maCTGD: int</text>
+<text x="1456" y="988" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- ngayNhan: date</text>
+<text x="1456" y="1022" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- thanhTien: decimal</text>
+<text x="1456" y="1059" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ checkInOut()</text>
+<rect x="2100" y="860" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="2100" y="860" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="2100" y1="920" x2="2620" y2="920" stroke="#111" stroke-width="3"/>
+<line x1="2100" y1="1025" x2="2620" y2="1025" stroke="#111" stroke-width="3"/>
+<text x="2360" y="901" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">HoaDon</text>
+<text x="2126" y="954" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maHoaDon: int</text>
+<text x="2126" y="988" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- tongTien: decimal</text>
+<text x="2126" y="1022" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThai: enum</text>
+<text x="2126" y="1059" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ lapHoaDon()</text>
+<rect x="2770" y="860" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="2770" y="860" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="2770" y1="920" x2="3290" y2="920" stroke="#111" stroke-width="3"/>
+<line x1="2770" y1="1025" x2="3290" y2="1025" stroke="#111" stroke-width="3"/>
+<text x="3030" y="901" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">DichVu</text>
+<text x="2796" y="954" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maDichVu: int</text>
+<text x="2796" y="988" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- tenDichVu: string</text>
+<text x="2796" y="1022" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- giaDichVu: decimal</text>
+<text x="2796" y="1059" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ capNhatGia()</text>
+<rect x="3440" y="860" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="3440" y="860" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="3440" y1="920" x2="3960" y2="920" stroke="#111" stroke-width="3"/>
+<line x1="3440" y1="1025" x2="3960" y2="1025" stroke="#111" stroke-width="3"/>
+<text x="3700" y="901" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">ChiTietDichVu</text>
+<text x="3466" y="954" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maCTDV: int</text>
+<text x="3466" y="988" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- soLuong: int</text>
+<text x="3466" y="1022" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- thanhTien: decimal</text>
+<text x="3466" y="1059" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ tinhTien()</text>
+<rect x="90" y="1460" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="90" y="1460" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="90" y1="1520" x2="610" y2="1520" stroke="#111" stroke-width="3"/>
+<line x1="90" y1="1625" x2="610" y2="1625" stroke="#111" stroke-width="3"/>
+<text x="350" y="1501" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">EkycVerification</text>
+<text x="116" y="1554" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maEkyc: int</text>
+<text x="116" y="1588" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- soGiayTo: string</text>
+<text x="116" y="1622" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- ketQua: enum</text>
+<text x="116" y="1659" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ xacThuc()</text>
+<rect x="760" y="1460" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="760" y="1460" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="760" y1="1520" x2="1280" y2="1520" stroke="#111" stroke-width="3"/>
+<line x1="760" y1="1625" x2="1280" y2="1625" stroke="#111" stroke-width="3"/>
+<text x="1020" y="1501" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">PhanHoi</text>
+<text x="786" y="1554" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maPhanHoi: int</text>
+<text x="786" y="1588" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- mucDoHaiLong: int</text>
+<text x="786" y="1622" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- tinhTrang: enum</text>
+<text x="786" y="1659" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ guiPhanHoi()</text>
+<rect x="1430" y="1460" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="1430" y="1460" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="1430" y1="1520" x2="1950" y2="1520" stroke="#111" stroke-width="3"/>
+<line x1="1430" y1="1625" x2="1950" y2="1625" stroke="#111" stroke-width="3"/>
+<text x="1690" y="1501" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">ChiTietPhanHoi</text>
+<text x="1456" y="1554" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maCTPH: int</text>
+<text x="1456" y="1588" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- noiDungTraLoi: text</text>
+<text x="1456" y="1622" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- ngayTraLoi: date</text>
+<text x="1456" y="1659" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ traLoi()</text>
+<rect x="2100" y="1460" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="2100" y="1460" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="2100" y1="1520" x2="2620" y2="1520" stroke="#111" stroke-width="3"/>
+<line x1="2100" y1="1625" x2="2620" y2="1625" stroke="#111" stroke-width="3"/>
+<text x="2360" y="1501" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">RefundRequest</text>
+<text x="2126" y="1554" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- id: int</text>
+<text x="2126" y="1588" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- amountRequested: decimal</text>
+<text x="2126" y="1622" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- status: enum</text>
+<text x="2126" y="1659" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ duyetHoanTien()</text>
+<rect x="2770" y="1460" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="2770" y="1460" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="2770" y1="1520" x2="3290" y2="1520" stroke="#111" stroke-width="3"/>
+<line x1="2770" y1="1625" x2="3290" y2="1625" stroke="#111" stroke-width="3"/>
+<text x="3030" y="1501" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">CongNoPhaiThu</text>
+<text x="2796" y="1554" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maCongNo: int</text>
+<text x="2796" y="1588" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- soTienGoc: decimal</text>
+<text x="2796" y="1622" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThai: enum</text>
+<text x="2796" y="1659" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ ghiNhanThu()</text>
+<rect x="3440" y="1460" width="520" height="240" rx="8" fill="#fff" stroke="#111" stroke-width="4"/>
+<rect x="3440" y="1460" width="520" height="60" rx="8" fill="#eeeeee" stroke="none"/>
+<line x1="3440" y1="1520" x2="3960" y2="1520" stroke="#111" stroke-width="3"/>
+<line x1="3440" y1="1625" x2="3960" y2="1625" stroke="#111" stroke-width="3"/>
+<text x="3700" y="1501" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" text-anchor="middle" fill="#111">RoomStatusLog</text>
+<text x="3466" y="1554" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- maLog: int</text>
+<text x="3466" y="1588" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- trangThaiMoi: string</text>
+<text x="3466" y="1622" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="400" text-anchor="start" fill="#111">- thoiDiem: date</text>
+<text x="3466" y="1659" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="400" text-anchor="start" fill="#111">+ ghiLog()</text>
+</svg>

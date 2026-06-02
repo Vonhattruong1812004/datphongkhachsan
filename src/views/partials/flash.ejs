@@ -1,3 +1,6 @@
 <% if (query.success === "registered") { %>
   <div class="flash flash--success">Đăng ký thành công. Bạn có thể đăng nhập ngay.</div>
 <% } %>
+<% if (query.error) { %>
+  <div class="flash flash--error"><%= query.error %></div>
+<% } %>

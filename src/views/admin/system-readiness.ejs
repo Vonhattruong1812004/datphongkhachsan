@@ -1,31 +1,595 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
-  <section class="panel">
-    <div class="section-eyebrow">System Readiness</div>
-    <h2>Do phu module va tinh san sang van hanh</h2>
-    <div class="dashboard-grid">
-      <article class="dashboard-card"><strong><%= payload.summary.overall_score %>%</strong><h3>Overall score</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.ready %></strong><h3>Ready modules</h3></article>
-      <article class="dashboard-card"><strong><%= payload.summary.partial %></strong><h3>Partial modules</h3></article>
-    </div>
-    <div class="nav-links" style="margin-top:16px;">
-      <a class="chip" href="/api/admin/diagnostics/system">System JSON</a>
-      <a class="chip" href="/admin/diagnostics">Tổng hợp sức khỏe</a>
-      <a class="chip" href="/dashboard/admin">Về dashboard Admin</a>
-    </div>
-  </section>
-  <section class="panel">
-    <div class="section-eyebrow">Modules</div>
-    <div class="room-grid room-grid--wide">
-      <% payload.modules.forEach((item) => { %>
-        <article class="room-card">
-          <span class="badge"><%= item.ready ? "ready" : "partial" %></span>
-          <h3><%= item.name %></h3>
-          <p class="muted"><%= item.detail %></p>
-        </article>
-      <% }) %>
-    </div>
-  </section>
+<%
+  const summary = payload?.summary || {};
+  const modules = payload?.modules || [];
+  const readyCount = Number(summary.ready || 0);
+  const partialCount = Number(summary.partial || 0);
+  const score = Number(summary.overall_score || 0);
+  const generatedAt = payload?.generatedAt || new Date().toISOString();
+  const shortTime = new Date(generatedAt).toLocaleString("vi-VN", { hour12: false });
+  const pendingModules = modules.filter((item) => !item.ready);
+  const nextActions = payload?.next_actions || [];
+  const moduleTone = (index) => ["cyan", "green", "blue", "violet", "amber", "rose"][index % 6];
+%>
+<style>
+  .system-readiness {
+    --sr-ink: #f8fbff;
+    --sr-muted: #bfd4ea;
+    --sr-line: rgba(125, 211, 252, .22);
+    --sr-card: rgba(8, 18, 40, .82);
+    --sr-cyan: #67e8f9;
+    --sr-green: #5eead4;
+    --sr-blue: #60a5fa;
+    --sr-violet: #a78bfa;
+    --sr-amber: #facc15;
+    --sr-rose: #fb7185;
+    --sr-shadow: 0 34px 100px rgba(0, 0, 0, .36);
+    position: relative;
+    isolation: isolate;
+    min-height: calc(100vh - 84px);
+    overflow: hidden;
+    padding: 36px 18px 64px;
+    color: var(--sr-ink);
+    background:
+      radial-gradient(circle at 15% 12%, rgba(34, 211, 238, .22), transparent 30%),
+      radial-gradient(circle at 86% 18%, rgba(168, 85, 247, .24), transparent 34%),
+      radial-gradient(circle at 48% 108%, rgba(20, 184, 166, .16), transparent 42%),
+      linear-gradient(135deg, #03111f 0%, #071634 45%, #160d33 76%, #070814 100%);
+  }
+
+  .system-readiness::before,
+  .system-readiness::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .system-readiness::before {
+    inset: 0;
+    opacity: .74;
+    background:
+      radial-gradient(circle, #e0f2fe 0 1px, transparent 2px) 8% 12% / 150px 150px,
+      radial-gradient(circle, #a7f3d0 0 1px, transparent 2px) 44% 28% / 210px 210px,
+      radial-gradient(circle, #fde68a 0 1px, transparent 2px) 76% 8% / 180px 180px,
+      linear-gradient(115deg, transparent 0 52%, rgba(125, 211, 252, .20) 53%, transparent 57% 100%);
+  }
+
+  .system-readiness::after {
+    right: -16%;
+    bottom: -38%;
+    width: 680px;
+    height: 680px;
+    border-radius: 999px;
+    opacity: .34;
+    background: conic-gradient(from 130deg, rgba(34, 211, 238, .34), rgba(167, 139, 250, .24), rgba(250, 204, 21, .16), rgba(20, 184, 166, .22), rgba(34, 211, 238, .34));
+    filter: blur(10px);
+  }
+
+  .sr-wrap {
+    position: relative;
+    z-index: 1;
+    width: min(1280px, 100%);
+    margin: 0 auto;
+  }
+
+  .sr-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) 360px;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .sr-panel,
+  .sr-score,
+  .sr-stat,
+  .sr-module,
+  .sr-action {
+    border: 1px solid var(--sr-line);
+    background:
+      linear-gradient(145deg, rgba(8, 18, 40, .90), rgba(13, 25, 56, .76)),
+      radial-gradient(circle at 88% 12%, rgba(34, 211, 238, .16), transparent 32%);
+    box-shadow: var(--sr-shadow), inset 0 1px 0 rgba(255, 255, 255, .08);
+    backdrop-filter: blur(22px);
+  }
+
+  .sr-panel {
+    position: relative;
+    overflow: hidden;
+    min-height: 344px;
+    border-radius: 34px;
+    padding: clamp(28px, 4vw, 42px);
+  }
+
+  .sr-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(120deg, rgba(255, 255, 255, .12), transparent 30%),
+      radial-gradient(circle at 86% 18%, rgba(250, 204, 21, .18), transparent 26%);
+  }
+
+  .sr-label {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: max-content;
+    border-radius: 999px;
+    padding: 8px 13px;
+    color: #dffcff;
+    background: rgba(8, 18, 40, .76);
+    border: 1px solid rgba(125, 211, 252, .30);
+    box-shadow: 0 16px 42px rgba(34, 211, 238, .12);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .sr-label::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--sr-amber);
+    box-shadow: 0 0 0 7px rgba(250, 204, 21, .18), 0 0 24px rgba(250, 204, 21, .42);
+  }
+
+  .sr-panel h1 {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 22px 0 12px;
+    color: #fff;
+    font-size: clamp(42px, 5.6vw, 72px);
+    line-height: .94;
+    letter-spacing: 0;
+    text-shadow: 0 14px 38px rgba(0, 0, 0, .30);
+  }
+
+  .sr-panel h1 span {
+    color: transparent;
+    background: linear-gradient(135deg, #67e8f9 0%, #5eead4 35%, #facc15 66%, #fb7185 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  .sr-lead {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0;
+    color: var(--sr-muted);
+    font-size: 15.5px;
+    line-height: 1.68;
+  }
+
+  .sr-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .sr-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    border: 1px solid rgba(125, 211, 252, .28);
+    border-radius: 999px;
+    padding: 10px 16px;
+    color: #f8fbff;
+    background: rgba(10, 24, 52, .76);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, .20);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 950;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .sr-button:hover {
+    transform: translateY(-2px);
+    border-color: rgba(103, 232, 249, .56);
+    box-shadow: 0 20px 52px rgba(34, 211, 238, .20);
+  }
+
+  .sr-button--primary {
+    color: #061426;
+    border-color: rgba(255, 255, 255, .22);
+    background: linear-gradient(135deg, #67e8f9, #5eead4 58%, #facc15);
+    box-shadow: 0 20px 54px rgba(34, 211, 238, .28);
+  }
+
+  .sr-score {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 34px;
+    padding: 26px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 32% 20%, rgba(34, 211, 238, .20), transparent 30%),
+      linear-gradient(155deg, rgba(8, 18, 40, .92), rgba(18, 12, 45, .84));
+  }
+
+  .sr-ring {
+    --score: <%= score %>;
+    position: relative;
+    width: 198px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: conic-gradient(var(--sr-green) calc(var(--score) * 1%), rgba(148, 163, 184, .18) 0);
+    box-shadow: inset 0 0 0 15px rgba(8, 18, 40, .70), 0 0 0 1px rgba(125, 211, 252, .18), 0 24px 76px rgba(34, 211, 238, .26);
+  }
+
+  .sr-ring::after {
+    content: "";
+    position: absolute;
+    inset: 30px;
+    border-radius: 50%;
+    border: 1px solid rgba(125, 211, 252, .20);
+    background: linear-gradient(145deg, rgba(8, 18, 40, .96), rgba(15, 23, 42, .88));
+  }
+
+  .sr-ring-value {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sr-ring-value strong {
+    display: block;
+    color: #fff;
+    font-size: 48px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .sr-ring-value span {
+    display: block;
+    margin-top: 7px;
+    color: #a9c7df;
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .sr-score h2 {
+    margin: 20px 0 6px;
+    color: #fff;
+    font-size: 26px;
+    letter-spacing: 0;
+  }
+
+  .sr-score p {
+    margin: 0;
+    color: var(--sr-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .sr-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 24px;
+  }
+
+  .sr-stat {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    padding: 20px;
+  }
+
+  .sr-stat::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 6px;
+    background: linear-gradient(90deg, var(--stat-color), transparent);
+  }
+
+  .sr-stat strong {
+    display: block;
+    color: #fff;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .sr-stat span {
+    display: block;
+    margin-top: 9px;
+    color: var(--sr-muted);
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .sr-section {
+    margin-top: 26px;
+  }
+
+  .sr-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .sr-section-head h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 28px;
+    letter-spacing: 0;
+  }
+
+  .sr-section-head p {
+    margin: 5px 0 0;
+    color: var(--sr-muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .sr-module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .sr-module {
+    position: relative;
+    overflow: hidden;
+    min-height: 190px;
+    border-radius: 28px;
+    padding: 20px;
+  }
+
+  .sr-module::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 8px;
+    background: linear-gradient(90deg, var(--tone), transparent);
+  }
+
+  .sr-module::after {
+    content: "";
+    position: absolute;
+    right: 18px;
+    top: 18px;
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .04));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .20);
+    transform: rotate(9deg);
+  }
+
+  .sr-module[data-tone="cyan"] { --tone: var(--sr-cyan); }
+  .sr-module[data-tone="green"] { --tone: var(--sr-green); }
+  .sr-module[data-tone="blue"] { --tone: var(--sr-blue); }
+  .sr-module[data-tone="violet"] { --tone: var(--sr-violet); }
+  .sr-module[data-tone="amber"] { --tone: var(--sr-amber); }
+  .sr-module[data-tone="rose"] { --tone: var(--sr-rose); }
+
+  .sr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    border-radius: 999px;
+    padding: 7px 10px;
+    color: var(--tone);
+    background: rgba(8, 18, 40, .78);
+    border: 1px solid rgba(125, 211, 252, .20);
+    font-size: 11px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .sr-badge::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 18px currentColor;
+  }
+
+  .sr-module h3 {
+    max-width: calc(100% - 58px);
+    margin: 20px 0 9px;
+    color: #fff;
+    font-size: 22px;
+    line-height: 1.15;
+    letter-spacing: 0;
+  }
+
+  .sr-module p {
+    margin: 0;
+    color: var(--sr-muted);
+    font-size: 13.5px;
+    line-height: 1.58;
+  }
+
+  .sr-action-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .sr-action {
+    position: relative;
+    overflow: hidden;
+    min-height: 84px;
+    border-radius: 24px;
+    padding: 18px 18px 18px 22px;
+    color: var(--sr-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .sr-action::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background: linear-gradient(180deg, var(--sr-amber), var(--sr-cyan));
+  }
+
+  .sr-empty {
+    border: 1px dashed rgba(125, 211, 252, .28);
+    border-radius: 24px;
+    padding: 18px;
+    color: var(--sr-muted);
+    background: rgba(8, 18, 40, .55);
+    font-weight: 850;
+  }
+
+  @media (max-width: 1100px) {
+    .sr-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .sr-module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .system-readiness {
+      padding: 24px 12px 54px;
+    }
+
+    .sr-panel,
+    .sr-score,
+    .sr-module {
+      border-radius: 26px;
+    }
+
+    .sr-panel {
+      min-height: auto;
+      padding: 22px;
+    }
+
+    .sr-panel h1 {
+      font-size: 42px;
+    }
+
+    .sr-stats,
+    .sr-module-grid,
+    .sr-action-list {
+      grid-template-columns: 1fr;
+    }
+
+    .sr-section-head {
+      display: block;
+    }
+
+    .sr-ring {
+      width: 176px;
+    }
+  }
+</style>
+
+<main class="system-readiness">
+  <div class="sr-wrap">
+    <section class="sr-hero" aria-label="System readiness">
+      <div class="sr-panel">
+        <div class="sr-label">System readiness</div>
+        <h1>Độ phủ module và <span>sẵn sàng vận hành</span></h1>
+        <p class="sr-lead">
+          Kiểm tra nhanh các mảnh chính của hệ thống: xác thực, đặt phòng, lễ tân, dịch vụ,
+          quản lý, kế toán, eKYC, phản hồi, AI và mobile/PWA.
+        </p>
+        <div class="sr-actions">
+          <button class="sr-button sr-button--primary" type="button" onclick="window.location.reload()">Kiểm tra lại</button>
+          <a class="sr-button" href="/api/admin/diagnostics/system">System JSON</a>
+          <a class="sr-button" href="/admin/diagnostics">Tổng hợp sức khỏe</a>
+          <a class="sr-button" href="/dashboard/admin">Dashboard Admin</a>
+        </div>
+      </div>
+
+      <aside class="sr-score">
+        <div class="sr-ring" aria-label="System readiness score">
+          <div class="sr-ring-value">
+            <strong><%= score %></strong>
+            <span>Score</span>
+          </div>
+        </div>
+        <h2><%= pendingModules.length ? "Cần theo dõi" : "Sẵn sàng" %></h2>
+        <p>Cập nhật: <%= shortTime %></p>
+      </aside>
+    </section>
+
+    <section class="sr-stats" aria-label="Tổng quan readiness">
+      <article class="sr-stat" style="--stat-color: var(--sr-green)">
+        <strong><%= readyCount %></strong>
+        <span>Module sẵn sàng</span>
+      </article>
+      <article class="sr-stat" style="--stat-color: var(--sr-amber)">
+        <strong><%= partialCount %></strong>
+        <span>Module theo dõi</span>
+      </article>
+      <article class="sr-stat" style="--stat-color: var(--sr-cyan)">
+        <strong><%= modules.length %></strong>
+        <span>Tổng module</span>
+      </article>
+    </section>
+
+    <section class="sr-section" aria-label="Danh sách module">
+      <div class="sr-section-head">
+        <div>
+          <h2>Module hệ thống</h2>
+          <p>Mỗi card thể hiện trạng thái sẵn sàng và phạm vi nghiệp vụ đã được kiểm tra.</p>
+        </div>
+      </div>
+      <div class="sr-module-grid">
+        <% modules.forEach((item, index) => { const tone = item.ready ? moduleTone(index) : "amber"; %>
+          <article class="sr-module" data-tone="<%= tone %>">
+            <span class="sr-badge"><%= item.ready ? "Ready" : "Partial" %></span>
+            <h3><%= item.name %></h3>
+            <p><%= item.detail %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="sr-section" aria-label="Việc cần làm tiếp theo">
+      <div class="sr-section-head">
+        <div>
+          <h2>Gợi ý xử lý</h2>
+          <p>Các mục này chỉ hiển thị khi service readiness phát hiện phần cần hoàn thiện.</p>
+        </div>
+      </div>
+      <% if (!nextActions.length) { %>
+        <div class="sr-empty">Tất cả module chính đang sẵn sàng, chưa có gợi ý xử lý thêm.</div>
+      <% } else { %>
+        <div class="sr-action-list">
+          <% nextActions.forEach((action) => { %>
+            <div class="sr-action"><%= action %></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
 </main>
 <%- include("../partials/footer") %>
