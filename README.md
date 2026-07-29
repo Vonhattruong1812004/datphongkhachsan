@@ -4,6 +4,20 @@
 
 Hệ thống không chỉ xử lý đặt phòng. Đây là một nền tảng vận hành resort theo nhiều actor: khách hàng, lễ tân, quản lý, kế toán, chăm sóc khách hàng, nhân viên dịch vụ và admin. Mỗi actor có dashboard riêng, UC riêng và dữ liệu được nối với nhau thành workflow đặt phòng, cọc, eKYC, check-in, check-out, hủy phòng, hoàn tiền, dịch vụ bổ sung, phản hồi và báo cáo tài chính.
 
+## Ảnh Giao Diện
+
+<p align="center">
+  <img src="screenshots_giao_dien/01-giao-dien-chung-trang-chu.png" alt="Trang chủ Bento Booking" width="900" />
+</p>
+
+| Dashboard khách hàng | Quản lý phòng |
+| --- | --- |
+| <img src="screenshots_giao_dien/14-actor-khach-hang-dashboard-khach-hang.png" alt="Dashboard khách hàng" width="100%" /> | <img src="screenshots_giao_dien/24-actor-quan-ly-quan-ly-phong.png" alt="Quản lý phòng" width="100%" /> |
+
+| Đặt dịch vụ bổ sung | Gửi phản hồi và đánh giá |
+| --- | --- |
+| <img src="screenshots_giao_dien/18-actor-khach-hang-dich-vu-bo-sung.png" alt="Đặt dịch vụ bổ sung" width="100%" /> | <img src="screenshots_giao_dien/20-actor-khach-hang-gui-phan-hoi-danh-gia.png" alt="Gửi phản hồi và đánh giá" width="100%" /> |
+
 ## Mục Tiêu Hệ Thống
 
 - Quản lý toàn bộ vòng đời đặt phòng: tìm phòng, giữ phòng, thanh toán cọc, nhận phòng, trả phòng, phát sinh dịch vụ và hóa đơn.
