@@ -690,7 +690,7 @@
 
             <datalist id="promotion-list">
               <% payload.promotions.forEach((item) => { %>
-                <option value="<%= item.id %>"><%= item.tenChuongTrinh %> · <%= item.loaiUuDai %> · <%= item.mucUuDai %></option>
+                <option value="<%= item.id %>"><%= item.maGiamGia ? `${item.maGiamGia} · ` : "" %><%= item.tenChuongTrinh %> · <%= item.loaiUuDai %> · <%= item.mucUuDai %></option>
               <% }) %>
             </datalist>
           </form>

@@ -383,19 +383,811 @@
       padding:20px;
     }
   }
+
+  /* Customer service final: align with manager/customer white-blue operating UI. */
+  body{
+    background:#f4f8ff!important;
+    color:#102033!important;
+  }
+  body:has(.svc-shell) .floating-assist{
+    display:none!important;
+  }
+  .svc-shell{
+    max-width:1480px;
+    padding:14px 20px 34px;
+    gap:14px;
+    overflow:visible;
+    background:linear-gradient(180deg,#eaf4ff 0,#f7fbff 150px,#ffffff 100%);
+    color:#102033;
+  }
+  .svc-shell::before,
+  .svc-shell::after,
+  .svc-hero::before,
+  .svc-hero::after,
+  .svc-art::before,
+  .svc-art::after,
+  .svc-order-card::before{
+    display:none!important;
+    content:none!important;
+    animation:none!important;
+  }
+  .svc-hero,
+  .svc-panel,
+  .svc-order{
+    border:1px solid #c9e0fb;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:0 8px 22px rgba(0,59,149,.07);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+  .svc-hero{
+    min-height:58px;
+    margin:0;
+    padding:13px 18px 13px 30px;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:12px;
+    align-items:center;
+    position:relative;
+    overflow:visible;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%);
+    color:#ffffff;
+    box-shadow:0 14px 34px rgba(0,59,149,.16);
+  }
+  .svc-hero::marker{
+    display:none;
+  }
+  .svc-hero > .svc-cloud,
+  .svc-hero .svc-muted{
+    display:none!important;
+  }
+  .svc-hero::before{
+    display:block!important;
+    content:""!important;
+    position:absolute;
+    left:16px;
+    top:13px;
+    bottom:13px;
+    width:5px;
+    border-radius:999px;
+    background:#ffffff;
+  }
+  .svc-kicker{
+    width:max-content;
+    border:1px solid rgba(255,255,255,.36);
+    border-radius:999px;
+    background:rgba(255,255,255,.12);
+    color:#ffffff;
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:950;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .svc-hero h1{
+    margin:6px 0 0;
+    max-width:none;
+    color:#ffffff!important;
+    font-size:34px;
+    line-height:1.12;
+    letter-spacing:0!important;
+    text-shadow:none;
+  }
+  .svc-hero h1 span{
+    color:#ffffff;
+    background:none;
+    -webkit-background-clip:initial;
+    background-clip:initial;
+  }
+  .svc-actions{
+    margin:0;
+    justify-content:flex-end;
+    align-items:center;
+  }
+  .svc-button{
+    min-height:42px;
+    border:1px solid #bfdbfe;
+    border-radius:8px;
+    background:#ffffff;
+    color:#003b95;
+    padding:9px 15px;
+    font-size:14px;
+    font-weight:950;
+    box-shadow:0 8px 18px rgba(0,59,149,.08);
+  }
+  .svc-button:hover{
+    transform:none;
+    border-color:#006ce4;
+    background:#eff6ff;
+    box-shadow:0 12px 24px rgba(0,108,228,.12);
+  }
+  .svc-button--primary{
+    border-color:#006ce4;
+    background:#006ce4;
+    color:#ffffff;
+    box-shadow:0 14px 26px rgba(0,108,228,.18);
+  }
+  .svc-button--danger{
+    border-color:#fecdd3;
+    background:#fff1f2;
+    color:#be123c;
+  }
+  .svc-stats{
+    display:none;
+  }
+  .svc-layout{
+    grid-template-columns:minmax(0,1fr) 360px;
+    gap:14px;
+  }
+  .svc-panel,
+  .svc-order{
+    padding:18px;
+  }
+  .svc-panel-head{
+    align-items:center;
+    margin-bottom:14px;
+    padding-bottom:12px;
+    border-bottom:1px solid #dbeafe;
+  }
+  .svc-panel h2,
+  .svc-order h2{
+    color:#102033!important;
+    font-size:24px;
+    line-height:1.2;
+    letter-spacing:0!important;
+    text-shadow:none;
+  }
+  .svc-panel .svc-muted,
+  .svc-order .svc-muted,
+  .svc-help{
+    color:#64748b;
+    font-size:14px;
+    font-weight:750;
+    line-height:1.5;
+  }
+  .svc-tools{
+    grid-template-columns:minmax(260px,1.2fr) repeat(3,minmax(150px,.75fr));
+    gap:10px;
+    padding:12px;
+    border:1px solid #dbeafe;
+    border-radius:8px;
+    background:#f8fbff;
+  }
+  .svc-field label{
+    color:#102033;
+    font-size:12px;
+    letter-spacing:0;
+  }
+  .svc-field input,
+  .svc-field select,
+  .svc-field textarea{
+    min-height:44px;
+    border:1px solid #cbdcf2;
+    border-radius:8px;
+    background:#ffffff;
+    color:#102033;
+    font-size:14px;
+    font-weight:750;
+    box-shadow:none;
+  }
+  .svc-field textarea{
+    min-height:82px;
+  }
+  .svc-field input:focus,
+  .svc-field select:focus,
+  .svc-field textarea:focus{
+    border-color:#006ce4;
+    box-shadow:0 0 0 3px rgba(0,108,228,.12);
+  }
+  .svc-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+    margin-top:14px;
+  }
+  .svc-card,
+  .svc-booking,
+  .svc-order-card{
+    border:1px solid #dbeafe;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:0 8px 18px rgba(0,59,149,.06);
+  }
+  .svc-card:hover,
+  .svc-card.is-selected,
+  .svc-booking:hover,
+  .svc-order-card:hover{
+    transform:none;
+    border-color:#006ce4;
+    box-shadow:0 12px 26px rgba(0,108,228,.12);
+  }
+  .svc-art{
+    height:132px;
+    border-bottom:1px solid #dbeafe;
+    background:#eff6ff;
+  }
+  .svc-art img,
+  .svc-order-thumb img{
+    position:relative;
+    z-index:3;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .svc-art img + .svc-visual-fallback,
+  .svc-order-thumb img + .svc-visual-fallback{
+    display:none;
+  }
+  .svc-visual-fallback{
+    background:linear-gradient(135deg,#e0f2fe,#ccfbf1);
+    color:#003b95;
+  }
+  .svc-visual-fallback span{
+    background:#ffffff;
+    color:#006ce4;
+    box-shadow:inset 0 0 0 1px #bfdbfe;
+  }
+  .svc-visual-fallback strong,
+  .svc-visual-fallback small{
+    color:#003b95;
+    text-shadow:none;
+  }
+  .svc-card-body{
+    padding:14px;
+  }
+  .svc-card h3,
+  .svc-order-card h3,
+  .svc-booking strong,
+  .svc-line strong{
+    color:#102033;
+    font-size:18px;
+    line-height:1.22;
+    letter-spacing:0;
+    overflow-wrap:anywhere;
+  }
+  .svc-card .svc-muted{
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .svc-price{
+    color:#047857;
+    font-size:18px;
+    letter-spacing:0;
+  }
+  .svc-chip{
+    border:1px solid #bfdbfe;
+    background:#eff6ff;
+    color:#003b95;
+    border-radius:999px;
+  }
+  .svc-chip.is-fresh{color:#075985;background:#e0f2fe;border-color:#bae6fd}
+  .svc-chip.is-active{color:#92400e;background:#fef3c7;border-color:#fde68a}
+  .svc-chip.is-done{color:#047857;background:#dcfce7;border-color:#bbf7d0}
+  .svc-chip.is-muted{color:#475569;background:#f1f5f9;border-color:#cbd5e1}
+  .svc-order{
+    position:sticky;
+    top:14px;
+  }
+  .svc-order .svc-kicker{
+    border-color:#bfdbfe;
+    background:#eff6ff;
+    color:#003b95;
+  }
+  .svc-total-box,
+  .svc-context,
+  .svc-line,
+  .svc-empty{
+    border:1px solid #dbeafe;
+    border-radius:8px;
+    background:#f8fbff;
+    color:#102033;
+    box-shadow:none;
+  }
+  .svc-total-box span,
+  .svc-total-box .svc-help,
+  .svc-context{
+    color:#64748b;
+  }
+  .svc-total-box strong{
+    color:#047857;
+    font-size:26px;
+  }
+  .svc-bookings{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .svc-booking{
+    padding:13px;
+  }
+  .svc-room-link{
+    color:#006ce4;
+  }
+  .svc-orders{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+  }
+  .svc-order-thumb{
+    height:126px;
+    margin:-18px -18px 14px;
+    border-bottom:1px solid #dbeafe;
+    background:#eff6ff;
+  }
+  .svc-lines{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .svc-alert{
+    border:1px solid #dbeafe;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:0 8px 18px rgba(0,59,149,.06);
+  }
+  .svc-alert--success{
+    border-color:#bbf7d0;
+    color:#047857;
+    background:#f0fdf4;
+  }
+  .svc-alert--error{
+    border-color:#fecdd3;
+    color:#be123c;
+    background:#fff1f2;
+  }
+  @media(max-width:1180px){
+    .svc-layout,
+    .svc-grid,
+    .svc-orders,
+    .svc-bookings{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    .svc-order{
+      grid-column:1/-1;
+      position:relative;
+      top:auto;
+    }
+    .svc-tools{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+  @media(max-width:760px){
+    .svc-shell{
+      padding:12px;
+    }
+    .svc-hero{
+      grid-template-columns:1fr;
+      padding:14px 16px 14px 28px;
+    }
+    .svc-actions{
+      justify-content:flex-start;
+    }
+    .svc-hero h1{
+      font-size:28px;
+    }
+    .svc-layout,
+    .svc-grid,
+    .svc-orders,
+    .svc-bookings,
+    .svc-lines,
+    .svc-tools{
+      grid-template-columns:1fr;
+    }
+  }
+
+  /* Premium polish: crisp travel marketplace feel without changing behavior. */
+  body{
+    background:
+      radial-gradient(circle at 18% 0,rgba(0,108,228,.10),transparent 30%),
+      radial-gradient(circle at 88% 12%,rgba(20,184,166,.10),transparent 26%),
+      linear-gradient(180deg,#f6fbff 0%,#eef6ff 42%,#ffffff 100%)!important;
+  }
+  .svc-shell{
+    max-width:1420px;
+    padding:10px 18px 28px;
+    background:transparent;
+    gap:12px;
+  }
+  .svc-hero{
+    min-height:70px;
+    padding:14px 22px 14px 28px;
+    grid-template-columns:minmax(0,1fr);
+    overflow:hidden;
+    border:1px solid rgba(191,219,254,.95);
+    border-radius:18px;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%);
+    color:#102033;
+    box-shadow:0 14px 32px rgba(0,59,149,.14);
+  }
+  .svc-hero::before{
+    display:block!important;
+    content:""!important;
+    position:absolute;
+    inset:0 auto 0 0;
+    width:8px;
+    height:auto;
+    border-radius:18px 0 0 18px;
+    background:#ffffff;
+  }
+  .svc-hero::after{
+    display:none!important;
+    content:none!important;
+  }
+  .svc-hero-copy{
+    position:relative;
+    z-index:2;
+    min-width:0;
+    max-width:980px;
+  }
+  .svc-hero .svc-kicker{
+    display:none;
+  }
+  .svc-hero h1{
+    margin:0;
+    color:#ffffff!important;
+    font-size:32px;
+    font-weight:950;
+  }
+  .svc-hero h1::after{
+    display:none;
+  }
+  .svc-hero .svc-muted{
+    display:none!important;
+  }
+  .svc-panel,
+  .svc-order{
+    border-radius:14px;
+  }
+  .svc-panel{
+    padding:16px;
+  }
+  .svc-panel-head{
+    padding-bottom:10px;
+    margin-bottom:12px;
+  }
+  .svc-panel h2,
+  .svc-order h2{
+    font-size:24px;
+  }
+  .svc-tools{
+    padding:8px;
+  }
+  .svc-grid{
+    margin-top:12px;
+  }
+  .svc-art{
+    height:158px;
+  }
+  .svc-card{
+    min-height:430px;
+  }
+  .svc-card h3{
+    min-height:0;
+  }
+  .svc-card .svc-muted{
+    min-height:0;
+  }
+  .svc-card .svc-help{
+    min-height:0;
+  }
+  .svc-order h2{
+    margin-top:14px!important;
+  }
+  .svc-order > .svc-kicker{
+    padding:12px 18px;
+  }
+  .svc-order form{
+    margin-bottom:14px;
+  }
+  @media(max-width:760px){
+    .svc-shell{
+      padding:10px 12px 28px;
+    }
+    .svc-hero{
+      min-height:58px;
+      padding:13px 16px 13px 28px;
+    }
+    .svc-hero h1{
+      font-size:28px;
+    }
+  }
+
+  /* Compact override after premium polish. */
+  .svc-hero .svc-kicker{
+    display:none!important;
+  }
+  .svc-hero h1{
+    margin:0!important;
+    color:#ffffff!important;
+    font-size:32px!important;
+    line-height:1.1!important;
+  }
+  .svc-hero h1::after,
+  .svc-hero .svc-muted{
+    display:none!important;
+  }
+  .svc-hero{
+    min-height:70px!important;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%)!important;
+  }
+  .svc-shell{
+    gap:12px!important;
+  }
+  .svc-panel{
+    padding:16px!important;
+  }
+  .svc-art{
+    height:158px!important;
+  }
+  .svc-card{
+    min-height:430px!important;
+  }
+  .svc-actions{
+    position:relative;
+    z-index:2;
+    align-self:center;
+    padding:6px;
+    border:1px solid rgba(191,219,254,.84);
+    border-radius:14px;
+    background:rgba(255,255,255,.78);
+    box-shadow:0 14px 30px rgba(0,59,149,.08);
+  }
+  .svc-button{
+    border-radius:10px;
+    min-height:44px;
+    box-shadow:none;
+  }
+  .svc-button--primary{
+    background:linear-gradient(135deg,#006ce4,#004fb8);
+    box-shadow:0 12px 22px rgba(0,108,228,.18);
+  }
+  .svc-layout{
+    grid-template-columns:minmax(0,1fr) 382px;
+    align-items:start;
+  }
+  .svc-panel,
+  .svc-order{
+    border-radius:16px;
+    border-color:#cfe3fb;
+    box-shadow:0 18px 44px rgba(0,59,149,.08);
+  }
+  .svc-panel{
+    padding:18px;
+  }
+  .svc-panel-head{
+    padding-bottom:14px;
+    margin-bottom:14px;
+  }
+  .svc-panel h2,
+  .svc-order h2{
+    font-size:25px;
+    font-weight:950;
+  }
+  .svc-tools{
+    grid-template-columns:minmax(280px,1fr) 152px 152px 152px;
+    padding:10px;
+    border-color:#d8e9fc;
+    border-radius:14px;
+    background:linear-gradient(180deg,#f8fbff,#ffffff);
+  }
+  .svc-field{
+    gap:6px;
+  }
+  .svc-field input,
+  .svc-field select,
+  .svc-field textarea{
+    border-radius:11px;
+  }
+  .svc-grid{
+    gap:14px;
+  }
+  .svc-card{
+    display:flex;
+    flex-direction:column;
+    min-height:472px;
+    overflow:hidden;
+    border-radius:16px;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .svc-card:hover,
+  .svc-card.is-selected{
+    transform:translateY(-4px);
+    box-shadow:0 20px 44px rgba(0,108,228,.16);
+  }
+  .svc-art{
+    height:176px;
+    background:linear-gradient(135deg,#e0f2fe,#eff6ff);
+  }
+  .svc-art::after{
+    display:block!important;
+    content:""!important;
+    position:absolute;
+    inset:auto 0 0;
+    height:72px;
+    z-index:4;
+    background:linear-gradient(180deg,transparent,rgba(15,32,51,.30));
+  }
+  .svc-card-body{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:16px;
+  }
+  .svc-chip-row{
+    gap:7px;
+  }
+  .svc-chip{
+    min-height:28px;
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:950;
+  }
+  .svc-card h3{
+    margin-top:12px;
+    min-height:44px;
+    font-size:20px;
+  }
+  .svc-card .svc-muted{
+    min-height:42px;
+  }
+  .svc-card .svc-help{
+    min-height:42px;
+    margin-bottom:0;
+  }
+  .svc-price{
+    margin:14px 0 12px;
+    font-size:21px;
+    color:#006b46;
+  }
+  .svc-card .svc-button{
+    width:100%;
+    min-height:46px;
+    margin-top:auto;
+  }
+  .svc-order{
+    padding:0;
+    overflow:hidden;
+    border-color:#b7d7ff;
+  }
+  .svc-order > .svc-kicker{
+    display:block;
+    width:auto;
+    margin:0;
+    padding:14px 18px;
+    border:0;
+    border-radius:0;
+    background:linear-gradient(135deg,#003b95,#006ce4);
+    color:#ffffff;
+  }
+  .svc-order h2,
+  .svc-order > p,
+  .svc-order form{
+    margin-left:18px!important;
+    margin-right:18px!important;
+  }
+  .svc-order h2{
+    margin-top:18px!important;
+  }
+  .svc-order form{
+    margin-bottom:18px;
+  }
+  .svc-total-box{
+    background:linear-gradient(135deg,#ecfdf5,#eff6ff);
+    border-color:#b7d7ff;
+  }
+  .svc-total-box strong{
+    font-size:30px;
+  }
+  .svc-context{
+    background:#f8fbff;
+  }
+  .svc-bookings{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+  .svc-booking{
+    border-radius:14px;
+  }
+  .svc-orders{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+  .svc-order-card{
+    border-radius:16px;
+  }
+  .svc-order-thumb{
+    height:150px;
+  }
+  @media(max-width:1180px){
+    .svc-layout{
+      grid-template-columns:1fr;
+    }
+    .svc-grid,
+    .svc-orders,
+    .svc-bookings{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    .svc-tools{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+  @media(max-width:760px){
+    .svc-hero{
+      min-height:auto;
+      padding:20px;
+      grid-template-columns:1fr;
+    }
+    .svc-hero h1{
+      font-size:30px;
+    }
+    .svc-actions{
+      justify-content:stretch;
+      padding:0;
+      background:transparent;
+      border:0;
+      box-shadow:none;
+    }
+    .svc-actions .svc-button{
+      flex:1;
+    }
+    .svc-grid,
+    .svc-orders,
+    .svc-bookings,
+    .svc-tools{
+      grid-template-columns:1fr;
+    }
+  }
+
+  /* Final compact lock for service UC header. */
+  .svc-shell{
+    padding:10px 18px 28px!important;
+    gap:12px!important;
+  }
+  .svc-hero{
+    min-height:70px!important;
+    padding:14px 22px 14px 30px!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%)!important;
+  }
+  .svc-hero h1{
+    margin:0!important;
+    color:#ffffff!important;
+    font-size:32px!important;
+    line-height:1.1!important;
+    text-shadow:none!important;
+  }
+  .svc-hero .svc-title-compact{
+    margin:0!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    background:none!important;
+    font-size:32px!important;
+    line-height:1.1!important;
+    text-shadow:none!important;
+  }
+  .svc-hero .svc-kicker,
+  .svc-hero .svc-muted,
+  .svc-hero h1::after{
+    display:none!important;
+  }
+  .svc-panel{
+    padding:16px!important;
+  }
+  .svc-art{
+    height:158px!important;
+  }
+  .svc-card{
+    min-height:430px!important;
+  }
 </style>
 
 <main class="svc-shell">
   <section class="svc-hero">
     <span class="svc-cloud one"></span>
     <span class="svc-cloud two"></span>
-    <span class="svc-kicker">Dịch vụ bổ sung</span>
-    <h1>Thêm tiện ích cho chuyến đi <span>vui và gọn hơn.</span></h1>
-    <p class="svc-muted">Chọn phòng sắp lưu trú hoặc đang CheckedIn, thêm tiện ích phù hợp từng thời điểm và theo dõi các dịch vụ chưa sử dụng có thể hủy.</p>
-    <div class="svc-actions">
-      <a class="svc-button svc-button--primary" href="/customer/bookings">Xem lịch sử và hóa đơn</a>
-      <a class="svc-button" href="/customer/dashboard">Về dashboard</a>
-      <a class="svc-button" href="/booking/search">Đặt phòng mới</a>
+    <div class="svc-hero-copy">
+      <span class="svc-kicker">Khách hàng</span>
+      <h1 class="svc-title-compact">Đặt dịch vụ bổ sung</h1>
+      <p class="svc-muted">Chọn tiện ích theo phòng, theo thời điểm lưu trú và theo dõi các dịch vụ có thể hủy.</p>
     </div>
   </section>
 
@@ -419,7 +1211,6 @@
         <div class="svc-panel-head">
           <div>
             <h2>Danh mục dịch vụ</h2>
-            <p class="svc-muted">Danh sách chỉ hiển thị dịch vụ đang hoạt động. Lọc theo nhóm, thời điểm sử dụng và chọn nhanh vào phiếu đặt.</p>
           </div>
         </div>
         <div class="svc-tools">
@@ -510,7 +1301,7 @@
           </div>
         </div>
         <% if (!payload.bookingOptions.length) { %>
-          <div class="svc-empty">Bạn chưa có phòng nào đủ điều kiện đặt thêm dịch vụ. Hãy kiểm tra lịch sử booking hoặc tạo booking mới.</div>
+          <div class="svc-empty">Bạn chưa có phòng nào đủ điều kiện đặt thêm dịch vụ. Hãy kiểm tra lịch sử đặt phòng hoặc tạo đặt phòng mới.</div>
         <% } else { %>
           <div class="svc-bookings">
             <% payload.bookingOptions.forEach((item) => { %>
@@ -535,9 +1326,9 @@
       <p class="svc-muted">Chọn đúng phòng và dịch vụ, hệ thống sẽ tự tính tiền rồi cộng vào tổng giao dịch.</p>
       <form method="post" action="/customer/services" id="svcOrderForm">
         <div class="svc-field">
-          <label for="svcBooking">Booking và phòng</label>
+          <label for="svcBooking">Đặt phòng và phòng</label>
           <select id="svcBooking" name="booking_key" required <%= !payload.bookingOptions.length ? "disabled" : "" %>>
-            <option value="">Chọn booking đủ điều kiện</option>
+            <option value="">Chọn đặt phòng đủ điều kiện</option>
             <% payload.bookingOptions.forEach((item) => { %>
               <option value="<%= item.optionKey %>" data-hotel-id="<%= item.hotelId || "" %>" data-timing="<%= item.timing %>" data-room="<%= item.roomNumber %>" data-hotel="<%= item.hotelName %>">
                 <%= item.bookingCode || `GD-${item.transactionId}` %> · Phòng <%= item.roomNumber %> · <%= item.hotelName %> · nhận <%= item.checkinLabel %>
@@ -568,7 +1359,7 @@
           <strong id="svcTotal">0 đ</strong>
           <p class="svc-help" id="svcPreview">Chọn dịch vụ để xem tạm tính.</p>
         </div>
-        <div class="svc-context" id="svcContext">Chọn booking để hệ thống lọc dịch vụ phù hợp với phòng và thời điểm lưu trú.</div>
+        <div class="svc-context" id="svcContext">Chọn đặt phòng để hệ thống lọc dịch vụ phù hợp với phòng và thời điểm lưu trú.</div>
         <button class="svc-button svc-button--primary" type="submit" <%= !payload.bookingOptions.length || !payload.catalog.length ? "disabled" : "" %>>Xác nhận đặt dịch vụ</button>
       </form>
     </aside>
@@ -583,7 +1374,7 @@
       <span class="svc-chip"><%= payload.stats.cancellableCount %> có thể hủy</span>
     </div>
     <% if (!payload.serviceOrders.length) { %>
-      <div class="svc-empty">Bạn chưa đặt dịch vụ bổ sung nào cho các booking đang mở.</div>
+      <div class="svc-empty">Bạn chưa đặt dịch vụ bổ sung nào cho các đặt phòng đang mở.</div>
     <% } else { %>
       <div class="svc-orders">
         <% payload.serviceOrders.forEach((item) => { %>
@@ -673,7 +1464,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const option = serviceSelect?.selectedOptions?.[0];
     const serviceName = String(option?.dataset?.name || "");
     if (!booking.room) {
-      context.textContent = "Chọn booking để hệ thống lọc dịch vụ phù hợp với phòng và thời điểm lưu trú.";
+      context.textContent = "Chọn đặt phòng để hệ thống lọc dịch vụ phù hợp với phòng và thời điểm lưu trú.";
       return;
     }
     const timingLabel = booking.timing === "in_stay" ? "đang lưu trú" : "trước nhận phòng";
@@ -764,6 +1555,15 @@ document.addEventListener("DOMContentLoaded", function () {
   sort?.addEventListener("change", applyCatalogFilter);
   category?.addEventListener("change", applyCatalogFilter);
   timing?.addEventListener("change", applyCatalogFilter);
+
+  const preselectBookingId = new URLSearchParams(window.location.search).get("booking");
+  if (preselectBookingId && bookingSelect) {
+    const option = Array.from(bookingSelect.options).find((item) => String(item.value || "").startsWith(`${preselectBookingId}:`));
+    if (option) {
+      bookingSelect.value = option.value;
+    }
+  }
+
   updateServiceCompatibility();
   updateTotal();
   applyCatalogFilter();

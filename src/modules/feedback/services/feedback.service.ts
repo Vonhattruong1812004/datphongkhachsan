@@ -1317,35 +1317,35 @@ export class FeedbackService {
         label: "Nhắc check-in",
         channel: "Email" as BroadcastChannel,
         title: "Nhắc khách chuẩn bị check-in",
-        message: "Bento Resort xin chào {{ten_kh}}. Booking {{ma_giao_dich}} của anh/chị sắp đến ngày nhận phòng. Vui lòng kiểm tra giờ check-in, chuẩn bị CCCD/eKYC và phản hồi CSKH nếu cần hỗ trợ trước chuyến đi."
+        message: "Bento Booking xin chào {{ten_kh}}. Booking {{ma_giao_dich}} của anh/chị sắp đến ngày nhận phòng. Vui lòng kiểm tra giờ check-in, chuẩn bị CCCD/eKYC và phản hồi CSKH nếu cần hỗ trợ trước chuyến đi."
       },
       {
         key: "today_checkout" as BroadcastAudience,
         label: "Nhắc check-out",
         channel: "SMS" as BroadcastChannel,
         title: "Nhắc lịch check-out hôm nay",
-        message: "Bento Resort xin nhắc anh/chị {{ten_kh}} về lịch check-out hôm nay. Nếu cần hỗ trợ hành lý, gia hạn giờ trả phòng hoặc kiểm tra dịch vụ phát sinh, vui lòng phản hồi CSKH sớm."
+        message: "Bento Booking xin nhắc anh/chị {{ten_kh}} về lịch check-out hôm nay. Nếu cần hỗ trợ hành lý, gia hạn giờ trả phòng hoặc kiểm tra dịch vụ phát sinh, vui lòng phản hồi CSKH sớm."
       },
       {
         key: "thank_you" as BroadcastAudience,
         label: "Lời cảm ơn",
         channel: "Email" as BroadcastChannel,
-        title: "Cảm ơn bạn đã lưu trú tại Bento Resort",
-        message: "Bento Resort cảm ơn anh/chị {{ten_kh}} đã lưu trú cùng chúng tôi. CSKH rất mong được ghi nhận góp ý sau chuyến đi và hy vọng tiếp tục đồng hành trong kỳ nghỉ tiếp theo."
+        title: "Cảm ơn bạn đã đặt phòng qua Bento Booking",
+        message: "Bento Booking cảm ơn anh/chị {{ten_kh}} đã đặt phòng qua hệ thống. CSKH rất mong được ghi nhận góp ý sau chuyến đi và hy vọng tiếp tục đồng hành trong kỳ nghỉ tiếp theo."
       },
       {
         key: "booking_confirmation" as BroadcastAudience,
         label: "Xác nhận đặt phòng",
         channel: "Email" as BroadcastChannel,
         title: "Xác nhận đặt phòng thành công",
-        message: "Bento Resort xác nhận booking {{ma_giao_dich}} của anh/chị {{ten_kh}} đã được tạo thành công. CSKH sẵn sàng hỗ trợ kiểm tra thông tin phòng, thêm dịch vụ, đổi lịch hoặc hướng dẫn thủ tục trước chuyến đi."
+        message: "Bento Booking xác nhận booking {{ma_giao_dich}} của anh/chị {{ten_kh}} đã được tạo thành công. CSKH sẵn sàng hỗ trợ kiểm tra thông tin phòng, thêm dịch vụ, đổi lịch hoặc hướng dẫn thủ tục trước chuyến đi."
       },
       {
         key: "winback" as BroadcastAudience,
         label: "Giữ chân khách cũ",
         channel: "Mixed" as BroadcastChannel,
-        title: "Bento Resort nhớ bạn và có lời mời quay lại",
-        message: "Đã một thời gian anh/chị {{ten_kh}} chưa quay lại Bento Resort. CSKH gửi lời chào cùng gợi ý ưu đãi phù hợp để anh/chị dễ lên kế hoạch cho kỳ nghỉ tiếp theo."
+        title: "Bento Booking có gợi ý lưu trú mới cho bạn",
+        message: "Đã một thời gian anh/chị {{ten_kh}} chưa đặt phòng qua Bento Booking. CSKH gửi lời chào cùng gợi ý ưu đãi phù hợp để anh/chị dễ lên kế hoạch cho kỳ nghỉ tiếp theo."
       }
     ];
   }
@@ -1686,7 +1686,7 @@ export class FeedbackService {
       checkoutLabel: formatDate(item.checkoutAt),
       createdAtLabel: formatDate(item.createdAt),
       bookingLabel: item.bookingId ? `GD${item.bookingId}` : "-",
-      hotelLabel: item.hotelName || "Bento Resort"
+      hotelLabel: item.hotelName || "Đối tác lưu trú"
     };
   }
 
@@ -1711,7 +1711,7 @@ export class FeedbackService {
     const replacements: Record<string, string> = {
       "{{ten_kh}}": recipient.customerName || "Quý khách",
       "{{ma_giao_dich}}": recipient.bookingId ? `GD${recipient.bookingId}` : "-",
-      "{{khach_san}}": recipient.hotelName || "Bento Resort",
+      "{{khach_san}}": recipient.hotelName || "Đối tác lưu trú",
       "{{ngay_nhan}}": recipient.checkinAt ? formatDate(recipient.checkinAt) : "",
       "{{ngay_tra}}": recipient.checkoutAt ? formatDate(recipient.checkoutAt) : ""
     };
@@ -2133,7 +2133,7 @@ export class FeedbackService {
       const directTemplates: Record<Exclude<AdvisoryTopic, "all">, string[]> = {
         booking: [
           "CSKH đã tiếp nhận câu hỏi của anh/chị về booking. Anh/chị vui lòng gửi thêm mã đặt phòng hoặc ngày lưu trú để CSKH kiểm tra đúng hồ sơ và phản hồi phương án cụ thể.",
-          "Bento Resort có thể hỗ trợ kiểm tra/điều chỉnh thông tin đặt phòng. Anh/chị vui lòng xác nhận mã giao dịch, ngày nhận phòng và nhu cầu cần thay đổi."
+          "Bento Booking có thể hỗ trợ kiểm tra/điều chỉnh thông tin đặt phòng. Anh/chị vui lòng xác nhận mã giao dịch, ngày nhận phòng và nhu cầu cần thay đổi."
         ],
         checkin: [
           "Về thủ tục check-in/check-out, CSKH sẽ hỗ trợ anh/chị theo lịch lưu trú. Anh/chị vui lòng chuẩn bị CCCD/eKYC và cho biết thời gian dự kiến đến resort để được hướng dẫn chính xác.",
@@ -2145,7 +2145,7 @@ export class FeedbackService {
         ],
         pricing: [
           "CSKH đã ghi nhận nhu cầu về giá/khuyến mãi. Anh/chị vui lòng cho biết ngày lưu trú, số khách và loại phòng mong muốn để CSKH kiểm tra ưu đãi phù hợp nhất.",
-          "Bento Resort hiện có thể tư vấn ưu đãi theo ngày ở và điều kiện áp dụng. Anh/chị gửi thêm thời gian dự kiến để CSKH phản hồi chính xác."
+          "Bento Booking hiện có thể tư vấn ưu đãi theo ngày ở và điều kiện áp dụng. Anh/chị gửi thêm thời gian dự kiến để CSKH phản hồi chính xác."
         ],
         payment: [
           "Về thanh toán/hủy hoàn, CSKH sẽ kiểm tra theo mã booking và chính sách áp dụng tại thời điểm đặt. Anh/chị vui lòng gửi mã giao dịch hoặc số điện thoại đặt phòng.",
@@ -2153,31 +2153,31 @@ export class FeedbackService {
         ],
         service: [
           "CSKH đã tiếp nhận nhu cầu dịch vụ thêm. Anh/chị vui lòng cho biết ngày sử dụng, số lượng khách và dịch vụ mong muốn để CSKH kiểm tra khả dụng và báo điều kiện áp dụng.",
-          "Bento Resort có thể hỗ trợ đặt thêm dịch vụ trước kỳ lưu trú. Anh/chị gửi giúp mã booking và thời gian mong muốn để CSKH tư vấn gói phù hợp."
+          "Bento Booking có thể hỗ trợ đặt thêm dịch vụ trước kỳ lưu trú. Anh/chị gửi giúp mã booking và thời gian mong muốn để CSKH tư vấn gói phù hợp."
         ],
         room: [
           "Về thông tin phòng/lưu trú, CSKH sẽ kiểm tra theo ngày ở và loại phòng còn khả dụng. Anh/chị vui lòng cho biết số khách, ngày nhận phòng và nhu cầu cụ thể.",
           "CSKH đã ghi nhận câu hỏi về phòng. Nếu anh/chị cần đổi/nâng hạng phòng, CSKH sẽ kiểm tra tình trạng phòng và phản hồi phụ phí nếu có."
         ],
         policy: [
-          "CSKH đã tiếp nhận câu hỏi về chính sách. Anh/chị vui lòng cho biết tình huống cụ thể để CSKH phản hồi đúng điều kiện áp dụng tại Bento Resort.",
+          "CSKH đã tiếp nhận câu hỏi về chính sách. Anh/chị vui lòng cho biết tình huống cụ thể để CSKH phản hồi đúng điều kiện áp dụng của cơ sở lưu trú.",
           "Với nội dung liên quan quy định lưu trú, CSKH sẽ kiểm tra theo chính sách hiện hành và phản hồi lại anh/chị bằng thông tin rõ ràng nhất."
         ],
         other: [
           "CSKH đã tiếp nhận câu hỏi của anh/chị. Anh/chị vui lòng bổ sung mã booking, ngày lưu trú hoặc nhu cầu cụ thể để CSKH hỗ trợ nhanh và chính xác hơn.",
-          "Cảm ơn anh/chị đã liên hệ Bento Resort. CSKH sẽ kiểm tra thông tin liên quan và phản hồi hướng xử lý tiếp theo trong thời gian sớm nhất."
+          "Cảm ơn anh/chị đã liên hệ Bento Booking. CSKH sẽ kiểm tra thông tin liên quan và phản hồi hướng xử lý tiếp theo trong thời gian sớm nhất."
         ]
       };
       return directTemplates[intent];
     }
     if (String(input.sentiment || "Neutral") === "Negative" || input.rating <= 2 || overdue) {
       return [
-        "Bento Resort rất xin lỗi vì trải nghiệm của anh/chị chưa như mong đợi. CSKH đã ghi nhận phản hồi này và sẽ chuyển bộ phận liên quan kiểm tra ngay.",
+        "Bento Booking rất xin lỗi vì trải nghiệm của anh/chị chưa như mong đợi. CSKH đã ghi nhận phản hồi này và sẽ chuyển bộ phận liên quan kiểm tra ngay.",
         "Cảm ơn anh/chị đã phản hồi cụ thể. CSKH sẽ theo dõi đến khi có hướng xử lý rõ ràng và cập nhật lại cho anh/chị sớm nhất."
       ];
     }
     return [
-      "Bento Resort cảm ơn anh/chị đã chia sẻ trải nghiệm. CSKH đã ghi nhận ý kiến này để cải thiện chất lượng phục vụ.",
+      "Bento Booking cảm ơn anh/chị đã chia sẻ trải nghiệm. CSKH đã ghi nhận ý kiến này để cải thiện chất lượng phục vụ.",
       "Rất vui khi nhận được phản hồi từ anh/chị. Nếu cần hỗ trợ thêm, CSKH luôn sẵn sàng tiếp nhận và xử lý."
     ];
   }

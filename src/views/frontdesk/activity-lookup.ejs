@@ -437,13 +437,361 @@
     position: relative;
     z-index: 1;
   }
+
+  /* UC activity final UI pass: compact frontdesk operations layout, UI only. */
+  body {
+    background: #f3f8ff !important;
+  }
+
+  .activity-shell {
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #d6e4f2;
+    --card: #ffffff;
+    --blue: #0b74de;
+    max-width: 1180px;
+    padding: 22px 18px 42px;
+  }
+
+  .activity-hero {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items: start;
+    margin-bottom: 14px;
+  }
+
+  .activity-panel {
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(15, 36, 66, .08);
+    backdrop-filter: none;
+  }
+
+  .activity-title {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .activity-title::before,
+  .activity-kicker,
+  .activity-title p,
+  .activity-section-head .activity-note {
+    display: none;
+  }
+
+  .activity-title h1 {
+    max-width: none;
+    margin: 4px 0 0;
+    color: #0f172a;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  .activity-filter,
+  .activity-section {
+    padding: 18px;
+  }
+
+  .activity-filter {
+    padding: 14px 16px;
+  }
+
+  .activity-filter h2 {
+    display: none;
+  }
+
+  .activity-filter h2,
+  .activity-section h2 {
+    margin: 0 0 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5edf6;
+    color: #102033;
+    font-size: 19px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .activity-form {
+    grid-template-columns: minmax(0, 1fr) 160px 330px;
+    align-items: end;
+    gap: 10px;
+  }
+
+  .activity-field {
+    gap: 6px;
+  }
+
+  .activity-field label {
+    color: #334155;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .activity-field input,
+  .activity-field select {
+    min-height: 42px;
+    border: 1px solid #c9d8e8;
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: none;
+  }
+
+  .activity-field input:focus,
+  .activity-field select:focus {
+    border-color: #0b74de;
+    box-shadow: 0 0 0 3px rgba(11, 116, 222, .12);
+  }
+
+  .activity-actions,
+  .activity-card-actions {
+    gap: 8px;
+  }
+
+  .activity-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 2px;
+  }
+
+  .activity-actions .activity-btn[href="/frontdesk"] {
+    grid-column: auto;
+  }
+
+  .activity-btn {
+    min-height: 40px;
+    border: 1px solid #c9d8e8;
+    border-radius: 8px;
+    padding: 8px 13px;
+    background: #ffffff;
+    color: #102033;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: none;
+    white-space: nowrap;
+    transition: border-color .16s ease, background .16s ease, color .16s ease;
+  }
+
+  .activity-btn:hover {
+    transform: none;
+    border-color: #0b74de;
+    background: #eef6ff;
+    box-shadow: none;
+  }
+
+  .activity-btn--primary {
+    border-color: #0b74de;
+    color: #ffffff;
+    background: #0b74de;
+  }
+
+  .activity-btn--primary:hover {
+    color: #ffffff;
+    background: #075eb8;
+  }
+
+  .activity-stats {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .activity-stat {
+    border-top: 0;
+    padding: 16px;
+    background: #ffffff;
+  }
+
+  .activity-stat strong {
+    color: #102033;
+    font-size: 26px;
+    letter-spacing: 0;
+  }
+
+  .activity-stat span {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .activity-grid {
+    gap: 14px;
+  }
+
+  .activity-section-head {
+    margin-bottom: 0;
+  }
+
+  .activity-list {
+    gap: 10px;
+  }
+
+  .activity-card {
+    gap: 10px;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    padding: 14px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(15, 36, 66, .05);
+  }
+
+  .activity-card-top {
+    align-items: flex-start;
+  }
+
+  .activity-card h3 {
+    color: #102033;
+    font-size: 16px;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .activity-card p,
+  .activity-note,
+  .activity-event-time,
+  .activity-event-source {
+    color: #64748b;
+  }
+
+  .activity-meta {
+    gap: 8px;
+  }
+
+  .activity-meta div {
+    border: 1px solid #e5edf6;
+    border-radius: 8px;
+    background: #f8fbff;
+  }
+
+  .activity-meta strong {
+    color: #102033;
+  }
+
+  .activity-badge,
+  .activity-badge--hot,
+  .activity-badge--warm {
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #075eb8;
+  }
+
+  .activity-badge--hot {
+    border-color: #fecdd3;
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .activity-badge--warm {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+  }
+
+  .activity-table-wrap {
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff;
+  }
+
+  .activity-table {
+    min-width: 900px;
+  }
+
+  .activity-table th,
+  .activity-table td {
+    padding: 12px 13px;
+    border-bottom: 1px solid #e5edf6;
+  }
+
+  .activity-table th {
+    color: #334155;
+    background: #f8fbff;
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .activity-empty {
+    border: 1px dashed #b9cce0;
+    border-radius: 8px;
+    padding: 16px;
+    background: #f8fbff;
+    color: #64748b;
+  }
+
+  .activity-events {
+    gap: 8px;
+  }
+
+  .activity-event {
+    grid-template-columns: 130px minmax(0, 1fr) 120px;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    padding: 12px 14px;
+    background: #ffffff;
+  }
+
+  @media (max-width: 980px) {
+    .activity-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .activity-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .activity-shell {
+      padding: 12px 10px 28px;
+    }
+
+    .activity-title h1 {
+      font-size: 25px;
+    }
+
+    .activity-filter,
+    .activity-section {
+      padding: 14px;
+    }
+
+    .activity-stats,
+    .activity-grid,
+    .activity-actions,
+    .activity-form,
+    .activity-meta,
+    .activity-event {
+      grid-template-columns: 1fr;
+    }
+
+    .activity-card-top,
+    .activity-section-head {
+      flex-direction: column;
+    }
+
+    .activity-card-actions .activity-btn,
+    .activity-actions .activity-btn {
+      width: 100%;
+    }
+  }
 </style>
 
 <main class="activity-shell">
   <section class="activity-hero">
     <div class="activity-panel activity-title">
       <span class="activity-kicker">Tra cứu hoạt động</span>
-      <h1>Nhìn một lần là biết ca trực cần xử lý gì.</h1>
+      <h1>Tra cứu hoạt động</h1>
       <p>Gom lịch sử đặt phòng gần đây, phòng quá hạn check-in và phòng đang ở tới hạn check-out vào một màn riêng cho lễ tân.</p>
     </div>
 

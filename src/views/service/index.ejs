@@ -5,7 +5,7 @@
   const transaction = fd?.transaction || null;
   const rooms = fd?.rooms || [];
   const catalog = fd?.catalog || payload.catalog || [];
-  const recentOrders = fd?.recentOrders || payload.recentOrders || [];
+  const recentOrders = isFrontdesk ? (fd?.recentOrders || []) : (fd?.recentOrders || payload.recentOrders || []);
   const aiAddon = fd?.aiAddon || { available: false, count: 0, headline: "AI service preselect", summary: "Booking này chưa có AI add-on nào để gợi ý cho lễ tân.", items: [] };
   const drafts = serviceDrafts || {};
 %>
@@ -368,6 +368,478 @@
   @keyframes svc-rise{to{transform:translateY(0);opacity:1}}
   @media(max-width:1080px){.svc-hero{grid-template-columns:1fr}.svc-service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:span 6}}
   @media(max-width:760px){.svc-shell{padding:20px 12px 42px}.svc-hero-main{min-height:auto;padding:24px}.svc-hero h1{font-size:42px}.svc-row,.svc-summary,.svc-service-grid,.svc-control-grid,.svc-search-row{grid-template-columns:1fr}.svc-search-actions{justify-content:stretch;padding-bottom:0}.svc-search-actions .svc-button{flex:1;min-width:0}.svc-section-head{display:block}.svc-action,.svc-action:nth-child(1),.svc-action:nth-child(2),.svc-action:nth-child(4),.svc-action:nth-child(5){grid-column:1/-1}}
+
+  /* UC6 final UI pass: match frontdesk luxury-minimal workflow screens */
+  .svc-shell{
+    --svc-ink:#0f172a;
+    --svc-muted:#64748b;
+    --svc-card:#ffffff;
+    --svc-line:#d6e4f2;
+    --svc-blue:#0b74de;
+    --svc-teal:#0f9fbd;
+    --svc-shadow:0 10px 28px rgba(15,36,66,.08);
+    overflow:visible;
+    padding:22px 18px 42px;
+    background:#f3f8ff;
+  }
+  .svc-shell::before,
+  .svc-shell::after,
+  .svc-orbit,
+  .svc-eyebrow,
+  .svc-lead,
+  main.svc-shell:has(#formSearch) .svc-actions a[href="/api/service/room-feed"],
+  #formSearch.svc-card > .svc-muted{
+    display:none;
+  }
+  .svc-wrap{
+    max-width:1180px;
+  }
+  .svc-hero{
+    display:block;
+    margin-bottom:14px;
+  }
+  .svc-hero-main{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:14px;
+    align-items:center;
+    min-height:0;
+    padding:0;
+    overflow:visible;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    backdrop-filter:none;
+  }
+  .svc-hero-main::before,
+  .svc-order-card::before,
+  .svc-action::before,
+  .svc-action::after{
+    display:none;
+  }
+  .svc-hero h1{
+    max-width:none;
+    margin:0;
+    color:#0f172a;
+    font-size:30px;
+    line-height:1.2;
+    letter-spacing:0;
+  }
+  .svc-hero h1 span{
+    color:#0f172a;
+    background:none;
+  }
+  .svc-hero .svc-actions{
+    justify-content:flex-end;
+    margin-top:0;
+    gap:8px;
+  }
+  main.svc-shell:has(#formSearch) .svc-hero-main{
+    display:block;
+  }
+  .svc-card,
+  .svc-table-card,
+  .svc-feed-card,
+  #formSearch.svc-card,
+  #formService > section.svc-card:nth-of-type(1),
+  #formService > section.svc-card:nth-of-type(2),
+  #recent-orders.svc-card{
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#ffffff !important;
+    box-shadow:0 10px 28px rgba(15,36,66,.08);
+    backdrop-filter:none;
+  }
+  .svc-card{
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .svc-card h2,
+  #formSearch.svc-card h2,
+  #formService > section.svc-card > h2,
+  #formService > section.svc-card .svc-section-head h2,
+  #recent-orders.svc-card h2{
+    margin:0 0 14px;
+    padding-bottom:12px;
+    border-bottom:1px solid #e5edf6;
+    color:#102033;
+    font-size:19px;
+    line-height:1.25;
+    letter-spacing:0;
+    text-shadow:none;
+  }
+  .svc-muted,
+  #formService > section.svc-card > .svc-muted,
+  #formService > section.svc-card .svc-section-head .svc-muted,
+  #formService > section.svc-card > .svc-muted strong,
+  #formService > section.svc-card > .svc-card .svc-muted{
+    color:#64748b;
+    text-shadow:none;
+  }
+  .svc-section-head{
+    margin-bottom:14px;
+  }
+  .svc-section-head h2{
+    margin-bottom:0;
+  }
+  .svc-section-head .svc-muted{
+    margin:0;
+  }
+  .svc-row{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+  }
+  .svc-field{
+    margin-top:0;
+    gap:6px;
+  }
+  .svc-field label,
+  #formSearch.svc-card .svc-field label,
+  .svc-control-label,
+  .svc-order-card__meta{
+    color:#334155;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:0;
+    text-transform:none;
+    text-shadow:none;
+  }
+  .svc-field input,
+  .svc-field select,
+  .svc-field textarea,
+  .svc-order-card select,
+  .svc-order-card textarea{
+    min-height:42px;
+    border:1px solid #c9d8e8;
+    border-radius:8px;
+    background:#ffffff !important;
+    color:#0f172a;
+    box-shadow:none;
+  }
+  .svc-field input[disabled]{
+    background:#f8fbff !important;
+    border-color:#d7e4f2;
+    color:#475569;
+  }
+  .svc-field input:focus,
+  .svc-field select:focus,
+  .svc-field textarea:focus,
+  .svc-order-card select:focus,
+  .svc-order-card textarea:focus,
+  .svc-stepper:focus-within{
+    border-color:#0b74de;
+    box-shadow:0 0 0 3px rgba(11,116,222,.12);
+  }
+  .svc-search-row{
+    grid-template-columns:minmax(0,1fr) 300px;
+    gap:12px;
+    align-items:start;
+  }
+  .svc-search-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    padding-top:27px;
+    padding-bottom:0;
+    white-space:normal;
+  }
+  .svc-search-actions .svc-button{
+    min-width:0;
+    white-space:nowrap;
+  }
+  .svc-button,
+  .svc-button:not(.svc-button--primary):not(.svc-button--danger),
+  .svc-mini-button{
+    min-height:42px;
+    border:1px solid #c9d8e8;
+    border-radius:8px;
+    background:#ffffff;
+    color:#102033;
+    box-shadow:none;
+    font-size:14px;
+    font-weight:800;
+    transition:border-color .16s ease,background .16s ease,color .16s ease;
+  }
+  .svc-button:hover,
+  .svc-mini-button:hover{
+    transform:none;
+    border-color:#0b74de;
+    background:#eef6ff;
+    box-shadow:none;
+  }
+  .svc-button--primary{
+    border-color:#0b74de;
+    background:#0b74de;
+    color:#ffffff;
+    box-shadow:none;
+  }
+  .svc-button--primary:hover{
+    background:#075eb8;
+    color:#ffffff;
+  }
+  .svc-button--danger,
+  .svc-mini-button--danger{
+    border-color:#fecdd3;
+    background:#fff1f2;
+    color:#be123c;
+    box-shadow:none;
+  }
+  .svc-service-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px;
+    margin-top:14px;
+  }
+  .svc-order-card{
+    min-height:392px;
+    gap:12px;
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    padding:14px;
+    background:#ffffff;
+    color:#0f172a;
+    box-shadow:0 8px 22px rgba(15,36,66,.06);
+  }
+  .svc-order-card:nth-child(2n),
+  .svc-order-card:nth-child(3n){
+    background:#ffffff;
+  }
+  .svc-order-card.is-selected{
+    outline:0;
+    transform:none;
+    border-color:#8cc8ff;
+    background:#eef6ff;
+    box-shadow:0 10px 24px rgba(11,116,222,.10);
+  }
+  .svc-order-card__title,
+  .svcLineTotal{
+    color:#102033;
+    text-shadow:none;
+  }
+  .svc-order-card__title{
+    font-size:16px;
+    letter-spacing:0;
+  }
+  .svc-order-card__top{
+    display:grid;
+    grid-template-columns:86px minmax(0,1fr);
+    gap:12px;
+    align-items:start;
+    padding-top:0;
+  }
+  .svc-order-card__info{
+    min-width:0;
+    display:grid;
+    gap:7px;
+  }
+  .svc-order-media{
+    width:86px;
+    height:86px;
+    overflow:hidden;
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#f8fbff;
+  }
+  .svc-order-media img,
+  .svc-order-media-fallback{
+    width:100%;
+    height:100%;
+  }
+  .svc-order-media img{
+    display:block;
+    object-fit:cover;
+  }
+  .svc-order-media-fallback{
+    display:grid;
+    place-items:center;
+    color:#075eb8;
+    background:linear-gradient(135deg,#eef6ff,#ecfeff);
+    font-size:16px;
+    font-weight:900;
+  }
+  .svc-price-pill,
+  .svc-picked,
+  .svc-order-card.is-selected .svc-picked{
+    border:1px solid #bfdbfe;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#075eb8;
+    text-shadow:none;
+  }
+  .svc-price-pill{
+    width:max-content;
+    max-width:100%;
+  }
+  .svc-control-grid{
+    grid-template-columns:122px minmax(0,1fr);
+    gap:10px;
+  }
+  .svc-stepper{
+    grid-template-columns:36px minmax(0,1fr) 36px;
+    border:1px solid #c9d8e8;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:none;
+  }
+  .svc-stepper button{
+    height:42px;
+    background:#eef6ff;
+    color:#075eb8;
+  }
+  .svc-stepper button:hover{
+    background:#dbeafe;
+    color:#075eb8;
+  }
+  .svc-stepper input{
+    height:42px;
+    color:#0f172a;
+  }
+  .svc-summary{
+    gap:10px;
+    margin:14px 0;
+  }
+  .svc-stat{
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#f8fbff;
+    box-shadow:none;
+  }
+  .svc-stat strong{
+    color:#102033;
+    font-size:24px;
+    letter-spacing:0;
+  }
+  .svc-stat span{
+    color:#64748b;
+    letter-spacing:0;
+  }
+  .svc-badge,
+  .svc-badge--blue,
+  .svc-badge--amber,
+  .svc-badge--danger{
+    border:1px solid #bfdbfe;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#075eb8;
+    letter-spacing:0;
+  }
+  .svc-grid{
+    gap:12px;
+  }
+  .svc-recent-head{
+    position:relative;
+    z-index:1;
+    display:grid;
+    grid-template-columns:56px minmax(0,1fr);
+    gap:12px;
+    align-items:start;
+  }
+  .svc-recent-media{
+    width:56px;
+    height:56px;
+    overflow:hidden;
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#f8fbff;
+  }
+  .svc-recent-media img,
+  .svc-recent-media .svc-order-media-fallback{
+    width:100%;
+    height:100%;
+  }
+  .svc-recent-media img{
+    display:block;
+    object-fit:cover;
+  }
+  .svc-action,
+  .svc-action:nth-child(2n),
+  .svc-action:nth-child(3n){
+    min-height:142px;
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    padding:16px;
+    background:#ffffff;
+    color:#0f172a;
+    box-shadow:0 8px 22px rgba(15,36,66,.06);
+    transform:none;
+    opacity:1;
+    animation:none;
+  }
+  .svc-action h3,
+  .svc-action p,
+  .svc-action p strong{
+    color:#102033;
+    text-shadow:none;
+  }
+  .svc-action h3{
+    margin:0 0 8px;
+    font-size:18px;
+    letter-spacing:0;
+  }
+  .svc-action p{
+    color:#64748b;
+  }
+  .svc-table-wrap{
+    border-color:#d6e4f2;
+    border-radius:8px;
+    background:#ffffff;
+  }
+  .svc-table th{
+    background:#f8fbff;
+    letter-spacing:0;
+  }
+  .svc-empty{
+    border:1px dashed #b9cce0;
+    border-radius:8px;
+    padding:16px;
+    background:#f8fbff;
+    color:#64748b;
+    box-shadow:none;
+  }
+  #formService > section.svc-card > .svc-card{
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#f8fbff !important;
+    box-shadow:none !important;
+  }
+  #formService > section.svc-card:nth-of-type(1) > .svc-card,
+  #formService > section.svc-card:nth-of-type(1) .svc-summary .svc-stat:nth-child(4){
+    display:none;
+  }
+  #formService > section.svc-card:nth-of-type(1) .svc-summary{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+
+  @media(max-width:1080px){
+    .svc-service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(max-width:760px){
+    .svc-shell{padding:12px 10px 28px}
+    .svc-hero-main{grid-template-columns:1fr;gap:10px}
+    .svc-hero h1{font-size:25px}
+    .svc-hero .svc-actions,
+    .svc-actions{justify-content:stretch}
+    .svc-hero .svc-actions .svc-button,
+    .svc-actions .svc-button{width:100%}
+    .svc-card{padding:14px}
+    .svc-row,
+    .svc-summary,
+    .svc-service-grid,
+    .svc-control-grid,
+    .svc-search-row{grid-template-columns:1fr}
+    .svc-search-actions{grid-template-columns:1fr;padding-top:0;padding-bottom:0}
+    .svc-order-card{min-height:0}
+    .svc-order-card__top{grid-template-columns:74px minmax(0,1fr)}
+    .svc-order-media{width:74px;height:74px}
+    .svc-section-head{display:block}
+    .svc-section-head .svc-badge{margin-top:10px}
+    .svc-stat[style]{grid-column:auto !important}
+    .svc-action,
+    .svc-action:nth-child(1),
+    .svc-action:nth-child(2),
+    .svc-action:nth-child(4),
+    .svc-action:nth-child(5){grid-column:1/-1}
+  }
 </style>
 
 <main class="svc-shell">
@@ -379,7 +851,7 @@
     <section class="svc-hero">
       <div class="svc-hero-main">
         <div class="svc-eyebrow"><span class="svc-dot"></span> <%= isFrontdesk ? "Đặt dịch vụ · Lễ tân" : "Dịch vụ ops" %></div>
-        <h1><%= isFrontdesk ? "Đăng ký dịch vụ" : "Room operations" %> <span><%= isFrontdesk ? "cho khách đang ở." : "live board." %></span></h1>
+        <h1><%= isFrontdesk ? "Đăng ký dịch vụ" : "Room operations" %> <span><%= isFrontdesk ? "cho khách đang ở" : "live board." %></span></h1>
         <p class="svc-lead">
           <% if (isFrontdesk) { %>
             Tìm giao dịch đã check-in, chọn phòng đang ở và thêm nhiều dịch vụ trong một lần.
@@ -387,13 +859,15 @@
             Chọn nhanh màn cần xử lý: dịch vụ, kiểm tra phòng hoặc room board live.
           <% } %>
         </p>
+        <% if (!isFrontdesk) { %>
         <div class="svc-actions">
-          <a class="svc-button svc-button--primary" href="<%= isFrontdesk ? "/frontdesk" : "/dashboard/dichvu" %>">Quay lại dashboard</a>
+          <a class="svc-button svc-button--primary" href="/dashboard/dichvu">Quay lại dashboard</a>
           <% if (!isFrontdesk) { %><a class="svc-button" href="/service/catalog/manage">Quản lý dịch vụ</a><% } %>
           <% if (!isFrontdesk) { %><a class="svc-button" href="/service/room-inspection">Kiểm tra phòng</a><% } %>
           <% if (!isFrontdesk) { %><a class="svc-button" href="/service/room-board-live">Theo dõi Room board live</a><% } %>
           <a class="svc-button" href="/api/service/room-feed">Room board API</a>
         </div>
+        <% } %>
       </div>
       <aside class="svc-orbit" aria-label="Minh họa đặt dịch vụ">
         <div class="svc-orbit-stage">
@@ -473,11 +947,19 @@
               %>
                 <article class="svc-order-card <%= qty > 0 ? "is-selected" : "" %>" data-service-card="<%= service.id %>">
                   <div class="svc-order-card__top">
-                    <div>
+                    <div class="svc-order-media">
+                      <% if (service.imageUrl) { %>
+                        <img src="<%= service.imageUrl %>" alt="Ảnh <%= service.tenDichVu %>" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+                        <div class="svc-order-media-fallback" style="display:none" aria-hidden="true">DV</div>
+                      <% } else { %>
+                        <div class="svc-order-media-fallback" aria-hidden="true">DV</div>
+                      <% } %>
+                    </div>
+                    <div class="svc-order-card__info">
                       <h3 class="svc-order-card__title"><%= service.tenDichVu %></h3>
                       <div class="svc-order-card__meta">Mã DV: <%= service.id %></div>
+                      <span class="svc-price-pill"><%= service.giaDichVuFormatted %></span>
                     </div>
-                    <span class="svc-price-pill"><%= service.giaDichVuFormatted %></span>
                   </div>
 
                   <div class="svc-control-grid">
@@ -532,6 +1014,7 @@
         </section>
       </form>
 
+      <% if (transaction) { %>
       <section class="svc-card" id="recent-orders">
         <h2>Dịch vụ đã đặt gần đây</h2>
         <% if (!recentOrders.length) { %>
@@ -540,8 +1023,20 @@
           <div class="svc-grid">
             <% recentOrders.forEach((item) => { %>
               <article class="svc-action" style="--card-accent:#14b8a6;--card-glow:rgba(20,184,166,.22)">
-                <span class="svc-badge"><%= item.trangThaiDichVu %></span>
-                <h3><%= item.tenDichVu %></h3>
+                <div class="svc-recent-head">
+                  <div class="svc-recent-media">
+                    <% if (item.imageUrl) { %>
+                      <img src="<%= item.imageUrl %>" alt="Ảnh <%= item.tenDichVu %>" onerror="this.style.display='none';this.nextElementSibling.style.display='grid';" />
+                      <div class="svc-order-media-fallback" style="display:none" aria-hidden="true">DV</div>
+                    <% } else { %>
+                      <div class="svc-order-media-fallback" aria-hidden="true">DV</div>
+                    <% } %>
+                  </div>
+                  <div>
+                    <span class="svc-badge"><%= item.trangThaiDichVu %></span>
+                    <h3><%= item.tenDichVu %></h3>
+                  </div>
+                </div>
                 <p>GD <%= item.transactionId %> · Phòng <%= item.roomNumber || "N/A" %> · SL <%= item.soLuong %></p>
                 <p><strong><%= item.thanhTienFormatted %></strong></p>
               </article>
@@ -549,6 +1044,7 @@
           </div>
         <% } %>
       </section>
+      <% } %>
     <% } else { %>
       <section class="svc-card">
         <h2>Chọn việc cần xử lý</h2>

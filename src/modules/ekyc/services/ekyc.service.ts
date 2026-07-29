@@ -170,7 +170,10 @@ export class EkycService {
       verificationResult.rows[0] ? this.mapVerificationResource(verificationResult.rows[0]) : null
     );
     const persistedCustomerStatus = customer.trangThaiEkyc || "ChuaXacThuc";
-    const effectiveCustomerStatus = latest
+    const latestMatchesCustomerDocument = Boolean(
+      latest && (!customer.cccd || !latest.document_number || latest.document_number === customer.cccd)
+    );
+    const effectiveCustomerStatus = latest && latestMatchesCustomerDocument
       ? this.customerStatusFromVerificationResult(latest.result)
       : persistedCustomerStatus;
 

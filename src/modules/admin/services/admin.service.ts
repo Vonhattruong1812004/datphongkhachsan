@@ -996,7 +996,7 @@ export class AdminService {
 
   private buildBackupHeader(metadata: Record<string, unknown>) {
     const lines = [
-      "-- Bento Resort Node Backup File",
+      "-- Bento Booking Node Backup File",
       `-- Created: ${String(metadata.created_at ?? "")}`,
       `-- Database: ${String(metadata.database ?? env.PGDATABASE)}`,
       `-- Type: ${String(metadata.type ?? "toan_bo")}`,

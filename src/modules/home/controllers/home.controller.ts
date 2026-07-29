@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import QRCode from "qrcode";
 import { HomeService } from "../services/home.service";
 
 const service = new HomeService();
@@ -23,4 +24,54 @@ export async function renderHome(req: Request, res: Response) {
     roleMenu: user ? ROLE_MENU[user.maVaiTro] ?? null : null,
     home
   });
+}
+
+function getPublicBaseUrl(req: Request) {
+  const configured = String(process.env.APP_PUBLIC_URL || "").trim().replace(/\/+$/, "");
+  if (configured) return configured;
+
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+function getStoreLinks(req: Request) {
+  const baseUrl = getPublicBaseUrl(req);
+  const downloadUrl = `${baseUrl}/app-download`;
+  const iosUrl = String(process.env.IOS_APP_STORE_URL || "").trim();
+  const androidUrl = String(process.env.ANDROID_PLAY_STORE_URL || "").trim();
+
+  return {
+    baseUrl,
+    downloadUrl,
+    iosUrl,
+    androidUrl,
+    webAppUrl: baseUrl,
+    qrUrl: `/app-download/qr.svg?url=${encodeURIComponent(downloadUrl)}`,
+    isStoreReady: Boolean(iosUrl || androidUrl)
+  };
+}
+
+export async function renderAppDownload(req: Request, res: Response) {
+  return res.render("home/app-download", {
+    title: "Tải app Bento Booking",
+    links: getStoreLinks(req)
+  });
+}
+
+export async function renderAppDownloadQr(req: Request, res: Response) {
+  const fallbackUrl = getStoreLinks(req).downloadUrl;
+  const rawUrl = String(req.query.url || fallbackUrl).trim();
+  const targetUrl = /^https?:\/\//i.test(rawUrl) && rawUrl.length <= 600 ? rawUrl : fallbackUrl;
+  const svg = await QRCode.toString(targetUrl, {
+    type: "svg",
+    errorCorrectionLevel: "M",
+    margin: 2,
+    color: {
+      dark: "#003b95",
+      light: "#ffffff"
+    }
+  });
+
+  res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=300");
+  return res.send(svg);
 }

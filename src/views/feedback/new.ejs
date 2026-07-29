@@ -465,6 +465,448 @@
     .fb-rating{grid-template-columns:repeat(5,minmax(0,1fr))}
     .fb-button{width:100%}
   }
+
+  /* Final customer feedback UI: clean white-blue operating layout. */
+  body{
+    background:#f4f8ff!important;
+    color:#102033!important;
+  }
+  body:has(.fb-shell) .floating-assist{
+    display:none!important;
+  }
+  .fb-shell{
+    --ink:#102033;
+    --muted:#64748b;
+    --line:#c9e0fb;
+    --blue:#006ce4;
+    --blue-dark:#003b95;
+    width:min(1420px, calc(100vw - 36px));
+    max-width:1420px;
+    padding:10px 18px 32px!important;
+    gap:12px!important;
+    overflow:hidden!important;
+    background:linear-gradient(180deg,#eaf4ff 0,#f7fbff 138px,#ffffff 100%);
+    color:#102033!important;
+  }
+  .fb-shell::before,
+  .fb-shell::after,
+  .fb-hero::before,
+  .fb-orbit{
+    display:none!important;
+    content:none!important;
+    animation:none!important;
+  }
+  main.fb-shell::before,
+  main.fb-shell::after{
+    content:none!important;
+    display:none!important;
+    width:0!important;
+    height:0!important;
+    inset:auto!important;
+    left:0!important;
+    top:0!important;
+    right:auto!important;
+    bottom:auto!important;
+    opacity:0!important;
+    transform:none!important;
+  }
+  main.fb-shell,
+  main.fb-shell *,
+  main.fb-shell *::before,
+  main.fb-shell *::after{
+    box-sizing:border-box!important;
+    max-width:100%;
+  }
+  .fb-hero,
+  .fb-panel,
+  .fb-side-card{
+    border:1px solid #c9e0fb!important;
+    border-radius:14px!important;
+    background:#ffffff!important;
+    box-shadow:0 8px 22px rgba(0,59,149,.07)!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  .fb-hero{
+    min-height:70px!important;
+    margin:0!important;
+    padding:14px 22px 14px 30px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:0!important;
+    align-items:center!important;
+    position:relative!important;
+    overflow:hidden!important;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%)!important;
+    color:#ffffff!important;
+  }
+  .fb-hero::after{
+    content:""!important;
+    position:absolute;
+    left:16px;
+    top:13px;
+    bottom:13px;
+    width:5px;
+    border-radius:999px;
+    background:#ffffff;
+  }
+  .fb-hero-main{
+    position:relative;
+    z-index:2;
+    min-width:0;
+  }
+  .fb-hero .fb-kicker,
+  .fb-hero .fb-lead,
+  .fb-dot{
+    display:none!important;
+  }
+  .fb-hero .fb-hero-back{
+    position:relative;
+    z-index:2;
+    display:inline-flex!important;
+    align-items:center;
+    justify-content:center;
+    min-height:34px;
+    padding:7px 11px;
+    border:1px solid rgba(255,255,255,.58);
+    border-radius:8px;
+    background:#ffffff;
+    color:#003b95!important;
+    font-size:12px;
+    font-weight:950;
+    text-decoration:none;
+    box-shadow:0 10px 22px rgba(0,59,149,.14);
+  }
+  .fb-hero .fb-hero-back:hover{
+    background:#eff6ff;
+  }
+  .fb-hero h1{
+    margin:0!important;
+    max-width:none!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    background:none!important;
+    font-size:32px!important;
+    line-height:1.1!important;
+    letter-spacing:0!important;
+    text-shadow:none!important;
+  }
+  .fb-hero h1 span{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    background:none!important;
+    -webkit-background-clip:initial!important;
+    background-clip:initial!important;
+  }
+  .fb-stats{
+    display:none!important;
+  }
+  .fb-alert{
+    margin:0!important;
+    border:1px solid #dbeafe!important;
+    border-radius:8px!important;
+    background:#ffffff!important;
+    color:#102033!important;
+    box-shadow:0 8px 18px rgba(0,59,149,.06)!important;
+  }
+  .fb-alert--success{
+    border-color:#bbf7d0!important;
+    background:#f0fdf4!important;
+    color:#047857!important;
+  }
+  .fb-alert--error{
+    border-color:#fecdd3!important;
+    background:#fff1f2!important;
+    color:#be123c!important;
+  }
+  .fb-layout{
+    grid-template-columns:minmax(0,1fr) 390px!important;
+    gap:14px!important;
+    align-items:start!important;
+  }
+  .fb-panel,
+  .fb-side-card{
+    padding:16px!important;
+  }
+  .fb-panel h2,
+  .fb-side-card h3{
+    margin:0!important;
+    color:#102033!important;
+    font-size:24px!important;
+    line-height:1.18!important;
+    letter-spacing:0!important;
+    text-shadow:none!important;
+  }
+  .fb-panel > .fb-muted{
+    display:none!important;
+  }
+  .fb-side-card > .fb-muted{
+    margin:8px 0 0!important;
+    color:#64748b!important;
+  }
+  .fb-form{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:12px!important;
+    margin-top:14px!important;
+  }
+  .fb-field{
+    gap:6px!important;
+    min-width:0!important;
+  }
+  .fb-field label{
+    color:#102033!important;
+    font-size:12px!important;
+    font-weight:950!important;
+    letter-spacing:0!important;
+    text-transform:none!important;
+  }
+  .fb-field input,
+  .fb-field select,
+  .fb-field textarea{
+    min-height:44px!important;
+    max-width:100%!important;
+    border:1px solid #cbdcf2!important;
+    border-radius:8px!important;
+    background:#ffffff!important;
+    color:#102033!important;
+    font-size:14px!important;
+    font-weight:750!important;
+    box-shadow:none!important;
+  }
+  .fb-field textarea{
+    min-height:118px!important;
+    line-height:1.55!important;
+  }
+  .fb-field input:focus,
+  .fb-field select:focus,
+  .fb-field textarea:focus{
+    border-color:#006ce4!important;
+    box-shadow:0 0 0 3px rgba(0,108,228,.12)!important;
+  }
+  .fb-field input:disabled{
+    background:#f1f5f9!important;
+    color:#64748b!important;
+  }
+  .fb-note,
+  .fb-muted,
+  .fb-error-text{
+    font-size:12px!important;
+    line-height:1.45!important;
+  }
+  .fb-note,
+  .fb-muted{
+    color:#64748b!important;
+    font-weight:750!important;
+  }
+  .fb-error-text{
+    min-height:14px!important;
+    color:#be123c!important;
+    font-weight:850!important;
+  }
+  .fb-context-card,
+  .fb-upload,
+  .fb-feedback-item,
+  .fb-reply,
+  .fb-empty{
+    border:1px solid #dbeafe!important;
+    border-radius:8px!important;
+    background:#f8fbff!important;
+    color:#102033!important;
+    box-shadow:none!important;
+  }
+  .fb-context-card{
+    padding:10px 12px!important;
+  }
+  .fb-context-card strong,
+  .fb-feedback-item strong,
+  .fb-reply strong{
+    color:#102033!important;
+  }
+  .fb-context-card span,
+  .fb-feedback-item .fb-muted,
+  .fb-feedback-item .fb-note,
+  .fb-reply .fb-muted,
+  .fb-reply .fb-note{
+    color:#64748b!important;
+  }
+  .fb-context-list{
+    gap:6px!important;
+  }
+  .fb-context-list span,
+  .fb-badge{
+    border:1px solid #bfdbfe!important;
+    border-radius:999px!important;
+    background:#eff6ff!important;
+    color:#003b95!important;
+    letter-spacing:0!important;
+  }
+  .fb-badge.is-done,
+  .fb-sentiment.is-positive{
+    border-color:#bbf7d0!important;
+    background:#dcfce7!important;
+    color:#047857!important;
+  }
+  .fb-badge.is-processing{
+    border-color:#bae6fd!important;
+    background:#e0f2fe!important;
+    color:#0369a1!important;
+  }
+  .fb-badge.is-pending{
+    border-color:#fde68a!important;
+    background:#fef3c7!important;
+    color:#92400e!important;
+  }
+  .fb-sentiment.is-neutral{
+    border-color:#cbd5e1!important;
+    background:#f1f5f9!important;
+    color:#475569!important;
+  }
+  .fb-sentiment.is-negative{
+    border-color:#fecdd3!important;
+    background:#ffe4e6!important;
+    color:#be123c!important;
+  }
+  .fb-tag-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .fb-check-chip{
+    min-height:40px!important;
+    border:1px solid #bfdbfe!important;
+    border-radius:999px!important;
+    background:#ffffff!important;
+    color:#003b95!important;
+    padding:7px 10px!important;
+    font-size:12px!important;
+    font-weight:900!important;
+    box-shadow:none!important;
+  }
+  .fb-check-chip:has(input:checked){
+    border-color:#006ce4!important;
+    background:#eff6ff!important;
+    box-shadow:0 8px 18px rgba(0,108,228,.08)!important;
+  }
+  .fb-check-chip input{
+    width:15px!important;
+    height:15px!important;
+    min-height:15px!important;
+    accent-color:#006ce4!important;
+  }
+  .fb-rating{
+    gap:8px!important;
+  }
+  .fb-rating label{
+    min-height:48px!important;
+    border:1px solid #cbdcf2!important;
+    border-radius:8px!important;
+    background:#ffffff!important;
+    color:#94a3b8!important;
+    font-size:20px!important;
+    box-shadow:none!important;
+  }
+  .fb-rating input:checked + label{
+    border-color:#f59e0b!important;
+    background:#fffbeb!important;
+    color:#b45309!important;
+    transform:none!important;
+    box-shadow:0 8px 18px rgba(245,158,11,.10)!important;
+  }
+  .fb-upload{
+    padding:12px!important;
+  }
+  .fb-upload input[type="file"]{
+    color:#102033!important;
+  }
+  .fb-upload-preview{
+    max-width:220px!important;
+    border-radius:8px!important;
+  }
+  .fb-actions{
+    gap:10px!important;
+    margin-top:14px!important;
+  }
+  .fb-panel > .fb-actions{
+    padding-top:12px!important;
+    border-top:1px solid #dbeafe!important;
+  }
+  .fb-button{
+    min-height:42px!important;
+    border:1px solid #bfdbfe!important;
+    border-radius:8px!important;
+    background:#ffffff!important;
+    color:#003b95!important;
+    padding:9px 15px!important;
+    font-size:14px!important;
+    font-weight:950!important;
+    box-shadow:0 8px 18px rgba(0,59,149,.08)!important;
+  }
+  .fb-button:hover{
+    transform:none!important;
+    border-color:#006ce4!important;
+    background:#eff6ff!important;
+    box-shadow:0 12px 24px rgba(0,108,228,.12)!important;
+  }
+  .fb-button--primary{
+    border-color:#006ce4!important;
+    background:#006ce4!important;
+    color:#ffffff!important;
+  }
+  .fb-side{
+    gap:14px!important;
+  }
+  .fb-feedback-list{
+    gap:10px!important;
+    margin-top:12px!important;
+  }
+  .fb-feedback-item{
+    padding:12px!important;
+  }
+  .fb-feedback-head{
+    align-items:flex-start!important;
+  }
+  .fb-stars{
+    color:#f59e0b!important;
+    font-size:12px!important;
+    letter-spacing:0!important;
+  }
+  .fb-reply{
+    margin-top:9px!important;
+    padding:10px!important;
+    background:#f0fdf4!important;
+    border-color:#bbf7d0!important;
+  }
+  @media(max-width:1080px){
+    .fb-layout{
+      grid-template-columns:1fr!important;
+    }
+  }
+  @media(max-width:760px){
+    .fb-shell{
+      padding:10px 12px 28px!important;
+    }
+    .fb-hero{
+      min-height:58px!important;
+      padding:13px 16px 13px 28px!important;
+      grid-template-columns:1fr!important;
+      gap:10px!important;
+    }
+    .fb-hero h1{
+      font-size:28px!important;
+    }
+    .fb-form,
+    .fb-tag-grid{
+      grid-template-columns:1fr!important;
+    }
+    .fb-actions{
+      flex-direction:column!important;
+    }
+    .fb-hero .fb-hero-back{
+      width:100%;
+    }
+    .fb-button{
+      width:100%!important;
+    }
+  }
 </style>
 
 <main class="fb-shell">
@@ -474,21 +916,17 @@
       <% if (advisoryMode) { %>
         <h1>Gửi câu hỏi và nhận <span>CSKH phản hồi rõ ràng.</span></h1>
       <% } else { %>
-        <h1>Gửi trải nghiệm <span>để resort phục vụ tốt hơn.</span></h1>
+        <h1>Gửi phản hồi và đánh giá</h1>
       <% } %>
-      <p class="fb-lead"><%= advisoryMode ? "Gửi câu hỏi về phòng, booking, check-in, eKYC hoặc dịch vụ. CSKH sẽ tiếp nhận trong inbox tư vấn." : "Gửi loại dịch vụ, mức hài lòng, nội dung và ảnh minh chứng để CSKH ưu tiên xử lý." %></p>
-      <div class="fb-actions">
-        <a class="fb-button fb-button--primary" href="#feedbackForm"><%= advisoryMode ? "Tạo yêu cầu tư vấn" : "Viết phản hồi" %></a>
-        <a class="fb-button" href="<%= advisoryMode ? "/customer/advisory" : "/customer/dashboard" %>"><%= advisoryMode ? "Về tư vấn" : "Về dashboard" %></a>
-        <a class="fb-button" href="/customer/bookings">Quản lý đặt phòng</a>
-      </div>
+      <p class="fb-lead"><%= advisoryMode ? "Gửi câu hỏi về phòng, đặt phòng, nhận phòng, eKYC hoặc dịch vụ. CSKH sẽ tiếp nhận trong hộp tư vấn." : "Gửi loại dịch vụ, mức hài lòng, nội dung và ảnh minh chứng để CSKH ưu tiên xử lý." %></p>
     </div>
+    <a class="fb-hero-back" href="/customer/dashboard">Quay về dashboard</a>
     <aside class="fb-orbit" aria-label="Minh họa phản hồi">
       <div class="fb-orbit-ring"></div>
       <div class="fb-orbit-core"></div>
-      <span class="fb-orbit-word"><%= advisoryMode ? "Câu hỏi" : "Rating 1-5" %></span>
-      <span class="fb-orbit-word"><%= advisoryMode ? "Booking context" : "Ảnh đính kèm" %></span>
-      <span class="fb-orbit-word"><%= advisoryMode ? "Follow-up" : "Sentiment" %></span>
+      <span class="fb-orbit-word"><%= advisoryMode ? "Câu hỏi" : "Đánh giá 1-5" %></span>
+      <span class="fb-orbit-word"><%= advisoryMode ? "Ngữ cảnh đặt phòng" : "Ảnh đính kèm" %></span>
+      <span class="fb-orbit-word"><%= advisoryMode ? "Theo dõi tiếp" : "Cảm xúc" %></span>
       <span class="fb-orbit-word">CSKH trả lời</span>
     </aside>
   </section>
@@ -508,7 +946,7 @@
     <form class="fb-panel" id="feedbackForm" method="post" action="/feedback" enctype="multipart/form-data" novalidate>
       <input type="hidden" name="mode" value="<%= advisoryMode ? "advisory" : "feedback" %>" />
       <h2><%= advisoryMode ? "Tạo yêu cầu tư vấn" : "Gửi phản hồi mới" %></h2>
-      <p class="fb-muted"><%= advisoryMode ? "Thông tin khách hàng được giữ nguyên để CSKH trả lời đúng người, đúng ngữ cảnh. Nếu đang có booking, bạn nên nêu rõ mã đặt chỗ hoặc thời gian lưu trú ngay trong nội dung." : "Thông tin khách hàng được khóa để giữ đúng snapshot khi gửi phản hồi. Nội dung tối đa 1000 ký tự, ảnh tối đa 5MB." %></p>
+      <p class="fb-muted"><%= advisoryMode ? "Thông tin khách hàng được giữ nguyên để CSKH trả lời đúng người, đúng ngữ cảnh. Nếu đang có đặt phòng, bạn nên nêu rõ mã đặt chỗ hoặc thời gian lưu trú ngay trong nội dung." : "Thông tin khách hàng được khóa để giữ đúng bản ghi tại thời điểm gửi phản hồi. Nội dung tối đa 1000 ký tự, ảnh tối đa 5MB." %></p>
 
       <div class="fb-form">
         <div class="fb-field">
@@ -533,10 +971,10 @@
           <div class="fb-field is-wide">
             <div class="fb-field-head">
               <label>Gắn với đặt phòng</label>
-              <span class="fb-note"><%= bookingOptions.length %> booking gần đây</span>
+              <span class="fb-note"><%= bookingOptions.length %> đặt phòng gần đây</span>
             </div>
             <select id="feedbackBooking" name="booking_key">
-              <option value="">Không gắn booking cụ thể</option>
+              <option value="">Không gắn đặt phòng cụ thể</option>
               <% bookingOptions.forEach(function (booking) { %>
                 <option
                   value="<%= booking.key %>"
@@ -552,8 +990,8 @@
             </select>
             <div class="fb-context-card" id="bookingContextNote">
               <div>
-                <strong>Chưa chọn booking</strong>
-                <span>Chọn booking nếu phản hồi liên quan đến kỳ lưu trú, phòng, thanh toán hoặc dịch vụ đã đặt.</span>
+                <strong>Chưa chọn đặt phòng</strong>
+                <span>Chọn đặt phòng nếu phản hồi liên quan đến kỳ lưu trú, phòng, thanh toán hoặc dịch vụ đã đặt.</span>
               </div>
               <span class="fb-badge">Tùy chọn</span>
             </div>
@@ -601,7 +1039,7 @@
         <% } %>
         <div class="fb-field is-wide">
           <label><%= advisoryMode ? "Nội dung cần tư vấn *" : "Nội dung phản hồi *" %></label>
-          <textarea id="feedbackContent" name="noi_dung" maxlength="1000" required placeholder="<%= advisoryMode ? "Ví dụ: tôi có booking cuối tuần tới, cần hỏi thủ tục eKYC, giờ check-in và cách thêm dịch vụ cho phòng..." : "Chia sẻ điều bạn hài lòng, điểm cần cải thiện hoặc tình huống cần CSKH hỗ trợ..." %>"><%= form.noi_dung || "" %></textarea>
+          <textarea id="feedbackContent" name="noi_dung" maxlength="1000" required placeholder="<%= advisoryMode ? "Ví dụ: tôi có đặt phòng cuối tuần tới, cần hỏi thủ tục eKYC, giờ nhận phòng và cách thêm dịch vụ cho phòng..." : "Chia sẻ điều bạn hài lòng, điểm cần cải thiện hoặc tình huống cần CSKH hỗ trợ..." %>"><%= form.noi_dung || "" %></textarea>
           <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
             <div class="fb-error-text" id="errContent"></div>
             <div class="fb-note"><span id="contentCount">0</span>/1000 ký tự</div>
@@ -664,11 +1102,6 @@
           <% }) %>
         </div>
       </article>
-
-      <article class="fb-side-card">
-        <h3><%= advisoryMode ? "Gợi ý viết câu hỏi" : "Gợi ý viết phản hồi" %></h3>
-        <p class="fb-muted"><%= advisoryMode ? "Nên nêu rõ booking, ngày ở, cơ sở, loại phòng hoặc dịch vụ đang hỏi. Câu hỏi càng cụ thể thì CSKH càng trả lời nhanh và đúng ngữ cảnh." : "Nên nêu rõ phòng, ngày lưu trú, dịch vụ sử dụng và mong muốn xử lý. Phản hồi càng cụ thể thì CSKH càng xử lý nhanh." %></p>
-      </article>
     </aside>
   </section>
 </main>
@@ -719,14 +1152,14 @@
       const badge = document.createElement("span");
       badge.className = "fb-badge";
       if (!selected || !selected.value) {
-        title.textContent = "Chưa chọn booking";
-        detail.textContent = "Chọn booking nếu phản hồi liên quan đến kỳ lưu trú, phòng, thanh toán hoặc dịch vụ đã đặt.";
+        title.textContent = "Chưa chọn đặt phòng";
+        detail.textContent = "Chọn đặt phòng nếu phản hồi liên quan đến kỳ lưu trú, phòng, thanh toán hoặc dịch vụ đã đặt.";
         badge.textContent = "Tùy chọn";
         body.append(title, detail);
         bookingContextNote.append(body, badge);
         return;
       }
-      const hotel = selected.dataset.hotel || "Bento Resort";
+      const hotel = selected.dataset.hotel || "Đối tác lưu trú";
       const stay = selected.dataset.stay || selected.dataset.status || "";
       const room = selected.dataset.room || "Chưa rõ phòng";
       const status = selected.dataset.status || "";

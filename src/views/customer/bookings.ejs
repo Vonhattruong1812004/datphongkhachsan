@@ -306,17 +306,299 @@
       padding:20px;
     }
   }
+
+  /* Clean white-blue booking management pass */
+  body{
+    background:#f3f8ff !important;
+    color:#102033 !important;
+  }
+  .history-shell{
+    max-width:1240px;
+    padding:24px 18px 56px;
+    gap:14px;
+  }
+  .history-shell::before,
+  .history-shell::after,
+  .history-hero::before,
+  .history-card::before{
+    display:none !important;
+  }
+  .history-hero,
+  .history-panel,
+  .history-card,
+  .history-stat,
+  .history-alert,
+  .history-empty{
+    border:1px solid #cfe0f3 !important;
+    background:#ffffff !important;
+    box-shadow:0 14px 34px rgba(15,36,66,.08) !important;
+    backdrop-filter:none !important;
+  }
+  .history-hero{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+    min-height:auto;
+    border-radius:8px;
+    padding:18px 20px;
+  }
+  .history-kicker{
+    display:none;
+  }
+  .history-hero h1{
+    margin:0;
+    color:#003b95;
+    font-size:32px;
+    line-height:1.15;
+    letter-spacing:0;
+    text-shadow:none;
+  }
+  .history-hero h1 span{
+    color:#003b95;
+    background:none;
+    -webkit-background-clip:initial;
+    background-clip:initial;
+  }
+  .history-hero .history-muted{
+    display:none;
+  }
+  .history-hero .history-actions{
+    margin:0;
+    justify-content:flex-end;
+    flex:0 0 auto;
+  }
+  .history-button{
+    min-height:42px;
+    border-radius:8px;
+    border:1px solid #b8d4f6;
+    background:#ffffff;
+    color:#003b95;
+    padding:9px 14px;
+    font-size:14px;
+    font-weight:900;
+    box-shadow:none;
+  }
+  .history-button--primary{
+    border-color:#006ce4;
+    background:#006ce4;
+    color:#ffffff;
+    box-shadow:0 10px 24px rgba(0,108,228,.18);
+  }
+  .history-summary{
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:10px;
+  }
+  .history-stat{
+    border-radius:8px;
+    padding:14px 16px;
+    color:#102033;
+  }
+  .history-stat span{
+    color:#60748d;
+    font-size:12px;
+    letter-spacing:0;
+    text-transform:none;
+    text-shadow:none;
+  }
+  .history-stat strong{
+    margin-top:6px;
+    color:#003b95;
+    font-size:24px;
+    line-height:1.2;
+    letter-spacing:0;
+    text-shadow:none;
+  }
+  .history-panel{
+    border-radius:8px;
+    padding:14px;
+  }
+  .history-filter{
+    grid-template-columns:minmax(260px,1fr) 180px 180px auto;
+    gap:10px;
+  }
+  .history-field label,
+  .history-cancel-field label{
+    color:#102033;
+    font-size:12px;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .history-field input,
+  .history-field select,
+  .history-cancel-field input,
+  .history-cancel-field textarea,
+  .history-cancel-field select{
+    min-height:42px;
+    border:1px solid #cfe0f3;
+    border-radius:8px;
+    background:#ffffff;
+    color:#102033;
+    font-weight:700;
+    box-shadow:none;
+  }
+  .history-grid{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .history-card{
+    display:grid;
+    grid-template-columns:minmax(270px,.9fr) minmax(0,1.35fr) auto;
+    gap:14px;
+    align-items:center;
+    border-radius:8px;
+    padding:16px;
+  }
+  .history-card:hover{
+    transform:none;
+    border-color:#8fc1ff !important;
+    box-shadow:0 16px 38px rgba(15,36,66,.11) !important;
+  }
+  .history-card-head{
+    display:block;
+    min-width:0;
+  }
+  .history-code{
+    margin:8px 0 5px;
+    color:#003b95;
+    font-size:22px;
+    line-height:1.2;
+    letter-spacing:0;
+    overflow-wrap:anywhere;
+  }
+  .history-meta{
+    display:grid;
+    gap:3px;
+    color:#60748d;
+    font-size:13px;
+  }
+  .history-total{
+    display:block;
+    margin-top:8px;
+    color:#047857 !important;
+    font-size:20px !important;
+    text-shadow:none;
+  }
+  .history-badge{
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:12px;
+    border:1px solid #cfe0f3;
+    background:#eef6ff;
+  }
+  .history-lines{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    margin:0;
+  }
+  .history-line{
+    min-width:0;
+    border:1px solid #e0ebf8;
+    border-radius:8px;
+    background:#f8fbff;
+    padding:10px 12px;
+    box-shadow:none;
+  }
+  .history-line span{
+    color:#60748d;
+    font-size:11px;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .history-line strong{
+    margin-top:4px;
+    color:#102033;
+    font-size:14px;
+    line-height:1.3;
+    overflow-wrap:anywhere;
+  }
+  .history-card > .history-actions{
+    width:150px;
+    margin:0;
+    justify-content:flex-end;
+  }
+  .history-card > .history-actions .history-button{
+    width:100%;
+  }
+  .history-card > .history-actions a[href^="#cancel-"]{
+    border-color:#fecdd3;
+    background:#fff1f2;
+    color:#be123c;
+  }
+  .history-cancel{
+    grid-column:1/-1;
+    margin-top:2px;
+    border:1px solid #fecdd3;
+    border-radius:8px;
+    background:#fff7f7;
+    box-shadow:none;
+  }
+  .history-cancel summary{
+    color:#be123c;
+  }
+  .history-cancel .history-muted{
+    color:#60748d;
+  }
+  .history-alert,
+  .history-empty{
+    border-radius:8px;
+    color:#102033;
+    padding:14px 16px;
+  }
+  .history-alert--success{
+    color:#047857;
+    border-color:#b7ebd3 !important;
+    background:#f0fdf7 !important;
+  }
+  .history-alert--error{
+    color:#be123c;
+    border-color:#fecdd3 !important;
+    background:#fff1f2 !important;
+  }
+  @media(max-width:1080px){
+    .history-card{
+      grid-template-columns:1fr;
+      align-items:stretch;
+    }
+    .history-card > .history-actions{
+      width:auto;
+      justify-content:flex-start;
+    }
+    .history-card > .history-actions .history-button{
+      width:auto;
+    }
+    .history-lines{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+  @media(max-width:760px){
+    .history-hero{
+      display:grid;
+      padding:16px;
+    }
+    .history-hero .history-actions{
+      justify-content:flex-start;
+    }
+    .history-summary,
+    .history-filter,
+    .history-lines{
+      grid-template-columns:1fr;
+    }
+    .history-button{
+      width:100%;
+    }
+  }
 </style>
 
 <main class="history-shell">
   <section class="history-hero">
     <span class="history-kicker">Quản lý đặt phòng</span>
-    <h1>Quản lý lưu trú <span>rõ từng giao dịch.</span></h1>
-    <p class="history-muted">Theo dõi đặt phòng, hóa đơn, trạng thái thanh toán, phòng đã chọn, dịch vụ bổ sung và các thao tác như sửa thông tin hoặc hủy theo chính sách hoàn cọc.</p>
+    <h1>Quản lý đặt phòng</h1>
+    <p class="history-muted">Theo dõi đặt phòng, hóa đơn, thanh toán, dịch vụ và thao tác sửa hoặc hủy theo chính sách.</p>
     <div class="history-actions">
       <a class="history-button history-button--primary" href="/booking/multi">Đặt phòng mới</a>
-      <a class="history-button" href="/customer/dashboard">Về dashboard</a>
-      <a class="history-button" href="/customer/services">Dịch vụ bổ sung</a>
+      <a class="history-button" href="/customer/dashboard">Về trang khách hàng</a>
+      <a class="history-button" href="/customer/services">Đặt dịch vụ bổ sung</a>
     </div>
   </section>
 
@@ -397,18 +679,21 @@
           <div class="history-actions">
             <a class="history-button history-button--primary" href="/customer/bookings/<%= booking.id %>">Xem chi tiết</a>
             <a class="history-button" href="<%= booking.invoiceUrl %>">Hóa đơn</a>
+            <% if (["Booked", "Stayed"].includes(String(booking.status))) { %>
+              <a class="history-button" href="/customer/services?booking=<%= booking.id %>">Đặt dịch vụ bổ sung</a>
+            <% } %>
             <% if (booking.editable) { %>
-              <a class="history-button" href="/customer/bookings/<%= booking.id %>/edit">Sửa booking</a>
+              <a class="history-button" href="/customer/bookings/<%= booking.id %>/edit">Sửa đặt phòng</a>
             <% } %>
             <% if (booking.cancelable) { %>
-              <a class="history-button" href="#cancel-<%= booking.id %>">Hủy booking</a>
+              <a class="history-button" href="#cancel-<%= booking.id %>">Hủy đặt phòng</a>
             <% } %>
           </div>
           <% if (booking.cancelable) { const cancel = booking.cancelPreview || {}; %>
             <details class="history-cancel" id="cancel-<%= booking.id %>">
               <summary>Chính sách hủy: <%= cancel.policy?.label || "Đang tính" %> · dự kiến hoàn <%= cancel.refundAmountFormatted || "0 đ" %></summary>
               <p class="history-muted"><%= cancel.policy?.note || "" %> <%= cancel.statusText || "" %> Luồng xử lý: khách nhập tài khoản nhận hoàn → quản lý duyệt → kế toán chuyển khoản hoàn tiền.</p>
-              <form method="post" action="/customer/bookings/<%= booking.id %>/cancel" onsubmit="return confirm('Bạn xác nhận hủy booking <%= booking.bookingCode || `GD-${booking.id}` %>?');">
+              <form method="post" action="/customer/bookings/<%= booking.id %>/cancel" onsubmit="return confirm('Bạn xác nhận hủy đặt phòng <%= booking.bookingCode || `GD-${booking.id}` %>?');">
                 <div class="history-cancel-grid">
                   <div class="history-cancel-field" style="grid-column:1/-1">
                     <label>Lý do hủy *</label>
@@ -446,7 +731,7 @@
                   <% } %>
                 </div>
                 <div class="history-actions">
-                  <button class="history-button" type="submit">Xác nhận hủy booking</button>
+                  <button class="history-button" type="submit">Xác nhận hủy đặt phòng</button>
                 </div>
               </form>
             </details>

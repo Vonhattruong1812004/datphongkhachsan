@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query, withTransaction } from "../../../config/database";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney } from "../../../shared/utils/format";
+import { expireOutdatedPromotions } from "../../../shared/promotions/promotion-maintenance";
 import { parseSepayMetadata } from "../../payment/sepay";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 
@@ -510,7 +511,6 @@ export class ManagerService {
       keyword: z.string().optional().default(""),
       cccd: z.string().optional().default(""),
       trang_thai_ekyc: z.string().optional().default("all"),
-      loai_khach: z.string().optional().default("all"),
       page: z.coerce.number().optional().default(1),
       limit: z.coerce.number().int().min(5).max(50).optional().default(10)
     }).parse(rawFilters ?? {});
@@ -543,11 +543,6 @@ export class ManagerService {
     if (filters.trang_thai_ekyc !== "all") {
       params.push(filters.trang_thai_ekyc);
       where.push(`kh.trangthaiekyc::text = $${params.length}`);
-    }
-
-    if (filters.loai_khach !== "all") {
-      params.push(filters.loai_khach);
-      where.push(`COALESCE(kh.loaikhach, 'CaNhan') = $${params.length}`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
@@ -885,7 +880,6 @@ export class ManagerService {
       keyword: z.string().optional().default(""),
       cccd: z.string().optional().default(""),
       trang_thai_ekyc: z.string().optional().default("all"),
-      loai_khach: z.string().optional().default("all"),
       limit: z.coerce.number().int().min(1).max(1000).optional().default(1000)
     }).parse(rawFilters ?? {});
 
@@ -913,11 +907,6 @@ export class ManagerService {
     if (filters.trang_thai_ekyc !== "all") {
       params.push(filters.trang_thai_ekyc);
       where.push(`kh.trangthaiekyc::text = $${params.length}`);
-    }
-
-    if (filters.loai_khach !== "all") {
-      params.push(filters.loai_khach);
-      where.push(`COALESCE(kh.loaikhach, 'CaNhan') = $${params.length}`);
     }
 
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
@@ -1183,8 +1172,10 @@ export class ManagerService {
 
   async listPromotions() {
     await this.ensurePromotionMetadataColumn();
+    await expireOutdatedPromotions();
     const result = await query<{
       id: number;
+      maGiamGia: string | null;
       tenChuongTrinh: string;
       ngayBatDau: string | null;
       ngayKetThuc: string | null;
@@ -1198,6 +1189,7 @@ export class ManagerService {
       `
         SELECT
           km.makhuyenmai AS id,
+          km.magiamgia AS "maGiamGia",
           km.tenchuongtrinh AS "tenChuongTrinh",
           km.ngaybatdau AS "ngayBatDau",
           km.ngayketthuc AS "ngayKetThuc",
@@ -1883,7 +1875,7 @@ export class ManagerService {
     const start = formatDate(promotion.ngayBatDau);
     const end = formatDate(promotion.ngayKetThuc);
 
-    return `Bento Resort vừa mở chương trình ${promotion.tenChuongTrinh} với mức ưu đãi ${benefit}.${start || end ? ` Thời gian áp dụng: ${start || "-"} đến ${end || "-"}.` : ""} Bạn có thể liên hệ CSKH để được tư vấn booking phù hợp và áp dụng ưu đãi đúng nhu cầu.`;
+    return `Bento Booking vừa mở chương trình ${promotion.tenChuongTrinh} với mức ưu đãi ${benefit}.${start || end ? ` Thời gian áp dụng: ${start || "-"} đến ${end || "-"}.` : ""} Bạn có thể liên hệ CSKH để được tư vấn booking phù hợp và áp dụng ưu đãi đúng nhu cầu.`;
   }
 
   private async queuePromotionAnnouncement(client: any, promotion: {
@@ -1969,7 +1961,7 @@ export class ManagerService {
             delivery_channel,
             delivery_status
           )
-          VALUES ($1, $2, $3, $4, $5, NULL, 'Bento Resort', 'Thông báo khuyến mãi mới', NULL, NULL, 'Mixed', 'Queued')
+          VALUES ($1, $2, $3, $4, $5, NULL, 'Bento Booking', 'Thông báo khuyến mãi mới', NULL, NULL, 'Mixed', 'Queued')
         `,
         [
           campaignId,

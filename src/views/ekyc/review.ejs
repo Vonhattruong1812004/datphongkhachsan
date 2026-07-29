@@ -760,6 +760,233 @@
     border-color: rgba(125,211,252,.20);
     background: linear-gradient(180deg, #ffffff 0%, #f3fbff 100%) !important;
   }
+
+  /* Manager eKYC UC: white/blue operations layout. */
+  .ekyc-shell.is-quanly {
+    width: auto;
+    max-width: 1380px;
+    min-height: calc(100vh - 69px);
+    margin: 0 auto;
+    padding: 12px 18px 42px;
+    overflow: visible !important;
+    color: #102033;
+    background:
+      linear-gradient(180deg, #eaf4ff 0%, #f8fbff 220px, #ffffff 100%) !important;
+  }
+  .ekyc-shell.is-quanly > * {
+    max-width: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-topbar {
+    min-height: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 13px 16px;
+    border: 1px solid #bfdcff;
+    border-radius: 8px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #006ce4 0%, #0b78ea 52%, #003b95 100%) !important;
+    box-shadow: 0 14px 34px rgba(0, 59, 149, .16);
+  }
+  .ekyc-shell.is-quanly .ekyc-title-block::before,
+  .ekyc-shell.is-quanly .ekyc-title-block p,
+  .ekyc-shell.is-quanly .ekyc-topbar .ekyc-actions {
+    display: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-title-block h1 {
+    width: max-content;
+    max-width: 100%;
+    margin: 0;
+    padding-left: 11px;
+    border-left: 5px solid #ffffff;
+    color: #ffffff;
+    font-size: 25px;
+    line-height: 1.14;
+    text-shadow: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-flash {
+    margin-bottom: 10px;
+  }
+  .ekyc-shell.is-quanly .ekyc-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ekyc-shell.is-quanly .ekyc-metric,
+  .ekyc-shell.is-quanly .ekyc-metric:nth-child(n) {
+    min-height: 68px;
+    padding: 11px 13px;
+    border: 1px solid #cfe5ff;
+    color: #003b95;
+    background: #ffffff !important;
+    box-shadow: 0 8px 18px rgba(0, 59, 149, .06);
+  }
+  .ekyc-shell.is-quanly .ekyc-metric::after {
+    height: 0;
+    background: transparent;
+  }
+  .ekyc-shell.is-quanly .ekyc-metric span {
+    color: #64748b;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-metric strong,
+  .ekyc-shell.is-quanly .ekyc-metric strong[style] {
+    margin-top: 6px;
+    color: #003b95 !important;
+    font-size: 24px;
+  }
+  .ekyc-shell.is-quanly .ekyc-layout {
+    grid-template-columns: 350px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .ekyc-shell.is-quanly .ekyc-panel,
+  .ekyc-shell.is-quanly .ekyc-panel--queue,
+  .ekyc-shell.is-quanly .ekyc-panel:not(.ekyc-panel--queue) {
+    padding: 12px;
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    color: #102033;
+    background: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(0, 59, 149, .08);
+  }
+  .ekyc-shell.is-quanly .ekyc-panel--queue {
+    position: sticky;
+    top: 82px;
+  }
+  .ekyc-shell.is-quanly .ekyc-toolbar {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ekyc-shell.is-quanly .ekyc-field label {
+    color: #102033;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-field input,
+  .ekyc-shell.is-quanly .ekyc-field select,
+  .ekyc-shell.is-quanly .ekyc-field textarea {
+    min-height: 38px;
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #ffffff;
+    color: #102033;
+    box-shadow: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-field textarea {
+    min-height: 84px;
+  }
+  .ekyc-shell.is-quanly .ekyc-field input:focus,
+  .ekyc-shell.is-quanly .ekyc-field select:focus,
+  .ekyc-shell.is-quanly .ekyc-field textarea:focus {
+    border-color: #006ce4;
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, .12);
+  }
+  .ekyc-shell.is-quanly .ekyc-btn {
+    min-height: 36px;
+    border-radius: 8px;
+    border-color: #bfdbfe;
+    color: #075eb8;
+    background: #ffffff;
+    box-shadow: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-btn--primary {
+    color: #ffffff;
+    border-color: #006ce4;
+    background: #006ce4;
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .18);
+  }
+  .ekyc-shell.is-quanly .ekyc-queue {
+    max-height: calc(100vh - 365px);
+    min-height: 420px;
+    gap: 7px;
+    padding-right: 2px;
+  }
+  .ekyc-shell.is-quanly .ekyc-queue-item,
+  .ekyc-shell.is-quanly .ekyc-queue-item:nth-child(n):not(.is-active) {
+    padding: 11px;
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: none;
+  }
+  .ekyc-shell.is-quanly .ekyc-queue-item.is-active {
+    border-color: #006ce4;
+    background: #eff6ff !important;
+    box-shadow: inset 4px 0 0 #006ce4;
+  }
+  .ekyc-shell.is-quanly .ekyc-name {
+    color: #003b95;
+    font-size: 15px;
+  }
+  .ekyc-shell.is-quanly .ekyc-chip-row {
+    gap: 5px;
+    margin-top: 7px;
+  }
+  .ekyc-shell.is-quanly .ekyc-chip {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #075eb8;
+  }
+  .ekyc-shell.is-quanly .ekyc-detail-head,
+  .ekyc-shell.is-quanly .ekyc-info-box,
+  .ekyc-shell.is-quanly .ekyc-image-box {
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: 0 8px 18px rgba(0, 59, 149, .05);
+  }
+  .ekyc-shell.is-quanly .ekyc-detail-head {
+    margin-bottom: 10px;
+    padding: 12px;
+    background: #f7fbff !important;
+  }
+  .ekyc-shell.is-quanly .ekyc-detail-head h2 {
+    color: #003b95;
+    font-size: 22px;
+  }
+  .ekyc-shell.is-quanly .ekyc-image-grid,
+  .ekyc-shell.is-quanly .ekyc-info-grid {
+    gap: 10px;
+  }
+  .ekyc-shell.is-quanly .ekyc-image-box,
+  .ekyc-shell.is-quanly .ekyc-info-box {
+    padding: 12px;
+  }
+  .ekyc-shell.is-quanly .ekyc-image-box img,
+  .ekyc-shell.is-quanly .ekyc-empty-img {
+    border-radius: 8px;
+  }
+  .ekyc-shell.is-quanly .ekyc-review-box form {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 10px;
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions {
+    gap: 7px;
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions .ekyc-btn--ok {
+    color: #ffffff;
+    border-color: #16a34a !important;
+    background: #16a34a !important;
+    box-shadow: 0 10px 22px rgba(22, 163, 74, .18) !important;
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions .ekyc-btn--bad {
+    color: #ffffff;
+    border-color: #dc2626 !important;
+    background: #dc2626 !important;
+    box-shadow: 0 10px 22px rgba(220, 38, 38, .16) !important;
+  }
+  .ekyc-shell.is-quanly .ekyc-review-actions .ekyc-btn--wait {
+    color: #8a5a00 !important;
+    border-color: #fde68a !important;
+    background: #fffbeb !important;
+    box-shadow: none !important;
+  }
 </style>
 
 <main class="container ekyc-shell <%= roleId === 6 ? "is-quanly" : "" %>">
@@ -780,7 +1007,7 @@
   <% } %>
 
   <section class="ekyc-metrics" aria-label="Tổng quan eKYC">
-    <article class="ekyc-metric"><span>Tổng latest</span><strong><%= overview.total || 0 %></strong></article>
+    <article class="ekyc-metric"><span>Tổng hồ sơ</span><strong><%= overview.total || 0 %></strong></article>
     <article class="ekyc-metric"><span>Cần xử lý</span><strong style="color:var(--ekyc-amber)"><%= overview.needsAttention || 0 %></strong></article>
     <article class="ekyc-metric"><span>Đang chờ</span><strong style="color:var(--ekyc-amber)"><%= overview.pending || 0 %></strong></article>
     <article class="ekyc-metric"><span>Đã xác thực</span><strong style="color:var(--ekyc-green)"><%= overview.approved || 0 %></strong></article>
@@ -855,7 +1082,7 @@
           </div>
           <div class="ekyc-status-stack">
             <span class="ekyc-badge <%= badgeClass(review?.tone) %>"><%= review?.result_label || "Chưa xác thực" %></span>
-            <div class="ekyc-muted" style="margin-top:7px">Khách: <%= customer?.ekyc_status_label || "Khách chưa xác thực" %></div>
+            <div class="ekyc-muted" style="margin-top:7px"><%= customer?.ekyc_status_label || "Chưa xác thực" %></div>
             <div class="ekyc-muted">Tin cậy: <%= verification.confidence_label || "0%" %></div>
           </div>
         </div>

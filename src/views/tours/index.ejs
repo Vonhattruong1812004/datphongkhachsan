@@ -1,0 +1,117 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const queryParams = new URLSearchParams();
+  const selectedAttr = (value, target) => String(value || "") === String(target || "") ? "selected" : "";
+%>
+
+<style>
+  .tour-page{min-height:calc(100vh - 76px);padding:24px 0 64px;background:linear-gradient(180deg,#eaf4ff 0%,#f8fbff 280px,#ffffff 100%);color:#102033}
+  .tour-shell{width:min(1220px,calc(100vw - 32px));margin:0 auto;display:grid;gap:18px}
+  .tour-hero,.tour-panel,.tour-card{border:1px solid #cfe5ff;border-radius:8px;background:#fff;box-shadow:0 14px 34px rgba(0,59,149,.08)}
+  .tour-hero{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;overflow:hidden}
+  .tour-hero__copy{padding:24px}
+  .tour-kicker{display:inline-flex;border-radius:999px;padding:7px 11px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:900}
+  .tour-hero h1{margin:14px 0 8px;color:#003b95;font-size:42px;line-height:1.02;letter-spacing:-.04em}
+  .tour-hero p,.tour-muted{color:#64748b;line-height:1.65}
+  .tour-hero__media{min-height:300px;background:url("/uploads/destinations/da-nang-ba-na.jpg") center/cover no-repeat}
+  .tour-filter{padding:18px}
+  .tour-filter form{display:grid;grid-template-columns:1.3fr 1fr 1fr .8fr auto;gap:10px;align-items:end}
+  .tour-field{display:grid;gap:6px}
+  .tour-field label{font-size:12px;font-weight:900;color:#173651;text-transform:uppercase;letter-spacing:.05em}
+  .tour-field input,.tour-field select{min-height:44px;border:1px solid #cfe5ff;border-radius:8px;background:#fff;color:#102033;padding:9px 12px;font:inherit}
+  .tour-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;color:#003b95;padding:9px 14px;font-weight:900;text-decoration:none;cursor:pointer}
+  .tour-button--primary{border-color:#006ce4;background:#006ce4;color:#fff}
+  .tour-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .tour-card{overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column}
+  .tour-card img{width:100%;height:190px;object-fit:cover;display:block;background:#dbeafe}
+  .tour-card__body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
+  .tour-card h2{margin:0;color:#102033;font-size:22px;line-height:1.15;letter-spacing:-.025em}
+  .tour-meta,.tour-chip-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .tour-chip{border:1px solid #bae6fd;border-radius:999px;background:#eff6ff;color:#075985;padding:5px 9px;font-size:12px;font-weight:850}
+  .tour-price{margin-top:auto;color:#047857;font-size:23px;font-weight:1000;letter-spacing:-.03em}
+  .tour-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .tour-empty{padding:20px;border:1px dashed #bfdbfe;border-radius:8px;background:#f8fbff;color:#64748b}
+  .tour-alert{padding:12px 14px;border-radius:8px;background:#ecfdf5;border:1px solid #bbf7d0;color:#047857;font-weight:850}
+  @media(max-width:1000px){.tour-hero,.tour-filter form,.tour-grid{grid-template-columns:1fr}.tour-hero__media{min-height:220px}}
+</style>
+
+<main class="tour-page">
+  <div class="tour-shell">
+    <section class="tour-hero">
+      <div class="tour-hero__copy">
+        <span class="tour-kicker">Bento Travel · Gói tour du lịch</span>
+        <h1>Chọn tour, giữ phòng gần điểm đến.</h1>
+        <p>Khách có thể xem tour nổi bật, lọc theo địa điểm, loại tour và ngân sách. Mỗi tour đều nối sang tìm phòng gần điểm tham quan để tạo combo nghỉ dưỡng rõ ràng hơn.</p>
+        <div class="tour-actions">
+          <a class="tour-button tour-button--primary" href="#tour-list">Xem tour</a>
+          <a class="tour-button" href="/booking/search">Tìm phòng trước</a>
+        </div>
+      </div>
+      <div class="tour-hero__media" aria-hidden="true"></div>
+    </section>
+
+    <% if (successMessage) { %><div class="tour-alert"><%= successMessage %></div><% } %>
+
+    <section class="tour-panel tour-filter">
+      <form action="/tours" method="get">
+        <div class="tour-field">
+          <label>Tìm tour</label>
+          <input name="q" value="<%= filters.q || "" %>" placeholder="Tên tour, lịch trình, điểm đến..." />
+        </div>
+        <div class="tour-field">
+          <label>Gần địa điểm</label>
+          <input name="dia_diem" value="<%= filters.dia_diem || "" %>" placeholder="VD: Chợ nổi, Bà Nà..." />
+        </div>
+        <div class="tour-field">
+          <label>Tỉnh/thành</label>
+          <select name="hotel_city">
+            <option value="">Tất cả</option>
+            <% options.cities.forEach((city) => { %>
+              <option value="<%= city %>" <%= selectedAttr(filters.hotel_city, city) %>><%= city %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="tour-field">
+          <label>Loại tour</label>
+          <select name="loai_tour">
+            <option value="">Tất cả</option>
+            <% options.types.forEach((type) => { %>
+              <option value="<%= type %>" <%= selectedAttr(filters.loai_tour, type) %>><%= type %></option>
+            <% }) %>
+          </select>
+        </div>
+        <button class="tour-button tour-button--primary" type="submit">Lọc tour</button>
+      </form>
+    </section>
+
+    <section id="tour-list">
+      <% if (!tours.length) { %>
+        <div class="tour-empty">Chưa có gói tour phù hợp. Hãy đổi địa điểm hoặc loại tour.</div>
+      <% } else { %>
+        <div class="tour-grid">
+          <% tours.forEach((tour) => { %>
+            <article class="tour-card">
+              <a href="/tours/<%= tour.slug %>"><img src="<%= tour.imageUrl %>" alt="<%= tour.name %>" /></a>
+              <div class="tour-card__body">
+                <div class="tour-chip-row">
+                  <span class="tour-chip"><%= tour.type %></span>
+                  <span class="tour-chip"><%= tour.duration %></span>
+                </div>
+                <h2><%= tour.name %></h2>
+                <p class="tour-muted"><%= tour.destinationName || tour.destinationCity || "Điểm đến đang cập nhật" %><%= tour.hotelName ? ` · khởi hành từ ${tour.hotelName}` : "" %></p>
+                <div class="tour-price"><%= tour.priceFormatted %> / khách</div>
+                <div class="tour-actions">
+                  <a class="tour-button tour-button--primary" href="<%= tour.bookingHref %>">Yêu cầu tour</a>
+                  <a class="tour-button" href="<%= tour.roomSearchHref %>">Tìm phòng gần đây</a>
+                </div>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

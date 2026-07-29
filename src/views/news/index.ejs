@@ -1,0 +1,250 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const mainArticle = articles[0] || null;
+  const sideArticles = articles.slice(1, 4);
+%>
+
+<style>
+  .news-page {
+    min-height: calc(100vh - 76px);
+    padding: 24px 0 58px;
+    background: linear-gradient(180deg, #eaf4ff 0%, #f8fbff 260px, #ffffff 100%);
+    color: #102033;
+  }
+
+  .news-shell {
+    width: min(1220px, calc(100vw - 32px));
+    margin: 0 auto;
+    display: grid;
+    gap: 18px;
+  }
+
+  .news-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr);
+    gap: 16px;
+  }
+
+  .news-titlebar,
+  .news-card,
+  .news-panel {
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 14px 34px rgba(0, 59, 149, .08);
+  }
+
+  .news-titlebar {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+  }
+
+  .news-titlebar h1 {
+    margin: 0;
+    color: #003b95 !important;
+    font-size: 32px;
+    letter-spacing: -0.035em;
+  }
+
+  .news-titlebar p {
+    margin: 5px 0 0;
+    color: #64748b !important;
+  }
+
+  .news-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 8px 13px;
+    color: #003b95;
+    background: #eff6ff;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .news-card {
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .news-card:hover {
+    border-color: #006ce4;
+    box-shadow: 0 18px 42px rgba(0, 108, 228, .14);
+  }
+
+  .news-card img {
+    width: 100%;
+    height: 100%;
+    min-height: 245px;
+    object-fit: cover;
+    display: block;
+    background: #dbeafe;
+  }
+
+  .news-card__body {
+    padding: 16px;
+  }
+
+  .news-card__body h2,
+  .news-card__body h3 {
+    margin: 8px 0;
+    color: #102033 !important;
+    letter-spacing: -0.03em;
+  }
+
+  .news-card__body h2 {
+    font-size: 30px;
+    line-height: 1.1;
+  }
+
+  .news-card__body h3 {
+    font-size: 18px;
+    line-height: 1.18;
+  }
+
+  .news-card__body p {
+    margin: 0;
+    color: #64748b !important;
+    line-height: 1.55;
+  }
+
+  .news-meta,
+  .news-reaction-row,
+  .news-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .news-meta {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .news-pill {
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    padding: 5px 9px;
+    color: #075eb8;
+    background: #eff6ff;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .news-pill--hot {
+    color: #047857;
+    background: #f0fdf4;
+    border-color: #a7f3d0;
+  }
+
+  .news-side {
+    display: grid;
+    gap: 12px;
+  }
+
+  .news-side .news-card {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+  }
+
+  .news-side .news-card img {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .news-grid .news-card img {
+    height: 168px;
+    min-height: 168px;
+  }
+
+  @media (max-width: 980px) {
+    .news-hero,
+    .news-grid {
+      grid-template-columns: 1fr;
+    }
+    .news-titlebar {
+      display: block;
+    }
+    .news-link {
+      margin-top: 12px;
+    }
+  }
+</style>
+
+<main class="news-page">
+  <div class="news-shell">
+    <section class="news-titlebar">
+      <div>
+        <h1>Tin tức du lịch</h1>
+        <p>Điểm đến hot, ảnh đẹp, nguồn tham khảo rõ ràng và thảo luận như một diễn đàn nhỏ.</p>
+      </div>
+      <a class="news-link" href="/booking/multi">Tìm phòng theo điểm đến</a>
+    </section>
+
+    <% if (mainArticle) { %>
+      <section class="news-hero">
+        <a class="news-card" href="/news/<%= mainArticle.slug %>">
+          <img src="<%= mainArticle.imageUrl %>" alt="<%= mainArticle.imageAlt %>" loading="eager" onerror="this.onerror=null;this.src='/uploads/phong/22.png';" />
+          <div class="news-card__body">
+            <div class="news-meta">
+              <span class="news-pill news-pill--hot"><%= mainArticle.category %></span>
+              <span><%= mainArticle.location %></span>
+              <span><%= mainArticle.readingMinutes %> phút đọc</span>
+            </div>
+            <h2><%= mainArticle.title %></h2>
+            <p><%= mainArticle.summary %></p>
+            <div class="news-reaction-row" style="margin-top:12px;">
+              <% Object.keys(reactionLabels).forEach((key) => { %>
+                <span class="news-pill"><%= reactionLabels[key] %>: <%= mainArticle.reactions[key] %></span>
+              <% }) %>
+            </div>
+          </div>
+        </a>
+
+        <aside class="news-side">
+          <% sideArticles.forEach((article) => { %>
+            <a class="news-card" href="/news/<%= article.slug %>">
+              <img src="<%= article.imageUrl %>" alt="<%= article.imageAlt %>" loading="lazy" onerror="this.onerror=null;this.src='/uploads/phong/48.png';" />
+              <div class="news-card__body">
+                <div class="news-meta"><span><%= article.location %></span><span><%= article.viralScore %> hot score</span></div>
+                <h3><%= article.title %></h3>
+                <p><%= article.comments.length %> bình luận đang bàn tán</p>
+              </div>
+            </a>
+          <% }) %>
+        </aside>
+      </section>
+    <% } %>
+
+    <section class="news-grid" aria-label="Tất cả tin tức">
+      <% articles.forEach((article) => { %>
+        <a class="news-card" href="/news/<%= article.slug %>">
+          <img src="<%= article.imageUrl %>" alt="<%= article.imageAlt %>" loading="lazy" onerror="this.onerror=null;this.src='/uploads/phong/76.png';" />
+          <div class="news-card__body">
+            <div class="news-meta"><span class="news-pill"><%= article.location %></span><span><%= article.readingMinutes %> phút</span></div>
+            <h3><%= article.title %></h3>
+            <p><%= article.summary %></p>
+          </div>
+        </a>
+      <% }) %>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

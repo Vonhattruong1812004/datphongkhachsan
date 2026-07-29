@@ -5,6 +5,37 @@
   const queryText = queryParams.toString();
   const backUrl = `/booking/multi${queryText ? `?${queryText}` : ""}`;
   const bookingUrl = `/booking/rooms/${room.id}${queryText ? `?${queryText}` : ""}`;
+  const directionsHref = (() => {
+    if (!room.hotelLatitude || !room.hotelLongitude) return "";
+    const params = new URLSearchParams({
+      api: "1",
+      destination: `${room.hotelLatitude},${room.hotelLongitude}`
+    });
+    if (filters.user_lat && filters.user_lng) {
+      params.set("origin", `${filters.user_lat},${filters.user_lng}`);
+    }
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  })();
+  const roomLat = Number(room.hotelLatitude);
+  const roomLng = Number(room.hotelLongitude);
+  const userLat = Number(filters.user_lat || 0);
+  const userLng = Number(filters.user_lng || 0);
+  const detailMapJson = JSON.stringify({
+    hotel: Number.isFinite(roomLat) && Number.isFinite(roomLng) ? {
+      title: room.khachSan,
+      type: room.loaiLuuTruTen || "Hotel",
+      roomLabel: `${room.loaiPhong || "Phòng"} · P${room.soPhong || ""}`,
+      address: room.diaChi || "",
+      city: room.tinhThanh || "",
+      lat: roomLat,
+      lng: roomLng,
+      directionsUrl: directionsHref
+    } : null,
+    user: Number.isFinite(userLat) && Number.isFinite(userLng) && userLat && userLng ? {
+      lat: userLat,
+      lng: userLng
+    } : null
+  }).replace(/</g, "\\u003c");
   const statusMap = {
     Trong: "Có thể đặt",
     Booked: "Đã đặt",
@@ -34,17 +65,27 @@
   body{background:radial-gradient(circle at 10% 10%,rgba(34,211,238,.20),transparent 24%),radial-gradient(circle at 88% 12%,rgba(251,113,133,.16),transparent 27%),linear-gradient(135deg,#fffdf7 0%,#effffd 38%,#eef8ff 70%,#fff5f0 100%);color:#14314b}
   .room-detail-shell{max-width:1200px;margin:0 auto;padding:32px 18px 66px}
   .room-detail-hero,.room-detail-panel{border:1px solid rgba(19,48,74,.12);border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.74));box-shadow:0 24px 66px rgba(12,39,64,.12);backdrop-filter:blur(18px)}
-  .room-detail-hero{overflow:hidden;display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);gap:0;margin-bottom:18px}
-  .room-detail-media{min-height:430px;background:#e0f2fe}
+  .room-detail-hero{overflow:hidden;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:0;margin-bottom:18px}
+  .room-detail-media{min-width:0;min-height:430px;background:#e0f2fe}
   .room-detail-media img{width:100%;height:100%;min-height:430px;object-fit:cover;display:block}
-  .room-detail-copy{padding:30px;display:flex;flex-direction:column;justify-content:center}
-  .room-kicker{display:inline-flex;width:max-content;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}
-  .room-detail-copy h1{margin:18px 0 10px;font-size:clamp(38px,5.2vw,64px);line-height:.96;letter-spacing:-.06em;color:#102033}
-  .room-detail-copy h1 span{color:transparent;background:linear-gradient(135deg,#0ea5e9,#14b8a6 52%,#f97316);-webkit-background-clip:text;background-clip:text}
-  .room-muted{color:#5f778f;line-height:1.65}.room-price{display:block;margin-top:16px;color:#0f766e;font-size:34px;font-weight:1000;letter-spacing:-.05em}
+  .room-detail-copy{min-width:0;padding:30px;display:flex;flex-direction:column;justify-content:center}
+  .room-kicker{display:inline-flex;width:fit-content;max-width:100%;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.18);color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.06em;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+  .room-detail-copy h1{max-width:100%;margin:18px 0 10px;font-size:clamp(34px,4.2vw,56px);line-height:1.02;letter-spacing:0;color:#102033;overflow-wrap:anywhere}
+  .room-detail-copy h1 span{display:block;color:transparent;background:linear-gradient(135deg,#0ea5e9,#14b8a6 52%,#f97316);-webkit-background-clip:text;background-clip:text}
+  .room-muted{max-width:100%;color:#5f778f;line-height:1.65;overflow-wrap:anywhere}.room-price{display:block;margin-top:16px;color:#0f766e;font-size:clamp(26px,3vw,34px);font-weight:1000;letter-spacing:0;line-height:1.15;overflow-wrap:anywhere}
+  .room-distance{display:flex;align-items:center;gap:9px;flex-wrap:wrap;width:max-content;max-width:100%;margin-top:12px;border-radius:999px;border:1px solid rgba(14,165,233,.18);background:rgba(240,249,255,.9);color:#075985;padding:8px 12px;font-size:13px;font-weight:950}
+  .room-distance span{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:rgba(14,165,233,.14);color:#0369a1}
+  .room-distance a{color:#0057b8;text-decoration:none;border-bottom:1px solid rgba(0,87,184,.28)}
+  .room-map{min-height:340px;border-radius:22px;border:1px solid rgba(14,165,233,.18);background:#e0f2fe;overflow:hidden;box-shadow:0 16px 42px rgba(12,39,64,.10);margin-top:14px}
+  .room-map-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .room-map-note{margin-top:10px;color:#5f778f;font-size:13px;line-height:1.55}
+  .map-marker{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:#006ce4;color:#fff;border:3px solid #fff;box-shadow:0 10px 24px rgba(0,59,149,.30);font-weight:1000}
+  .map-marker--user{background:#10b981}
+  .map-popup{min-width:210px;color:#14314b}.map-popup strong{display:block;color:#003b95;font-size:14px;margin-bottom:4px}.map-popup p{margin:3px 0;color:#5f778f;font-size:12px}.map-popup a{display:inline-flex;margin-top:8px;color:#006ce4;font-weight:900;text-decoration:none}
+  .map-fallback{padding:18px;color:#5f778f;font-weight:800}
   .room-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.room-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid rgba(19,48,74,.12);background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,251,255,.86));color:#14314b;padding:10px 17px;font-weight:900;text-decoration:none}.room-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0ea5e9,#14b8a6 52%,#22c55e)}
   .room-button[aria-disabled="true"]{opacity:.55;pointer-events:none}
-  .room-detail-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(320px,.82fr);gap:18px;align-items:start}.room-detail-panel{padding:22px}.room-detail-panel h2{margin:0 0 12px;font-size:25px;color:#102033;letter-spacing:-.04em}
+  .room-detail-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(320px,.82fr);gap:18px;align-items:start}.room-detail-panel{min-width:0;padding:22px}.room-detail-panel h2{margin:0 0 12px;font-size:25px;color:#102033;letter-spacing:0}
   .room-spec-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.room-spec{border-radius:18px;border:1px solid rgba(19,48,74,.10);background:rgba(255,255,255,.70);padding:14px}.room-spec span{display:block;color:#5f778f;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.room-spec strong{display:block;margin-top:6px;color:#102033;font-size:17px;line-height:1.35}
   .room-status-grid{display:grid;gap:10px}.room-status{border-radius:18px;border:1px solid rgba(20,184,166,.16);background:rgba(20,184,166,.09);padding:13px}.room-status span{display:block;color:#0f766e;font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.07em}.room-status strong{display:block;margin-top:5px;color:#102033}
   .room-note{margin-top:14px;border-radius:18px;border:1px solid rgba(14,165,233,.14);background:rgba(14,165,233,.08);padding:14px;color:#0c4a6e;font-size:14px;line-height:1.7;font-weight:800}
@@ -67,9 +108,15 @@
       <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" onerror="this.onerror=null;this.src='/uploads/phong/1.png';" />
     </div>
     <div class="room-detail-copy">
-      <span class="room-kicker"><%= room.tinhThanh %> · <%= room.khachSan %></span>
+      <span class="room-kicker"><%= room.loaiLuuTruTen || "Hotel" %> · <%= room.tinhThanh %> · <%= room.khachSan %></span>
       <h1><%= room.loaiPhong %> <span>phòng <%= room.soPhong %></span></h1>
       <p class="room-muted"><%= room.diaChi || "Địa chỉ cơ sở đang được cập nhật." %></p>
+      <% if (room.userDistanceLabel) { %>
+        <div class="room-distance">
+          <span>⌖</span> Cách vị trí của bạn khoảng <%= room.userDistanceLabel %>
+          <% if (directionsHref) { %><a href="<%= directionsHref %>" target="_blank" rel="noopener">Xem đường đi</a><% } %>
+        </div>
+      <% } %>
       <strong class="room-price"><%= room.priceFormatted || `${Number(room.gia || 0).toLocaleString("vi-VN")} đ` %> / đêm</strong>
       <div class="room-actions">
         <a class="room-button room-button--primary" href="<%= bookingUrl %>" aria-disabled="<%= canBook ? "false" : "true" %>">Đặt phòng này</a>
@@ -84,6 +131,7 @@
       <div class="room-spec-grid">
         <div class="room-spec"><span>Mã phòng</span><strong>#<%= room.id %></strong></div>
         <div class="room-spec"><span>Số phòng</span><strong><%= room.soPhong %></strong></div>
+        <div class="room-spec"><span>Loại lưu trú</span><strong><%= room.loaiLuuTruTen || "Hotel" %></strong></div>
         <div class="room-spec"><span>Loại phòng</span><strong><%= room.loaiPhong %></strong></div>
         <div class="room-spec"><span>Vị trí</span><strong><%= room.vitri || "Đang cập nhật" %></strong></div>
         <div class="room-spec"><span>Diện tích</span><strong><%= Number(room.dienTich || 0) ? `${Number(room.dienTich).toLocaleString("vi-VN")} m²` : "Đang cập nhật" %></strong></div>
@@ -100,7 +148,7 @@
         </div>
         <% if (latestBooking) { %>
           <div class="room-last-booking__grid">
-            <div><span>Mã booking</span><strong><%= latestBooking.bookingCode %></strong></div>
+            <div><span>Mã đặt phòng</span><strong><%= latestBooking.bookingCode %></strong></div>
             <div><span>Khách</span><strong><%= latestBooking.customerName %></strong></div>
             <div><span>Tạo lúc</span><strong><%= latestBooking.createdAtLabel %></strong></div>
             <div><span>Ngày ở</span><strong><%= latestBooking.checkinLabel %> → <%= latestBooking.checkoutLabel %></strong></div>
@@ -120,13 +168,111 @@
         <div class="room-status"><span>Tình trạng kiểm tra</span><strong><%= conditionMap[room.tinhTrangPhong] || room.tinhTrangPhong || "Đang cập nhật" %></strong></div>
         <div class="room-status"><span>Realtime</span><strong><%= realtimeMap[room.trangThaiRealtime] || room.trangThaiRealtime || "Sẵn sàng" %></strong></div>
       </div>
+      <div style="margin-top:18px">
+        <h2>Bản đồ vị trí</h2>
+        <div class="room-map" id="roomDetailMap"></div>
+        <p class="room-map-note">Kiểm tra khu vực lưu trú, vị trí trung tâm và mở đường đi trước khi đặt phòng.</p>
+        <div class="room-map-actions">
+          <% if (directionsHref) { %><a class="room-button" href="<%= directionsHref %>" target="_blank" rel="noopener">Mở Google Maps</a><% } %>
+        </div>
+      </div>
       <div class="room-policy" style="margin-top:14px;">
-        <div><strong>Điều kiện đặt online</strong>Phòng chỉ có thể đặt khi trạng thái là có thể đặt, tình trạng tốt và không ở luồng vệ sinh/bảo trì/đang có khách.</div>
-        <div><strong>Thanh toán cọc</strong>Khi tạo booking, hệ thống sinh QR cọc SePay 50% và giữ phòng trong 10 phút.</div>
-        <div><strong>Hoàn tất booking</strong>Booking chính thức được tạo sau khi webhook xác nhận đúng số tiền và nội dung chuyển khoản.</div>
+        <div><strong>Điều kiện đặt trực tuyến</strong>Phòng chỉ có thể đặt khi trạng thái là có thể đặt, tình trạng tốt và không ở luồng vệ sinh/bảo trì/đang có khách.</div>
+        <div><strong>Thanh toán cọc</strong>Khi tạo đặt phòng, hệ thống sinh QR cọc SePay 50% và giữ phòng trong 10 phút.</div>
+        <div><strong>Hoàn tất đặt phòng</strong>Đặt phòng chính thức được tạo sau khi SePay xác nhận đúng số tiền và nội dung chuyển khoản.</div>
       </div>
     </aside>
   </section>
 </main>
 
+<script type="application/json" id="roomDetailMapData"><%- detailMapJson %></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const mapNode = document.getElementById("roomDetailMap");
+  const dataNode = document.getElementById("roomDetailMapData");
+  if (!mapNode || !dataNode) return;
+
+  let payload = {};
+  try {
+    payload = JSON.parse(dataNode.textContent || "{}");
+  } catch (_error) {
+    payload = {};
+  }
+
+  if (!payload.hotel) {
+    mapNode.innerHTML = '<div class="map-fallback">Cơ sở này chưa có tọa độ bản đồ.</div>';
+    return;
+  }
+
+  if (!window.L) {
+    mapNode.innerHTML = '<div class="map-fallback">Không tải được bản đồ. Bạn vẫn có thể mở Google Maps bằng nút bên dưới.</div>';
+    return;
+  }
+
+  const map = L.map(mapNode, { scrollWheelZoom: false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+
+  const hotelIcon = L.divIcon({
+    className: "",
+    html: '<div class="map-marker">B</div>',
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -16]
+  });
+  const userIcon = L.divIcon({
+    className: "",
+    html: '<div class="map-marker map-marker--user">Bạn</div>',
+    iconSize: [42, 34],
+    iconAnchor: [21, 17],
+    popupAnchor: [0, -16]
+  });
+  const bounds = [];
+  const hotelLatLng = [Number(payload.hotel.lat), Number(payload.hotel.lng)];
+  bounds.push(hotelLatLng);
+  L.marker(hotelLatLng, { icon: hotelIcon }).addTo(map).bindPopup(`
+    <div class="map-popup">
+      <strong>${escapeMapText(payload.hotel.title)}</strong>
+      <p>${escapeMapText(payload.hotel.type)} · ${escapeMapText(payload.hotel.city)}</p>
+      <p>${escapeMapText(payload.hotel.roomLabel)}</p>
+      <p>${escapeMapText(payload.hotel.address)}</p>
+      ${payload.hotel.directionsUrl ? `<a href="${escapeMapAttr(payload.hotel.directionsUrl)}" target="_blank" rel="noopener">Xem đường đi</a>` : ""}
+    </div>
+  `).openPopup();
+
+  if (payload.user) {
+    const userLatLng = [Number(payload.user.lat), Number(payload.user.lng)];
+    if (Number.isFinite(userLatLng[0]) && Number.isFinite(userLatLng[1])) {
+      bounds.push(userLatLng);
+      L.marker(userLatLng, { icon: userIcon }).addTo(map).bindPopup('<div class="map-popup"><strong>Vị trí của bạn</strong><p>Điểm xuất phát để xem khoảng cách.</p></div>');
+      L.polyline([userLatLng, hotelLatLng], { color: "#0ea5e9", weight: 3, opacity: 0.72, dashArray: "7 8" }).addTo(map);
+    }
+  }
+
+  if (bounds.length > 1) {
+    map.fitBounds(bounds, { padding: [42, 42], maxZoom: 14 });
+  } else {
+    map.setView(hotelLatLng, 15);
+  }
+
+  setTimeout(() => map.invalidateSize(), 120);
+
+  function escapeMapText(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char]));
+  }
+
+  function escapeMapAttr(value) {
+    return escapeMapText(value).replace(/`/g, "&#96;");
+  }
+});
+</script>
 <%- include("../partials/footer") %>

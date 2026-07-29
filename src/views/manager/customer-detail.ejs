@@ -11,172 +11,230 @@
 %>
 
 <style>
-  .cust-detail {
-    --ink: #172033;
-    --muted: #667085;
-    --line: rgba(23, 32, 51, .10);
-    --panel: #ffffff;
-    --cyan: #00a6d6;
-    --mint: #19b879;
-    --sun: #f5b700;
-    --coral: #ff6b6b;
-    --berry: #d946ef;
-    min-height: calc(100vh - 84px);
-    position: relative;
-    padding: 24px 18px 54px;
-    color: var(--ink);
-    background:
-      linear-gradient(135deg, rgba(255, 107, 107, .10), transparent 32%),
-      linear-gradient(225deg, rgba(0, 166, 214, .12), transparent 38%),
-      repeating-linear-gradient(90deg, rgba(23, 32, 51, .035) 0 1px, transparent 1px 44px),
-      linear-gradient(180deg, #fffefa 0%, #f5fcff 48%, #fff8fb 100%);
+  body:has(.customer-detail-page){
+    background:#f4f8ff;
   }
-  .cust-detail::before { content: ""; position: absolute; inset: 0 0 auto; height: 9px; background: linear-gradient(90deg, var(--coral), var(--sun), var(--mint), var(--cyan), var(--berry)); }
-  .cust-shell { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
-  .cust-hero,
-  .cust-panel,
-  .cust-kpi {
-    border: 1px solid var(--line);
-    background: var(--panel);
-    box-shadow: 0 18px 44px rgba(23, 32, 51, .09);
+  body:has(.customer-detail-page) .floating-assist{
+    display:none !important;
   }
-  .cust-hero { border-radius: 8px; padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; border-top: 5px solid var(--cyan); }
-  .cust-chip { display: inline-flex; border-radius: 8px; padding: 7px 10px; color: #087894; background: #effbff; border: 1px solid rgba(0,166,214,.22); font-size: 12px; font-weight: 900; letter-spacing: 0; text-transform: uppercase; }
-  .cust-hero h1 { margin: 14px 0 8px; font-size: 48px; line-height: 1; letter-spacing: 0; }
-  .cust-muted { color: var(--muted); font-size: 13px; line-height: 1.58; }
-  .cust-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-  .cust-button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; border-radius: 8px; padding: 9px 14px; border: 1px solid rgba(23,32,51,.12); background: #fff; color: var(--ink); text-decoration: none; font: inherit; font-size: 14px; font-weight: 850; cursor: pointer; }
-  .cust-button:disabled { cursor: not-allowed; opacity: .62; }
-  .cust-button--primary { color: #fff; border-color: transparent; background: linear-gradient(135deg, #00a6d6, #19b879); box-shadow: 0 14px 28px rgba(0,166,214,.18); }
-  .cust-button--danger { color: #b42318; border-color: rgba(255,107,107,.28); background: #fff7f7; }
-  .cust-alert { border-radius: 8px; padding: 12px 14px; border: 1px solid rgba(23,32,51,.10); font-size: 14px; font-weight: 800; line-height: 1.5; }
-  .cust-alert--error { color: #b42318; background: #fff4f4; border-color: rgba(255,107,107,.30); }
-  .cust-alert--success { color: #047857; background: #effcf6; border-color: rgba(25,184,121,.28); }
-  .cust-status { display: inline-flex; align-items: center; border-radius: 8px; padding: 6px 9px; font-size: 12px; font-weight: 850; }
-  .cust-status--green { color: #047857; background: #effcf6; }
-  .cust-status--cyan { color: #087894; background: #effbff; }
-  .cust-status--sun { color: #8a5a00; background: #fff8d7; }
-  .cust-status--rose { color: #b42318; background: #fff4f4; }
-  .cust-status--slate { color: #475569; background: #f3f5f8; }
-  .cust-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-  .cust-kpi { position: relative; overflow: hidden; border-radius: 8px; padding: 16px; }
-  .cust-kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--cyan); }
-  .cust-kpi:nth-child(2)::before { background: var(--sun); }
-  .cust-kpi:nth-child(3)::before { background: var(--mint); }
-  .cust-kpi:nth-child(4)::before { background: var(--coral); }
-  .cust-kpi span { display: block; color: var(--muted); font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: 0; }
-  .cust-kpi strong { display: block; margin-top: 10px; font-size: 26px; line-height: 1; letter-spacing: 0; }
-  .cust-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
-  .cust-panel { border-radius: 8px; padding: 20px; }
-  .cust-panel h2 { margin: 0; font-size: 24px; letter-spacing: 0; }
-  .cust-list { display: grid; gap: 10px; margin-top: 14px; }
-  .cust-insight { border-radius: 8px; padding: 14px; background: #fff; border: 1px solid rgba(23,32,51,.08); border-left: 5px solid var(--coral); }
-  .cust-money { font-weight: 900; color: #047857; white-space: nowrap; }
-  .cust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-  @media (max-width: 1040px) { .cust-hero, .cust-layout, .cust-grid { grid-template-columns: 1fr; } .cust-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 640px) { .cust-detail { padding: 18px 12px 42px; } .cust-hero, .cust-panel { padding: 18px; } .cust-hero h1 { font-size: 36px; } .cust-kpi-grid { grid-template-columns: 1fr; } }
+  .customer-detail-page{
+    --ink:#102033;
+    --muted:#607086;
+    --line:#cfe0f3;
+    --blue:#006ce4;
+    --blue-dark:#003b95;
+    --soft:#f7fbff;
+    --shadow:0 18px 42px rgba(0,59,149,.10);
+    min-height:calc(100vh - 68px);
+    padding:24px 18px 48px;
+    color:var(--ink);
+    background:linear-gradient(180deg,#eaf4ff 0%,#f8fbff 230px,#ffffff 100%);
+  }
+  .customer-detail-shell{max-width:1220px;margin:0 auto;display:grid;gap:14px}
+  .customer-detail-title{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .customer-detail-title h1{
+    margin:0;
+    padding:0 12px 2px 14px;
+    border-left:5px solid var(--blue);
+    color:var(--blue-dark);
+    background:#fff;
+    font-size:30px;
+    line-height:1.2;
+    letter-spacing:0;
+  }
+  .customer-detail-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .customer-detail-button{
+    display:inline-flex;align-items:center;justify-content:center;min-height:40px;border-radius:8px;padding:9px 14px;
+    border:1px solid #bfdcff;background:#fff;color:var(--blue-dark);text-decoration:none;font:inherit;font-size:14px;font-weight:850;
+    box-shadow:0 8px 18px rgba(0,59,149,.08);cursor:pointer;
+  }
+  .customer-detail-button:hover{border-color:var(--blue);background:#f0f7ff}
+  .customer-detail-button--primary{border-color:var(--blue);background:var(--blue);color:#fff;box-shadow:0 12px 26px rgba(0,108,228,.20)}
+  .customer-detail-button--danger{border-color:#fecaca;background:#fff5f5;color:#b42318;box-shadow:none}
+  .customer-detail-button:disabled{cursor:not-allowed;opacity:.62}
+  .customer-detail-alert{border-radius:8px;padding:12px 14px;border:1px solid #d6e4f2;background:#fff;font-weight:800}
+  .customer-detail-alert--error{color:#b42318;background:#fff4f4;border-color:#fecaca}
+  .customer-detail-alert--success{color:#047857;background:#effcf6;border-color:#b7efd9}
+  .customer-detail-card{border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:var(--shadow)}
+  .customer-profile{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;padding:18px}
+  .customer-profile-main{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:center}
+  .customer-avatar{display:grid;place-items:center;width:64px;height:64px;border-radius:8px;background:var(--blue);color:#fff;font-size:28px;font-weight:950;text-transform:uppercase}
+  .customer-profile h2{margin:0 0 8px;color:var(--ink);font-size:26px;line-height:1.18}
+  .customer-muted{color:var(--muted);font-size:13px;line-height:1.55}
+  .customer-contact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+  .customer-contact-item{border:1px solid #d6e4f2;border-radius:8px;padding:10px;background:var(--soft)}
+  .customer-contact-item span{display:block;color:var(--muted);font-size:12px;font-weight:850}
+  .customer-contact-item strong{display:block;margin-top:4px;color:var(--ink);overflow-wrap:anywhere}
+  .customer-side{display:grid;align-content:start;gap:10px}
+  .customer-status{display:inline-flex;width:max-content;align-items:center;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:850;border:1px solid transparent}
+  .customer-status--green,.customer-status--cyan{color:#00613c;background:#effcf6;border-color:#b7efd9}
+  .customer-status--sun{color:#8a5a00;background:#fff8d7;border-color:#f7dda0}
+  .customer-status--rose{color:#b42318;background:#fff4f4;border-color:#fecaca}
+  .customer-status--slate{color:#475569;background:#f3f6f9;border-color:#d7e1eb}
+  .customer-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .customer-kpi{padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 12px 28px rgba(0,59,149,.08)}
+  .customer-kpi span{display:block;color:var(--muted);font-size:12px;font-weight:850;text-transform:uppercase}
+  .customer-kpi strong{display:block;margin-top:8px;color:var(--blue-dark);font-size:26px;line-height:1}
+  .customer-detail-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+  .customer-section{padding:16px}
+  .customer-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e2edf8}
+  .customer-section h2{margin:0;color:var(--ink);font-size:22px;line-height:1.25}
+  .customer-section h3{margin:0;color:var(--ink);font-size:17px;line-height:1.3}
+  .customer-list{display:grid;gap:10px}
+  .customer-split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .customer-item{border:1px solid #d6e4f2;border-radius:8px;background:#fff;padding:12px}
+  .customer-item h3{margin:8px 0 4px}
+  .customer-item a{color:var(--blue-dark);text-decoration:none}
+  .customer-item a:hover{text-decoration:underline}
+  .customer-money{color:var(--blue-dark);font-weight:950}
+  .customer-lock{border-color:#fecaca;background:#fff5f5}
+  .customer-empty{border:1px dashed #cfe0f3;border-radius:8px;background:#f7fbff;padding:14px;color:var(--muted)}
+  .customer-audit{display:grid;gap:8px}
+  .customer-audit .customer-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+  @media(max-width:1040px){
+    .customer-profile,.customer-detail-layout,.customer-split{grid-template-columns:1fr}
+    .customer-contact-grid,.customer-kpis{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:640px){
+    .customer-detail-page{padding:18px 10px 42px}
+    .customer-detail-title{display:grid;gap:10px}
+    .customer-detail-title h1{font-size:26px}
+    .customer-detail-actions{justify-content:stretch}
+    .customer-detail-button{flex:1 1 130px}
+    .customer-detail-actions form{flex:1 1 100%;display:flex}
+    .customer-detail-actions form .customer-detail-button{width:100%}
+    .customer-profile-main{grid-template-columns:48px minmax(0,1fr)}
+    .customer-avatar{width:48px;height:48px;font-size:22px}
+    .customer-contact-grid,.customer-kpis{grid-template-columns:1fr}
+    .customer-audit .customer-item{grid-template-columns:1fr}
+  }
 </style>
 
-<main class="cust-detail">
-  <div class="cust-shell">
-    <section class="cust-hero">
+<main class="customer-detail-page">
+  <div class="customer-detail-shell">
+    <section class="customer-detail-title">
+      <h1>Chi tiết khách hàng</h1>
+      <div class="customer-detail-actions">
+        <a class="customer-detail-button" href="/manager/customers">Danh sách</a>
+        <a class="customer-detail-button customer-detail-button--primary" href="/manager/customers/<%= customer.id %>/edit">Sửa hồ sơ</a>
+        <form method="post" action="/manager/customers/<%= customer.id %>/delete" onsubmit="return confirm('Xóa khách hàng này? Chỉ xóa được khi khách chưa có giao dịch.')">
+          <button class="customer-detail-button customer-detail-button--danger" type="submit" <%= customer.canDelete ? "" : "disabled title='Khách đã có giao dịch nên không thể xóa'" %>>
+            <%= customer.canDelete ? "Xóa hồ sơ" : "Khóa xóa" %>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <% if (error) { %><div class="customer-detail-alert customer-detail-alert--error"><%= error %></div><% } %>
+    <% if (success) { %><div class="customer-detail-alert customer-detail-alert--success"><%= success %></div><% } %>
+
+    <section class="customer-detail-card customer-profile">
       <div>
-        <span class="cust-chip">Hồ sơ khách hàng</span>
-        <h1><%= customer.tenKh %></h1>
-        <p class="cust-muted"><%= customer.email || "Chưa email" %> · <%= customer.sdt || "Chưa SĐT" %> · <%= customer.cccd || "Chưa CCCD" %></p>
-        <div class="cust-actions">
-          <a class="cust-button" href="/manager/customers">Danh sách</a>
-          <a class="cust-button cust-button--primary" href="/manager/customers/<%= customer.id %>/edit">Sửa hồ sơ</a>
-          <form method="post" action="/manager/customers/<%= customer.id %>/delete" onsubmit="return confirm('Xóa khách hàng này? Chỉ xóa được khi khách chưa có giao dịch.')">
-            <button class="cust-button cust-button--danger" type="submit" <%= customer.canDelete ? "" : "disabled title='Khách đã có giao dịch nên không thể xóa'" %>>
-              <%= customer.canDelete ? "Xóa hồ sơ" : "Không thể xóa" %>
-            </button>
-          </form>
+        <div class="customer-profile-main">
+          <span class="customer-avatar"><%= String(customer.tenKh || "?").trim().slice(0, 1).toUpperCase() || "?" %></span>
+          <div>
+            <h2><%= customer.tenKh %></h2>
+            <div class="customer-muted">Mã khách hàng #<%= customer.id %></div>
+          </div>
+        </div>
+        <div class="customer-contact-grid">
+          <div class="customer-contact-item"><span>Email</span><strong><%= customer.email || "Chưa email" %></strong></div>
+          <div class="customer-contact-item"><span>Số điện thoại</span><strong><%= customer.sdt || "Chưa SĐT" %></strong></div>
+          <div class="customer-contact-item"><span>CCCD</span><strong><%= customer.cccd || "Chưa CCCD" %></strong></div>
         </div>
       </div>
-      <div style="text-align:right">
-        <span class="cust-status cust-status--<%= customer.ekycMeta.tone %>"><%= customer.ekycMeta.label %></span>
-        <p class="cust-muted" style="margin:12px 0 0">#<%= customer.id %> · <%= customer.typeLabel %></p>
-      </div>
+      <aside class="customer-side">
+        <span class="customer-status customer-status--<%= customer.ekycMeta.tone %>"><%= customer.ekycMeta.label %></span>
+        <div class="customer-muted"><%= customer.ekycMeta.hint || "Theo dõi trạng thái xác minh định danh của khách." %></div>
+        <% if (!customer.canDelete) { %>
+          <div class="customer-item customer-lock">
+            <span class="customer-status customer-status--rose">Khóa xóa</span>
+            <p class="customer-muted" style="margin:8px 0 0">Khách đã có giao dịch nên chỉ cho sửa hồ sơ để bảo toàn lịch sử đặt phòng.</p>
+          </div>
+        <% } %>
+      </aside>
     </section>
 
-    <% if (error) { %><div class="cust-alert cust-alert--error"><%= error %></div><% } %>
-    <% if (success) { %><div class="cust-alert cust-alert--success"><%= success %></div><% } %>
-
-    <section class="cust-kpi-grid">
-      <article class="cust-kpi"><span>Chi tiêu</span><strong class="cust-money"><%= customer.totalSpentFormatted %></strong></article>
-      <article class="cust-kpi"><span>Giao dịch</span><strong><%= customer.transactionCount %></strong></article>
-      <article class="cust-kpi"><span>Booking mở</span><strong><%= customer.activeBookingCount %></strong></article>
-      <article class="cust-kpi"><span>Sức khỏe</span><strong><%= customer.healthScore %>%</strong></article>
+    <section class="customer-kpis">
+      <article class="customer-kpi"><span>Chi tiêu</span><strong><%= customer.totalSpentFormatted %></strong></article>
+      <article class="customer-kpi"><span>Giao dịch</span><strong><%= customer.transactionCount %></strong></article>
+      <article class="customer-kpi"><span>Booking đang mở</span><strong><%= customer.activeBookingCount %></strong></article>
     </section>
 
-    <section class="cust-layout">
-      <section class="cust-panel">
-        <h2>Hoạt động khách hàng</h2>
-        <div class="cust-grid">
+    <section class="customer-detail-layout">
+      <section class="customer-detail-card customer-section">
+        <div class="customer-section-head">
+          <h2>Lịch sử hoạt động</h2>
+        </div>
+        <div class="customer-split">
           <div>
-            <h3>Booking gần đây</h3>
-            <div class="cust-list">
-              <% if (!bookings.length) { %><div class="cust-insight cust-muted">Khách chưa có booking.</div><% } %>
+            <div class="customer-section-head">
+              <h3>Booking gần đây</h3>
+            </div>
+            <div class="customer-list">
+              <% if (!bookings.length) { %><div class="customer-empty">Khách chưa có booking.</div><% } %>
               <% bookings.forEach((booking) => { %>
-                <article class="cust-insight">
-                  <span class="cust-status cust-status--cyan"><%= booking.trangThai %></span>
-                  <h3 style="margin:10px 0 4px"><%= booking.bookingCode || `GD-${booking.id}` %> · <%= booking.tongTienFormatted %></h3>
-                  <p class="cust-muted"><%= booking.ngayGiaoDichLabel %> · <%= booking.roomCount %> phòng · <%= booking.hotelLabel || "Chưa gắn cơ sở" %></p>
+                <article class="customer-item">
+                  <span class="customer-status customer-status--cyan"><%= booking.trangThai %></span>
+                  <h3><%= booking.bookingCode || `GD-${booking.id}` %> · <span class="customer-money"><%= booking.tongTienFormatted %></span></h3>
+                  <p class="customer-muted"><%= booking.ngayGiaoDichLabel %> · <%= booking.roomCount %> phòng · <%= booking.hotelLabel || "Chưa gắn cơ sở" %></p>
                 </article>
               <% }) %>
             </div>
           </div>
           <div>
-            <h3>Feedback gần đây</h3>
-            <div class="cust-list">
-              <% if (!feedback.length) { %><div class="cust-insight cust-muted">Chưa có phản hồi từ khách này.</div><% } %>
+            <div class="customer-section-head">
+              <h3>Feedback gần đây</h3>
+            </div>
+            <div class="customer-list">
+              <% if (!feedback.length) { %><div class="customer-empty">Chưa có phản hồi từ khách này.</div><% } %>
               <% feedback.forEach((fb) => { %>
-                <article class="cust-insight">
-                  <span class="cust-status cust-status--sun"><%= fb.stars %></span>
-                  <h3 style="margin:10px 0 4px"><%= fb.loaiDichVu || "Phản hồi" %> · <%= fb.tinhTrang || "ChuaXuLy" %></h3>
-                  <p class="cust-muted"><%= fb.ngayPhanHoiLabel %> · <%= fb.sentiment || "Neutral" %></p>
-                  <p class="cust-muted"><%= String(fb.noiDung || "").slice(0, 130) %></p>
+                <article class="customer-item">
+                  <span class="customer-status customer-status--sun"><%= fb.stars %></span>
+                  <h3><%= fb.loaiDichVu || "Phản hồi" %> · <%= fb.tinhTrang || "ChuaXuLy" %></h3>
+                  <p class="customer-muted"><%= fb.ngayPhanHoiLabel %> · <%= fb.sentiment || "Neutral" %></p>
+                  <p class="customer-muted"><%= String(fb.noiDung || "").slice(0, 130) %></p>
                 </article>
               <% }) %>
             </div>
           </div>
         </div>
 
-        <h3 style="margin:22px 0 0">Audit log</h3>
-        <div class="cust-list">
-          <% if (!audit.length) { %><div class="cust-insight cust-muted">Chưa có lịch sử chỉnh sửa.</div><% } %>
+        <div class="customer-section-head" style="margin-top:18px">
+          <h3>Audit log</h3>
+        </div>
+        <div class="customer-audit">
+          <% if (!audit.length) { %><div class="customer-empty">Chưa có lịch sử chỉnh sửa.</div><% } %>
           <% audit.forEach((log) => { %>
-            <article class="cust-insight">
-              <span class="cust-status cust-status--slate"><%= log.hanhDong %></span>
-              <strong style="display:block;margin-top:8px"><%= log.usernameThucHien || "system" %></strong>
-              <p class="cust-muted"><%= log.ghichu || "" %> · <%= log.thoigianLabel %></p>
+            <article class="customer-item">
+              <div>
+                <span class="customer-status customer-status--slate"><%= log.hanhDong %></span>
+                <strong style="display:block;margin-top:8px"><%= log.usernameThucHien || "system" %></strong>
+                <p class="customer-muted"><%= log.ghichu || "" %></p>
+              </div>
+              <div class="customer-muted"><%= log.thoigianLabel %></div>
             </article>
           <% }) %>
         </div>
       </section>
 
-      <aside class="cust-panel">
-        <h2>Đối soát hồ sơ</h2>
-        <% if (!customer.canDelete) { %>
-          <div class="cust-insight">
-            <span class="cust-status cust-status--rose">Khóa xóa</span>
-            <p class="cust-muted">Hồ sơ này đã có giao dịch nên hệ thống chỉ cho sửa, không xóa để bảo toàn lịch sử đặt phòng, công nợ và audit.</p>
-          </div>
-        <% } %>
+      <aside class="customer-detail-card customer-section">
+        <div class="customer-section-head">
+          <h2>Đối soát hồ sơ</h2>
+        </div>
         <% if (duplicates.length) { %>
-          <div class="cust-list">
+          <div class="customer-list">
             <% duplicates.forEach((item) => { %>
-              <article class="cust-insight">
-                <span class="cust-status cust-status--<%= item.meta.tone %>"><%= item.meta.label %> · <%= item.scoreLabel %></span>
-                <h3 style="margin:10px 0 4px"><a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a></h3>
-                <p class="cust-muted"><%= item.email || "Chưa email" %> · <%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></p>
-                <p class="cust-muted"><%= (item.reasons || []).join(", ") %></p>
+              <article class="customer-item">
+                <span class="customer-status customer-status--<%= item.meta.tone %>"><%= item.meta.label %> · <%= item.scoreLabel %></span>
+                <h3><a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a></h3>
+                <p class="customer-muted"><%= item.email || "Chưa email" %> · <%= item.sdt || "Chưa SĐT" %> · <%= item.cccd || "Chưa CCCD" %></p>
+                <p class="customer-muted"><%= (item.reasons || []).join(", ") %></p>
               </article>
             <% }) %>
           </div>
         <% } else { %>
-          <p class="cust-muted">Chưa thấy hồ sơ nào có dấu hiệu trùng mềm với khách hàng này.</p>
+          <div class="customer-empty">Chưa thấy hồ sơ nào có dấu hiệu trùng mềm với khách hàng này.</div>
         <% } %>
       </aside>
     </section>

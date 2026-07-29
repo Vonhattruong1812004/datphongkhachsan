@@ -1,0 +1,265 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+
+<style>
+  body {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(0, 108, 228, .14), transparent 30%),
+      radial-gradient(circle at 88% 12%, rgba(20, 184, 166, .14), transparent 28%),
+      linear-gradient(180deg, #f8fbff 0%, #eef6ff 48%, #ffffff 100%) !important;
+  }
+
+  .download-shell {
+    width: min(1160px, calc(100vw - 32px));
+    margin: 0 auto;
+    padding: 34px 0 72px;
+  }
+
+  .download-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.04fr) 390px;
+    gap: 22px;
+    align-items: stretch;
+  }
+
+  .download-panel {
+    border-radius: 28px;
+    border: 1px solid rgba(0, 108, 228, .12);
+    background: rgba(255, 255, 255, .88);
+    box-shadow: 0 24px 70px rgba(15, 36, 66, .12);
+    padding: 28px;
+  }
+
+  .download-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 34px;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: #eaf4ff;
+    color: #0057b8;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .download-kicker::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: #10b981;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, .12);
+  }
+
+  .download-panel h1 {
+    margin: 18px 0 12px;
+    color: #0f2442;
+    font-size: clamp(42px, 6vw, 76px);
+    line-height: .96;
+    letter-spacing: 0;
+  }
+
+  .download-panel p {
+    margin: 0;
+    color: #5c7189;
+    font-size: 17px;
+    line-height: 1.75;
+  }
+
+  .download-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .download-store {
+    min-height: 82px;
+    border-radius: 18px;
+    border: 1px solid rgba(0, 108, 228, .16);
+    background: #ffffff;
+    color: #0f2442;
+    padding: 14px;
+    text-decoration: none;
+    display: grid;
+    gap: 4px;
+    box-shadow: 0 14px 34px rgba(15, 36, 66, .08);
+  }
+
+  .download-store.is-primary {
+    border-color: transparent;
+    background: linear-gradient(135deg, #003b95, #006ce4);
+    color: #ffffff;
+  }
+
+  .download-store.is-disabled {
+    opacity: .76;
+  }
+
+  .download-store span {
+    font-size: 12px;
+    font-weight: 850;
+    color: inherit;
+    opacity: .78;
+  }
+
+  .download-store strong {
+    font-size: 18px;
+    font-weight: 1000;
+  }
+
+  .download-qr-card {
+    display: grid;
+    gap: 16px;
+    text-align: center;
+    align-content: center;
+  }
+
+  .download-qr {
+    width: min(286px, 100%);
+    aspect-ratio: 1;
+    margin: 0 auto;
+    border-radius: 24px;
+    border: 12px solid #ffffff;
+    box-shadow: 0 20px 48px rgba(0, 59, 149, .18);
+    background: #ffffff;
+  }
+
+  .download-url {
+    display: block;
+    color: #0057b8;
+    font-size: 13px;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+  }
+
+  .download-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 22px;
+  }
+
+  .download-card {
+    border-radius: 22px;
+    border: 1px solid rgba(0, 108, 228, .12);
+    background: rgba(255, 255, 255, .82);
+    padding: 20px;
+    box-shadow: 0 16px 42px rgba(15, 36, 66, .08);
+  }
+
+  .download-card strong {
+    display: block;
+    color: #0f2442;
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .download-card p {
+    margin: 0;
+    color: #5c7189;
+    line-height: 1.6;
+  }
+
+  .download-note {
+    margin-top: 22px;
+    border-radius: 22px;
+    border: 1px solid rgba(245, 158, 11, .22);
+    background: #fffbeb;
+    color: #92400e;
+    padding: 16px 18px;
+    line-height: 1.6;
+    font-weight: 750;
+  }
+
+  @media (max-width: 900px) {
+    .download-hero,
+    .download-grid,
+    .download-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .download-panel {
+      padding: 22px;
+      border-radius: 22px;
+    }
+  }
+</style>
+
+<main class="download-shell">
+  <section class="download-hero">
+    <div class="download-panel">
+      <div class="download-kicker">Bento Booking App</div>
+      <h1>Tải app đa nền tảng.</h1>
+      <p>
+        Quét QR để mở trung tâm tải app. Hệ thống hỗ trợ iOS, Android và Web/PWA để khách đặt phòng,
+        xem tour, nhận gợi ý AI, kiểm tra eKYC, mã giảm giá và lịch sử đặt phòng trên cùng một nền tảng.
+      </p>
+
+      <div class="download-actions">
+        <a class="download-store <%= links.iosUrl ? "is-primary" : "is-disabled" %>" href="<%= links.iosUrl || links.webAppUrl %>">
+          <span><%= links.iosUrl ? "Tải trên" : "Đang chờ duyệt" %></span>
+          <strong>App Store</strong>
+        </a>
+        <a class="download-store <%= links.androidUrl ? "is-primary" : "is-disabled" %>" href="<%= links.androidUrl || links.webAppUrl %>">
+          <span><%= links.androidUrl ? "Tải trên" : "Đang chờ duyệt" %></span>
+          <strong>Google Play</strong>
+        </a>
+        <a class="download-store is-primary" href="<%= links.webAppUrl %>">
+          <span>Cài ngay</span>
+          <strong>Web App</strong>
+        </a>
+      </div>
+
+      <% if (!links.isStoreReady) { %>
+        <div class="download-note">
+          App Store và Google Play cần tài khoản developer, ký build và duyệt store. Hiện QR sẽ đưa khách về web app/PWA;
+          sau khi có link store thật, chỉ cần cấu hình `IOS_APP_STORE_URL` và `ANDROID_PLAY_STORE_URL`.
+        </div>
+      <% } %>
+    </div>
+
+    <aside class="download-panel download-qr-card">
+      <img class="download-qr" src="<%= links.qrUrl %>" alt="QR tải app Bento Booking" />
+      <div>
+        <div class="download-kicker">QR tải app</div>
+        <p>Quét bằng camera điện thoại để mở trang tải app.</p>
+        <span class="download-url"><%= links.downloadUrl %></span>
+      </div>
+    </aside>
+  </section>
+
+  <section class="download-grid">
+    <article class="download-card">
+      <strong>iOS</strong>
+      <p>Phát hành qua App Store Connect sau khi có Apple Developer Program, bundle id, chứng chỉ ký app và ảnh chụp màn hình.</p>
+    </article>
+    <article class="download-card">
+      <strong>Android</strong>
+      <p>Phát hành qua Google Play Console bằng Android App Bundle, signing key, chính sách dữ liệu và store listing.</p>
+    </article>
+    <article class="download-card">
+      <strong>Web/PWA</strong>
+      <p>Cài trực tiếp từ trình duyệt, dùng manifest hiện có, service worker và giao diện responsive cho mọi thiết bị.</p>
+    </article>
+  </section>
+</main>
+
+<script>
+  (() => {
+    const iosUrl = "<%= links.iosUrl %>";
+    const androidUrl = "<%= links.androidUrl %>";
+    const webUrl = "<%= links.webAppUrl %>";
+    const ua = navigator.userAgent || "";
+    const isAndroid = /Android/i.test(ua);
+    const isIos = /iPhone|iPad|iPod/i.test(ua);
+    const preferred = isAndroid && androidUrl ? androidUrl : (isIos && iosUrl ? iosUrl : webUrl);
+
+    document.querySelectorAll("[data-device-download]").forEach((link) => {
+      link.setAttribute("href", preferred);
+    });
+  })();
+</script>
+
+<%- include("../partials/footer") %>

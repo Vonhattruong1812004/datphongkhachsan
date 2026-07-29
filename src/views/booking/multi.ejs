@@ -3,7 +3,12 @@
 <%
   const pageSummary = summary || {};
   const selectedIds = new Set((formValues?.room_ids || []).map((id) => String(id)));
+  const accommodationTypeItems = typeof accommodationTypes !== "undefined" && Array.isArray(accommodationTypes) ? accommodationTypes : [];
+  const hotelCityItems = typeof hotelCities !== "undefined" && Array.isArray(hotelCities) ? hotelCities : [];
+  const hotelDistrictItems = typeof hotelDistricts !== "undefined" && Array.isArray(hotelDistricts) ? hotelDistricts : [];
+  const hotelDistrictJson = JSON.stringify(hotelDistrictItems).replace(/</g, "\\u003c");
   const staff = String(staffMode || "");
+  const hasRoomScope = Boolean(filters.hotel_city || filters.hotel_district || filters.dia_diem || filters.hotel_name || (filters.user_lat && filters.user_lng));
   const todayLabel = new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 %>
 <style>
@@ -27,6 +32,7 @@
   .booking-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(330px,.75fr);gap:18px;align-items:start}.room-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.room-card{position:relative;overflow:hidden;border-radius:24px;border:1px solid rgba(19,48,74,.12);background:rgba(255,255,255,.78);box-shadow:0 18px 44px rgba(12,39,64,.10)}.room-card.is-selected{border-color:rgba(20,184,166,.64);box-shadow:0 22px 54px rgba(20,184,166,.18)}
   .room-card img{width:100%;height:160px;object-fit:cover;display:block;background:#e0f2fe}.room-card__body{padding:15px}.room-card h3{margin:9px 0 6px;color:#102033;font-size:20px}.room-card p{margin:0 0 6px;color:#5f778f;font-size:13px}.room-price{color:#0f766e;font-weight:1000;font-size:20px}.room-check{display:flex;align-items:center;gap:9px;margin-top:12px;font-weight:900}.room-check input{width:18px;height:18px}
   .room-card__actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}.room-detail-link{display:inline-flex;align-items:center;justify-content:center;min-height:36px;border-radius:999px;border:1px solid rgba(14,165,233,.20);background:rgba(14,165,233,.08);color:#0369a1;padding:8px 12px;font-size:12px;font-weight:1000;text-decoration:none}
+  .room-distance{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:9px 0;color:#075985;font-size:12px;font-weight:950}.room-distance span{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:rgba(14,165,233,.12);color:#0369a1}
   .service-row{display:grid;grid-template-columns:minmax(0,1fr) 82px minmax(135px,.7fr);gap:10px;align-items:end;border-bottom:1px dashed rgba(19,48,74,.14);padding:12px 0}.service-row:last-child{border-bottom:0}.service-name strong{display:block;color:#102033}.service-name span{color:#5f778f;font-size:13px}.service-help{margin-top:10px;border-radius:16px;background:rgba(14,165,233,.08);border:1px solid rgba(14,165,233,.14);padding:11px;color:#0c4a6e;font-size:13px;font-weight:800;line-height:1.45}
   .sticky-total{position:sticky;top:92px}.total-lines{display:grid;gap:10px;margin-top:14px}.total-line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed rgba(19,48,74,.14);padding-bottom:9px;color:#5f778f}.total-line strong{color:#102033}.total-line--grand{border-bottom:0;border-radius:18px;background:linear-gradient(135deg,rgba(14,165,233,.10),rgba(20,184,166,.12));padding:13px;font-size:18px;color:#102033;font-weight:1000}
   .capacity-alert{margin-top:12px;border-radius:16px;border:1px solid rgba(239,71,111,.22);background:rgba(255,241,242,.92);color:#be123c;padding:11px;font-size:13px;font-weight:900;line-height:1.45}.capacity-alert[hidden]{display:none}
@@ -259,6 +265,38 @@
   .room-check input{
     accent-color:#14b8a6;
   }
+  .room-nearby{
+    display:flex;
+    gap:9px;
+    align-items:flex-start;
+    margin:10px 0 12px;
+    border-radius:16px;
+    border:1px solid rgba(14,165,233,.18);
+    background:linear-gradient(135deg,#eff6ff,#ecfeff);
+    padding:10px 11px;
+    color:#0f2d42;
+    font-size:12px;
+    line-height:1.42;
+  }
+  .room-nearby__pin{
+    flex:0 0 26px;
+    width:26px;
+    height:26px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#0ea5e9;
+    color:#ffffff;
+    font-weight:1000;
+  }
+  .room-nearby strong{
+    display:block;
+    color:#075985;
+  }
+  .room-nearby span{
+    color:#587083;
+  }
   .room-detail-link{
     border:1px solid rgba(255,255,255,.62);
     background:linear-gradient(135deg,#67e8f9,#86efac);
@@ -348,47 +386,466 @@
       padding:20px;
     }
   }
+
+  /* Customer booking UC: align with manager white/blue operating screens. */
+  body{
+    background:linear-gradient(180deg,#eaf4ff 0,#f7fbff 150px,#ffffff 100%) !important;
+    color:#102033;
+  }
+  .online-shell{
+    max-width:1480px;
+    gap:12px;
+    padding:14px 20px 38px;
+    overflow:visible;
+  }
+  .online-shell::before,
+  .online-shell::after,
+  .online-hero::after{
+    display:none;
+    content:none;
+  }
+  .online-hero,
+  .online-panel{
+    margin:0;
+    border:1px solid #c9e0fb;
+    border-radius:8px;
+    background:#ffffff !important;
+    box-shadow:0 8px 22px rgba(0,59,149,.07);
+    -webkit-backdrop-filter:none;
+    backdrop-filter:none;
+  }
+  .online-hero{
+    min-height:58px;
+    padding:0;
+    border:0;
+    box-shadow:none;
+    background:transparent !important;
+  }
+  .online-kicker,
+  .online-hero .online-muted,
+  .online-clock,
+  .online-panel > .online-muted,
+  .service-help{
+    display:none !important;
+  }
+  .online-hero h1{
+    min-height:58px;
+    display:flex;
+    align-items:center;
+    width:100%;
+    margin:0;
+    padding:13px 18px 13px 30px;
+    border:1px solid #b8d7fb;
+    border-left:0;
+    border-radius:8px;
+    color:#ffffff !important;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%);
+    box-shadow:0 14px 34px rgba(0,59,149,.16);
+    font-size:25px;
+    font-weight:950;
+    line-height:1.14;
+    letter-spacing:0;
+    text-shadow:none;
+    position:relative;
+  }
+  .online-hero h1::before{
+    content:"";
+    position:absolute;
+    left:16px;
+    top:13px;
+    bottom:13px;
+    width:5px;
+    border-radius:999px;
+    background:#ffffff;
+  }
+  .online-hero h1 span{
+    color:#ffffff !important;
+    background:none;
+    -webkit-background-clip:initial;
+    background-clip:initial;
+  }
+  .online-panel{
+    padding:16px;
+  }
+  .online-panel h2{
+    margin:0 0 12px;
+    color:#102033 !important;
+    font-size:19px;
+    font-weight:950;
+    letter-spacing:0;
+    text-shadow:none;
+  }
+  .online-form-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin-top:0;
+  }
+  .online-field{
+    gap:6px;
+  }
+  .online-field label,
+  .service-row .online-field label{
+    color:#102033;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:0;
+    text-transform:none;
+  }
+  .online-field input,
+  .online-field select,
+  .online-field textarea,
+  .service-row .online-field input,
+  .service-row .online-field select{
+    min-height:42px;
+    border:1px solid #d5e6fa;
+    border-radius:8px;
+    background:#ffffff;
+    color:#102033;
+    padding:8px 11px;
+    font-size:14px;
+    font-weight:850;
+    box-shadow:none;
+  }
+  .online-field textarea{
+    min-height:78px;
+  }
+  .online-field input:focus,
+  .online-field select:focus,
+  .online-field textarea:focus{
+    border-color:#006ce4;
+    box-shadow:0 0 0 3px rgba(0,108,228,.12);
+  }
+  .online-actions{
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:12px;
+  }
+  .online-button,
+  .room-detail-link{
+    min-height:40px;
+    border:1px solid #bfdbfe;
+    border-radius:8px;
+    background:#ffffff;
+    color:#003b95;
+    padding:8px 13px;
+    font-size:13px;
+    font-weight:950;
+    box-shadow:none;
+  }
+  .online-button:hover,
+  .room-detail-link:hover{
+    border-color:#006ce4;
+    background:#eff6ff;
+    box-shadow:0 8px 18px rgba(0,108,228,.10);
+  }
+  .online-button--primary{
+    border-color:#006ce4;
+    color:#ffffff;
+    background:#006ce4;
+    box-shadow:0 10px 22px rgba(0,108,228,.18);
+  }
+  .online-button--primary:hover{
+    background:#005fc7;
+    color:#ffffff;
+  }
+  .geo-row{
+    margin-top:10px;
+  }
+  .geo-status{
+    min-height:32px;
+    border-color:#bfdbfe;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#075eb8;
+    font-size:12px;
+  }
+  .online-summary{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin-top:12px;
+  }
+  .online-stat,
+  .online-stat:nth-child(n){
+    border:1px solid #c9e0fb;
+    border-radius:8px;
+    background:#ffffff;
+    color:#102033;
+    padding:12px 13px;
+    box-shadow:0 8px 18px rgba(0,59,149,.06);
+  }
+  .online-stat span,
+  .online-stat strong{
+    color:inherit;
+    text-shadow:none;
+  }
+  .online-stat span{
+    color:#526985;
+    font-size:12px;
+  }
+  .online-stat strong{
+    margin-top:4px;
+    color:#003b95;
+    font-size:18px;
+  }
+  .booking-layout{
+    grid-template-columns:minmax(0,1fr) 372px;
+    gap:12px;
+  }
+  .booking-layout > div{
+    display:grid;
+    gap:12px;
+  }
+  .online-room-select{
+    order:1;
+  }
+  .online-booking-info{
+    order:2;
+  }
+  .sticky-total{
+    top:92px;
+    display:grid;
+    gap:12px;
+  }
+  .room-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+  }
+  .room-card{
+    border:1px solid #c9e0fb;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:0 8px 18px rgba(0,59,149,.06);
+  }
+  .room-card:hover{
+    border-color:#006ce4;
+    box-shadow:0 12px 28px rgba(0,108,228,.12);
+  }
+  .room-card.is-selected{
+    border-color:#006ce4;
+    box-shadow:0 0 0 3px rgba(0,108,228,.12),0 12px 28px rgba(0,108,228,.12);
+  }
+  .room-card img{
+    height:142px;
+    border:0;
+  }
+  .room-card__body{
+    padding:12px;
+  }
+  .room-card .online-kicker{
+    display:inline-flex !important;
+    max-width:100%;
+    border:1px solid #bfdbfe;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#075eb8;
+    padding:5px 8px;
+    font-size:11px;
+    text-transform:none;
+    letter-spacing:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .room-card h3{
+    margin:10px 0 5px;
+    color:#102033;
+    font-size:18px;
+    line-height:1.2;
+  }
+  .room-card p{
+    color:#526985;
+    font-size:12px;
+    line-height:1.45;
+  }
+  .room-price{
+    color:#047857;
+    font-size:18px;
+  }
+  .room-check{
+    min-height:40px;
+    border:1px solid #bfdbfe;
+    border-radius:8px;
+    padding:8px 10px;
+    color:#003b95;
+    background:#eff6ff;
+    font-size:13px;
+  }
+  .room-check input{
+    accent-color:#006ce4;
+  }
+  .room-nearby{
+    border-color:#c9e0fb;
+    border-radius:8px;
+    background:#f7fbff;
+    padding:9px;
+  }
+  .room-nearby__pin{
+    background:#006ce4;
+  }
+  .room-distance{
+    color:#075eb8;
+  }
+  .service-row{
+    grid-template-columns:minmax(0,1fr) 66px minmax(118px,.7fr);
+    gap:8px;
+    margin:0 0 8px;
+    padding:10px;
+    border:1px solid #d5e6fa;
+    border-radius:8px;
+    background:#f7fbff;
+    box-shadow:none;
+  }
+  .service-row .service-name strong{
+    color:#102033;
+    font-size:14px;
+  }
+  .service-row .service-name span{
+    color:#047857;
+    font-size:12px;
+  }
+  .total-lines{
+    gap:8px;
+  }
+  .total-line{
+    border:1px solid #d5e6fa;
+    border-radius:8px;
+    padding:10px 11px;
+    background:#f7fbff;
+    color:#526985;
+    box-shadow:none;
+  }
+  .total-line strong{
+    color:#102033;
+  }
+  .total-line--grand,
+  .total-line--grand:nth-last-child(1){
+    border-color:#006ce4;
+    background:#006ce4;
+    color:#ffffff;
+  }
+  .total-line--grand strong,
+  .total-line--grand span{
+    color:#ffffff;
+    text-shadow:none;
+  }
+  .capacity-alert,
+  .empty,
+  .online-alert{
+    border-radius:8px;
+    box-shadow:none;
+  }
+  .empty{
+    border:1px dashed #bfdbfe;
+    background:#f7fbff;
+    color:#526985;
+  }
+  .capacity-alert,
+  .online-alert{
+    border:1px solid #fecdd3;
+    background:#fff1f2;
+    color:#be123c;
+  }
+  @media(max-width:1180px){
+    .booking-layout{
+      grid-template-columns:1fr;
+    }
+    .sticky-total{
+      position:static;
+    }
+    .room-grid{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+  @media(max-width:860px){
+    .online-form-grid,
+    .online-summary,
+    .room-grid{
+      grid-template-columns:1fr;
+    }
+    .online-actions{
+      justify-content:flex-start;
+    }
+    .online-button{
+      flex:1 1 auto;
+    }
+  }
+  [data-room-collapsed="true"]{
+    display:none;
+  }
+  .room-load-more{
+    display:flex;
+    justify-content:center;
+    margin-top:12px;
+  }
+  body .online-shell .online-hero h1{
+    color:#ffffff !important;
+  }
 </style>
 
 <main class="online-shell">
   <section class="online-hero">
-    <div class="online-kicker">Khách hàng · Đặt phòng online</div>
-    <h1>Chọn nhiều phòng, <span>gán dịch vụ đúng phòng.</span></h1>
-    <p class="online-muted">Luồng online vẫn là đặt phòng của khách hàng và cọc SePay. Điểm nâng cấp ở đây là khách có thể chọn nhiều phòng trong cùng giao dịch, sau đó gắn từng dịch vụ vào đúng phòng đã chọn.</p>
+    <div class="online-kicker">Khách hàng · Đặt phòng trực tuyến</div>
+    <h1>Đặt phòng trực tuyến</h1>
+    <p class="online-muted">Luồng trực tuyến vẫn là đặt phòng của khách hàng và cọc SePay. Điểm nâng cấp ở đây là khách có thể chọn nhiều phòng trong cùng giao dịch, sau đó gắn từng dịch vụ vào đúng phòng đã chọn.</p>
     <div class="online-clock"><%= todayLabel %> · <span id="onlineClock">--:--:--</span></div>
   </section>
 
   <section class="online-panel">
     <h2>Lọc phòng</h2>
-    <div class="online-muted">Lọc theo điểm đến, khách sạn, số khách, loại phòng, view và giá. Ngày nhận/trả chỉ nhập ở bước tạo booking để hệ thống kiểm tra trùng lịch trước khi sinh QR cọc.</div>
-    <form method="get" action="/booking/multi" novalidate>
+    <div class="online-muted">Lọc theo điểm đến, cơ sở lưu trú, số khách, loại phòng, view và giá. Ngày nhận/trả chỉ nhập ở bước tạo đặt phòng để hệ thống kiểm tra trùng lịch trước khi sinh QR cọc.</div>
+    <form method="get" action="/booking/multi" id="multiRoomFilterForm" novalidate>
       <% if (staff) { %><input type="hidden" name="staff_mode" value="<%= staff %>" /><% } %>
+      <input type="hidden" name="user_lat" id="multiUserLat" value="<%= filters.user_lat || "" %>" />
+      <input type="hidden" name="user_lng" id="multiUserLng" value="<%= filters.user_lng || "" %>" />
       <div class="online-form-grid">
-        <div class="online-field"><label>Điểm đến</label><input name="hotel_city" value="<%= filters.hotel_city %>" placeholder="VD: Đà Nẵng" /></div>
-        <div class="online-field"><label>Khách sạn</label><input name="hotel_name" value="<%= filters.hotel_name %>" placeholder="Tên resort" /></div>
+        <div class="online-field"><label>Tỉnh/thành</label>
+          <select name="hotel_city" id="onlineHotelCity">
+            <option value="">Chọn tỉnh/thành</option>
+            <% hotelCityItems.forEach((city) => { %>
+              <option value="<%= city %>" <%= filters.hotel_city === city ? "selected" : "" %>><%= city %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="online-field"><label>Quận/huyện</label>
+          <select name="hotel_district" id="onlineHotelDistrict" data-selected-district="<%= filters.hotel_district || "" %>">
+            <option value="">Chọn quận/huyện</option>
+            <% hotelDistrictItems.forEach((district) => { %>
+              <option value="<%= district.value %>" data-city="<%= district.city %>" <%= filters.hotel_district === district.value ? "selected" : "" %>><%= district.value %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="online-field"><label>Gần địa điểm</label><input name="dia_diem" value="<%= filters.dia_diem %>" placeholder="VD: Chợ nổi Cái Răng, Bà Nà..." /></div>
+        <div class="online-field"><label>Loại lưu trú</label>
+          <select name="loai_luu_tru">
+            <option value="">Tất cả loại lưu trú</option>
+            <% accommodationTypeItems.forEach((type) => { %>
+              <option value="<%= type.code %>" <%= filters.loai_luu_tru === type.code ? "selected" : "" %>><%= type.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="online-field"><label>Cơ sở lưu trú</label><input name="hotel_name" value="<%= filters.hotel_name %>" placeholder="Tên hotel, resort, homestay..." /></div>
         <div class="online-field"><label>Số khách</label><input name="so_khach" type="number" min="1" value="<%= filters.so_khach || formValues.so_nguoi || 1 %>" /></div>
-        <div class="online-field"><label>Sắp xếp</label><select name="sort_by"><option value="ai" <%= filters.sort_by === "ai" ? "selected" : "" %>>Gợi ý thông minh</option><option value="price_asc" <%= filters.sort_by === "price_asc" ? "selected" : "" %>>Giá thấp trước</option><option value="price_desc" <%= filters.sort_by === "price_desc" ? "selected" : "" %>>Giá cao trước</option></select></div>
-        <div class="online-field"><label>Loại phòng</label><input name="loai_phong" value="<%= filters.loai_phong %>" placeholder="Deluxe, Suite..." /></div>
+        <div class="online-field"><label>Sắp xếp</label><select name="sort_by"><option value="ai" <%= filters.sort_by === "ai" || filters.sort_by === "distance" ? "selected" : "" %>>Gợi ý phù hợp</option><option value="price_asc" <%= filters.sort_by === "price_asc" ? "selected" : "" %>>Giá thấp trước</option><option value="price_desc" <%= filters.sort_by === "price_desc" ? "selected" : "" %>>Giá cao trước</option></select></div>
+        <div class="online-field"><label>Loại phòng</label><input name="loai_phong" value="<%= filters.loai_phong %>" placeholder="VD: Deluxe, Suite..." /></div>
         <div class="online-field"><label>View</label><input name="view_phong" value="<%= filters.view_phong %>" placeholder="Biển, vườn..." /></div>
         <div class="online-field"><label>Giá từ</label><input name="gia_tu" type="number" min="0" value="<%= filters.gia_tu || "" %>" placeholder="VD: 500000" /></div>
         <div class="online-field"><label>Giá đến</label><input name="gia_den" type="number" min="0" value="<%= filters.gia_den || "" %>" placeholder="VD: 2000000" /></div>
-        <div class="online-field"><label>Loại giường</label><input name="loai_giuong" value="<%= filters.loai_giuong %>" placeholder="King, Twin..." /></div>
+        <div class="online-field"><label>Loại giường</label><input name="loai_giuong" value="<%= filters.loai_giuong %>" placeholder="VD: King, Twin..." /></div>
       </div>
       <div class="online-actions"><button class="online-button online-button--primary" type="submit">Cập nhật phòng trống</button><a class="online-button" href="/booking/multi<%= staff ? `?staff_mode=${staff}` : "" %>">Đặt lại</a></div>
     </form>
-    <div class="online-summary">
-      <div class="online-stat"><span>Bộ lọc</span><strong>Không cần ngày ở</strong></div>
-      <div class="online-stat"><span>Số khách</span><strong><%= Number(filters.so_khach || formValues.so_nguoi || 1) %></strong></div>
-      <div class="online-stat"><span>Phòng phù hợp</span><strong><%= rooms.length %></strong></div>
-      <div class="online-stat"><span>Giữ chỗ</span><strong><%= pageSummary.depositPolicyLabel || "Cọc 50%" %></strong></div>
-    </div>
     <% if (errorMessage) { %><div class="online-alert"><%= errorMessage %></div><% } %>
   </section>
 
   <form method="post" action="/booking/multi" id="multiBookingForm">
     <% if (staff) { %><input type="hidden" name="staff_mode" value="<%= staff %>" /><% } %>
     <input type="hidden" name="services_json" id="servicesJson" value="<%= formValues.services_json || "[]" %>" />
+    <input type="hidden" name="dia_diem" value="<%= filters.dia_diem %>" />
+    <input type="hidden" name="loai_luu_tru" value="<%= filters.loai_luu_tru %>" />
+    <input type="hidden" name="user_lat" value="<%= filters.user_lat || "" %>" />
+    <input type="hidden" name="user_lng" value="<%= filters.user_lng || "" %>" />
     <input type="hidden" name="hotel_city" value="<%= filters.hotel_city %>" />
+    <input type="hidden" name="hotel_district" value="<%= filters.hotel_district %>" />
     <input type="hidden" name="hotel_name" value="<%= filters.hotel_name %>" />
     <input type="hidden" name="loai_phong" value="<%= filters.loai_phong %>" />
     <input type="hidden" name="view_phong" value="<%= filters.view_phong %>" />
@@ -398,8 +855,8 @@
 
     <section class="booking-layout">
       <div>
-        <section class="online-panel">
-          <h2>Thông tin booking</h2>
+        <section class="online-panel online-booking-info">
+          <h2>Thông tin đặt phòng</h2>
           <div class="online-form-grid">
             <div class="online-field"><label>Họ tên</label><input name="ten_khach" required value="<%= formValues.ten_khach %>" /></div>
             <div class="online-field"><label>CCCD/CMND</label><input name="cccd" required value="<%= formValues.cccd %>" /></div>
@@ -408,38 +865,57 @@
             <div class="online-field" style="grid-column:1/-1">
               <label style="display:flex;align-items:flex-start;gap:10px;text-transform:none;letter-spacing:0;font-size:13px;line-height:1.45">
                 <input type="checkbox" name="use_existing_customer" value="1" <%= ["1","true","on"].includes(String(formValues.use_existing_customer || "").toLowerCase()) ? "checked" : "" %> style="width:auto;min-height:auto;margin-top:3px" />
-                <span>Tôi là khách hàng cũ, cho phép hệ thống dùng hồ sơ đã lưu nếu CCCD/SĐT/email trùng khớp. Nếu thông tin không khớp, hệ thống sẽ yêu cầu nhập lại để tránh đặt nhầm hồ sơ.</span>
+                <span>Dùng hồ sơ đã lưu nếu CCCD/SĐT/email trùng khớp.</span>
               </label>
             </div>
             <div class="online-field"><label>Số khách</label><input name="so_nguoi" id="guestCount" type="number" min="1" required value="<%= formValues.so_nguoi || filters.so_khach || 1 %>" /></div>
             <div class="online-field"><label>Ngày nhận</label><input name="ngay_nhan" id="checkinDate" type="date" required value="<%= formValues.ngay_nhan || filters.ngay_nhan %>" /></div>
             <div class="online-field"><label>Ngày trả</label><input name="ngay_tra" id="checkoutDate" type="date" required value="<%= formValues.ngay_tra || filters.ngay_tra %>" /></div>
-            <div class="online-field"><label>Khuyến mãi</label><select name="ma_km" id="promotionSelect"><option value="" data-type="" data-value="0">Không áp dụng</option><% promotions.forEach((promo) => { %><option value="<%= promo.id %>" data-type="<%= promo.loaiUuDai %>" data-value="<%= promo.mucUuDai %>" <%= String(formValues.ma_km || "") === String(promo.id) ? "selected" : "" %>><%= promo.tenChuongTrinh %> · <%= promo.mucUuDai %><%= String(promo.loaiUuDai).toUpperCase() === "PERCENT" ? "%" : " đ" %></option><% }) %></select></div>
+            <div class="online-field"><label>Khuyến mãi</label><select name="ma_km" id="promotionSelect"><option value="" data-type="" data-value="0">Không áp dụng</option><% promotions.forEach((promo) => { %><option value="<%= promo.id %>" data-type="<%= promo.loaiUuDai %>" data-value="<%= promo.mucUuDai %>" <%= String(formValues.ma_km || "") === String(promo.id) ? "selected" : "" %>><%= promo.maGiamGia ? `${promo.maGiamGia} · ` : "" %><%= promo.tenChuongTrinh %> · <%= promo.mucUuDai %><%= String(promo.loaiUuDai).toUpperCase() === "PERCENT" ? "%" : " đ" %></option><% }) %></select></div>
           </div>
         </section>
 
-        <section class="online-panel">
-          <h2>Chọn phòng</h2>
-          <% if (!rooms.length) { %>
+        <section class="online-panel online-room-select">
+          <h2>Cơ sở lưu trú phù hợp</h2>
+          <% if (!hasRoomScope) { %>
+            <div class="empty">Vui lòng chọn tỉnh/thành rồi chọn quận/huyện hoặc nhập địa điểm cần đến để xem hotel, resort, homestay, penthouse phù hợp.</div>
+          <% } else if (!rooms.length) { %>
             <div class="empty">Chưa có phòng phù hợp với bộ lọc hiện tại. Hãy nới tiêu chí tìm kiếm rồi cập nhật lại.</div>
           <% } else { %>
             <div class="room-grid">
-              <% rooms.forEach((room) => { %>
-                <article class="room-card <%= selectedIds.has(String(room.id)) ? "is-selected" : "" %>" data-room-card>
+              <% rooms.forEach((room, index) => { %>
+                <article class="room-card <%= selectedIds.has(String(room.id)) ? "is-selected" : "" %>" data-room-card data-room-index="<%= index %>" data-room-collapsed="<%= index >= 12 && !selectedIds.has(String(room.id)) ? "true" : "false" %>">
                   <img src="<%= room.imageUrl %>" alt="Phòng <%= room.soPhong %>" />
                   <div class="room-card__body">
-                    <span class="online-kicker"><%= room.tinhThanh %> · <%= room.khachSan %></span>
+                    <span class="online-kicker"><%= room.loaiLuuTruTen || "Hotel" %> · <%= room.tinhThanh %> · <%= room.khachSan %></span>
                     <h3><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h3>
-                    <p><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View resort" %> · tối đa <%= room.soKhachToiDa %> khách</p>
+                    <p><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View lưu trú" %> · tối đa <%= room.soKhachToiDa %> khách</p>
+                    <% if (room.userDistanceLabel) { %>
+                      <div class="room-distance"><span>⌖</span> Cách vị trí của bạn khoảng <%= room.userDistanceLabel %></div>
+                    <% } %>
+                    <% if (room.nearbyPlaceName) { %>
+                      <div class="room-nearby">
+                        <span class="room-nearby__pin">G</span>
+                        <div>
+                          <strong>Gần <%= room.nearbyPlaceName %></strong>
+                          <span><%= room.nearbyDistanceLabel || "Đang cập nhật khoảng cách" %><%= room.nearbyTravelTimeLabel ? ` · khoảng ${room.nearbyTravelTimeLabel}` : "" %></span>
+                        </div>
+                      </div>
+                    <% } %>
                     <div class="room-price"><%= room.priceFormatted %> / đêm</div>
                     <div class="room-card__actions">
                       <label class="room-check"><input type="checkbox" name="room_ids" value="<%= room.id %>" data-room-id="<%= room.id %>" data-room-name="P<%= room.soPhong %> · <%= room.loaiPhong %>" data-room-price="<%= room.gia %>" data-room-capacity="<%= room.soKhachToiDa %>" <%= selectedIds.has(String(room.id)) ? "checked" : "" %> /> Chọn phòng này</label>
-                      <a class="room-detail-link" href="/booking/rooms/<%= room.id %>/detail?hotel_city=<%= encodeURIComponent(filters.hotel_city || "") %>&hotel_name=<%= encodeURIComponent(filters.hotel_name || "") %>&loai_phong=<%= encodeURIComponent(filters.loai_phong || "") %>&view_phong=<%= encodeURIComponent(filters.view_phong || "") %>&gia_tu=<%= encodeURIComponent(filters.gia_tu || "") %>&gia_den=<%= encodeURIComponent(filters.gia_den || "") %>&so_khach=<%= encodeURIComponent(filters.so_khach || formValues.so_nguoi || 1) %>&sort_by=<%= encodeURIComponent(filters.sort_by || "ai") %><%= staff ? `&staff_mode=${encodeURIComponent(staff)}` : "" %>">Chi tiết</a>
+                      <a class="room-detail-link" href="/booking/rooms/<%= room.id %>/detail?dia_diem=<%= encodeURIComponent(filters.dia_diem || "") %>&loai_luu_tru=<%= encodeURIComponent(filters.loai_luu_tru || "") %>&user_lat=<%= encodeURIComponent(filters.user_lat || "") %>&user_lng=<%= encodeURIComponent(filters.user_lng || "") %>&hotel_city=<%= encodeURIComponent(filters.hotel_city || "") %>&hotel_district=<%= encodeURIComponent(filters.hotel_district || "") %>&hotel_name=<%= encodeURIComponent(filters.hotel_name || "") %>&loai_phong=<%= encodeURIComponent(filters.loai_phong || "") %>&view_phong=<%= encodeURIComponent(filters.view_phong || "") %>&gia_tu=<%= encodeURIComponent(filters.gia_tu || "") %>&gia_den=<%= encodeURIComponent(filters.gia_den || "") %>&so_khach=<%= encodeURIComponent(filters.so_khach || formValues.so_nguoi || 1) %>&sort_by=<%= encodeURIComponent(filters.sort_by || "ai") %><%= staff ? `&staff_mode=${encodeURIComponent(staff)}` : "" %>">Chi tiết</a>
                     </div>
                   </div>
                 </article>
               <% }) %>
             </div>
+            <% if (rooms.length > 12) { %>
+              <div class="room-load-more">
+                <button class="online-button" type="button" data-room-load-more data-step="12">Xem thêm phòng</button>
+              </div>
+            <% } %>
           <% } %>
         </section>
       </div>
@@ -480,15 +956,20 @@
   </form>
 </main>
 
+<script type="application/json" id="onlineDistrictData"><%- hotelDistrictJson %></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
   const form = document.getElementById("multiBookingForm");
+  const citySelect = document.getElementById("onlineHotelCity");
+  const districtSelect = document.getElementById("onlineHotelDistrict");
+  const districtDataNode = document.getElementById("onlineDistrictData");
   const roomChecks = Array.from(document.querySelectorAll("[data-room-id]"));
   const serviceRows = Array.from(document.querySelectorAll("[data-service-row]"));
   const guestCountInput = document.getElementById("guestCount");
   const capacityAlert = document.getElementById("capacityAlert");
   const submitButton = document.getElementById("submitBookingButton");
+  const loadMoreRoomsButton = document.querySelector("[data-room-load-more]");
   const nights = () => {
     const start = new Date(document.getElementById("checkinDate")?.value || "");
     const end = new Date(document.getElementById("checkoutDate")?.value || "");
@@ -503,6 +984,58 @@ document.addEventListener("DOMContentLoaded", function () {
   }));
   const renderMoney = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = money.format(Math.max(0, Math.round(value || 0))); };
   const renderText = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+
+  function getDistrictData() {
+    try {
+      const parsed = JSON.parse(districtDataNode?.textContent || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function syncDistrictOptions() {
+    if (!citySelect || !districtSelect) return;
+    const selectedCity = citySelect.value;
+    const selectedDistrict = districtSelect.dataset.selectedDistrict || districtSelect.value;
+    const districts = selectedCity ? getDistrictData().filter((item) => item.city === selectedCity) : [];
+    districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>' + districts
+      .map((item) => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.value)}</option>`)
+      .join("");
+    districtSelect.value = districts.some((item) => item.value === selectedDistrict) ? selectedDistrict : "";
+    districtSelect.disabled = !selectedCity;
+    districtSelect.dataset.selectedDistrict = districtSelect.value;
+  }
+
+  function escapeHtml(value) {
+    return String(value || "").replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[char]));
+  }
+
+  citySelect?.addEventListener("change", () => {
+    if (districtSelect) districtSelect.dataset.selectedDistrict = "";
+    syncDistrictOptions();
+  });
+  districtSelect?.addEventListener("change", () => {
+    districtSelect.dataset.selectedDistrict = districtSelect.value;
+  });
+
+  loadMoreRoomsButton?.addEventListener("click", function () {
+    const step = Number(loadMoreRoomsButton.dataset.step || 12);
+    const hiddenCards = Array.from(document.querySelectorAll('[data-room-card][data-room-collapsed="true"]'));
+    hiddenCards.slice(0, step).forEach((card) => card.removeAttribute("data-room-collapsed"));
+    const remaining = document.querySelectorAll('[data-room-card][data-room-collapsed="true"]').length;
+    if (!remaining) {
+      loadMoreRoomsButton.closest(".room-load-more")?.remove();
+      return;
+    }
+    loadMoreRoomsButton.textContent = `Xem thêm phòng (${remaining} còn lại)`;
+  });
 
   function getCapacityStatus() {
     const rooms = selectedRooms();
@@ -621,6 +1154,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("servicesJson").value = JSON.stringify(collectServices().filter((item) => item.room_id));
   });
 
+  syncDistrictOptions();
   syncServiceRooms();
   recalc();
   tickClock();

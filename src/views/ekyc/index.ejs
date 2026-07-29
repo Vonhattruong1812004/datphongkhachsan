@@ -99,12 +99,12 @@
       <p class="ekyc-muted">Tải giấy tờ và selfie để hệ thống tạo hồ sơ định danh số. Trang eKYC nay được đồng bộ vào Hồ sơ cá nhân để khách thao tác một nơi.</p>
       <div class="ekyc-actions">
         <a class="ekyc-button ekyc-button--primary" href="/customer/profile">Hồ sơ cá nhân</a>
-        <a class="ekyc-button" href="/customer/dashboard">Về dashboard</a>
-        <a class="ekyc-button" href="/customer/bookings">Lịch sử booking</a>
+        <a class="ekyc-button" href="/customer/dashboard">Về trang khách hàng</a>
+        <a class="ekyc-button" href="/customer/bookings">Lịch sử đặt phòng</a>
       </div>
     </div>
     <aside class="ekyc-status-card">
-      <div class="ekyc-fingerprint">ID</div>
+      <div class="ekyc-fingerprint">ĐD</div>
       <h3 style="margin:16px 0 4px"><%= customer.tenKh || "Khách hàng" %></h3>
       <div class="ekyc-muted"><%= customer.email || "Chưa có email" %></div>
       <span class="ekyc-badge <%= status === "DaXacThuc" ? "is-ok" : status === "ThatBai" ? "is-bad" : status === "DangXuLy" ? "is-wait" : "is-idle" %>"><%= statusLabel %></span>
@@ -135,13 +135,13 @@
               <select name="document_type" id="documentType" <%= canSubmitEkyc ? "" : "disabled" %> required>
                 <option value="CCCD" <%= (verification?.document_type || "CCCD") === "CCCD" ? "selected" : "" %>>CCCD</option>
                 <option value="CMND" <%= verification?.document_type === "CMND" ? "selected" : "" %>>CMND</option>
-                <option value="Passport" <%= verification?.document_type === "Passport" ? "selected" : "" %>>Passport</option>
+                <option value="Passport" <%= verification?.document_type === "Passport" ? "selected" : "" %>>Hộ chiếu</option>
               </select>
             </div>
             <div class="ekyc-field">
               <label>Số giấy tờ</label>
-              <input name="document_number" id="documentNumber" <%= canSubmitEkyc ? "" : "disabled" %> required value="<%= customer.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Passport" />
-              <div class="ekyc-help" id="documentHelp">CCCD 12 số, CMND 9 hoặc 12 số, Passport 6-20 ký tự chữ/số.</div>
+              <input name="document_number" id="documentNumber" <%= canSubmitEkyc ? "" : "disabled" %> required value="<%= customer.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Hộ chiếu" />
+              <div class="ekyc-help" id="documentHelp">CCCD 12 số, CMND 9 hoặc 12 số, hộ chiếu 6-20 ký tự chữ/số.</div>
             </div>
           </div>
 
@@ -282,7 +282,7 @@
       const messages = {
         CCCD: "CCCD phải gồm đúng 12 chữ số.",
         CMND: "CMND phải gồm 9 hoặc 12 chữ số.",
-        Passport: "Passport gồm 6-20 ký tự chữ/số."
+        Passport: "Hộ chiếu gồm 6-20 ký tự chữ/số."
       };
       docHelp.textContent = ok ? "Số giấy tờ hợp lệ." : (messages[type] || "Số giấy tờ không hợp lệ.");
       docHelp.style.color = ok ? "#047857" : "#be123c";

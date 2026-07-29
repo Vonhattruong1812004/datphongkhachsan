@@ -4,6 +4,7 @@ import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
+import { expireOutdatedPromotions } from "../../../shared/promotions/promotion-maintenance";
 import {
   SEPAY_HOLD_MINUTES,
   appendNote,
@@ -138,6 +139,7 @@ interface DirectServiceCatalogRow {
 
 interface DirectPromotionRow {
   id: number;
+  maGiamGia?: string | null;
   tenChuongTrinh: string;
   mucUuDai: number;
   loaiUuDai: string;
@@ -2200,6 +2202,7 @@ export class FrontdeskService {
   }
 
   async getDirectBookingFormData(rawFilters: { ngay_den?: string; ngay_di?: string; so_nguoi?: number }) {
+    await expireOutdatedPromotions();
     const [services, promotions] = await Promise.all([
       query<DirectServiceCatalogRow>(
         `
@@ -2216,12 +2219,15 @@ export class FrontdeskService {
         `
           SELECT
             makhuyenmai AS id,
+            magiamgia AS "maGiamGia",
             tenchuongtrinh AS "tenChuongTrinh",
             mucuudai AS "mucUuDai",
             loaiuudai AS "loaiUuDai",
             trangthai AS "trangThai"
           FROM khuyenmai
           WHERE trangthai = 'DangApDung'
+            AND (ngaybatdau IS NULL OR ngaybatdau <= CURRENT_DATE)
+            AND (ngayketthuc IS NULL OR ngayketthuc >= CURRENT_DATE)
           ORDER BY makhuyenmai DESC
         `
       )
@@ -2957,18 +2963,25 @@ export class FrontdeskService {
 
       let discount = 0;
       if (maKhuyenMai) {
+        await expireOutdatedPromotions(client);
         const promotionResult = await client.query(
           `
             SELECT makhuyenmai AS id, mucuudai AS "mucUuDai", loaiuudai AS "loaiUuDai", doituong AS "doiTuong"
             FROM khuyenmai
             WHERE makhuyenmai = $1
               AND trangthai = 'DangApDung'
+              AND (ngaybatdau IS NULL OR ngaybatdau <= CURRENT_DATE)
+              AND (ngayketthuc IS NULL OR ngayketthuc >= CURRENT_DATE)
             LIMIT 1
           `,
           [maKhuyenMai]
         ) as { rows: Array<{ id: number; mucUuDai: number; loaiUuDai: string; doiTuong: string | null }> };
 
         const promotion = promotionResult.rows[0];
+        if (!promotion) {
+          throw new HttpError(422, "Khuyen mai da chon khong con trong thoi gian ap dung.");
+        }
+
         if (promotion) {
           const subtotal = tongPhong + tongDichVu;
           const meta = this.parsePromotionMeta(promotion.doiTuong);

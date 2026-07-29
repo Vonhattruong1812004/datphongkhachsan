@@ -12,9 +12,12 @@
     ChuaXacThuc: "Chưa xác thực"
   }[statusTone] || statusTone;
   const verification = ekyc.verification || null;
+  const verificationMatchesProfile = !verification?.document_number || !profile.cccd || verification.document_number === profile.cccd;
   const ekycHistory = ekyc.history || [];
-  const effectiveEkycResult = verification?.result || (statusTone === "DaXacThuc" ? "ThanhCong" : statusTone === "ThatBai" ? "ThatBai" : "ChuaXacThuc");
-  const effectiveEkycLabel = verification?.result_label || statusLabel;
+  const effectiveEkycResult = verificationMatchesProfile && verification?.result
+    ? verification.result
+    : (statusTone === "DaXacThuc" ? "ThanhCong" : statusTone === "ThatBai" ? "ThatBai" : statusTone === "DangXuLy" ? "DangXuLy" : "ChuaXacThuc");
+  const effectiveEkycLabel = verificationMatchesProfile && verification?.result_label ? verification.result_label : statusLabel;
   const ekycLockedReason = effectiveEkycResult === "ThanhCong"
     ? "Hồ sơ eKYC đã được xác thực. Bạn không cần gửi lại; nếu cần đổi giấy tờ định danh, vui lòng liên hệ CSKH hoặc lễ tân để được hỗ trợ."
     : effectiveEkycResult === "DangXuLy"
@@ -360,17 +363,556 @@
       padding:20px;
     }
   }
+
+  /* Customer profile final: same white/blue operating layout as manager UCs. */
+  body:has(.profile-shell) {
+    background: #f4f8ff;
+    color: #102033;
+  }
+  body:has(.profile-shell) .floating-assist {
+    display: none !important;
+  }
+  .profile-shell {
+    --ink: #102033;
+    --muted: #607086;
+    --line: #c9e0fb;
+    --blue: #006ce4;
+    --blue-dark: #003b95;
+    --soft: #f7fbff;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 14px 20px 34px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    overflow: visible;
+    background: linear-gradient(180deg, #eaf4ff 0, #f7fbff 148px, #ffffff 100%);
+    color: var(--ink);
+  }
+  .profile-shell::before,
+  .profile-shell::after,
+  .profile-hero::after {
+    display: none !important;
+    content: none !important;
+    animation: none !important;
+  }
+  .profile-shell > * {
+    grid-column: 1;
+  }
+  .profile-hero,
+  .profile-panel,
+  .profile-card,
+  .profile-ekyc-card,
+  .profile-stat,
+  .profile-alert {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .profile-hero {
+    min-height: 58px;
+    margin: 0;
+    padding: 13px 18px 13px 30px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    border-left: 0;
+    background: linear-gradient(135deg, #0071e8 0%, #006ce4 52%, #003b95 100%);
+    color: #ffffff;
+    box-shadow: 0 14px 34px rgba(0, 59, 149, .16);
+    position: relative;
+  }
+  .profile-hero::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 13px;
+    bottom: 13px;
+    width: 5px;
+    border-radius: 999px;
+    background: #ffffff;
+  }
+  .profile-kicker,
+  .profile-hero > div > .profile-muted {
+    display: none;
+  }
+  .profile-hero h1 {
+    margin: 0;
+    color: #ffffff !important;
+    font-size: 25px;
+    font-weight: 950;
+    line-height: 1.14;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+  .profile-hero h1 span {
+    color: #ffffff;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+  .profile-hero .profile-actions {
+    margin: 0;
+    justify-content: flex-end;
+  }
+  .profile-identity {
+    min-width: 250px;
+    padding: 8px 10px;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    border-color: rgba(255, 255, 255, .34);
+    background: rgba(255, 255, 255, .95);
+    box-shadow: none;
+  }
+  .profile-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    font-size: 16px;
+    background: #16a34a;
+    box-shadow: none;
+  }
+  .profile-identity h3 {
+    margin: 0 !important;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .profile-identity .profile-muted {
+    display: none;
+  }
+  .profile-identity .profile-pill {
+    grid-column: 2;
+    margin: -2px 0 0;
+    width: max-content;
+  }
+  .profile-actions {
+    gap: 8px;
+  }
+  .profile-button {
+    min-height: 38px;
+    border-radius: 8px;
+    border: 1px solid #bfdbfe;
+    background: #ffffff;
+    color: #075eb8;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 950;
+    box-shadow: none;
+  }
+  .profile-button:hover {
+    border-color: #006ce4;
+    box-shadow: 0 8px 18px rgba(0, 108, 228, .12);
+  }
+  .profile-button:disabled {
+    cursor: not-allowed;
+    border-color: #d5e6fa;
+    color: #64748b;
+    background: #f1f5f9;
+    box-shadow: none;
+  }
+  .profile-button--primary {
+    border-color: #006ce4;
+    color: #ffffff;
+    background: #006ce4;
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .18);
+  }
+  .profile-button--primary:disabled {
+    border-color: #bbf7d0;
+    color: #047857;
+    background: #f0fdf4;
+  }
+  .profile-hero .profile-button--anchor {
+    border-color: #ffffff !important;
+    color: #003b95 !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 22px rgba(0, 59, 149, .16) !important;
+  }
+  .profile-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+  }
+  .profile-stat {
+    min-height: 76px;
+    padding: 13px 15px 13px 70px;
+    position: relative;
+    overflow: hidden;
+    background: #ffffff !important;
+    color: var(--ink) !important;
+  }
+  .profile-stat:nth-child(n) {
+    background: #ffffff !important;
+  }
+  .profile-stat::before {
+    content: "OK";
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: #ffffff;
+    background: #006ce4;
+    transform: translateY(-50%);
+    font-size: 12px;
+    font-weight: 950;
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .20);
+  }
+  .profile-stat:nth-child(2)::before {
+    content: "LH";
+    background: #0284c7;
+  }
+  .profile-stat:nth-child(3)::before {
+    content: "ID";
+    background: #047857;
+  }
+  .profile-stat span {
+    color: #526985;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .profile-stat strong {
+    margin-top: 6px;
+    color: #003b95;
+    font-size: 25px;
+    line-height: 1.12;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+  .profile-layout,
+  .profile-ekyc {
+    margin: 0;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 12px;
+  }
+  .profile-panel,
+  .profile-card,
+  .profile-ekyc-card {
+    padding: 18px;
+    color: var(--ink);
+  }
+  .profile-panel h2,
+  .profile-card h3,
+  .profile-ekyc-head h2,
+  .profile-ekyc-card h3 {
+    color: var(--ink);
+    font-size: 20px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+  .profile-muted,
+  .profile-note,
+  .profile-check,
+  .profile-history-item span,
+  .profile-panel .profile-note,
+  .profile-ekyc-card .profile-note,
+  .profile-ekyc-card .profile-check {
+    color: var(--muted);
+    font-weight: 750;
+  }
+  .profile-panel > .profile-muted,
+  .profile-ekyc-head .profile-muted {
+    display: none;
+  }
+  .profile-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .profile-visual-strip,
+  .profile-ekyc-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .profile-visual-item,
+  .profile-step {
+    min-height: 68px;
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #d5e6fa;
+    border-radius: 8px;
+    background: #f7fbff;
+  }
+  .profile-visual-icon,
+  .profile-step-index {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: #ffffff;
+    background: #006ce4;
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .profile-visual-item:nth-child(2) .profile-visual-icon,
+  .profile-step:nth-child(2) .profile-step-index {
+    background: #0284c7;
+  }
+  .profile-visual-item:nth-child(3) .profile-visual-icon,
+  .profile-step:nth-child(3) .profile-step-index {
+    background: #047857;
+  }
+  .profile-visual-item span,
+  .profile-step span {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 900;
+  }
+  .profile-visual-item strong,
+  .profile-step strong {
+    display: block;
+    margin-top: 3px;
+    color: #102033;
+    font-size: 14px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .profile-field label,
+  .profile-ekyc-field label {
+    color: #102033;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .profile-field input,
+  .profile-ekyc-field input,
+  .profile-ekyc-field select {
+    min-height: 44px;
+    border: 1px solid #cbdff4;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #102033;
+    font-weight: 800;
+    box-shadow: none;
+  }
+  .profile-field input:focus,
+  .profile-ekyc-field input:focus,
+  .profile-ekyc-field select:focus {
+    border-color: #006ce4;
+    box-shadow: 0 0 0 4px rgba(0, 108, 228, .10);
+  }
+  .profile-field input:disabled,
+  .profile-ekyc-field input:disabled,
+  .profile-ekyc-field select:disabled {
+    background: #f1f5f9;
+    color: #64748b;
+  }
+  .profile-error-text {
+    min-height: 14px;
+    color: #b42318;
+  }
+  .profile-side {
+    gap: 10px;
+  }
+  .profile-progress {
+    height: 10px;
+    background: #e6eef8;
+  }
+  .profile-progress span {
+    background: #006ce4;
+  }
+  .profile-checklist {
+    gap: 8px;
+  }
+  .profile-check::before {
+    background: #cbd5e1;
+  }
+  .profile-check.is-done::before {
+    background: #16a34a;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, .10);
+  }
+  .profile-pill {
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #075eb8;
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .profile-pill.is-ok {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #047857;
+  }
+  .profile-pill.is-warn {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #a16207;
+  }
+  .profile-pill.is-bad {
+    border-color: #fecdd3;
+    background: #fff1f2;
+    color: #be123c;
+  }
+  .profile-ekyc-head {
+    margin-bottom: 12px;
+  }
+  .profile-ekyc-grid {
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .profile-upload-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .profile-upload,
+  .profile-history-item,
+  .profile-ekyc-img,
+  .profile-preview {
+    border: 1px solid #d5e6fa;
+    border-radius: 8px;
+    background: #f7fbff;
+    color: #102033;
+    box-shadow: none;
+  }
+  .profile-upload {
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+  }
+  .profile-upload:hover {
+    border-color: #006ce4;
+    background: #eff6ff;
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .10);
+  }
+  .profile-upload-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: #003b95;
+    font-size: 13px;
+    font-weight: 950;
+  }
+  .profile-upload-title span {
+    min-width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    color: #ffffff;
+    background: #006ce4;
+    font-size: 12px;
+  }
+  .profile-preview {
+    height: 136px;
+    border-style: dashed;
+    font-size: 14px;
+    font-weight: 950;
+  }
+  .profile-ekyc-images {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .profile-ekyc-img {
+    height: 82px;
+  }
+  .profile-lock {
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    background: #fffbeb;
+    color: #92400e;
+    box-shadow: none;
+  }
+  .profile-alert {
+    margin: 0;
+    padding: 12px 14px;
+    font-weight: 850;
+  }
+  .profile-alert--success {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #047857;
+  }
+  .profile-alert--error {
+    border-color: #fecdd3;
+    background: #fff1f2;
+    color: #be123c;
+  }
+  .profile-side .profile-card:first-child {
+    background:
+      linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  }
+  .profile-side .profile-card:first-child h3::after {
+    content: "<%= completion %>%";
+    float: right;
+    color: #003b95;
+    font-size: 18px;
+  }
+  @media (max-width: 1080px) {
+    .profile-shell,
+    .profile-layout,
+    .profile-ekyc {
+      grid-template-columns: 1fr;
+    }
+    .profile-shell > * {
+      grid-column: auto;
+      grid-row: auto;
+    }
+    .profile-stats,
+    .profile-visual-strip,
+    .profile-ekyc-steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 760px) {
+    .profile-shell {
+      padding: 12px;
+    }
+    .profile-hero {
+      grid-template-columns: 1fr;
+      padding: 14px 16px 14px 28px;
+    }
+    .profile-identity {
+      min-width: 0;
+    }
+    .profile-stats,
+    .profile-visual-strip,
+    .profile-ekyc-steps,
+    .profile-form,
+    .profile-ekyc-grid,
+    .profile-upload-grid,
+    .profile-ekyc-images {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
 
 <main class="profile-shell">
   <section class="profile-hero">
     <div>
-      <span class="profile-kicker"><span class="profile-dot"></span> Hồ sơ cá nhân</span>
-      <h1>Thông tin của bạn <span>luôn sẵn sàng.</span></h1>
-      <p class="profile-muted">Quản lý thông tin liên hệ, giấy tờ định danh và eKYC trong một luồng để đặt phòng, nhận phòng và hỗ trợ sau lưu trú chính xác hơn.</p>
+      <span class="profile-kicker"><span class="profile-dot"></span> Khách hàng</span>
+      <h1>Quản lý hồ sơ cá nhân</h1>
+      <p class="profile-muted">Quản lý thông tin liên hệ và xác minh định danh.</p>
       <div class="profile-actions">
-        <a class="profile-button profile-button--primary" href="#ekyc-section">Mở eKYC</a>
-        <a class="profile-button" href="/customer/dashboard">Về dashboard</a>
+        <a class="profile-button profile-button--anchor" href="#ekyc-section">Xác thực eKYC</a>
+        <a class="profile-button" href="/customer/dashboard">Tổng quan</a>
         <a class="profile-button" href="/customer/bookings">Quản lý đặt phòng</a>
       </div>
     </div>
@@ -387,24 +929,38 @@
 
   <section class="profile-stats">
     <article class="profile-stat"><span>Hoàn thiện hồ sơ</span><strong><%= completion %>%</strong></article>
-    <article class="profile-stat"><span>Loại khách</span><strong><%= profile.loaiKhach || "Cá nhân" %></strong></article>
-    <article class="profile-stat"><span>eKYC</span><strong><%= effectiveEkycLabel %></strong></article>
+    <article class="profile-stat"><span>Liên hệ</span><strong><%= profile.email && profile.sdt ? "Đầy đủ" : "Cần bổ sung" %></strong></article>
+    <article class="profile-stat"><span>Trạng thái eKYC</span><strong><%= effectiveEkycLabel %></strong></article>
   </section>
 
   <section class="profile-layout">
     <form class="profile-panel" method="post" action="/customer/profile" id="customerProfileForm" novalidate>
       <h2>Cập nhật liên hệ</h2>
       <p class="profile-muted">Họ tên và CCCD là thông tin định danh nên không chỉnh trực tiếp tại màn này. Nếu cần đổi CCCD sau khi đã xác thực, vui lòng liên hệ CSKH hoặc lễ tân để hỗ trợ.</p>
+      <div class="profile-visual-strip" aria-label="Tóm tắt hồ sơ">
+        <div class="profile-visual-item">
+          <div class="profile-visual-icon">KH</div>
+          <div><span>Khách hàng</span><strong><%= profile.tenKh || "Chưa có tên" %></strong></div>
+        </div>
+        <div class="profile-visual-item">
+          <div class="profile-visual-icon">LH</div>
+          <div><span>Liên hệ</span><strong><%= profile.sdt || profile.email ? "Đã cập nhật" : "Thiếu thông tin" %></strong></div>
+        </div>
+        <div class="profile-visual-item">
+          <div class="profile-visual-icon">ID</div>
+          <div><span>Định danh</span><strong><%= effectiveEkycLabel %></strong></div>
+        </div>
+      </div>
       <div class="profile-form">
         <div class="profile-field">
           <label>Họ tên</label>
-          <input value="<%= profile.tenKh || "" %>" disabled />
-          <div class="profile-note">Không chỉnh sửa trực tiếp.</div>
+          <input id="profileName" name="ten_khach" value="<%= profile.tenKh || "" %>" required maxlength="120" placeholder="Họ tên trên giấy tờ" />
+          <div class="profile-error-text" id="errName"></div>
         </div>
         <div class="profile-field">
           <label>CCCD/CMND</label>
-          <input value="<%= profile.cccd || "" %>" disabled />
-          <div class="profile-note">Đồng bộ qua hồ sơ eKYC.</div>
+          <input id="profileCccd" name="cccd" value="<%= profile.cccd || "" %>" required inputmode="numeric" maxlength="12" placeholder="9 hoặc 12 chữ số" />
+          <div class="profile-error-text" id="errCccd"></div>
         </div>
         <div class="profile-field">
           <label>Email *</label>
@@ -450,7 +1006,7 @@
     <form class="profile-ekyc-card" method="post" action="/ekyc" enctype="multipart/form-data" id="ekycForm" novalidate>
       <div class="profile-ekyc-head">
         <div>
-          <h2>Hồ sơ eKYC</h2>
+          <h2>Xác thực eKYC</h2>
           <p class="profile-muted">Tải giấy tờ và selfie để Quản lý duyệt trước khi đến quầy. Hệ thống kiểm định dạng giấy tờ, đủ ảnh và giữ lịch sử gửi rõ ràng.</p>
         </div>
         <span class="profile-pill <%= ekycToneClass %>"><%= effectiveEkycLabel %></span>
@@ -460,37 +1016,55 @@
         <div class="profile-lock"><%= ekycLockedReason %></div>
       <% } %>
 
+      <div class="profile-ekyc-steps" aria-label="Quy trình eKYC">
+        <div class="profile-step">
+          <div class="profile-step-index">1</div>
+          <div><span>Giấy tờ</span><strong>Chọn loại và nhập số</strong></div>
+        </div>
+        <div class="profile-step">
+          <div class="profile-step-index">2</div>
+          <div><span>Ảnh xác minh</span><strong>Mặt trước, mặt sau, selfie</strong></div>
+        </div>
+        <div class="profile-step">
+          <div class="profile-step-index">3</div>
+          <div><span>Duyệt hồ sơ</span><strong><%= effectiveEkycLabel %></strong></div>
+        </div>
+      </div>
+
       <div class="profile-ekyc-grid">
         <div class="profile-ekyc-field">
           <label>Loại giấy tờ</label>
           <select name="document_type" id="documentType" <%= canSubmitEkyc ? "" : "disabled" %> required>
             <option value="CCCD" <%= (verification?.document_type || "CCCD") === "CCCD" ? "selected" : "" %>>CCCD</option>
             <option value="CMND" <%= verification?.document_type === "CMND" ? "selected" : "" %>>CMND</option>
-            <option value="Passport" <%= verification?.document_type === "Passport" ? "selected" : "" %>>Passport</option>
+            <option value="Passport" <%= verification?.document_type === "Passport" ? "selected" : "" %>>Hộ chiếu</option>
           </select>
         </div>
         <div class="profile-ekyc-field">
           <label>Số giấy tờ</label>
-          <input name="document_number" id="documentNumber" <%= canSubmitEkyc ? "" : "disabled" %> required value="<%= profile.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Passport" />
-          <div class="profile-note" id="documentHelp">CCCD 12 số, CMND 9 hoặc 12 số, Passport 6-20 ký tự chữ/số.</div>
+          <input name="document_number" id="documentNumber" <%= canSubmitEkyc ? "" : "disabled" %> required value="<%= profile.cccd || verification?.document_number || "" %>" placeholder="CCCD/CMND/Hộ chiếu" />
+          <div class="profile-note" id="documentHelp">CCCD 12 số, CMND 9 hoặc 12 số, hộ chiếu 6-20 ký tự chữ/số.</div>
         </div>
       </div>
 
       <div class="profile-upload-grid">
         <label class="profile-upload">
+          <div class="profile-upload-title">Mặt trước <span>1</span></div>
           <div class="profile-preview" data-preview="front">Ảnh mặt trước</div>
           <input name="front" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
-          <div class="profile-note">Ảnh giấy tờ mặt trước, rõ số và họ tên.</div>
+          <div class="profile-note">Rõ số và họ tên.</div>
         </label>
         <label class="profile-upload">
+          <div class="profile-upload-title">Mặt sau <span>2</span></div>
           <div class="profile-preview" data-preview="back">Ảnh mặt sau</div>
           <input name="back" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
-          <div class="profile-note">Ảnh giấy tờ mặt sau, không lóa hoặc mất góc.</div>
+          <div class="profile-note">Không lóa hoặc mất góc.</div>
         </label>
         <label class="profile-upload">
+          <div class="profile-upload-title">Selfie <span>3</span></div>
           <div class="profile-preview" data-preview="selfie">Ảnh selfie</div>
           <input name="selfie" type="file" accept="image/jpeg,image/png,image/webp" <%= canSubmitEkyc ? "required" : "disabled" %> />
-          <div class="profile-note">Ảnh chân dung rõ mặt, cùng người trên giấy tờ.</div>
+          <div class="profile-note">Rõ mặt, cùng người trên giấy tờ.</div>
         </label>
       </div>
 
@@ -556,17 +1130,35 @@
 <script>
   (function () {
     const form = document.getElementById("customerProfileForm");
+    const name = document.getElementById("profileName");
+    const cccd = document.getElementById("profileCccd");
     const email = document.getElementById("profileEmail");
     const phone = document.getElementById("profilePhone");
+    const errName = document.getElementById("errName");
+    const errCccd = document.getElementById("errCccd");
     const errEmail = document.getElementById("errEmail");
     const errPhone = document.getElementById("errPhone");
 
     function validate() {
       let ok = true;
+      const nameValue = (name.value || "").trim();
+      const cccdValue = (cccd.value || "").trim();
       const emailValue = (email.value || "").trim();
       const phoneValue = (phone.value || "").trim();
+      errName.textContent = "";
+      errCccd.textContent = "";
       errEmail.textContent = "";
       errPhone.textContent = "";
+
+      if (nameValue.length < 2) {
+        errName.textContent = "Họ tên phải có ít nhất 2 ký tự.";
+        ok = false;
+      }
+
+      if (!/^\d{9}$|^\d{12}$/.test(cccdValue)) {
+        errCccd.textContent = "CCCD/CMND phải gồm 9 hoặc 12 chữ số.";
+        ok = false;
+      }
 
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
         errEmail.textContent = "Email không hợp lệ.";
@@ -581,7 +1173,7 @@
       return ok;
     }
 
-    [email, phone].forEach((field) => field && field.addEventListener("input", validate));
+    [name, cccd, email, phone].forEach((field) => field && field.addEventListener("input", validate));
     form && form.addEventListener("submit", function (event) {
       if (!validate()) event.preventDefault();
     });
@@ -609,7 +1201,7 @@
       const messages = {
         CCCD: "CCCD phải gồm đúng 12 chữ số.",
         CMND: "CMND phải gồm 9 hoặc 12 chữ số.",
-        Passport: "Passport gồm 6-20 ký tự chữ/số."
+        Passport: "Hộ chiếu gồm 6-20 ký tự chữ/số."
       };
       docHelp.textContent = ok ? "Số giấy tờ hợp lệ." : messages[type] || "Số giấy tờ không hợp lệ.";
       docHelp.style.color = ok ? "#047857" : "#be123c";

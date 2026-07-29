@@ -59,7 +59,7 @@ export async function renderCustomerProfile(req: Request, res: Response) {
   ]);
 
   return res.render("customer/profile", {
-    title: "Ho so khach hang",
+    title: "Quản lý hồ sơ cá nhân",
     profile,
     ekycPayload,
     errorMessage: readText(req.query.error),
@@ -86,11 +86,13 @@ export async function updateCustomerProfileAction(req: Request, res: Response) {
       ekycService.getStatusForCustomer(maKhachHang)
     ]);
     return res.status(400).render("customer/profile", {
-      title: "Ho so khach hang",
+      title: "Quản lý hồ sơ cá nhân",
       profile: {
         ...profile,
+        tenKh: readText(req.body.ten_khach, profile.tenKh || ""),
         email: readText(req.body.email, profile.email || ""),
         sdt: readText(req.body.sdt, profile.sdt || ""),
+        cccd: readText(req.body.cccd, profile.cccd || ""),
         diaChi: readText(req.body.dia_chi, profile.diaChi || "")
       },
       ekycPayload,
@@ -105,7 +107,7 @@ export async function renderCustomerServices(req: Request, res: Response) {
   const payload = await customerService.buildServicePortal(maKhachHang);
 
   return res.render("customer/services", {
-    title: "Dich vu bo sung",
+    title: "Đặt dịch vụ bổ sung",
     payload,
     errorMessage: readText(req.query.error),
     successMessage: readText(req.query.success)
@@ -131,7 +133,7 @@ export async function createCustomerServiceOrderAction(req: Request, res: Respon
   } catch (error) {
     const payload = await customerService.buildServicePortal(maKhachHang);
     return res.status(error instanceof ZodError ? 422 : 400).render("customer/services", {
-      title: "Dich vu bo sung",
+      title: "Đặt dịch vụ bổ sung",
       payload,
       errorMessage: formatCustomerServiceError(error),
       successMessage: ""
@@ -147,7 +149,7 @@ export async function cancelCustomerServiceOrderAction(req: Request, res: Respon
   } catch (error) {
     const payload = await customerService.buildServicePortal(maKhachHang);
     return res.status(error instanceof ZodError ? 422 : 400).render("customer/services", {
-      title: "Dich vu bo sung",
+      title: "Đặt dịch vụ bổ sung",
       payload,
       errorMessage: formatCustomerServiceError(error),
       successMessage: ""
@@ -256,6 +258,12 @@ export async function customerMobileApi(req: Request, res: Response) {
 export async function updateCustomerProfileApi(req: Request, res: Response) {
   const maKhachHang = Number(req.session.user?.maKhachHang || 0);
   const payload = await customerService.updateProfile(maKhachHang, req.body);
+  if (req.session.user) {
+    req.session.user.displayName = payload.tenKh || req.session.user.displayName;
+    req.session.user.email = payload.email || req.session.user.email;
+    req.session.user.phone = payload.sdt || req.session.user.phone;
+    req.session.user.cccd = payload.cccd || req.session.user.cccd;
+  }
   return res.json({
     ok: true,
     message: "Cập nhật hồ sơ thành công.",

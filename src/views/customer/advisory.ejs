@@ -405,16 +405,16 @@
     <div>
       <span class="adv-kicker"><span class="adv-dot"></span> Tư vấn & hỗ trợ</span>
       <h1>Hỏi nhanh mọi điều <span>trước, trong và sau chuyến đi.</span></h1>
-      <p class="adv-muted">Một nơi riêng để bạn hỏi về chọn phòng, booking, check-in, eKYC, dịch vụ và các thắc mắc cần CSKH hỗ trợ. AI Concierge trả lời trước, còn khi cần người thật hệ thống sẽ đưa bạn sang đúng kênh CSKH.</p>
+      <p class="adv-muted">Một nơi riêng để bạn hỏi về chọn phòng, đặt phòng, nhận phòng, eKYC, dịch vụ và các thắc mắc cần CSKH hỗ trợ. Trợ lý AI trả lời trước, còn khi cần người thật hệ thống sẽ đưa bạn sang đúng kênh CSKH.</p>
       <div class="adv-actions">
-        <button class="adv-button adv-button--primary" type="button" data-open-ai>Chat với AI Concierge</button>
+        <button class="adv-button adv-button--primary" type="button" data-open-ai>Chat với trợ lý AI</button>
         <a class="adv-button adv-button--support" href="/feedback/advisory/new">Gửi yêu cầu cho CSKH</a>
-        <a class="adv-button" href="/customer/dashboard">Về dashboard</a>
+        <a class="adv-button" href="/customer/dashboard">Về trang khách hàng</a>
       </div>
     </div>
     <aside class="adv-focus">
       <strong><%= displayName %></strong>
-      <span><%= payload.activeStay ? "Bạn đang có lưu trú mở, có thể hỏi thêm về dịch vụ, checkout hoặc hỗ trợ tại chỗ." : (payload.nextStay ? "Bạn đang có booking sắp tới, có thể hỏi về check-in, eKYC và chuẩn bị chuyến đi." : "Chưa có booking mở, nhưng bạn vẫn có thể hỏi AI để được tư vấn phòng và hành trình phù hợp.") %></span>
+      <span><%= payload.activeStay ? "Bạn đang có lưu trú mở, có thể hỏi thêm về dịch vụ, trả phòng hoặc hỗ trợ tại chỗ." : (payload.nextStay ? "Bạn đang có đặt phòng sắp tới, có thể hỏi về nhận phòng, eKYC và chuẩn bị chuyến đi." : "Chưa có đặt phòng mở, nhưng bạn vẫn có thể hỏi AI để được tư vấn phòng và hành trình phù hợp.") %></span>
       <div class="adv-chip-grid">
         <% if (profile.email) { %><span class="adv-chip"><%= profile.email %></span><% } %>
         <% if (profile.sdt) { %><span class="adv-chip"><%= profile.sdt %></span><% } %>
@@ -436,7 +436,7 @@
 
   <section class="adv-stats">
     <article class="adv-stat"><span>Tổng đặt phòng</span><strong><%= stats.totalBookings || 0 %></strong></article>
-    <article class="adv-stat"><span>Booking sắp tới</span><strong><%= stats.bookedCount || 0 %></strong></article>
+    <article class="adv-stat"><span>Đặt phòng sắp tới</span><strong><%= stats.bookedCount || 0 %></strong></article>
     <article class="adv-stat"><span>Ticket tư vấn mở</span><strong><%= stats.openAdvisoryCount || 0 %></strong></article>
     <article class="adv-stat"><span>Dịch vụ đã dùng</span><strong><%= stats.serviceLineCount || 0 %></strong></article>
   </section>
@@ -496,18 +496,18 @@
       <section class="adv-panel" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
-            <h2>Booking để hỏi đúng ngữ cảnh</h2>
-            <p class="adv-muted">AI và CSKH sẽ hỗ trợ nhanh hơn nếu bạn bám vào booking gần nhất hoặc lịch lưu trú sắp tới.</p>
+            <h2>Đặt phòng để hỏi đúng ngữ cảnh</h2>
+            <p class="adv-muted">AI và CSKH sẽ hỗ trợ nhanh hơn nếu bạn bám vào đặt phòng gần nhất hoặc lịch lưu trú sắp tới.</p>
           </div>
         </div>
 
         <% if (!recentBookings.length) { %>
-          <div class="adv-empty">Chưa có booking nào để gắn ngữ cảnh. Bạn vẫn có thể hỏi về chọn phòng, báo giá và chuẩn bị chuyến đi.</div>
+          <div class="adv-empty">Chưa có đặt phòng nào để gắn ngữ cảnh. Bạn vẫn có thể hỏi về chọn phòng, báo giá và chuẩn bị chuyến đi.</div>
         <% } else { %>
           <div class="adv-booking-list">
             <% recentBookings.forEach((booking) => { %>
               <article class="adv-booking">
-                <span class="adv-badge"><%= booking.statusLabel || "Booking" %></span>
+                <span class="adv-badge"><%= booking.statusLabel || "Đặt phòng" %></span>
                 <h3><%= booking.bookingCode || `GD-${booking.id}` %></h3>
                 <p><%= booking.hotelNames || "Chưa có tên cơ sở" %></p>
                 <p><%= booking.checkinLabel || "-" %> -> <%= booking.checkoutLabel || "-" %> · <%= booking.totalFormatted || "-" %></p>
@@ -515,9 +515,9 @@
                   class="adv-button"
                   type="button"
                   data-open-ai
-                  data-ai-prompt="Tôi muốn được tư vấn thêm cho booking <%= booking.bookingCode || `GD-${booking.id}` %> tại <%= booking.hotelNames || 'resort' %>, vui lòng giải thích các bước tiếp theo."
+                  data-ai-prompt="Tôi muốn được tư vấn thêm cho đặt phòng <%= booking.bookingCode || `GD-${booking.id}` %> tại <%= booking.hotelNames || 'resort' %>, vui lòng giải thích các bước tiếp theo."
                 >
-                  Hỏi theo booking này
+                  Hỏi theo đặt phòng này
                 </button>
               </article>
             <% }) %>
@@ -588,7 +588,7 @@
               <h3><%= channel.label %></h3>
               <p><%= channel.description %></p>
               <% if (channel.key === "ai") { %>
-                <button class="adv-button adv-button--primary" type="button" data-open-ai>Mở AI Concierge</button>
+                <button class="adv-button adv-button--primary" type="button" data-open-ai>Mở trợ lý AI</button>
               <% } else if (channel.key === "zalo") { %>
                 <a class="adv-button" href="<%= channel.href %>" target="_blank" rel="noreferrer">Mở Zalo hỗ trợ</a>
               <% } else { %>

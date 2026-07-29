@@ -972,12 +972,12 @@
                     data-timeline="<%= item.isExpiredByDate ? "expired" : (item.isUpcoming ? "upcoming" : (item.isActiveWindow ? "active" : "other")) %>"
                     data-channel="<%= item.promotionMeta?.channel || "All" %>"
                     data-health="<%= item.health?.tone || "slate" %>"
-                    data-keyword="<%= [item.tenChuongTrinh, item.doiTuong || '', item.conditionLabel || '', item.channelLabel || '', statusLabel(item.trangThai), typeLabel(item.loaiUuDai)].join(' ').toLowerCase() %>"
+                    data-keyword="<%= [item.maGiamGia || '', item.tenChuongTrinh, item.doiTuong || '', item.conditionLabel || '', item.channelLabel || '', statusLabel(item.trangThai), typeLabel(item.loaiUuDai)].join(' ').toLowerCase() %>"
                   >
                     <td>
                       <div class="promo-code">
                         <strong><%= item.tenChuongTrinh %></strong>
-                        <span>Mã KM #<%= item.id %></span>
+                        <span><%= item.maGiamGia ? `Mã ${item.maGiamGia}` : `Mã KM #${item.id}` %></span>
                       </div>
                     </td>
                     <td>

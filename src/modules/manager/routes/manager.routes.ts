@@ -16,6 +16,9 @@ import {
   deleteRoomAction,
   deleteRoomApi,
   exportCustomersCsv,
+  exportCustomersExcel,
+  exportRoomsCsv,
+  exportRoomsExcel,
   promotionsApi,
   renderCustomerDetail,
   renderCustomerEdit,
@@ -24,6 +27,8 @@ import {
   renderManagerHome,
   renderPromotions,
   renderRefundApprovals,
+  renderRoomEdit,
+  renderRoomNew,
   renderRooms,
   refundApprovalsApi,
   reviewRefundAction,
@@ -68,10 +73,15 @@ const upload = multer({
 managerRouter.get("/", requireRole([ROLE.QUAN_LY]), asyncHandler(renderManagerHome));
 managerRouter.get("/customers", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomers));
 managerRouter.get("/rooms", requireRole([ROLE.QUAN_LY]), asyncHandler(renderRooms));
+managerRouter.get("/rooms/new", requireRole([ROLE.QUAN_LY]), asyncHandler(renderRoomNew));
+managerRouter.get("/rooms/export.csv", requireRole([ROLE.QUAN_LY]), asyncHandler(exportRoomsCsv));
+managerRouter.get("/rooms/export.xls", requireRole([ROLE.QUAN_LY]), asyncHandler(exportRoomsExcel));
+managerRouter.get("/rooms/:id/edit", requireRole([ROLE.QUAN_LY]), asyncHandler(renderRoomEdit));
 managerRouter.get("/refunds", requireRole([ROLE.QUAN_LY]), asyncHandler(renderRefundApprovals));
 managerRouter.get("/promotions", requireRole([ROLE.QUAN_LY, ROLE.CSKH, ROLE.ADMIN]), asyncHandler(renderPromotions));
 managerRouter.get("/customers/new", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomerNew));
 managerRouter.get("/customers/export.csv", requireRole([ROLE.QUAN_LY]), asyncHandler(exportCustomersCsv));
+managerRouter.get("/customers/export.xls", requireRole([ROLE.QUAN_LY]), asyncHandler(exportCustomersExcel));
 managerRouter.get("/customers/:id/edit", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomerEdit));
 managerRouter.get("/customers/:id", requireRole([ROLE.QUAN_LY]), asyncHandler(renderCustomerDetail));
 managerRouter.post("/customers", requireRole([ROLE.QUAN_LY]), asyncHandler(saveCustomerAction));

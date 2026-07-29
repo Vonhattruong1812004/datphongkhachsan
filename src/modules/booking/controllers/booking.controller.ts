@@ -4,12 +4,13 @@ import { HttpError } from "../../../shared/http/http-error";
 import { AIService } from "../../ai/services/ai.service";
 import { AuthService } from "../../auth/services/auth.service";
 import { FeedbackService } from "../../feedback/services/feedback.service";
-import { BookingService, type SearchBookingInput } from "../services/booking.service";
+import { BookingService, type SearchBookingInput, type SearchRoomRow } from "../services/booking.service";
 
 const bookingService = new BookingService();
 const aiService = new AIService();
 const authService = new AuthService();
 const feedbackService = new FeedbackService();
+const RECENT_ROOM_LIMIT = 6;
 
 export async function renderSearchPage(req: Request, res: Response) {
   let payload: Awaited<ReturnType<BookingService["searchRooms"]>>;
@@ -43,6 +44,9 @@ export async function renderSearchPage(req: Request, res: Response) {
     filters: payload.filters,
     summary: payload.summary,
     promotions: await bookingService.getActivePromotions(),
+    popularDestinations: await bookingService.getPopularDestinationSuggestions(),
+    accommodationTypes: await bookingService.getAccommodationTypeOptions(),
+    recentRooms: req.session.recentRooms || [],
     errorMessage
   });
 }
@@ -68,6 +72,9 @@ export async function renderMultiRoomBookingPage(req: Request, res: Response) {
     summary: payload.summary,
     promotions: await bookingService.getActivePromotions(),
     services: await bookingService.getActiveServices(),
+    accommodationTypes: await bookingService.getAccommodationTypeOptions(),
+    hotelCities: await bookingService.getHotelCityOptions(),
+    hotelDistricts: await bookingService.getHotelDistrictOptions(),
     user: req.session.user,
     staffMode: readText(req.query.staff_mode),
     formValues: {
@@ -157,6 +164,9 @@ export async function submitMultiRoomBooking(req: Request, res: Response) {
       summary: payload.summary,
       promotions: await bookingService.getActivePromotions(),
       services: await bookingService.getActiveServices(),
+      accommodationTypes: await bookingService.getAccommodationTypeOptions(),
+      hotelCities: await bookingService.getHotelCityOptions(),
+      hotelDistricts: await bookingService.getHotelDistrictOptions(),
       user: req.session.user,
       staffMode: readText(req.body.staff_mode),
       formValues,
@@ -263,6 +273,7 @@ export async function renderBookingFormPage(req: Request, res: Response) {
   const payload = await bookingService.getBookingFormData(roomId);
   const filters = searchParamsFromRequest(req.query);
   const profile = await bookingService.getCustomerBookingProfile(req.session.user?.maKhachHang);
+  rememberRecentRoom(req, payload.room, filters);
 
   return res.render("booking/form", {
     title: `Dat phong P${payload.room.soPhong}`,
@@ -295,6 +306,8 @@ export async function renderRoomDetailPage(req: Request, res: Response) {
   }
 
   const filters = searchParamsFromRequest(req.query);
+  attachUserDistance(room, filters);
+  rememberRecentRoom(req, room, filters);
 
   return res.render("booking/room-detail", {
     title: `Chi tiết phòng ${room.soPhong}`,
@@ -421,12 +434,52 @@ export async function renderInvoicePage(req: Request, res: Response) {
   });
 }
 
+function rememberRecentRoom(req: Request, room: SearchRoomRow, filters: Record<string, string>) {
+  const queryParams = new URLSearchParams();
+  const zeroDefaults = new Set(["so_khach", "gia_goi_y", "gia_tu", "gia_den"]);
+  Object.entries(filters || {}).forEach(([key, value]) => {
+    if (!value) return;
+    if (zeroDefaults.has(key) && value === "0") return;
+    if (key === "sort_by" && value === "ai") return;
+    queryParams.set(key, value);
+  });
+  const suffix = queryParams.toString() ? `?${queryParams.toString()}` : "";
+  const price = Number(room.gia || 0);
+  const item = {
+    id: Number(room.id),
+    soPhong: String(room.soPhong || ""),
+    loaiPhong: String(room.loaiPhong || ""),
+    khachSan: String(room.khachSan || ""),
+    loaiLuuTruTen: String(room.loaiLuuTruTen || "Hotel"),
+    tinhThanh: String(room.tinhThanh || ""),
+    imageUrl: String(room.imageUrl || "/uploads/phong/1.png"),
+    priceFormatted: String(room.priceFormatted || (price > 0 ? `${price.toLocaleString("vi-VN")} đ` : "Đang cập nhật")),
+    loaiGiuong: String(room.loaiGiuong || "Giường tiêu chuẩn"),
+    viewPhong: String(room.viewPhong || "View nội khu"),
+    soKhachToiDa: Number(room.soKhachToiDa || 0),
+    lastSeenAt: new Date().toISOString(),
+    detailHref: `/booking/rooms/${room.id}/detail${suffix}`,
+    bookingHref: `/booking/rooms/${room.id}${suffix}`
+  };
+
+  const existing = Array.isArray(req.session.recentRooms) ? req.session.recentRooms : [];
+  req.session.recentRooms = [
+    item,
+    ...existing.filter((recentRoom) => Number(recentRoom.id) !== item.id)
+  ].slice(0, RECENT_ROOM_LIMIT);
+}
+
 function searchParamsFromRequest(source: Record<string, unknown>) {
   const keys = [
     "loai_phong",
     "loai_giuong",
     "view_phong",
+    "dia_diem",
+    "loai_luu_tru",
+    "user_lat",
+    "user_lng",
     "hotel_city",
+    "hotel_district",
     "hotel_name",
     "so_khach",
     "gia_goi_y",
@@ -446,7 +499,7 @@ function searchParamsFromRequest(source: Record<string, unknown>) {
 }
 
 function normalizeSearchSortBy(value: string): SearchBookingInput["sort_by"] {
-  return ["ai", "price_asc", "price_desc", "capacity_fit"].includes(value)
+  return ["ai", "distance", "price_asc", "price_desc", "capacity_fit"].includes(value)
     ? value as SearchBookingInput["sort_by"]
     : "ai";
 }
@@ -459,7 +512,12 @@ function searchFiltersFromRequest(source: Record<string, unknown>): SearchBookin
     loai_phong: values.loai_phong,
     loai_giuong: values.loai_giuong,
     view_phong: values.view_phong,
+    dia_diem: values.dia_diem,
+    loai_luu_tru: values.loai_luu_tru,
+    user_lat: safeNumber(values.user_lat),
+    user_lng: safeNumber(values.user_lng),
     hotel_city: values.hotel_city,
+    hotel_district: values.hotel_district,
     hotel_name: values.hotel_name,
     so_khach: safeNumber(values.so_khach),
     gia_goi_y: safeNumber(values.gia_goi_y),
@@ -474,6 +532,26 @@ function searchFiltersFromRequest(source: Record<string, unknown>): SearchBookin
 function safeNumber(value: string) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function attachUserDistance(room: SearchRoomRow, filters: Record<string, string>) {
+  const userLat = Number(filters.user_lat || 0);
+  const userLng = Number(filters.user_lng || 0);
+  const hotelLat = Number(room.hotelLatitude || 0);
+  const hotelLng = Number(room.hotelLongitude || 0);
+  if (!Number.isFinite(userLat) || !Number.isFinite(userLng) || !Number.isFinite(hotelLat) || !Number.isFinite(hotelLng)) return;
+  if (!userLat || !userLng || !hotelLat || !hotelLng) return;
+
+  const radians = (value: number) => value * Math.PI / 180;
+  const deltaLat = radians(hotelLat - userLat);
+  const deltaLng = radians(hotelLng - userLng);
+  const a = Math.sin(deltaLat / 2) ** 2
+    + Math.cos(radians(userLat)) * Math.cos(radians(hotelLat)) * Math.sin(deltaLng / 2) ** 2;
+  const distanceKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  room.userDistanceKm = distanceKm;
+  room.userDistanceLabel = distanceKm < 1
+    ? `${Math.round(distanceKm * 1000)} m`
+    : `${distanceKm.toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km`;
 }
 
 function readText(value: unknown, fallback = "") {

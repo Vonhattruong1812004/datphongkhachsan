@@ -6,7 +6,7 @@ export class SystemService {
   async health() {
     return {
       ok: true,
-      app: "Bento Resort",
+      app: "Bento Booking",
       now: new Date().toISOString()
     };
   }

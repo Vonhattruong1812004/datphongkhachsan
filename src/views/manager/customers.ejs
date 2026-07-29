@@ -10,6 +10,7 @@
   const totalPages = Number(payload.totalPages || 1);
   const makeQuery = (overrides = {}) => {
     const next = { ...filters, ...overrides };
+    delete next.loai_khach;
     Object.keys(next).forEach((key) => {
       if (next[key] === undefined || next[key] === null || next[key] === "") delete next[key];
     });
@@ -230,6 +231,548 @@
     backdrop-filter: none !important;
     will-change: auto !important;
   }
+
+  /* UC1 manager final pass: align with frontdesk operation screens, white/blue only. */
+  body:has(.crm-home){
+    background:#f4f8ff;
+  }
+  body:has(.crm-home) .floating-assist{
+    display:none !important;
+  }
+  .crm-home{
+    --crm-ink:#102033;
+    --crm-muted:#607086;
+    --crm-line:#cfe0f3;
+    --crm-card:#ffffff;
+    --crm-surface:#f7fbff;
+    --crm-surface-strong:#ffffff;
+    --crm-form-ink:#102033;
+    --crm-form-muted:#607086;
+    --crm-cyan:#006ce4;
+    --crm-blue:#003b95;
+    --crm-shadow:0 18px 42px rgba(0,59,149,.10);
+    --crm-shadow-pop:0 18px 42px rgba(0,59,149,.10);
+    min-height:calc(100vh - 68px);
+    padding:24px 18px 48px;
+    color:var(--crm-ink);
+    background:linear-gradient(180deg,#eaf4ff 0%,#f8fbff 230px,#ffffff 100%) !important;
+  }
+  .crm-shell{
+    max-width:1220px;
+  }
+  .crm-hero{
+    margin:0 0 14px;
+  }
+  .crm-hero-main{
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    overflow:visible;
+    padding:0;
+    border:0;
+    border-radius:0;
+    color:var(--crm-ink);
+    background:transparent;
+    box-shadow:none;
+  }
+  .crm-hero-main::before,
+  .crm-hero-main::after,
+  .crm-chip,
+  .crm-lead,
+  .crm-hero-mark,
+  .crm-hero-main .crm-actions,
+  .crm-hero-main .crm-actions a[href="/dashboard/quanly"],
+  .crm-hero-main .crm-actions a[href^="/manager/customers/export.csv"],
+  .crm-filter-panel .crm-section-head .crm-muted,
+  .crm-filter-panel .crm-section-head > .crm-button,
+  .crm-live-pill{
+    display:none !important;
+  }
+  .crm-hero-content{
+    max-width:none;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    width:100%;
+  }
+  .crm-hero h1{
+    max-width:none;
+    margin:0;
+    padding:0 12px 2px 14px;
+    border-left:5px solid #006ce4;
+    color:#003b95;
+    background:#ffffff;
+    font-size:30px;
+    line-height:1.2;
+    letter-spacing:0;
+    text-shadow:none;
+  }
+  .crm-hero h1 span{
+    color:#003b95;
+    background:none;
+    -webkit-background-clip:initial;
+    background-clip:initial;
+  }
+  .crm-actions{
+    gap:8px;
+    margin-top:0;
+  }
+  .crm-hero-main .crm-actions{
+    flex:0 0 auto;
+    justify-content:flex-end;
+  }
+  .crm-hero-main .crm-actions .crm-button{
+    min-width:168px;
+  }
+  .crm-button{
+    min-height:40px;
+    border-radius:8px;
+    border:1px solid #bfdcff;
+    background:#ffffff;
+    color:#003b95;
+    box-shadow:0 8px 18px rgba(0,59,149,.08);
+  }
+  .crm-button:hover{
+    transform:translateY(-1px);
+    border-color:#006ce4;
+    background:#f0f7ff;
+    box-shadow:0 12px 26px rgba(0,108,228,.14);
+  }
+  .crm-button--primary{
+    border-color:#006ce4;
+    color:#ffffff;
+    background:#006ce4;
+    box-shadow:0 12px 26px rgba(0,108,228,.20);
+  }
+  .crm-button--primary:hover{
+    background:#003b95;
+    border-color:#003b95;
+  }
+  .crm-button--danger{
+    color:#b42318;
+    border-color:#fecaca;
+    background:#fff5f5;
+    box-shadow:none;
+  }
+  .crm-layout{
+    gap:14px;
+  }
+  .crm-panel,
+  .crm-table-panel,
+  .crm-filter-panel{
+    border:1px solid var(--crm-line);
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:var(--crm-shadow);
+  }
+  .crm-filter-panel,
+  .crm-panel,
+  .crm-table-panel{
+    padding:16px;
+  }
+  .crm-filter-panel::before,
+  .crm-table-panel::before{
+    display:none;
+  }
+  .crm-section-head{
+    align-items:center;
+    margin:0 0 12px;
+    padding-bottom:10px;
+    border-bottom:1px solid #e2edf8;
+  }
+  .crm-panel h2,
+  .crm-table-panel h2{
+    color:#102033;
+    font-size:22px;
+    line-height:1.25;
+  }
+  .crm-muted{
+    color:var(--crm-muted);
+  }
+  #crmFilterForm{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:12px;
+    align-items:end;
+  }
+  .crm-field-grid{
+    grid-template-columns:1.15fr minmax(260px,1.7fr) repeat(2,minmax(128px,.8fr));
+    gap:12px;
+    margin-top:0;
+  }
+  .crm-field::after{
+    display:none;
+  }
+  .crm-field label{
+    color:#173651;
+    text-transform:none;
+    font-size:13px;
+    letter-spacing:0;
+  }
+  .crm-field input,
+  .crm-field select{
+    min-height:46px;
+    border:1px solid #cfe0f3;
+    border-radius:8px;
+    background:#ffffff;
+    color:#102033;
+    box-shadow:none;
+  }
+  .crm-field input:focus,
+  .crm-field select:focus{
+    border-color:#006ce4;
+    box-shadow:0 0 0 4px rgba(0,108,228,.12);
+  }
+  .crm-filter-panel .crm-actions{
+    display:flex;
+    flex-wrap:nowrap;
+    justify-content:flex-end;
+    align-items:end;
+    margin-top:0;
+  }
+  .crm-filter-panel .crm-actions .crm-button{
+    min-width:112px;
+    min-height:46px;
+    padding:10px 14px;
+    white-space:nowrap;
+  }
+  .crm-table-wrap{
+    margin-top:0;
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:none;
+  }
+  .crm-table{
+    width:100%;
+    min-width:0;
+    table-layout:fixed;
+  }
+  .crm-table th:nth-child(1),
+  .crm-table td:nth-child(1){width:21%}
+  .crm-table th:nth-child(2),
+  .crm-table td:nth-child(2){width:27%}
+  .crm-table th:nth-child(3),
+  .crm-table td:nth-child(3){width:12%}
+  .crm-table th:nth-child(4),
+  .crm-table td:nth-child(4){width:13%}
+  .crm-table th:nth-child(5),
+  .crm-table td:nth-child(5){width:12%}
+  .crm-table th:nth-child(6),
+  .crm-table td:nth-child(6){width:15%}
+  .crm-table th{
+    color:#003b95;
+    background:#eaf4ff;
+    border-bottom:1px solid #cfe0f3;
+    letter-spacing:0;
+  }
+  .crm-table td{
+    border-top:1px solid #edf3f9;
+    color:#102033;
+  }
+  .crm-table tbody tr:hover{
+    background:#f7fbff;
+    box-shadow:inset 4px 0 0 #006ce4;
+  }
+  .crm-avatar{
+    border-radius:8px;
+    color:#ffffff;
+    background:#006ce4;
+    box-shadow:none;
+  }
+  .crm-code a{
+    color:#003b95;
+  }
+  .crm-code,
+  .crm-code a,
+  .crm-table td:nth-child(2) strong,
+  .crm-table td:nth-child(2) .crm-muted{
+    min-width:0;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+  .crm-status{
+    border-radius:999px;
+    border:1px solid transparent;
+    box-shadow:none;
+  }
+  .crm-status--green,
+  .crm-status--cyan{
+    color:#00613c;
+    background:#effcf6;
+    border-color:#b7efd9;
+  }
+  .crm-status--sun{
+    color:#8a5a00;
+    background:#fff8d7;
+    border-color:#f7dda0;
+  }
+  .crm-status--rose{
+    color:#b42318;
+    background:#fff4f4;
+    border-color:#fecaca;
+  }
+  .crm-status--slate{
+    color:#475569;
+    background:#f3f6f9;
+    border-color:#d7e1eb;
+  }
+  .crm-money{
+    color:#003b95;
+  }
+  .crm-health{
+    color:#003b95;
+    background:#eaf4ff;
+    box-shadow:inset 0 0 0 1px #bfdcff;
+  }
+  .crm-row-actions{
+    grid-template-columns:76px 64px;
+    gap:6px;
+    justify-content:start;
+  }
+  .crm-row-actions form{
+    grid-column:1 / -1;
+  }
+  .crm-row-actions .crm-button{
+    width:100%;
+    min-height:34px;
+    border-radius:8px;
+    padding:7px 10px;
+    white-space:nowrap;
+  }
+  .crm-row-actions .crm-button:first-child{
+    color:#003b95;
+    background:#ffffff;
+    border-color:#bfdcff;
+  }
+  .crm-row-actions .crm-button--primary{
+    color:#ffffff;
+    background:#006ce4;
+    border-color:#006ce4;
+  }
+  .crm-row-actions .crm-button--danger{
+    color:#b42318;
+    background:#fff5f5;
+    border-color:#fecaca;
+  }
+  .crm-table td:nth-child(6) > .crm-muted{
+    display:none;
+  }
+  .crm-table-toolbar{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    margin:0;
+  }
+  .crm-add-button{
+    min-width:176px;
+  }
+  .crm-add-button::before{
+    content:"+";
+    display:inline-grid;
+    place-items:center;
+    width:20px;
+    height:20px;
+    margin-right:8px;
+    font-size:24px;
+    line-height:1;
+    font-weight:500;
+  }
+  .crm-download{
+    position:relative;
+  }
+  .crm-download summary{
+    width:46px;
+    height:46px;
+    min-height:46px;
+    padding:0;
+    border-radius:8px;
+    list-style:none;
+  }
+  .crm-download summary::-webkit-details-marker{
+    display:none;
+  }
+  .crm-download summary svg{
+    width:21px;
+    height:21px;
+  }
+  .crm-download-menu{
+    position:absolute;
+    right:0;
+    top:calc(100% + 8px);
+    z-index:5;
+    min-width:168px;
+    padding:8px;
+    border:1px solid #d6e4f2;
+    border-radius:8px;
+    background:#ffffff;
+    box-shadow:0 18px 42px rgba(15,36,66,.18);
+  }
+  .crm-download-menu a{
+    display:flex;
+    align-items:center;
+    min-height:40px;
+    border-radius:6px;
+    padding:9px 10px;
+    color:#102033;
+    text-decoration:none;
+    font-weight:850;
+  }
+  .crm-download-menu a:hover{
+    color:#003b95;
+    background:#eaf4ff;
+  }
+  .crm-page{
+    border-radius:8px;
+    border-color:#bfdcff;
+    background:#ffffff;
+    color:#003b95;
+  }
+  .crm-page.is-active{
+    color:#ffffff;
+    background:#006ce4;
+  }
+  .crm-insight{
+    border-color:#cfe0f3;
+    border-left-color:#006ce4;
+    background:#f7fbff;
+  }
+  @media (max-width: 1100px){
+    #crmFilterForm{
+      grid-template-columns:1fr;
+    }
+    .crm-field-grid{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    .crm-filter-panel .crm-actions{
+      justify-content:flex-end;
+    }
+  }
+  @media (max-width: 720px){
+    .crm-home{
+      padding:18px 10px 42px;
+    }
+    .crm-hero-content{
+      display:grid;
+      gap:10px;
+    }
+    .crm-hero h1{
+      font-size:26px;
+    }
+    .crm-hero-main .crm-actions{
+      width:100%;
+    }
+    .crm-hero-main .crm-button{
+      flex:1 1 140px;
+    }
+    .crm-field-grid{
+      grid-template-columns:1fr;
+    }
+    .crm-filter-panel .crm-actions{
+      justify-content:stretch;
+    }
+    .crm-filter-panel .crm-button{
+      flex:1 1 130px;
+    }
+    .crm-row-actions{
+      grid-template-columns:1fr;
+    }
+    .crm-table-wrap{
+      overflow:visible;
+      border:0;
+      background:transparent;
+    }
+    .crm-table{
+      min-width:0;
+      display:block;
+    }
+    .crm-table thead{
+      display:none;
+    }
+    .crm-table tbody{
+      display:grid;
+      gap:10px;
+    }
+    .crm-table tbody tr{
+      display:grid;
+      gap:0;
+      padding:12px;
+      border:1px solid #d6e4f2;
+      border-radius:8px;
+      background:#ffffff;
+      box-shadow:0 10px 24px rgba(0,59,149,.08);
+    }
+    .crm-table tbody tr:hover{
+      box-shadow:0 10px 24px rgba(0,59,149,.08);
+    }
+    .crm-table td{
+      display:grid;
+      grid-template-columns:92px minmax(0,1fr);
+      gap:10px;
+      align-items:start;
+      padding:9px 0;
+      border:0;
+      border-bottom:1px solid #edf3f9;
+      white-space:normal;
+      word-break:break-word;
+    }
+    .crm-table td:last-child{
+      border-bottom:0;
+      padding-bottom:0;
+    }
+    .crm-table td::before{
+      color:#607086;
+      font-size:11px;
+      font-weight:900;
+      line-height:1.25;
+      text-transform:uppercase;
+    }
+    .crm-table td:nth-child(1)::before{content:"Khách hàng";}
+    .crm-table td:nth-child(2)::before{content:"Liên hệ";}
+    .crm-table td:nth-child(3)::before{content:"eKYC";}
+    .crm-table td:nth-child(4)::before{content:"Booking";}
+    .crm-table td:nth-child(5)::before{content:"Chi tiêu";}
+    .crm-table td:nth-child(6)::before{content:"Thao tác";}
+    .crm-table td[colspan]{
+      display:block;
+    }
+    .crm-table td[colspan]::before{
+      content:none;
+    }
+    .crm-customer-cell{
+      grid-template-columns:38px minmax(0,1fr);
+    }
+    .crm-avatar{
+      width:38px;
+      height:38px;
+    }
+    .crm-row-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+    }
+    .crm-row-actions form{
+      grid-column:1 / -1;
+    }
+    .crm-table-toolbar{
+      width:100%;
+      justify-content:flex-start;
+    }
+    .crm-download-menu{
+      top:auto;
+      bottom:calc(100% + 8px);
+      left:0;
+      right:auto;
+    }
+    .crm-add-button{
+      flex:1 1 auto;
+      min-width:0;
+    }
+  }
 </style>
 
 <main class="crm-home">
@@ -240,11 +783,6 @@
           <div class="crm-chip"><span class="crm-dot"></span> Quản lý khách hàng</div>
           <h1>Quản lý <span>khách hàng</span></h1>
           <p class="crm-lead">Một màn làm việc riêng cho CRM: tìm đúng khách, kiểm tra eKYC, xem dấu hiệu trùng, rồi đi thẳng sang chi tiết hoặc chỉnh sửa hồ sơ.</p>
-          <div class="crm-actions">
-            <a class="crm-button crm-button--primary" href="/manager/customers/new">Thêm khách hàng</a>
-            <a class="crm-button" href="/manager/customers/export.csv?<%= makeQuery({ page: undefined }) %>">Xuất CSV</a>
-            <a class="crm-button" href="/dashboard/quanly">Về dashboard</a>
-          </div>
         </div>
         <div class="crm-hero-mark" aria-hidden="true">
           <div class="crm-mark-line"><span></span></div>
@@ -285,14 +823,6 @@
               </select>
             </div>
             <div class="crm-field">
-              <label for="loai_khach">Loại khách</label>
-              <select id="loai_khach" name="loai_khach">
-                <% (payload.customerTypeOptions || []).forEach((option) => { %>
-                  <option value="<%= option.value %>" <%= filters.loai_khach === option.value ? "selected" : "" %>><%= option.label %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="crm-field">
               <label for="limit">Hiển thị</label>
               <select id="limit" name="limit">
                 <% [10, 15, 25, 50].forEach((limit) => { %>
@@ -316,9 +846,19 @@
               <h2>Hồ sơ khách hàng</h2>
               <p class="crm-muted" data-crm-result-caption>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRows %> hồ sơ.</p>
             </div>
-          <div class="crm-actions" style="margin:0">
-              <a class="crm-button" href="/manager/customers/export.csv?<%= makeQuery({ page: undefined }) %>" data-crm-csv-link>CSV</a>
-              <a class="crm-button" href="/api/manager/customers?<%= makeQuery({}) %>" data-crm-json-link>JSON</a>
+          <div class="crm-table-toolbar">
+              <details class="crm-download">
+                <summary class="crm-button" aria-label="Tải danh sách khách hàng">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </summary>
+                <div class="crm-download-menu">
+                  <a href="/manager/customers/export.csv?<%= makeQuery({ page: undefined }) %>" data-crm-csv-link>Xuất CSV</a>
+                  <a href="/manager/customers/export.xls?<%= makeQuery({ page: undefined }) %>" data-crm-excel-link>Xuất Excel</a>
+                </div>
+              </details>
+              <a class="crm-button crm-button--primary crm-add-button" href="/manager/customers/new">Thêm khách hàng</a>
             </div>
           </div>
           <div class="crm-table-wrap">
@@ -330,13 +870,12 @@
                   <th>eKYC</th>
                   <th>Booking</th>
                   <th>Chi tiêu</th>
-                  <th>Sức khỏe</th>
                   <th>Thao tác</th>
                 </tr>
               </thead>
               <tbody data-crm-table-body>
                 <% if (!rows.length) { %>
-                  <tr><td colspan="7" class="crm-muted">Không có dữ liệu khách hàng phù hợp.</td></tr>
+                  <tr><td colspan="6" class="crm-muted">Không có dữ liệu khách hàng phù hợp.</td></tr>
                 <% } %>
                 <% rows.forEach((item) => { %>
                   <tr>
@@ -345,7 +884,7 @@
                         <span class="crm-avatar"><%= String(item.tenKh || "?").trim().slice(0, 1).toUpperCase() || "?" %></span>
                         <span class="crm-code">
                           <a href="/manager/customers/<%= item.id %>"><%= item.tenKh %></a>
-                          <span class="crm-muted">#<%= item.id %> · <%= item.typeLabel %></span>
+                          <span class="crm-muted">#<%= item.id %></span>
                         </span>
                       </div>
                     </td>
@@ -362,7 +901,6 @@
                       <div class="crm-muted"><%= item.activeBookingCount %> đang mở · <%= item.lastBookingLabel %></div>
                     </td>
                     <td class="crm-money"><%= item.totalSpentFormatted %></td>
-                    <td><span class="crm-health"><%= item.healthScore %>%</span></td>
                     <td>
                       <div class="crm-row-actions">
                         <a class="crm-button" href="/manager/customers/<%= item.id %>">Chi tiết</a>
@@ -421,6 +959,7 @@
     const liveState = document.querySelector("[data-crm-live-state]");
     const jsonLink = document.querySelector("[data-crm-json-link]");
     const csvLink = document.querySelector("[data-crm-csv-link]");
+    const excelLink = document.querySelector("[data-crm-excel-link]");
     let liveTimer = null;
 
     if (cccd && keyword) {
@@ -490,7 +1029,7 @@
     function renderCustomers(data) {
       tableBody.innerHTML = data.items.length
         ? data.items.map(renderRow).join("")
-        : `<tr><td colspan="7" class="crm-muted">Không có dữ liệu khách hàng phù hợp.</td></tr>`;
+        : `<tr><td colspan="6" class="crm-muted">Không có dữ liệu khách hàng phù hợp.</td></tr>`;
 
       if (resultCaption) {
         resultCaption.textContent = `Trang ${data.page}/${data.totalPages}, đang hiển thị ${data.items.length} trên ${data.totalRows} hồ sơ.`;
@@ -510,7 +1049,7 @@
               <span class="crm-avatar">${escapeHtml(getInitial(item.tenKh))}</span>
               <span class="crm-code">
                 <a href="/manager/customers/${Number(item.id)}">${escapeHtml(item.tenKh || "")}</a>
-                <span class="crm-muted">#${Number(item.id)} · ${escapeHtml(item.typeLabel || "")}</span>
+                <span class="crm-muted">#${Number(item.id)}</span>
               </span>
             </div>
           </td>
@@ -527,7 +1066,6 @@
             <div class="crm-muted">${Number(item.activeBookingCount || 0)} đang mở · ${escapeHtml(item.lastBookingLabel || "Chưa có booking")}</div>
           </td>
           <td class="crm-money">${escapeHtml(item.totalSpentFormatted || "0 đ")}</td>
-          <td><span class="crm-health">${Number(item.healthScore || 0)}%</span></td>
           <td>
             <div class="crm-row-actions">
               <a class="crm-button" href="/manager/customers/${Number(item.id)}">Chi tiết</a>
@@ -569,6 +1107,11 @@
         const params = new URLSearchParams(query);
         params.delete("page");
         csvLink.href = `/manager/customers/export.csv?${params.toString()}`;
+      }
+      if (excelLink) {
+        const params = new URLSearchParams(query);
+        params.delete("page");
+        excelLink.href = `/manager/customers/export.xls?${params.toString()}`;
       }
     }
 

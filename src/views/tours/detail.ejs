@@ -1,0 +1,133 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const itinerarySteps = String(tour.itinerary || "").split(";").map((item) => item.trim()).filter(Boolean);
+  const includeItems = String(tour.includes || "").split(",").map((item) => item.trim()).filter(Boolean);
+  const excludeItems = String(tour.excludes || "").split(",").map((item) => item.trim()).filter(Boolean);
+%>
+
+<style>
+  .tour-detail{min-height:calc(100vh - 76px);padding:24px 0 64px;background:linear-gradient(180deg,#eaf4ff 0%,#f8fbff 280px,#ffffff 100%);color:#102033}
+  .tour-detail-shell{width:min(1180px,calc(100vw - 32px));margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+  .tour-article,.tour-side,.tour-box{border:1px solid #cfe5ff;border-radius:8px;background:#fff;box-shadow:0 14px 34px rgba(0,59,149,.08)}
+  .tour-article{overflow:hidden}
+  .tour-hero-img{height:430px;background:#dbeafe}
+  .tour-hero-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .tour-body{padding:22px}
+  .tour-kicker{display:inline-flex;border-radius:999px;padding:7px 11px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:900}
+  .tour-body h1{margin:14px 0 8px;color:#102033;font-size:42px;line-height:1.04;letter-spacing:-.04em}
+  .tour-muted,.tour-body p,.tour-list li{color:#64748b;line-height:1.65}
+  .tour-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .tour-chip{border:1px solid #bae6fd;border-radius:999px;background:#eff6ff;color:#075985;padding:6px 10px;font-size:12px;font-weight:850}
+  .tour-price-card{display:grid;gap:8px;padding:18px}
+  .tour-price{color:#047857;font-size:28px;font-weight:1000;letter-spacing:-.03em}
+  .tour-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid #bfdbfe;background:#eff6ff;color:#003b95;padding:9px 14px;font-weight:900;text-decoration:none;cursor:pointer}
+  .tour-button--primary{border-color:#006ce4;background:#006ce4;color:#fff}
+  .tour-side{position:sticky;top:94px;display:grid;gap:0;overflow:hidden}
+  .tour-request{padding:18px;border-top:1px solid #cfe5ff}
+  .tour-request h2,.tour-box h2{margin:0 0 12px;color:#102033;font-size:22px}
+  .tour-form{display:grid;gap:10px}
+  .tour-field{display:grid;gap:6px}
+  .tour-field label{font-size:12px;font-weight:900;color:#173651;text-transform:uppercase;letter-spacing:.05em}
+  .tour-field input,.tour-field textarea{min-height:42px;border:1px solid #cfe5ff;border-radius:8px;background:#fff;color:#102033;padding:9px 12px;font:inherit}
+  .tour-field textarea{min-height:82px;resize:vertical}
+  .tour-alert{padding:12px 14px;border-radius:8px;font-weight:850}
+  .tour-alert--ok{background:#ecfdf5;border:1px solid #bbf7d0;color:#047857}
+  .tour-alert--error{background:#fff1f2;border:1px solid #fecdd3;color:#be123c}
+  .tour-section{margin-top:18px}
+  .tour-section h2{margin:0 0 10px;color:#003b95;font-size:24px}
+  .tour-list{margin:0;padding-left:20px}
+  .tour-related{display:grid;gap:10px;padding:18px}
+  .tour-related a{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;text-decoration:none;color:inherit;border:1px solid #dbeafe;border-radius:8px;padding:8px;background:#f8fbff}
+  .tour-related img{width:82px;height:68px;object-fit:cover;border-radius:6px}
+  .tour-related strong{color:#102033}
+  @media(max-width:980px){.tour-detail-shell{grid-template-columns:1fr}.tour-side{position:static}.tour-hero-img{height:300px}}
+</style>
+
+<main class="tour-detail">
+  <div class="tour-detail-shell">
+    <article class="tour-article">
+      <div class="tour-hero-img"><img src="<%= tour.imageUrl %>" alt="<%= tour.name %>" /></div>
+      <div class="tour-body">
+        <span class="tour-kicker"><%= tour.type %> · <%= tour.duration %></span>
+        <h1><%= tour.name %></h1>
+        <p><%= tour.destinationName || tour.destinationCity || "Điểm đến đang cập nhật" %><%= tour.departurePoint ? ` · Khởi hành từ ${tour.departurePoint}` : "" %></p>
+        <div class="tour-chip-row">
+          <span class="tour-chip">Từ <%= tour.minPeople %> - <%= tour.maxPeople %> khách</span>
+          <span class="tour-chip">Trẻ em: <%= tour.childPriceFormatted %></span>
+          <% if (tour.hotelName) { %><span class="tour-chip"><%= tour.hotelName %></span><% } %>
+        </div>
+
+        <section class="tour-section">
+          <h2>Lịch trình</h2>
+          <ol class="tour-list">
+            <% itinerarySteps.forEach((step) => { %>
+              <li><%= step %></li>
+            <% }) %>
+          </ol>
+        </section>
+
+        <section class="tour-section">
+          <h2>Bao gồm</h2>
+          <ul class="tour-list">
+            <% includeItems.forEach((item) => { %>
+              <li><%= item %></li>
+            <% }) %>
+          </ul>
+        </section>
+
+        <% if (excludeItems.length) { %>
+          <section class="tour-section">
+            <h2>Chưa bao gồm</h2>
+            <ul class="tour-list">
+              <% excludeItems.forEach((item) => { %>
+                <li><%= item %></li>
+              <% }) %>
+            </ul>
+          </section>
+        <% } %>
+      </div>
+    </article>
+
+    <aside class="tour-side">
+      <section class="tour-price-card">
+        <span class="tour-kicker">Giá tour</span>
+        <div class="tour-price"><%= tour.priceFormatted %> / khách</div>
+        <a class="tour-button tour-button--primary" href="#tour-request">Gửi yêu cầu tour</a>
+        <a class="tour-button" href="<%= tour.roomSearchHref %>">Tìm phòng gần điểm tour</a>
+      </section>
+
+      <section class="tour-request" id="tour-request">
+        <h2>Yêu cầu tư vấn tour</h2>
+        <% if (successMessage) { %><div class="tour-alert tour-alert--ok"><%= successMessage %></div><% } %>
+        <% if (errorMessage) { %><div class="tour-alert tour-alert--error"><%= errorMessage %></div><% } %>
+        <form class="tour-form" action="/tours/<%= tour.slug %>/requests" method="post">
+          <div class="tour-field"><label>Họ tên</label><input name="hoten" required value="<%= formValues.hoten %>" /></div>
+          <div class="tour-field"><label>Số điện thoại</label><input name="sdt" required value="<%= formValues.sdt %>" /></div>
+          <div class="tour-field"><label>Email</label><input name="email" type="email" value="<%= formValues.email %>" /></div>
+          <div class="tour-field"><label>Ngày đi</label><input name="ngaydi" type="date" value="<%= formValues.ngaydi %>" /></div>
+          <div class="tour-field"><label>Số khách</label><input name="songuoi" type="number" min="<%= tour.minPeople %>" max="<%= tour.maxPeople %>" value="<%= formValues.songuoi %>" /></div>
+          <div class="tour-field"><label>Ghi chú</label><textarea name="ghichu" placeholder="Nhu cầu xe đưa đón, trẻ em, giờ khởi hành..."><%= formValues.ghichu %></textarea></div>
+          <button class="tour-button tour-button--primary" type="submit">Gửi yêu cầu</button>
+        </form>
+      </section>
+
+      <% if (relatedTours.length) { %>
+        <section class="tour-related">
+          <h2>Tour khác</h2>
+          <% relatedTours.forEach((item) => { %>
+            <a href="/tours/<%= item.slug %>">
+              <img src="<%= item.imageUrl %>" alt="<%= item.name %>" />
+              <div>
+                <strong><%= item.name %></strong>
+                <p class="tour-muted"><%= item.priceFormatted %> / khách</p>
+              </div>
+            </a>
+          <% }) %>
+        </section>
+      <% } %>
+    </aside>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

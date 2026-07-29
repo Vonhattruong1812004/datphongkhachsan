@@ -1,6 +1,6 @@
-<header class="site-header">
-  <%
+<%
     const roleId = currentUser ? Number(currentUser.maVaiTro) : 0;
+    const activePath = typeof currentPath === "string" ? currentPath : "";
     const dashboardHrefByRole = {
       1: "/dashboard/admin",
       2: "/dashboard/letan",
@@ -19,12 +19,19 @@
       6: "Dashboard Quản lý",
       7: "Trang của tôi"
     };
-    const showBookingSearch = !currentUser || roleId === 7;
+    const showCustomerNav = !currentUser || roleId === 7;
+    const showBookingSearch = !currentUser;
+    const useCompactHeader = Boolean(currentUser);
+    const isStaffHeader = Boolean(currentUser && roleId !== 7);
+    const roleDashboardHref = dashboardHrefByRole[roleId] || "/";
+    const isOnRoleDashboard = Boolean(currentUser && roleDashboardHref && activePath === roleDashboardHref);
   %>
+<header class="site-header <%= useCompactHeader ? "site-header--staff" : "" %> <%= roleId === 2 ? "site-header--frontdesk" : "" %> <%= roleId === 7 ? "site-header--customer" : "" %>">
   <div class="container site-header__inner">
     <a href="/" class="brand">
-      <strong>Bento Resort</strong>
-      <span>Hệ thống đặt phòng và vận hành resort</span>
+      <span class="brand__mark" aria-hidden="true">B</span>
+      <strong>Bento Booking</strong>
+      <span>Nền tảng đặt phòng lưu trú toàn quốc</span>
     </a>
 
     <% if (showBookingSearch) { %>
@@ -39,9 +46,9 @@
         <input
           class="header-search__input"
           type="text"
-          name="hotel_name"
-          value="<%= typeof query?.hotel_name === 'string' ? query.hotel_name : '' %>"
-          placeholder="Tìm khách sạn, khu nghỉ dưỡng hoặc điểm đến"
+          name="dia_diem"
+          value="<%= typeof query?.dia_diem === 'string' ? query.dia_diem : '' %>"
+          placeholder="Tìm hotel, resort, homestay hoặc điểm đến"
           autocomplete="off"
           id="headerSearchInput"
         />
@@ -58,6 +65,16 @@
               name="hotel_city"
               value="<%= typeof query?.hotel_city === 'string' ? query.hotel_city : '' %>"
               placeholder="Ví dụ: Đà Nẵng"
+            />
+          </div>
+          <div class="header-search__field">
+            <label for="header_hotel_name">Cơ sở lưu trú</label>
+            <input
+              id="header_hotel_name"
+              type="text"
+              name="hotel_name"
+              value="<%= typeof query?.hotel_name === 'string' ? query.hotel_name : '' %>"
+              placeholder="Tên cơ sở nếu đã biết"
             />
           </div>
           <div class="header-search__field">
@@ -102,20 +119,50 @@
     </form>
     <% } %>
 
+    <button class="mobile-nav-toggle" type="button" id="mobileNavToggle" aria-expanded="false" aria-controls="siteNavLinks">
+      <span></span>
+      <span></span>
+      <span></span>
+      <strong>Menu</strong>
+    </button>
+
     <div class="header-clock" aria-label="Đồng hồ và lịch">
       <span class="header-clock__date" id="globalHeaderDate">--/--/----</span>
       <strong class="header-clock__time" id="globalHeaderTime">--:--:--</strong>
     </div>
 
-    <nav class="nav-links">
+    <nav class="nav-links <%= useCompactHeader ? "nav-links--staff" : "" %>" id="siteNavLinks">
+      <% if (showCustomerNav && !currentUser) { %>
+        <a class="chip nav-shortcut" href="/booking/search">Tìm phòng</a>
+        <a class="chip nav-shortcut" href="/app-download">Tải app</a>
+        <a class="chip nav-shortcut" href="/tours">Tour</a>
+        <a class="chip nav-shortcut" href="/news">Tin tức</a>
+        <a class="chip nav-shortcut" href="/#travel-partner">Đăng cơ sở</a>
+        <a class="chip nav-shortcut" href="<%= currentUser && roleId === 7 ? "/customer/bookings" : "/auth/login" %>">Đặt phòng của tôi</a>
+      <% } %>
       <% if (currentUser) { %>
-        <% if (dashboardHrefByRole[roleId]) { %>
-          <a class="chip chip--dashboard" href="<%= dashboardHrefByRole[roleId] %>"><%= dashboardLabelByRole[roleId] %></a>
+        <% if (dashboardHrefByRole[roleId] && !isOnRoleDashboard) { %>
+          <a class="chip chip--dashboard" href="<%= roleDashboardHref %>"><%= dashboardLabelByRole[roleId] %></a>
         <% } %>
-        <span class="chip chip--user"><%= currentUser.displayName %> · <%= currentUser.tenVaiTro %></span>
-        <form action="/auth/logout" method="post">
-          <button class="button" type="submit">Đăng xuất</button>
-        </form>
+        <details class="staff-account-menu">
+          <summary aria-label="Mở menu tài khoản">
+            <span class="staff-account-name"><%= currentUser.displayName %></span>
+            <span class="staff-account-avatar" aria-hidden="true"><%= String(currentUser.displayName || "B").trim().charAt(0).toUpperCase() %></span>
+          </summary>
+          <div class="staff-account-dropdown">
+            <strong><%= currentUser.displayName %></strong>
+            <span><%= currentUser.tenVaiTro %></span>
+            <a href="<%= roleDashboardHref %>">Trang chủ</a>
+            <% if (roleId === 7) { %>
+              <a href="/customer/profile">Quản lý hồ sơ cá nhân</a>
+              <a href="/customer/bookings">Đặt phòng của tôi</a>
+              <a href="/tours">Gói tour du lịch</a>
+            <% } %>
+            <form action="/auth/logout" method="post">
+              <button type="submit">Đăng xuất</button>
+            </form>
+          </div>
+        </details>
       <% } else { %>
         <a class="chip" href="/auth/login">Đăng nhập</a>
         <a class="button button--primary" href="/auth/register">Đăng ký</a>
@@ -190,6 +237,19 @@
       if (event.key === "Escape") {
         closePanel();
       }
+    });
+  })();
+
+  (() => {
+    const toggle = document.getElementById("mobileNavToggle");
+    const nav = document.getElementById("siteNavLinks");
+
+    if (!toggle || !nav) return;
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+      nav.classList.toggle("is-open", !expanded);
     });
   })();
 </script>

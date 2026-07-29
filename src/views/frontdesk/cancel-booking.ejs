@@ -385,6 +385,489 @@
     color:#536b80;
     box-shadow:0 0 0 5px rgba(255,255,255,.56);
   }
+
+  /* UC5 final UI/UX pass: clean OTA-style cancellation workspace, UI only. */
+  body {
+    background: linear-gradient(180deg, #eaf4ff 0%, #f5f9fe 52%, #edf6ff 100%) !important;
+    color: #243044;
+  }
+
+  .cancel-shell {
+    --ux-border: #d6e4f2;
+    --ux-border-strong: #9cc7f2;
+    --ux-text: #243044;
+    --ux-heading: #0f172a;
+    --ux-muted: #64748b;
+    --ux-cyan: #006ce4;
+    --ux-red: #e11d48;
+    --ux-green: #00a884;
+    --ux-shadow: 0 10px 28px rgba(15, 36, 66, 0.08);
+    max-width: 1180px;
+    padding: 18px 18px 34px;
+    color: #243044;
+    background: transparent !important;
+  }
+
+  .cancel-title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .cancel-title h1 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .cancel-chip,
+  .cancel-title > div > .cancel-muted,
+  #formSearch > .cancel-muted {
+    display: none;
+  }
+
+  .cancel-card,
+  #formSearch.cancel-card,
+  #formCancel.cancel-card,
+  .cancel-refund {
+    margin-bottom: 16px;
+    padding: 18px;
+    color: #243044;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: 0 10px 28px rgba(15, 36, 66, 0.08) !important;
+  }
+
+  .cancel-card h2,
+  #formSearch.cancel-card h2,
+  #formCancel.cancel-card > h2 {
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    color: #0f172a;
+    border-bottom: 1px solid #e5edf6;
+    font-size: 19px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .cancel-tag {
+    margin-left: 6px;
+    padding: 4px 9px;
+    color: #004cb8;
+    border: 1px solid #cfe4ff;
+    border-radius: 999px;
+    background: #eef6ff;
+    font-size: 11px;
+    font-weight: 800;
+    text-shadow: none;
+  }
+
+  .cancel-muted,
+  #formCancel.cancel-card > .cancel-row .cancel-muted,
+  .cancel-refund > .cancel-muted,
+  .cancel-scope .cancel-muted {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+    text-shadow: none;
+  }
+
+  .cancel-muted strong,
+  #formCancel.cancel-card > .cancel-row .cancel-muted strong,
+  .cancel-scope strong {
+    color: #0f172a;
+  }
+
+  .cancel-search-grid {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .cancel-search-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    min-width: 0;
+    padding-bottom: 14px;
+  }
+
+  .cancel-row {
+    gap: 10px;
+  }
+
+  .cancel-field {
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .cancel-field label,
+  #formSearch.cancel-card .cancel-field label,
+  #formCancel.cancel-card > .cancel-row .cancel-field label {
+    color: #243044;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.3;
+    text-shadow: none;
+  }
+
+  .cancel-field input,
+  .cancel-field select,
+  .cancel-field textarea {
+    min-height: 42px;
+    width: 100%;
+    height: auto;
+    padding: 10px 12px;
+    color: #0f172a;
+    border: 1px solid #c9d8e8;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: none;
+    font-size: 14px;
+  }
+
+  .cancel-field textarea {
+    min-height: 96px;
+  }
+
+  .cancel-field input[disabled],
+  .cancel-field select[disabled] {
+    color: #475569;
+    border-color: #d6e4f2;
+    background: #f8fbff !important;
+  }
+
+  .cancel-field input:hover,
+  .cancel-field select:hover,
+  .cancel-field textarea:hover {
+    border-color: #9cc7f2;
+    box-shadow: none;
+  }
+
+  .cancel-field input:focus,
+  .cancel-field select:focus,
+  .cancel-field textarea:focus {
+    border-color: #006ce4;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, 0.13);
+  }
+
+  .cancel-error-msg {
+    min-height: 14px;
+    color: #be123c;
+    font-size: 12px;
+  }
+
+  .cancel-summary {
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .cancel-stat,
+  .cancel-summary .cancel-stat {
+    min-height: 72px;
+    padding: 12px;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #f8fbff;
+    box-shadow: none;
+  }
+
+  .cancel-stat strong,
+  .cancel-summary .cancel-stat strong {
+    color: #0f172a;
+    font-size: 22px;
+    line-height: 1.1;
+  }
+
+  .cancel-stat span,
+  .cancel-summary .cancel-stat span {
+    margin-top: 5px;
+    color: #64748b;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .cancel-alert {
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .cancel-alert--warning {
+    color: #92400e;
+    border-color: #fed7aa;
+    background: #fff7ed;
+  }
+
+  .cancel-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .cancel-table {
+    min-width: 900px;
+    color: #243044;
+    background: #ffffff;
+    font-size: 13px;
+  }
+
+  .cancel-table th {
+    padding: 10px 12px;
+    color: #334155;
+    border-bottom: 1px solid #dfeaf5;
+    background: #f1f6fb;
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .cancel-table td {
+    padding: 11px 12px;
+    color: #243044;
+    border-bottom: 1px solid #e5edf6;
+    background: #ffffff;
+  }
+
+  .cancel-table tbody tr:hover td {
+    background: #f8fbff;
+  }
+
+  .cancel-badge {
+    color: #004cb8;
+    border-color: #cfe4ff;
+    background: #eef6ff;
+  }
+
+  .cancel-badge--green {
+    color: #047857;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+  }
+
+  .cancel-badge--red {
+    color: #be123c;
+    border-color: #fecdd3;
+    background: #fff1f2;
+  }
+
+  .cancel-badge--amber {
+    color: #92400e;
+    border-color: #fde68a;
+    background: #fffbeb;
+  }
+
+  .cancel-badge--slate {
+    color: #475569;
+    border-color: #d6e4f2;
+    background: #f1f5f9;
+  }
+
+  .cancel-scope {
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .cancel-scope label,
+  .cancel-scope label:nth-child(2) {
+    min-height: 0;
+    padding: 11px 12px;
+    color: #243044;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #f8fbff;
+    box-shadow: none;
+  }
+
+  .cancel-scope label:has(input:checked) {
+    color: #0f2442;
+    border-color: #8cc8ff;
+    background: #eef6ff;
+    outline: none;
+  }
+
+  .cancel-table input[type="checkbox"],
+  .cancel-scope input[type="radio"] {
+    accent-color: #006ce4;
+  }
+
+  .cancel-refund__head strong {
+    color: #0f172a;
+    text-shadow: none;
+  }
+
+  .cancel-policy {
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .cancel-policy__hero,
+  .cancel-policy__step,
+  .cancel-refund__metric,
+  .cancel-refund__notice {
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #f8fbff;
+    box-shadow: none;
+  }
+
+  .cancel-policy__hero {
+    min-height: 0;
+  }
+
+  .cancel-policy__hero span,
+  .cancel-policy__hero p,
+  .cancel-policy__step span,
+  .cancel-refund__metric span {
+    color: #64748b;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .cancel-policy__hero strong,
+  .cancel-policy__step b,
+  .cancel-refund__metric b {
+    color: #0f172a;
+  }
+
+  .cancel-policy__step {
+    min-height: 120px;
+  }
+
+  .cancel-policy__step.is-active {
+    border-color: #8cc8ff;
+    background: #eef6ff;
+  }
+
+  .cancel-refund__notice {
+    color: #92400e;
+    border-color: #fed7aa;
+    background: #fff7ed;
+  }
+
+  .cancel-empty {
+    padding: 16px;
+    color: #64748b;
+    border: 1px dashed #c9d8e8;
+    border-radius: 8px;
+    background: #f8fbff;
+    box-shadow: none;
+  }
+
+  .cancel-actions {
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .cancel-actions__right {
+    gap: 8px;
+  }
+
+  .cancel-shell .button,
+  .cancel-shell .button:not(.button--primary):not(.button--danger) {
+    min-height: 42px;
+    padding: 10px 14px;
+    color: #0f2442;
+    border: 1px solid #cbd8e6;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .cancel-shell .button:hover {
+    transform: none;
+    border-color: #9cc7f2;
+    box-shadow: none;
+  }
+
+  .cancel-shell .button--primary {
+    color: #ffffff;
+    border-color: #006ce4;
+    background: #006ce4;
+    box-shadow: none;
+  }
+
+  .cancel-shell .button--danger {
+    color: #ffffff;
+    border-color: #e11d48;
+    background: #e11d48;
+    box-shadow: none;
+  }
+
+  .input-error {
+    border-color: #e11d48 !important;
+    background: #fff7f8 !important;
+  }
+
+  @media (max-width: 900px) {
+    .cancel-title {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .cancel-row,
+    .cancel-summary,
+    .cancel-scope,
+    .cancel-refund__grid,
+    .cancel-policy,
+    .cancel-search-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cancel-search-actions,
+    .cancel-actions,
+    .cancel-actions__right {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: stretch;
+      padding-bottom: 0;
+    }
+
+    .cancel-shell .button {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .cancel-shell {
+      padding: 12px 10px 28px;
+    }
+
+    .cancel-title h1 {
+      font-size: 25px;
+    }
+
+    .cancel-card,
+    #formSearch.cancel-card,
+    #formCancel.cancel-card,
+    .cancel-refund {
+      padding: 14px;
+    }
+
+    .cancel-card h2,
+    #formSearch.cancel-card h2,
+    #formCancel.cancel-card > h2 {
+      font-size: 18px;
+    }
+
+    .cancel-policy__steps {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
 </style>
 
 <main class="cancel-shell">

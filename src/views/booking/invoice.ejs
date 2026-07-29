@@ -30,7 +30,7 @@
 <main class="invoice-shell">
   <section class="invoice-card">
     <span class="invoice-chip">Đặt phòng thành công</span>
-    <h1>Booking đã được giữ chỗ.</h1>
+    <h1>Đặt phòng đã được giữ chỗ.</h1>
     <p class="invoice-muted">Mã giao dịch <strong><%= booking.bookingCode || `GD-${booking.id}` %></strong> đã được tạo trong hệ thống. Trạng thái hiện tại là <strong><%= booking.statusLabel || booking.status %></strong>, phương thức thanh toán <strong><%= booking.paymentMethodLabel || booking.paymentMethod %></strong>.</p>
     <div class="invoice-summary">
       <div class="invoice-box"><span>Tổng tiền</span><strong><%= booking.totalFormatted %></strong></div>
@@ -51,7 +51,7 @@
     <% }) %>
     <h2 class="invoice-section-title">Dịch vụ bổ sung</h2>
     <% if (!booking.services || !booking.services.length) { %>
-      <p class="invoice-muted">Booking này chưa có dịch vụ bổ sung.</p>
+      <p class="invoice-muted">Đặt phòng này chưa có dịch vụ bổ sung.</p>
     <% } else { %>
       <table class="invoice-table">
         <thead>
@@ -78,7 +78,7 @@
     <% } %>
     <div class="invoice-actions">
       <a class="invoice-button invoice-button--primary" href="/customer/bookings/<%= booking.id %>">Xem chi tiết</a>
-      <a class="invoice-button invoice-button--primary" href="/customer/bookings">Về lịch sử booking</a>
+      <a class="invoice-button invoice-button--primary" href="/customer/bookings">Về lịch sử đặt phòng</a>
       <a class="invoice-button" href="/booking/search">Tiếp tục tìm phòng</a>
       <a class="invoice-button" href="/customer/dashboard">Trang khách hàng</a>
     </div>

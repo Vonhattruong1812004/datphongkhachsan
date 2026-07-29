@@ -4,6 +4,8 @@
   const profile = payload.profile || {};
   const stats = payload.stats || {};
   const recentBookings = payload.recentBookings || [];
+  const featuredRooms = payload.featuredRooms || [];
+  const tripHistory = recentBookings.filter((booking) => ["Stayed", "Paid", "Completed"].includes(String(booking.status || ""))).slice(0, 3);
   const ekycStatus = String(profile.trangThaiEkyc || "ChuaXacThuc");
   const ekycLabel = {
     DaXacThuc: "Đã xác thực",
@@ -576,6 +578,748 @@
       min-height: 230px;
     }
   }
+
+  /* Customer dashboard UC: compact white/blue app layout. */
+  body {
+    background: #f5f9ff;
+  }
+  .guest-home {
+    --guest-ink: #102033;
+    --guest-muted: #64748b;
+    --guest-line: #cfe5ff;
+    --guest-shadow: 0 10px 24px rgba(0, 59, 149, .08);
+    max-width: 1380px;
+    min-height: calc(100vh - 69px);
+    margin: 0 auto;
+    overflow: visible;
+    padding: 12px 18px 42px;
+    color: #102033;
+    background:
+      linear-gradient(180deg, #eaf4ff 0%, #f8fbff 220px, #ffffff 100%) !important;
+  }
+  .guest-home::before,
+  .guest-home::after {
+    display: none;
+    content: none;
+    animation: none;
+  }
+  .guest-wrap {
+    max-width: none;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+  .guest-hero {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .guest-live-card,
+  .guest-chip,
+  .guest-lead {
+    display: none;
+  }
+  .guest-hero-card,
+  .guest-focus-card,
+  .guest-uc-card,
+  .guest-booking-card,
+  .guest-empty {
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: 0 10px 24px rgba(0, 59, 149, .08);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .guest-hero-card {
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+    display: grid;
+    gap: 8px;
+  }
+  .guest-hero-card::before {
+    display: none;
+    content: none;
+  }
+  .guest-hero h1 {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 13px 16px 13px 27px;
+    border: 1px solid #bfdcff;
+    border-left: 0;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 25px;
+    line-height: 1.14;
+    letter-spacing: 0;
+    background: linear-gradient(135deg, #006ce4 0%, #0b78ea 52%, #003b95 100%);
+    box-shadow: 0 14px 34px rgba(0, 59, 149, .16);
+    text-shadow: none;
+    position: relative;
+  }
+  .guest-hero h1::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 13px;
+    bottom: 13px;
+    width: 5px;
+    border-radius: 999px;
+    background: #ffffff;
+  }
+  .guest-hero h1 span {
+    color: #ffffff;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+  .guest-tags {
+    display: none;
+  }
+  .guest-tag,
+  .guest-tag--ekyc {
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    padding: 6px 10px;
+    color: #075eb8;
+    background: #eff6ff;
+    box-shadow: none;
+    font-size: 12px;
+  }
+  .guest-hero-actions {
+    display: none;
+  }
+  .guest-button {
+    min-height: 36px;
+    border-radius: 8px;
+    border-color: #bfdbfe;
+    padding: 8px 12px;
+    color: #075eb8;
+    background: #ffffff;
+    box-shadow: none;
+    font-size: 13px;
+  }
+  .guest-button:hover {
+    transform: none;
+    box-shadow: 0 8px 18px rgba(0, 108, 228, .10);
+  }
+  .guest-button--primary {
+    color: #ffffff;
+    border-color: #006ce4;
+    background: #006ce4;
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .18);
+  }
+  .guest-button--browse {
+    border-color: #a7f3d0;
+    color: #047857;
+    background: #f0fdf4;
+  }
+  .guest-button--history,
+  .guest-button--detail {
+    border-color: #bfdbfe;
+    color: #003b95;
+    background: #eff6ff;
+  }
+  .guest-button--edit {
+    border-color: #fde68a;
+    color: #a16207;
+    background: #fffbeb;
+  }
+  .guest-button--browse:hover {
+    border-color: #34d399;
+    box-shadow: 0 8px 18px rgba(4, 120, 87, .12);
+  }
+  .guest-button--history:hover,
+  .guest-button--detail:hover {
+    border-color: #006ce4;
+    box-shadow: 0 8px 18px rgba(0, 108, 228, .12);
+  }
+  .guest-button--edit:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 8px 18px rgba(245, 158, 11, .14);
+  }
+  .guest-mini-stats {
+    order: 1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+  }
+  .guest-mini-stat,
+  .guest-mini-stat:nth-child(n) {
+    min-height: 68px;
+    padding: 11px 13px;
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    color: #003b95;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(0, 59, 149, .06);
+  }
+  .guest-mini-stat strong,
+  .guest-mini-stat span {
+    color: inherit;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+  .guest-mini-stat strong {
+    font-size: 24px;
+  }
+  .guest-mini-stat span {
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 11px;
+    text-transform: none;
+  }
+  .guest-section {
+    margin: 0;
+  }
+  .guest-section-head {
+    align-items: center;
+    margin: 0 0 8px;
+  }
+  .guest-section-head h2 {
+    color: #102033;
+    font-size: 18px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+  .guest-section-head p {
+    display: none;
+  }
+  .guest-bento {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .guest-uc-card,
+  .guest-uc-card:nth-child(n) {
+    min-height: 72px;
+    padding: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #102033;
+    background: #ffffff !important;
+    transform: none;
+    opacity: 1;
+    animation: none;
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+  .guest-uc-card:hover {
+    transform: none;
+    border-color: #006ce4;
+    box-shadow: 0 12px 28px rgba(0, 108, 228, .12);
+  }
+  .guest-uc-card::before,
+  .guest-uc-card::after,
+  .guest-uc-code,
+  .guest-uc-orb,
+  .guest-uc-card p {
+    display: none;
+    content: none;
+  }
+  .guest-uc-top {
+    display: none;
+  }
+  .guest-uc-card h3 {
+    margin: 0;
+    color: #003b95;
+    font-size: 17px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+  .guest-open {
+    position: static;
+    flex: 0 0 auto;
+    color: #075eb8;
+    font-size: 12px;
+    text-shadow: none;
+  }
+  .guest-dashboard-layout {
+    display: contents;
+  }
+  .guest-side-tabs {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    position: sticky;
+    top: 82px;
+    display: grid;
+    gap: 8px;
+  }
+  .guest-side-tabs .guest-section-head {
+    display: none;
+  }
+  .guest-side-tabs .guest-bento {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .guest-side-tabs .guest-uc-card,
+  .guest-side-tabs .guest-uc-card:nth-child(n) {
+    min-height: 48px;
+    padding: 0 12px;
+    border-left: 4px solid transparent;
+  }
+  .guest-side-tabs .guest-uc-card:hover {
+    z-index: 2;
+    border-color: #006ce4;
+    border-left-color: #006ce4;
+    background: #eff6ff !important;
+    transform: translateX(8px) scale(1.04);
+    box-shadow: 0 14px 32px rgba(0, 108, 228, .18);
+  }
+  .guest-side-tabs .guest-uc-card h3 {
+    font-size: 15px;
+  }
+  .guest-side-tabs .guest-search h3 {
+    color: #003b95;
+  }
+  .guest-side-tabs .guest-history h3 {
+    color: #075eb8;
+  }
+  .guest-side-tabs .guest-profile h3 {
+    color: #047857;
+  }
+  .guest-side-tabs .guest-service h3 {
+    color: #a16207;
+  }
+  .guest-side-tabs .guest-feedback h3 {
+    color: #7c3aed;
+  }
+  .guest-side-tabs .guest-advice h3 {
+    color: #0f766e;
+  }
+  .guest-side-tabs .guest-search:hover {
+    background: #eff6ff !important;
+  }
+  .guest-side-tabs .guest-history:hover {
+    background: #f0f9ff !important;
+  }
+  .guest-side-tabs .guest-profile:hover {
+    background: #ecfdf5 !important;
+  }
+  .guest-side-tabs .guest-service:hover {
+    background: #fffbeb !important;
+  }
+  .guest-side-tabs .guest-feedback:hover {
+    background: #f5f3ff !important;
+  }
+  .guest-side-tabs .guest-advice:hover {
+    background: #f0fdfa !important;
+  }
+  .guest-side-tabs .guest-open {
+    display: none;
+  }
+  .guest-overview {
+    grid-column: 2;
+    grid-row: 2;
+    display: grid;
+    gap: 10px;
+  }
+  .guest-overview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr);
+    gap: 10px;
+  }
+  .guest-overview-card {
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    padding: 13px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(0, 59, 149, .08);
+  }
+  .guest-overview-card h2 {
+    margin: 0 0 10px;
+    color: #102033;
+    font-size: 18px;
+    line-height: 1.2;
+  }
+  .guest-profile-list {
+    display: grid;
+    gap: 8px;
+  }
+  .guest-profile-item {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    gap: 10px;
+    padding: 9px 10px;
+    border: 1px solid #e0efff;
+    border-radius: 8px;
+    background: #f7fbff;
+  }
+  .guest-profile-item span {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 850;
+  }
+  .guest-profile-item strong {
+    color: #102033;
+    overflow-wrap: anywhere;
+  }
+  .guest-featured-rooms {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .guest-room-card {
+    overflow: hidden;
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    background: #ffffff;
+    text-decoration: none;
+    color: #102033;
+  }
+  .guest-room-card:hover {
+    border-color: #006ce4;
+    box-shadow: 0 12px 28px rgba(0, 108, 228, .12);
+  }
+  .guest-room-card img {
+    display: block;
+    width: 100%;
+    height: 118px;
+    object-fit: cover;
+    background: #eaf4ff;
+  }
+  .guest-room-card__body {
+    padding: 10px;
+  }
+  .guest-room-card h3 {
+    margin: 0 0 5px;
+    color: #003b95;
+    font-size: 15px;
+    line-height: 1.25;
+  }
+  .guest-room-card p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .guest-room-price {
+    display: block;
+    margin-top: 8px;
+    color: #007a52;
+    font-weight: 950;
+  }
+  .guest-history-list {
+    display: grid;
+    gap: 8px;
+  }
+  .guest-history-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0efff;
+    border-radius: 8px;
+    background: #ffffff;
+  }
+  .guest-history-item h3 {
+    margin: 0 0 4px;
+    color: #003b95;
+    font-size: 15px;
+  }
+  .guest-history-item p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+  }
+  .guest-booking-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .guest-booking-card {
+    padding: 13px;
+  }
+  .guest-booking-card h3,
+  .guest-booking-card strong {
+    color: #003b95;
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+  .guest-booking-card p,
+  .guest-empty {
+    color: #64748b;
+  }
+  .guest-empty {
+    padding: 14px;
+    background: #f7fbff !important;
+  }
+  .guest-badge {
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #075eb8;
+  }
+  @media (max-width: 1080px) {
+    .guest-wrap,
+    .guest-overview-grid {
+      grid-template-columns: 1fr;
+    }
+    .guest-hero,
+    .guest-side-tabs,
+    .guest-overview {
+      grid-column: auto;
+      grid-row: auto;
+    }
+    .guest-side-tabs {
+      position: static;
+    }
+    .guest-side-tabs .guest-bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .guest-bento,
+    .guest-booking-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 760px) {
+    .guest-home {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .guest-mini-stats,
+    .guest-bento,
+    .guest-booking-grid,
+    .guest-featured-rooms,
+    .guest-side-tabs .guest-bento {
+      grid-template-columns: 1fr;
+    }
+    .guest-profile-item,
+    .guest-history-item {
+      grid-template-columns: 1fr;
+    }
+    .guest-section-head {
+      display: flex;
+    }
+  }
+  .guest-home .guest-tags,
+  .guest-home .guest-hero-actions {
+    display: none !important;
+  }
+
+  /* Customer dashboard final: align with manager white/blue operating layout. */
+  .guest-home {
+    max-width: none;
+    padding: 14px 20px 34px;
+    background:
+      linear-gradient(180deg, #eaf4ff 0, #f7fbff 148px, #ffffff 100%) !important;
+  }
+  .guest-wrap {
+    max-width: 1480px;
+    grid-template-columns: 236px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .guest-hero {
+    margin: 0;
+  }
+  .guest-hero-card {
+    gap: 10px;
+    background: transparent !important;
+    border: 0;
+    box-shadow: none;
+  }
+  .guest-hero h1 {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    padding: 13px 18px 13px 30px;
+    border: 1px solid #b8d7fb;
+    border-left: 0;
+    border-radius: 8px;
+    color: #ffffff !important;
+    font-size: 25px;
+    font-weight: 950;
+    background: linear-gradient(135deg, #0071e8 0%, #006ce4 52%, #003b95 100%);
+  }
+  .guest-mini-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .guest-mini-stat,
+  .guest-overview-card,
+  .guest-booking-card,
+  .guest-empty {
+    border-color: #c9e0fb;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+  .guest-mini-stat {
+    min-height: 76px;
+    padding: 13px 15px;
+  }
+  .guest-mini-stat strong {
+    color: #003b95;
+    font-size: 28px;
+  }
+  .guest-mini-stat span {
+    color: #526985;
+    font-size: 12px;
+    font-weight: 900;
+  }
+  .guest-side-tabs {
+    top: 92px;
+    gap: 10px;
+  }
+  .guest-side-card {
+    padding: 14px;
+    border: 1px solid #c9e0fb;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+  .guest-side-card__label {
+    margin: 0 0 5px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+  }
+  .guest-side-card__name {
+    margin: 0;
+    color: #102033;
+    background: transparent !important;
+    font-size: 18px;
+    font-weight: 950;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .guest-side-card__status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    margin-top: 12px;
+    padding: 5px 9px;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #075eb8;
+    background: #eff6ff;
+    font-size: 12px;
+    font-weight: 950;
+  }
+  .guest-side-tabs .guest-bento {
+    gap: 8px;
+  }
+  .guest-side-tabs .guest-uc-card,
+  .guest-side-tabs .guest-uc-card:nth-child(n) {
+    min-height: 46px;
+    padding: 0 13px;
+    border: 1px solid #d5e6fa;
+    border-left: 4px solid transparent;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: none;
+  }
+  .guest-side-tabs .guest-uc-card:first-child,
+  .guest-side-tabs .guest-uc-card:first-child:nth-child(n) {
+    border-color: #006ce4;
+    border-left-color: #003b95;
+    background: #006ce4 !important;
+    box-shadow: 0 12px 26px rgba(0, 108, 228, .18);
+  }
+  .guest-side-tabs .guest-uc-card:first-child h3 {
+    color: #ffffff !important;
+  }
+  .guest-side-tabs .guest-uc-card h3 {
+    font-size: 14px;
+    font-weight: 950;
+    color: #003b95;
+  }
+  .guest-side-tabs .guest-uc-card:hover {
+    border-color: #006ce4;
+    border-left-color: #006ce4;
+    background: #eff6ff !important;
+    transform: translateX(6px) scale(1.025);
+    box-shadow: 0 12px 28px rgba(0, 108, 228, .14);
+  }
+  .guest-side-tabs .guest-uc-card:first-child:hover {
+    background: #005fc7 !important;
+  }
+  .guest-overview {
+    gap: 12px;
+  }
+  .guest-overview-grid {
+    grid-template-columns: minmax(280px, .74fr) minmax(0, 1.26fr);
+    gap: 12px;
+  }
+  .guest-overview-card {
+    padding: 16px;
+  }
+  .guest-section-head {
+    min-height: 38px;
+  }
+  .guest-section-head h2,
+  .guest-overview-card h2 {
+    margin: 0;
+    color: #102033;
+    font-size: 19px;
+    font-weight: 950;
+  }
+  .guest-profile-item {
+    grid-template-columns: 104px minmax(0, 1fr);
+    padding: 10px 11px;
+  }
+  .guest-featured-rooms {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .guest-room-card img {
+    height: 126px;
+  }
+  .guest-history-item {
+    text-decoration: none;
+  }
+  .guest-history-item:hover,
+  .guest-room-card:hover {
+    transform: translateY(-1px);
+  }
+  .guest-booking-card {
+    padding: 15px;
+  }
+  @media (max-width: 1180px) {
+    .guest-wrap {
+      grid-template-columns: 220px minmax(0, 1fr);
+    }
+    .guest-featured-rooms {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 900px) {
+    .guest-wrap,
+    .guest-overview-grid {
+      grid-template-columns: 1fr;
+    }
+    .guest-side-tabs {
+      position: static;
+    }
+    .guest-side-tabs .guest-bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .guest-home {
+      padding: 10px 12px 28px;
+    }
+    .guest-hero h1 {
+      font-size: 22px;
+    }
+    .guest-mini-stats,
+    .guest-side-tabs .guest-bento,
+    .guest-featured-rooms,
+    .guest-booking-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  body .guest-home .guest-hero h1 {
+    color: #ffffff !important;
+  }
+  body .guest-home .guest-side-tabs .guest-uc-card:first-child h3 {
+    color: #ffffff !important;
+  }
 </style>
 
 <main class="guest-home">
@@ -583,7 +1327,7 @@
     <section class="guest-hero" aria-label="Dashboard khách hàng">
       <div class="guest-hero-card">
         <div class="guest-chip"><span class="guest-pulse"></span> Guest journey center</div>
-        <h1>Xin chào <span><%= displayName %></span></h1>
+        <h1>Tổng quan khách hàng</h1>
         <p class="guest-lead">
           Một dashboard sạch cho hành trình nghỉ dưỡng: tìm phòng, theo dõi booking,
           cập nhật hồ sơ, gửi eKYC, đặt thêm dịch vụ, mở tư vấn nhanh và phản hồi sau lưu trú.
@@ -596,10 +1340,10 @@
         </div>
 
         <div class="guest-hero-actions">
-          <a class="guest-button guest-button--primary" href="/booking/multi">Đặt phòng online</a>
+          <a class="guest-button guest-button--primary" href="/booking/multi">Đặt phòng trực tuyến</a>
           <a class="guest-button" href="/customer/bookings">Quản lý đặt phòng</a>
           <a class="guest-button" href="/customer/advisory">Tư vấn</a>
-          <a class="guest-button" href="/ekyc">Mở eKYC</a>
+          <a class="guest-button" href="/customer/profile#ekyc-section">Quản lý hồ sơ cá nhân</a>
         </div>
 
         <div class="guest-mini-stats" aria-label="Tóm tắt tài khoản">
@@ -621,110 +1365,146 @@
       </aside>
     </section>
 
-    <section class="guest-section" aria-label="Nghiệp vụ khách hàng">
-      <div class="guest-section-head">
-        <div>
-          <h2>Tác vụ chính</h2>
-          <p>Các thao tác khách hàng dùng nhiều nhất.</p>
+    <section class="guest-dashboard-layout" aria-label="Tổng quan khách hàng">
+      <aside class="guest-side-tabs" aria-label="Chức năng khách hàng">
+        <div class="guest-side-card">
+          <p class="guest-side-card__label">Tài khoản</p>
+          <p class="guest-side-card__name"><%= displayName %></p>
+          <span class="guest-side-card__status">eKYC: <%= ekycLabel %></span>
         </div>
-      </div>
-
-      <div class="guest-bento">
-        <a class="guest-uc-card guest-search" href="/booking/multi">
-          <div class="guest-uc-top">
-            <span class="guest-uc-code">01</span>
-            <span class="guest-uc-orb"></span>
+        <section class="guest-section">
+          <div class="guest-section-head"><h2>Chức năng</h2></div>
+          <div class="guest-bento">
+            <a class="guest-uc-card guest-search" href="/booking/multi">
+              <div class="guest-uc-top"><span class="guest-uc-code">01</span><span class="guest-uc-orb"></span></div>
+              <h3>Đặt phòng trực tuyến</h3>
+              <p>Lọc phòng theo điểm đến, số khách, loại phòng và ngân sách; ngày ở nhập khi tạo đặt phòng.</p>
+              <span class="guest-open">Mở</span>
+            </a>
+            <a class="guest-uc-card guest-history" href="/customer/bookings">
+              <div class="guest-uc-top"><span class="guest-uc-code">02</span><span class="guest-uc-orb"></span></div>
+              <h3>Quản lý đặt phòng</h3>
+              <p>Xem lịch sử, hóa đơn, chỉnh thông tin hoặc hủy đặt phòng theo chính sách hoàn cọc.</p>
+              <span class="guest-open">Mở</span>
+            </a>
+            <a class="guest-uc-card guest-profile" href="/customer/profile">
+              <div class="guest-uc-top"><span class="guest-uc-code">03</span><span class="guest-uc-orb"></span></div>
+              <h3>Quản lý hồ sơ cá nhân</h3>
+              <p>Cập nhật thông tin cá nhân, liên hệ và xác thực eKYC khi cần.</p>
+              <span class="guest-open">Mở</span>
+            </a>
+            <a class="guest-uc-card guest-service" href="/customer/services">
+              <div class="guest-uc-top"><span class="guest-uc-code">04</span><span class="guest-uc-orb"></span></div>
+              <h3>Đặt dịch vụ bổ sung</h3>
+              <p>Đặt thêm dịch vụ cho đặt phòng đủ điều kiện và theo dõi các đơn dịch vụ đã tạo.</p>
+              <span class="guest-open">Mở</span>
+            </a>
+            <a class="guest-uc-card guest-feedback" href="/feedback/new">
+              <div class="guest-uc-top"><span class="guest-uc-code">05</span><span class="guest-uc-orb"></span></div>
+              <h3>Gửi phản hồi và đánh giá</h3>
+              <p>Gửi trải nghiệm lưu trú, góp ý dịch vụ hoặc đánh giá để CSKH tiếp nhận và xử lý.</p>
+              <span class="guest-open">Mở</span>
+            </a>
+            <a class="guest-uc-card guest-advice" href="/customer/advisory">
+              <div class="guest-uc-top"><span class="guest-uc-code">06</span><span class="guest-uc-orb"></span></div>
+              <h3>Tư vấn và hỗ trợ</h3>
+              <p>Chat hỏi nhanh với trợ lý AI, bám theo đặt phòng hiện có và chuyển sang CSKH khi cần người thật hỗ trợ.</p>
+              <span class="guest-open">Mở</span>
+            </a>
           </div>
-          <h3>Đặt phòng online</h3>
-          <p>Lọc phòng theo điểm đến, số khách, loại phòng và ngân sách; ngày ở nhập khi tạo booking.</p>
-          <span class="guest-open">Mở</span>
-        </a>
+        </section>
+      </aside>
 
-        <a class="guest-uc-card guest-history" href="/customer/bookings">
-          <div class="guest-uc-top">
-            <span class="guest-uc-code">02</span>
-            <span class="guest-uc-orb"></span>
-          </div>
-          <h3>Quản lý đặt phòng</h3>
-          <p>Xem lịch sử, hóa đơn, chỉnh thông tin hoặc hủy đặt phòng theo chính sách hoàn cọc.</p>
-          <span class="guest-open">Mở</span>
-        </a>
+      <section class="guest-overview">
+        <div class="guest-overview-grid">
+          <article class="guest-overview-card">
+            <h2>Thông tin cá nhân</h2>
+            <div class="guest-profile-list">
+              <div class="guest-profile-item"><span>Họ tên</span><strong><%= displayName %></strong></div>
+              <div class="guest-profile-item"><span>Email</span><strong><%= profile.email || "Chưa cập nhật" %></strong></div>
+              <div class="guest-profile-item"><span>Số điện thoại</span><strong><%= profile.sdt || "Chưa cập nhật" %></strong></div>
+              <div class="guest-profile-item"><span>eKYC</span><strong><%= ekycLabel %></strong></div>
+            </div>
+          </article>
 
-        <a class="guest-uc-card guest-profile" href="/customer/profile">
-          <div class="guest-uc-top">
-            <span class="guest-uc-code">03</span>
-            <span class="guest-uc-orb"></span>
-          </div>
-          <h3>Hồ sơ và eKYC</h3>
-          <p>Cập nhật liên hệ, kiểm tra trạng thái xác minh và gửi lại hồ sơ eKYC khi cần.</p>
-          <span class="guest-open">Mở</span>
-        </a>
-
-        <a class="guest-uc-card guest-service" href="/customer/services">
-          <div class="guest-uc-top">
-            <span class="guest-uc-code">04</span>
-            <span class="guest-uc-orb"></span>
-          </div>
-          <h3>Dịch vụ bổ sung</h3>
-          <p>Đặt thêm dịch vụ cho booking đủ điều kiện và theo dõi các order đã tạo.</p>
-          <span class="guest-open">Mở</span>
-        </a>
-
-        <a class="guest-uc-card guest-feedback" href="/feedback/new">
-          <div class="guest-uc-top">
-            <span class="guest-uc-code">05</span>
-            <span class="guest-uc-orb"></span>
-          </div>
-          <h3>Phản hồi và đánh giá</h3>
-          <p>Gửi trải nghiệm lưu trú, góp ý dịch vụ hoặc đánh giá để CSKH tiếp nhận và xử lý.</p>
-          <span class="guest-open">Mở</span>
-        </a>
-
-        <a class="guest-uc-card guest-advice" href="/customer/advisory">
-          <div class="guest-uc-top">
-            <span class="guest-uc-code">06</span>
-            <span class="guest-uc-orb"></span>
-          </div>
-          <h3>Tư vấn và hỗ trợ</h3>
-          <p>Chat hỏi nhanh với AI Concierge, bám theo booking hiện có và chuyển sang CSKH khi cần người thật hỗ trợ.</p>
-          <span class="guest-open">Mở</span>
-        </a>
-      </div>
-    </section>
-
-    <section class="guest-section" aria-label="Booking gần đây">
-      <div class="guest-section-head">
-        <div>
-          <h2>Booking gần đây</h2>
-          <p>Lưu trú và giao dịch mới nhất của tài khoản hiện tại.</p>
-        </div>
-        <a class="guest-button" href="/customer/bookings">Xem tất cả</a>
-      </div>
-
-      <% if (!recentBookings.length) { %>
-        <div class="guest-empty">Chưa có giao dịch nào gần đây. Khi bạn đặt phòng, lịch sử mới nhất sẽ xuất hiện tại đây.</div>
-      <% } else { %>
-        <div class="guest-booking-grid">
-          <% recentBookings.forEach((booking) => { %>
-            <article class="guest-booking-card">
-              <span class="guest-badge"><%= booking.statusLabel || booking.status %></span>
-              <h3><%= booking.bookingCode || `GD-${booking.id}` %></h3>
-              <p><%= booking.hotelNames || "Chưa có tên cơ sở" %></p>
-              <p><%= booking.checkinLabel || "-" %> -> <%= booking.checkoutLabel || "-" %></p>
-              <strong><%= booking.totalFormatted %></strong>
-              <div class="guest-booking-actions">
-                <a class="guest-button" href="/customer/bookings/<%= booking.id %>">Chi tiết</a>
-                <% if (booking.editable) { %>
-                  <a class="guest-button" href="/customer/bookings/<%= booking.id %>/edit">Sửa</a>
-                <% } %>
+          <article class="guest-overview-card">
+            <div class="guest-section-head">
+              <h2>Phòng nổi bật</h2>
+              <a class="guest-button guest-button--browse" href="/booking/multi">Xem phòng</a>
+            </div>
+            <% if (!featuredRooms.length) { %>
+              <div class="guest-empty">Chưa có phòng nổi bật đang mở bán.</div>
+            <% } else { %>
+              <div class="guest-featured-rooms">
+                <% featuredRooms.forEach((room) => { %>
+                  <a class="guest-room-card" href="/booking/rooms/<%= room.id %>/detail">
+                    <img src="<%= room.imageUrl || "/uploads/phong/1.png" %>" alt="<%= room.loaiPhong %> · phòng <%= room.soPhong %>" />
+                    <div class="guest-room-card__body">
+                      <h3><%= room.loaiPhong %> · P<%= room.soPhong %></h3>
+                      <p><%= room.khachSan %></p>
+                      <p><%= room.viewPhong || "View lưu trú" %> · tối đa <%= room.soKhachToiDa %> khách</p>
+                      <strong class="guest-room-price"><%= room.priceFormatted %></strong>
+                    </div>
+                  </a>
+                <% }) %>
               </div>
-            </article>
-          <% }) %>
+            <% } %>
+          </article>
         </div>
-      <% } %>
+
+        <article class="guest-overview-card">
+          <div class="guest-section-head">
+            <h2>Lịch sử đã đi</h2>
+            <a class="guest-button guest-button--history" href="/customer/bookings">Xem tất cả</a>
+          </div>
+          <% if (!tripHistory.length && !recentBookings.length) { %>
+            <div class="guest-empty">Chưa có giao dịch nào gần đây.</div>
+          <% } else { %>
+            <div class="guest-history-list">
+              <% (tripHistory.length ? tripHistory : recentBookings.slice(0, 3)).forEach((booking) => { %>
+                <a class="guest-history-item" href="/customer/bookings/<%= booking.id %>">
+                  <div>
+                    <h3><%= booking.bookingCode || `GD-${booking.id}` %></h3>
+                    <p><%= booking.hotelNames || "Chưa có tên cơ sở" %> · <%= booking.checkinLabel || "-" %> -> <%= booking.checkoutLabel || "-" %></p>
+                  </div>
+                  <span class="guest-badge"><%= booking.statusLabel || booking.status %></span>
+                </a>
+              <% }) %>
+            </div>
+          <% } %>
+        </article>
+
+        <section class="guest-section" aria-label="Đặt phòng gần đây">
+          <div class="guest-section-head">
+            <h2>Đặt phòng gần đây</h2>
+            <a class="guest-button guest-button--history" href="/customer/bookings">Xem tất cả</a>
+          </div>
+
+          <% if (!recentBookings.length) { %>
+            <div class="guest-empty">Chưa có giao dịch nào gần đây.</div>
+          <% } else { %>
+            <div class="guest-booking-grid">
+              <% recentBookings.slice(0, 3).forEach((booking) => { %>
+                <article class="guest-booking-card">
+                  <span class="guest-badge"><%= booking.statusLabel || booking.status %></span>
+                  <h3><%= booking.bookingCode || `GD-${booking.id}` %></h3>
+                  <p><%= booking.hotelNames || "Chưa có tên cơ sở" %></p>
+                  <p><%= booking.checkinLabel || "-" %> -> <%= booking.checkoutLabel || "-" %></p>
+                  <strong><%= booking.totalFormatted %></strong>
+                  <div class="guest-booking-actions">
+                    <a class="guest-button guest-button--detail" href="/customer/bookings/<%= booking.id %>">Chi tiết</a>
+                    <% if (booking.editable) { %>
+                      <a class="guest-button guest-button--edit" href="/customer/bookings/<%= booking.id %>/edit">Sửa</a>
+                    <% } %>
+                  </div>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
+      </section>
     </section>
   </div>
 </main>
 
-<script type="module" src="/js/home-galaxy-earth.js"></script>
 <%- include("../partials/footer") %>

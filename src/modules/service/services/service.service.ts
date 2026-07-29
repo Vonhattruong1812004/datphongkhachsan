@@ -111,6 +111,7 @@ interface RecentOrderRow {
   roomId: number | null;
   roomNumber: string | null;
   tenDichVu: string;
+  hinhAnh: string | null;
   soLuong: number;
   giaBan: number;
   thanhTien: number;
@@ -627,6 +628,7 @@ export class ServiceModuleService {
           ctdv.maphong AS "roomId",
           p.sophong AS "roomNumber",
           dv.tendichvu AS "tenDichVu",
+          dv.hinhanh AS "hinhAnh",
           ctdv.soluong AS "soLuong",
           ctdv.giaban AS "giaBan",
           ctdv.thanhtien AS "thanhTien",
@@ -643,7 +645,8 @@ export class ServiceModuleService {
     return result.rows.map((item) => ({
       ...item,
       giaBanFormatted: formatMoney(item.giaBan),
-      thanhTienFormatted: formatMoney(item.thanhTien)
+      thanhTienFormatted: formatMoney(item.thanhTien),
+      imageUrl: this.resolveServiceImage(item.hinhAnh)
     }));
   }
 
@@ -1616,6 +1619,7 @@ export class ServiceModuleService {
           ctdv.maphong AS "roomId",
           p.sophong AS "roomNumber",
           dv.tendichvu AS "tenDichVu",
+          dv.hinhanh AS "hinhAnh",
           ctdv.soluong AS "soLuong",
           ctdv.giaban AS "giaBan",
           ctdv.thanhtien AS "thanhTien",
@@ -1634,7 +1638,8 @@ export class ServiceModuleService {
     return result.rows.map((item) => ({
       ...item,
       giaBanFormatted: formatMoney(item.giaBan),
-      thanhTienFormatted: formatMoney(item.thanhTien)
+      thanhTienFormatted: formatMoney(item.thanhTien),
+      imageUrl: this.resolveServiceImage(item.hinhAnh)
     }));
   }
 

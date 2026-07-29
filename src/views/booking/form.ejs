@@ -64,7 +64,7 @@
       <div class="book-process" aria-label="Luồng xác nhận">
         <div><span>Kiểm tra</span><strong>Phòng còn trống đúng ngày</strong></div>
         <div><span>Tính tiền</span><strong>Giá phòng, ưu đãi, cọc</strong></div>
-        <div><span>Thanh toán</span><strong>Webhook SePay tạo booking</strong></div>
+        <div><span>Thanh toán</span><strong>SePay tạo đặt phòng</strong></div>
       </div>
       <% if (errorMessage) { %>
         <div class="book-alert"><%= errorMessage %></div>
@@ -113,7 +113,7 @@
               <option value="">Không áp dụng</option>
               <% promotions.forEach((promotion) => { %>
                 <option value="<%= promotion.id %>" <%= String(formValues.ma_km) === String(promotion.id) ? "selected" : "" %>>
-                  <%= promotion.tenChuongTrinh %> · <%= promotion.loaiUuDai === "PERCENT" ? `${promotion.mucUuDai}%` : `${Number(promotion.mucUuDai).toLocaleString("vi-VN")} đ` %>
+                  <%= promotion.maGiamGia ? `${promotion.maGiamGia} · ` : "" %><%= promotion.tenChuongTrinh %> · <%= promotion.loaiUuDai === "PERCENT" ? `${promotion.mucUuDai}%` : `${Number(promotion.mucUuDai).toLocaleString("vi-VN")} đ` %>
                 </option>
               <% }) %>
             </select>
@@ -165,11 +165,11 @@
         <strong class="book-price"><%= Number(room.gia).toLocaleString("vi-VN") %> đ / đêm</strong>
         <div class="book-mini-summary">
           <div><span>Sức chứa</span><strong><%= room.soKhachToiDa %> khách</strong></div>
-          <div><span>Cọc online</span><strong>50% tổng tiền</strong></div>
+          <div><span>Cọc trực tuyến</span><strong>50% tổng tiền</strong></div>
         </div>
         <div class="book-note">
           <div>Phòng chỉ được giữ sau khi tạo QR cọc. Trong thời gian giữ, phòng không hiện cho lượt đặt trùng ngày.</div>
-          <div>Booking thật chỉ được tạo khi webhook SePay nhận đúng số tiền và đúng nội dung chuyển khoản.</div>
+          <div>Đặt phòng thật chỉ được tạo khi SePay nhận đúng số tiền và đúng nội dung chuyển khoản.</div>
         </div>
         <div class="book-actions">
           <a class="book-button" href="<%= roomDetailUrl %>">Xem chi tiết phòng</a>

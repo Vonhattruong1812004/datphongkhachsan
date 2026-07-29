@@ -1,4 +1,661 @@
-<aside class="floating-assist" aria-label="AI Concierge và liên hệ nhanh">
+<style id="enterprise-runtime-ui">
+  /* Late-loading enterprise polish layer. UI only; no logic or routes are changed. */
+  body {
+    background:
+      radial-gradient(circle at 82% 4%, rgba(6, 182, 212, 0.08), transparent 24%),
+      linear-gradient(180deg, #ffffff 0%, #f8fafc 42%, #f5f7fa 100%) !important;
+    color: var(--booking-text, #172033);
+  }
+
+  body::before,
+  body::after,
+  .system-galaxy-background,
+  .galaxy-background {
+    display: none !important;
+    content: none !important;
+  }
+
+  [class$="-shell"],
+  [class*="-shell "] {
+    color: var(--booking-text, #172033);
+  }
+
+  [class*="-hero"],
+  [class*="-panel"],
+  [class*="-card"],
+  [class*="-box"],
+  [class*="-summary"],
+  [class*="-table-panel"],
+  [class*="-table-wrap"],
+  [class*="-drawer"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  [class*="-hero"],
+  [class*="-panel"],
+  [class*="-card"],
+  [class*="-box"] {
+    border-color: var(--booking-line, #d8e1ec) !important;
+    box-shadow: 0 14px 42px rgba(15, 36, 66, 0.08) !important;
+  }
+
+  [class*="-panel"],
+  [class*="-card"],
+  [class*="-box"],
+  [class*="-table-panel"],
+  [class*="-table-wrap"] {
+    background: #ffffff !important;
+  }
+
+  [class*="-hero"] h1,
+  [class*="-hero"] h2,
+  [class*="-panel"] h1,
+  [class*="-panel"] h2,
+  [class*="-panel"] h3,
+  [class*="-card"] h1,
+  [class*="-card"] h2,
+  [class*="-card"] h3,
+  [class*="-copy"] h1,
+  [class*="-copy"] h2,
+  [class*="-body"] h3,
+  [class*="-body"] strong {
+    color: var(--booking-navy, #0f2442) !important;
+    text-shadow: none !important;
+  }
+
+  [class*="-muted"],
+  [class*="-meta"],
+  [class*="-hint"],
+  [class*="-subtitle"],
+  [class*="-description"],
+  [class*="-panel"] p,
+  [class*="-card"] p {
+    color: var(--booking-muted, #66758a) !important;
+  }
+
+  [class*="-button"],
+  .button,
+  button[type="submit"],
+  a[class*="button"] {
+    border-radius: 12px !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+
+  [class*="-button--primary"],
+  .button--primary,
+  button[type="submit"]:not([class*="secondary"]) {
+    border-color: transparent !important;
+    background: var(--booking-blue, #006ce4) !important;
+    color: #ffffff !important;
+    box-shadow: 0 12px 26px rgba(0, 108, 228, 0.20) !important;
+  }
+
+  [class*="-button"]:hover,
+  .button:hover {
+    transform: translateY(-1px);
+  }
+
+  [class*="-badge"],
+  [class*="-status"],
+  .badge {
+    border-radius: 999px !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    font-weight: 850 !important;
+  }
+
+  input,
+  textarea,
+  select,
+  [class*="-field"] input,
+  [class*="-field"] textarea,
+  [class*="-field"] select {
+    border-color: var(--booking-line, #d8e1ec) !important;
+    background: #ffffff !important;
+    color: var(--booking-text, #172033) !important;
+    box-shadow: none !important;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus,
+  [class*="-field"] input:focus,
+  [class*="-field"] textarea:focus,
+  [class*="-field"] select:focus {
+    border-color: var(--booking-blue, #006ce4) !important;
+    box-shadow: 0 0 0 4px rgba(0, 108, 228, 0.10) !important;
+    outline: none !important;
+  }
+
+  label,
+  [class*="-field"] label {
+    color: var(--booking-navy, #0f2442) !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  table,
+  [class*="-table"] {
+    color: var(--booking-text, #172033) !important;
+    background: #ffffff !important;
+  }
+
+  th,
+  [class*="-table"] th {
+    background: #f1f5f9 !important;
+    color: var(--booking-navy, #0f2442) !important;
+  }
+
+  td,
+  [class*="-table"] td {
+    color: var(--booking-text, #172033) !important;
+    border-color: var(--booking-line, #d8e1ec) !important;
+  }
+
+  .pay-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px) !important;
+  }
+
+  .pay-qr {
+    width: min(100%, 360px) !important;
+    margin: 0 auto;
+    display: block;
+    border-radius: 20px !important;
+    padding: 14px !important;
+    box-shadow: 0 14px 34px rgba(15, 36, 66, 0.12) !important;
+  }
+
+  .pay-content,
+  .room-price,
+  .travel-room-price {
+    color: #047857 !important;
+  }
+
+  .room-fresh,
+  .travel-room-card {
+    overflow: hidden;
+  }
+
+  .room-fresh img,
+  .travel-room-media img {
+    background: #eef6ff;
+  }
+
+  .travel-promo-card h3,
+  .travel-promo-card p,
+  .travel-scene-commercial h2,
+  .travel-scene-commercial p {
+    color: #ffffff !important;
+  }
+
+  .travel-promo-card .travel-button {
+    background: #ffffff !important;
+    color: var(--booking-blue-dark, #003b95) !important;
+  }
+
+  .travel-room-card,
+  .room-fresh,
+  .room-card,
+  .guest-uc-card,
+  .guest-booking-card,
+  .history-card,
+  .detail-box,
+  .profile-card,
+  .profile-ekyc-card,
+  .svc-card,
+  .adv-card,
+  .fb-feedback-item,
+  .ekyc-card {
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .travel-room-card,
+  .travel-room-media,
+  .travel-room-overlay {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .travel-room-card {
+    width: 100%;
+  }
+
+  .travel-room-media {
+    width: 100%;
+  }
+
+  .travel-room-media,
+  .room-card__media,
+  .detail-room-media,
+  .profile-preview,
+  .profile-ekyc-img,
+  .ekyc-preview,
+  .ekyc-latest-img,
+  .fb-upload-preview {
+    overflow: hidden;
+    background: #eef6ff !important;
+  }
+
+  .travel-room-media,
+  .room-card__media,
+  .detail-room-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  .travel-room-media img,
+  .room-card__media img,
+  .room-fresh img,
+  .detail-room-media img,
+  .profile-preview img,
+  .profile-ekyc-img img,
+  .ekyc-preview img,
+  .ekyc-latest-img img,
+  .fb-upload-preview img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+  }
+
+  .travel-room-body,
+  .room-fresh__body,
+  .room-card__body,
+  .guest-uc-card,
+  .guest-booking-card,
+  .history-card,
+  .detail-box,
+  .profile-card,
+  .svc-card,
+  .adv-card,
+  .fb-feedback-item,
+  .ekyc-card {
+    min-width: 0;
+  }
+
+  .travel-room-body h3,
+  .room-fresh h3,
+  .room-card h3,
+  .guest-uc-card h3,
+  .guest-booking-card h3,
+  .history-code,
+  .detail-box strong,
+  .profile-card h3,
+  .svc-card h3,
+  .adv-card h3,
+  .fb-feedback-item h3,
+  .ekyc-card h3 {
+    line-height: 1.18 !important;
+    letter-spacing: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  .travel-room-overlay,
+  .history-card-head,
+  .detail-actions,
+  .profile-actions,
+  .svc-actions,
+  .adv-actions,
+  .fb-actions,
+  .pay-actions,
+  .guest-actions,
+  .guest-hero-actions,
+  .guest-booking-actions,
+  .online-actions,
+  .room-card__actions,
+  .travel-room-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .travel-room-price,
+  .room-price,
+  .history-total,
+  .pay-content,
+  .total-line strong,
+  .invoice-box strong,
+  .detail-box strong {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  .travel-button,
+  .guest-button,
+  .history-button,
+  .online-button,
+  .pay-button,
+  .detail-button,
+  .profile-button,
+  .svc-button,
+  .adv-button,
+  .fb-button,
+  .ekyc-button {
+    min-height: 44px !important;
+    white-space: normal !important;
+    text-align: center;
+  }
+
+  .service-table,
+  .invoice-table,
+  .detail-table,
+  .history-panel table,
+  .profile-panel table {
+    min-width: 720px;
+  }
+
+  .detail-panel,
+  .invoice-panel,
+  .history-panel,
+  .profile-panel,
+  .svc-panel,
+  .adv-panel,
+  .fb-panel,
+  .ekyc-panel,
+  .online-panel {
+    overflow-x: auto;
+  }
+
+  @media (max-width: 860px) {
+    .pay-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .pay-qr {
+      width: min(100%, 320px) !important;
+    }
+
+    .travel-room-grid,
+    .room-grid-fresh,
+    .room-grid,
+    .guest-bento,
+    .guest-booking-grid,
+    .history-grid,
+    .history-summary,
+    .history-lines,
+    .online-summary,
+    .online-form-grid,
+    .profile-layout,
+    .profile-form,
+    .profile-stats,
+    .profile-ekyc-grid,
+    .profile-upload-grid,
+    .svc-layout,
+    .svc-grid,
+    .adv-layout,
+    .adv-grid,
+    .adv-stats,
+    .fb-layout,
+    .fb-form,
+    .fb-stats,
+    .ekyc-layout,
+    .ekyc-form-grid,
+    .ekyc-upload-grid,
+    .ekyc-stats {
+      grid-template-columns: 1fr !important;
+    }
+
+    .travel-room-overlay,
+    .history-card-head {
+      align-items: flex-start !important;
+    }
+
+    .travel-room-overlay {
+      inset: auto 12px 12px 12px !important;
+      max-width: calc(100% - 24px);
+      justify-content: flex-start !important;
+    }
+
+    .travel-room-price,
+    .travel-room-badge {
+      flex: 1 1 120px;
+      min-width: 0;
+    }
+
+    .travel-room-card,
+    .room-fresh,
+    .room-card,
+    .history-card,
+    .guest-uc-card,
+    .guest-booking-card,
+    .profile-card,
+    .svc-card,
+    .adv-card,
+    .fb-feedback-item,
+    .ekyc-card {
+      border-radius: 18px !important;
+    }
+  }
+
+  .guest-side-tabs .guest-search h3 {
+    color: #003b95 !important;
+  }
+
+  .guest-side-tabs .guest-history h3 {
+    color: #075eb8 !important;
+  }
+
+  .guest-side-tabs .guest-profile h3 {
+    color: #047857 !important;
+  }
+
+  .guest-side-tabs .guest-service h3 {
+    color: #a16207 !important;
+  }
+
+  .guest-side-tabs .guest-feedback h3 {
+    color: #7c3aed !important;
+  }
+
+  .guest-side-tabs .guest-advice h3 {
+    color: #0f766e !important;
+  }
+
+  .staff-account-dropdown button[type="submit"] {
+    border-color: transparent !important;
+    background: transparent !important;
+    color: #b91c1c !important;
+    box-shadow: none !important;
+  }
+
+  .staff-account-dropdown button[type="submit"]:hover {
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+  }
+
+  .travel-home .travel-info-card {
+    background: #ffffff !important;
+  }
+
+  .travel-home .travel-info-card h3,
+  .travel-home .travel-contact-card h3 {
+    color: var(--booking-navy, #0f2442) !important;
+  }
+
+  .travel-home .travel-info-card p,
+  .travel-home .travel-contact-card p,
+  .travel-home .travel-list,
+  .travel-home .travel-list li {
+    color: #4f647a !important;
+  }
+
+  .travel-home .travel-list li::marker {
+    color: var(--booking-blue, #006ce4) !important;
+  }
+
+  .travel-home .travel-amenity-item {
+    background: #f8fbff !important;
+    border-color: #d8e9ff !important;
+    color: #24445f !important;
+  }
+
+  .travel-home .travel-amenity-item span {
+    color: #24445f !important;
+  }
+
+  .travel-home .travel-amenity-dot {
+    background: var(--booking-cyan, #06b6d4) !important;
+    box-shadow: 0 0 0 6px rgba(6, 182, 212, .12) !important;
+  }
+
+  .travel-home .travel-promo-card {
+    background:
+      radial-gradient(circle at 92% 12%, rgba(255, 255, 255, .24), transparent 24%),
+      linear-gradient(135deg, #003b95 0%, #006ce4 56%, #06b6d4 100%) !important;
+    border-color: rgba(0, 108, 228, .24) !important;
+  }
+
+  .travel-home .travel-promo-card h3,
+  .travel-home .travel-promo-card p {
+    color: #ffffff !important;
+  }
+
+  .travel-home .travel-promo-card .travel-button {
+    background: #ffffff !important;
+    color: var(--booking-blue-dark, #003b95) !important;
+    border-color: rgba(255, 255, 255, .72) !important;
+  }
+
+  .travel-home .travel-hero {
+    position: relative;
+    min-height: 640px;
+    display: grid;
+    grid-template-columns: 1fr !important;
+    align-items: end;
+    overflow: hidden;
+    border: 1px solid rgba(191, 219, 254, .72) !important;
+    border-radius: 28px !important;
+    padding: clamp(28px, 4vw, 48px) !important;
+    background:
+      linear-gradient(180deg, rgba(3, 16, 37, .20) 0%, rgba(4, 21, 47, .62) 58%, rgba(4, 21, 47, .84) 100%),
+      url("/uploads/destinations/da-nang-ba-na.jpg") center / cover no-repeat !important;
+    box-shadow: 0 28px 72px rgba(15, 36, 66, .18) !important;
+  }
+
+  .travel-home .travel-panel {
+    width: min(100%, 1120px);
+    min-height: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .travel-home .travel-eyebrow {
+    color: #ffffff !important;
+    background: rgba(15, 36, 66, .56) !important;
+    border-color: rgba(255, 255, 255, .22) !important;
+  }
+
+  .travel-home .travel-title {
+    max-width: 880px;
+    color: #ffffff !important;
+    text-shadow: 0 5px 24px rgba(0, 0, 0, .28) !important;
+  }
+
+  .travel-home .travel-description {
+    max-width: 760px;
+    color: rgba(255, 255, 255, .88) !important;
+    text-shadow: 0 3px 14px rgba(0, 0, 0, .25) !important;
+  }
+
+  .travel-home .travel-actions .travel-button--secondary,
+  .travel-home .travel-actions .travel-button--install {
+    color: #ffffff !important;
+    background: rgba(15, 36, 66, .54) !important;
+    border-color: rgba(255, 255, 255, .22) !important;
+  }
+
+  .travel-home .travel-search-card {
+    max-width: 1120px;
+    margin-top: 28px;
+    border: 1px solid rgba(255, 255, 255, .30) !important;
+    background: rgba(255, 255, 255, .96) !important;
+    box-shadow: 0 22px 58px rgba(2, 14, 34, .26) !important;
+  }
+
+  .travel-home .travel-section--destinations,
+  .travel-home .travel-section--news,
+  .travel-home .travel-section--info,
+  .travel-home .travel-section--promo,
+  .travel-home .travel-section--contact {
+    overflow: hidden;
+    background-position: center !important;
+    background-size: cover !important;
+    background-repeat: no-repeat !important;
+  }
+
+  .travel-home .travel-section--destinations {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .58), rgba(246, 250, 255, .66)),
+      url("/uploads/destinations/nha-trang.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-home .travel-section--news {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .54), rgba(239, 246, 255, .68)),
+      url("/uploads/destinations/can-tho-cai-rang.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-home .travel-section--info {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .48), rgba(248, 251, 255, .64)),
+      url("/uploads/destinations/ha-long.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-home .travel-section--promo {
+    background:
+      linear-gradient(135deg, rgba(0, 59, 149, .22), rgba(6, 182, 212, .18)),
+      url("/uploads/destinations/phu-quoc.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-home .travel-section--contact {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .52), rgba(240, 249, 255, .68)),
+      url("/uploads/destinations/sa-pa.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-home .travel-section--destinations .travel-city-card,
+  .travel-home .travel-section--news .travel-news-card,
+  .travel-home .travel-section--info .travel-info-card,
+  .travel-home .travel-section--contact .travel-contact-card {
+    background: rgba(255, 255, 255, .88) !important;
+    box-shadow: 0 16px 42px rgba(15, 36, 66, .12) !important;
+  }
+
+  .travel-home .travel-section--promo .travel-promo-card {
+    background:
+      linear-gradient(135deg, rgba(0, 59, 149, .92), rgba(0, 108, 228, .82) 54%, rgba(6, 182, 212, .72)),
+      url("/uploads/destinations/phu-quoc.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-home .travel-scene-card,
+  .travel-home .travel-scene-card--hotel-gif,
+  .travel-home .travel-hero-gif {
+    display: none !important;
+  }
+
+  @media (max-width: 700px) {
+    .travel-home .travel-hero {
+      min-height: auto;
+      padding: 24px 14px !important;
+      border-radius: 20px !important;
+      background-position: center top !important;
+    }
+
+    .travel-home .travel-title {
+      font-size: 38px;
+      line-height: 1.04;
+    }
+  }
+</style>
+
+<aside class="floating-assist" aria-label="Trợ lý AI và liên hệ nhanh">
   <div class="floating-assist__fab-stack">
     <a
       class="floating-assist__fab-link floating-assist__fab-link--zalo"
@@ -13,7 +670,7 @@
       </span>
     </a>
 
-    <button class="floating-assist__toggle" type="button" id="floatingAiToggle" aria-label="Mở AI Concierge" title="AI Concierge">
+    <button class="floating-assist__toggle" type="button" id="floatingAiToggle" aria-label="Mở trợ lý AI" title="Trợ lý AI">
       <span class="floating-assist__toggle-badge"></span>
       <span class="floating-assist__toggle-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="28" height="28" fill="none">
@@ -27,11 +684,11 @@
   <section class="floating-assist__drawer" id="floatingAiDrawer" hidden>
     <header class="floating-assist__head">
       <div>
-        <div class="floating-assist__eyebrow">AI Concierge</div>
-        <h2 class="floating-assist__title">Trợ lý đặt phòng</h2>
-        <div class="floating-assist__subtitle">Hỏi bằng tiếng Việt, AI sẽ gợi ý phòng, bộ lọc và CTA tiếp theo.</div>
+        <div class="floating-assist__eyebrow">Bento AI</div>
+        <h2 class="floating-assist__title">Trợ lý du lịch thông minh</h2>
+        <div class="floating-assist__subtitle">Hỏi về phòng, tour, điểm đến, mã giảm giá, eKYC, thanh toán hoặc đăng cơ sở lưu trú.</div>
       </div>
-      <button class="floating-assist__close" type="button" id="floatingAiClose" aria-label="Đóng AI Concierge">×</button>
+      <button class="floating-assist__close" type="button" id="floatingAiClose" aria-label="Đóng trợ lý AI">×</button>
     </header>
 
     <div class="floating-assist__body" id="floatingAiMessages"></div>
@@ -40,11 +697,11 @@
       <textarea
         class="floating-assist__input"
         id="floatingAiInput"
-        placeholder="Ví dụ: cần phòng deluxe view biển cho 2 người ở Đà Nẵng cuối tuần này, ngân sách 2 triệu"
+        placeholder="Ví dụ: cần resort gần biển Mỹ Khê cho 2 người, có mã giảm giá hoặc tour nào đi kèm không?"
       ></textarea>
       <div class="floating-assist__submit-row">
-        <div class="floating-assist__hint">AI sẽ xếp hạng phòng, trả lời nhanh và dẫn bạn sang bước đặt phòng phù hợp.</div>
-        <button class="floating-assist__submit" type="submit" id="floatingAiSubmit">Gửi yêu cầu</button>
+        <div class="floating-assist__hint">AI dùng dữ liệu hệ thống để trả lời, gợi ý và mở đúng bước xử lý.</div>
+        <button class="floating-assist__submit" type="submit" id="floatingAiSubmit">Gửi</button>
       </div>
     </form>
   </section>
@@ -56,10 +713,10 @@
     const HISTORY_KEY = "abc_ai_widget_history_v2";
     const OPEN_KEY = "abc_ai_widget_open_v1";
     const STARTERS = [
-      "Tìm phòng gần biển cho 2 người cuối tuần này",
-      "Phòng nào hợp cho gia đình có trẻ em?",
-      "Tôi muốn phòng view đẹp nhưng ngân sách mềm",
-      "Gợi ý combo nghỉ dưỡng có ăn sáng và hồ bơi"
+      "Tìm resort gần biển cho 2 người cuối tuần này",
+      "Có mã giảm giá nào còn hạn không?",
+      "Gợi ý tour Cần Thơ và phòng gần Chợ nổi Cái Răng",
+      "Đối tác cần làm gì để đăng cơ sở lưu trú?"
     ];
 
     const toggle = document.getElementById("floatingAiToggle");
@@ -109,8 +766,8 @@
     function renderWelcome() {
       return `
         <div class="floating-assist__message floating-assist__message--assistant">
-          <h4>Xin chào, mình là AI Concierge.</h4>
-          <p>Bạn có thể hỏi nhu cầu đặt phòng, xin gợi ý theo ngân sách, lịch đi, view yêu thích hoặc hỏi thêm về check-in, eKYC và thanh toán.</p>
+          <h4>Xin chào, mình là Bento AI.</h4>
+          <p>Bạn có thể hỏi mọi vấn đề trong hệ thống: tìm phòng, so sánh hotel/resort/homestay, tour, tin tức điểm đến, mã giảm giá, bản đồ, eKYC, thanh toán, hoàn tiền hoặc đăng cơ sở lưu trú.</p>
           <div class="floating-assist__starter-grid">
             ${STARTERS.map((item) => `<button type="button" class="floating-assist__starter" data-ai-starter="${escapeHtml(item)}">${escapeHtml(item)}</button>`).join("")}
           </div>
@@ -120,28 +777,58 @@
 
     function renderAssistantPayload(payload) {
       if (!payload) {
-        return `<div class="floating-assist__message floating-assist__message--assistant"><p class="floating-assist__empty">Không có dữ liệu từ AI Concierge.</p></div>`;
+        return `<div class="floating-assist__message floating-assist__message--assistant"><p class="floating-assist__empty">Không có dữ liệu từ trợ lý AI.</p></div>`;
       }
 
       const top = payload.recommendations?.top_pick || null;
       const alternatives = Array.isArray(payload.recommendations?.alternatives) ? payload.recommendations.alternatives : [];
+      const answer = payload.answer || null;
+      const contextCards = Array.isArray(payload.context_cards) ? payload.context_cards : [];
+      const quickActions = Array.isArray(payload.quick_actions) ? payload.quick_actions : [];
       const filters = payload.extracted_filters || {};
       const filterChips = [
+        filters.dia_diem ? `Gần ${filters.dia_diem}` : "",
+        filters.loai_luu_tru ? `Loại lưu trú ${filters.loai_luu_tru}` : "",
         filters.hotel_city ? `Thành phố ${filters.hotel_city}` : "",
         filters.loai_phong ? `Loại ${filters.loai_phong}` : "",
         filters.view_phong ? `View ${filters.view_phong}` : "",
         Number(filters.so_khach || 0) > 0 ? `${filters.so_khach} khách` : "",
         Number(filters.gia_goi_y || 0) > 0 ? `${Number(filters.gia_goi_y).toLocaleString("vi-VN")} đ` : ""
       ].filter(Boolean);
+      const cardIcon = (type) => ({
+        room: "P",
+        tour: "T",
+        news: "N",
+        promotion: "%",
+        destination: "M",
+        guide: "i"
+      }[type] || "AI");
+      const renderContextCard = (card) => `
+        <a class="floating-assist__smart-card" href="${escapeHtml(card.href || "#")}" ${card.href && card.href.startsWith("http") ? 'target="_blank" rel="noreferrer"' : ""}>
+          ${card.imageUrl ? `<img src="${escapeHtml(card.imageUrl)}" alt="" loading="lazy" onerror="this.remove();" />` : `<span class="floating-assist__smart-icon">${escapeHtml(cardIcon(card.type))}</span>`}
+          <span class="floating-assist__smart-body">
+            <span class="floating-assist__smart-top">
+              ${card.badge ? `<b>${escapeHtml(card.badge)}</b>` : ""}
+              ${card.price ? `<strong>${escapeHtml(card.price)}</strong>` : ""}
+            </span>
+            <span class="floating-assist__smart-title">${escapeHtml(card.title || "")}</span>
+            <span class="floating-assist__smart-subtitle">${escapeHtml(card.subtitle || "")}</span>
+            ${card.meta ? `<span class="floating-assist__smart-meta">${escapeHtml(card.meta)}</span>` : ""}
+          </span>
+        </a>
+      `;
 
       return `
         <div class="floating-assist__message floating-assist__message--assistant">
-          <h4>${escapeHtml(payload.faq?.answer || "AI đã phân tích xong nhu cầu của bạn.")}</h4>
+          <h4>${escapeHtml(answer?.title || payload.faq?.answer || "AI đã phân tích xong nhu cầu của bạn.")}</h4>
+          ${answer?.body ? `<p>${escapeHtml(answer.body)}</p>` : ""}
+          ${Array.isArray(answer?.bullets) && answer.bullets.length ? `<ul class="floating-assist__list">${answer.bullets.slice(0, 4).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
           ${filterChips.length ? `<div class="floating-assist__chips">${filterChips.map((item) => `<span class="floating-assist__chip">${escapeHtml(item)}</span>`).join("")}</div>` : ""}
-          ${top ? `
+          ${contextCards.length ? `<div class="floating-assist__smart-grid">${contextCards.slice(0, 4).map(renderContextCard).join("")}</div>` : ""}
+          ${!contextCards.length && top ? `
             <div class="floating-assist__card">
               <div class="floating-assist__card-title">
-                <span class="floating-assist__badge">${escapeHtml(top.recommendation?.label || "AI Top Pick")}</span>
+                <span class="floating-assist__badge">${escapeHtml(top.recommendation?.label || "Gợi ý phù hợp nhất")}</span>
                 <span class="floating-assist__price">${Number(top.gia || 0).toLocaleString("vi-VN")} đ / đêm</span>
               </div>
               <h5>${escapeHtml(top.loaiPhong || "")} - phòng ${escapeHtml(top.soPhong || "")}</h5>
@@ -150,11 +837,11 @@
               ${Array.isArray(top.recommendation?.reasons) && top.recommendation.reasons.length ? `<div class="floating-assist__chips">${top.recommendation.reasons.slice(0, 3).map((item) => `<span class="floating-assist__chip">${escapeHtml(item)}</span>`).join("")}</div>` : ""}
             </div>
           ` : ""}
-          ${alternatives.length ? `
+          ${!contextCards.length && alternatives.length ? `
             <div class="floating-assist__alternatives">
               ${alternatives.slice(0, 3).map((item) => `
                 <div class="floating-assist__card" style="margin-top:0;flex:1 1 180px;">
-                  <span class="floating-assist__badge">${escapeHtml(item.recommendation?.label || "Alternative")}</span>
+                  <span class="floating-assist__badge">${escapeHtml(item.recommendation?.label || "Lựa chọn khác")}</span>
                   <p style="margin-top:8px;"><strong>${escapeHtml(item.loaiPhong || "")}</strong> · P${escapeHtml(item.soPhong || "")}</p>
                   <p class="floating-assist__meta">${escapeHtml(item.khachSan || "")}</p>
                 </div>
@@ -162,9 +849,18 @@
             </div>
           ` : ""}
           <div class="floating-assist__actions">
-            <a class="floating-assist__action floating-assist__action--primary" href="${escapeHtml(top ? `/booking/rooms/${top.id}` : (payload.cta?.href || "/booking/search"))}">${top ? "Đặt phòng này" : "Mở tìm phòng"}</a>
-            <a class="floating-assist__action" href="${escapeHtml(payload.cta?.href || "/booking/search")}">${escapeHtml(payload.cta?.label || "Xem danh sách phòng")}</a>
-            <a class="floating-assist__action" href="https://zalo.me/0333204860" target="_blank" rel="noreferrer">Hỏi thêm qua Zalo</a>
+            ${
+              quickActions.length
+                ? quickActions.slice(0, 4).map((action) => action.href
+                    ? `<a class="floating-assist__action ${action.primary ? "floating-assist__action--primary" : ""}" href="${escapeHtml(action.href)}">${escapeHtml(action.label)}</a>`
+                    : `<button type="button" class="floating-assist__action ${action.primary ? "floating-assist__action--primary" : ""}" data-ai-starter="${escapeHtml(action.prompt || action.label)}">${escapeHtml(action.label)}</button>`
+                  ).join("")
+                : `
+                  <a class="floating-assist__action floating-assist__action--primary" href="${escapeHtml(top ? `/booking/rooms/${top.id}/detail` : (payload.cta?.href || "/booking/search"))}">${top ? "Xem phòng này" : "Mở tìm phòng"}</a>
+                  <a class="floating-assist__action" href="${escapeHtml(payload.cta?.href || "/booking/search")}">${escapeHtml(payload.cta?.label || "Xem danh sách phòng")}</a>
+                `
+            }
+            <a class="floating-assist__action" href="https://zalo.me/0333204860" target="_blank" rel="noreferrer">Zalo CSKH</a>
           </div>
           ${Array.isArray(payload.follow_up_prompts) && payload.follow_up_prompts.length ? `
             <div class="floating-assist__starter-grid">
@@ -212,7 +908,7 @@
       pushHistory({ role: "user", text: trimmed });
       input.value = "";
       submit.disabled = true;
-      pushHistory({ role: "assistant", text: "AI đang phân tích nhu cầu và tìm phòng phù hợp..." });
+      pushHistory({ role: "assistant", text: "Bento AI đang đọc câu hỏi, đối chiếu dữ liệu hệ thống và chuẩn bị gợi ý phù hợp..." });
 
       try {
         const response = await fetch("/api/ai/concierge", {
@@ -224,7 +920,7 @@
 
         const json = await response.json();
         if (!json.ok) {
-          throw new Error(json.message || "Không thể xử lý AI Concierge.");
+          throw new Error(json.message || "Không thể xử lý trợ lý AI.");
         }
 
         const items = readHistory();
@@ -237,7 +933,7 @@
         writeHistory(items);
         pushHistory({
           role: "assistant",
-          text: error instanceof Error ? error.message : "Không thể xử lý AI Concierge lúc này."
+          text: error instanceof Error ? error.message : "Không thể xử lý trợ lý AI lúc này."
         });
       } finally {
         submit.disabled = false;

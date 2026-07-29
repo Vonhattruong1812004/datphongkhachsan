@@ -4,11 +4,13 @@ import { query, withTransaction } from "../../../config/database";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney } from "../../../shared/utils/format";
 import { BookingService } from "../../booking/services/booking.service";
+import { HomeService } from "../../home/services/home.service";
 import { realtimeHub } from "../../realtime/services/realtime.service";
 import { ServiceModuleService } from "../../service/services/service.service";
 
 export class CustomerService {
   private readonly bookingService = new BookingService();
+  private readonly homeService = new HomeService();
   private readonly serviceModuleService = new ServiceModuleService();
 
   async buildDashboard(maKhachHang: number) {
@@ -40,7 +42,10 @@ export class CustomerService {
       throw new HttpError(404, "Không tìm thấy hồ sơ khách hàng.");
     }
 
-    const bookings = await this.bookingService.listBookingsForCustomer(maKhachHang);
+    const [bookings, featuredRooms] = await Promise.all([
+      this.bookingService.listBookingsForCustomer(maKhachHang),
+      this.homeService.getFeaturedRooms(3)
+    ]);
 
     return {
       profile: {
@@ -52,7 +57,11 @@ export class CustomerService {
         stayedCount: bookings.filter((item) => item.status === "Stayed").length,
         paidCount: bookings.filter((item) => item.status === "Paid").length
       },
-      recentBookings: bookings.slice(0, 5)
+      recentBookings: bookings.slice(0, 5),
+      featuredRooms: featuredRooms.map((room) => ({
+        ...room,
+        priceFormatted: formatMoney(room.gia)
+      }))
     };
   }
 
@@ -112,11 +121,11 @@ export class CustomerService {
       quickActions: [
         { key: "search", label: "Tìm phòng", href: "/booking/search" },
         { key: "history", label: "Lịch sử", href: "/customer/bookings" },
-        { key: "profile", label: "Hồ sơ", href: "/customer/profile" },
-        { key: "services", label: "Dịch vụ", href: "/customer/services" },
+        { key: "profile", label: "Quản lý hồ sơ cá nhân", href: "/customer/profile" },
+        { key: "services", label: "Đặt dịch vụ bổ sung", href: "/customer/services" },
         { key: "advisory", label: "Tư vấn", href: "/customer/advisory" },
         { key: "ekyc", label: "eKYC", href: "/ekyc" },
-        { key: "feedback", label: "Phản hồi", href: "/feedback/new" },
+        { key: "feedback", label: "Gửi phản hồi và đánh giá", href: "/feedback/new" },
         { key: "ai", label: "AI Concierge", href: "/ai/concierge" }
       ],
       bookings: bookings.map((item) => ({
@@ -400,7 +409,7 @@ export class CustomerService {
         tone: input.activeStay || input.nextStay ? "active" : "neutral"
       },
       {
-        label: "Dịch vụ bổ sung",
+        label: "Đặt dịch vụ bổ sung",
         value: String(input.serviceStats.serviceLineCount || 0),
         detail: input.serviceStats.serviceLineCount
           ? `${formatMoney(input.serviceStats.serviceRevenue || 0)} dịch vụ đã ghi nhận, có thể hỏi thêm theo phòng.`
@@ -518,11 +527,17 @@ export class CustomerService {
   }
 
   async updateProfile(maKhachHang: number, rawInput: Record<string, unknown>) {
+    const tenKh = String(rawInput.ten_khach || "").trim();
     const email = String(rawInput.email || "").trim();
     const sdt = String(rawInput.sdt || "").trim();
+    const cccd = String(rawInput.cccd || "").trim();
     const diaChi = String(rawInput.dia_chi || "").trim();
 
     const errors: string[] = [];
+    if (tenKh.length < 2) {
+      errors.push("Họ tên phải có ít nhất 2 ký tự.");
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.push("Email không hợp lệ.");
     }
@@ -531,26 +546,37 @@ export class CustomerService {
       errors.push("Số điện thoại không hợp lệ.");
     }
 
+    if (!/^\d{9}$|^\d{12}$/.test(cccd)) {
+      errors.push("CCCD/CMND phải gồm 9 hoặc 12 chữ số.");
+    }
+
     if (errors.length) {
       throw new HttpError(422, errors.join(" "));
     }
 
+    const current = await this.getProfile(maKhachHang);
+    const emailChanged = String(current.email || "").toLowerCase() !== email.toLowerCase();
+    const phoneChanged = String(current.sdt || "") !== sdt;
+    const identityChanged = String(current.cccd || "") !== cccd;
+
     const duplicate = await query<{ field: string }>(
       `
         SELECT CASE
-          WHEN lower(email) = lower($2) THEN 'email'
-          WHEN sdt = $3 THEN 'sdt'
+          WHEN $5::boolean AND lower(email) = lower($2) THEN 'email'
+          WHEN $6::boolean AND sdt = $3 THEN 'sdt'
+          WHEN $7::boolean AND cccd = $4 THEN 'cccd'
           ELSE 'identity'
         END AS field
         FROM khachhang
         WHERE makhachhang <> $1
           AND (
-            lower(email) = lower($2)
-            OR sdt = $3
+            ($5::boolean AND lower(email) = lower($2))
+            OR ($6::boolean AND sdt = $3)
+            OR ($7::boolean AND cccd = $4)
           )
         LIMIT 1
       `,
-      [maKhachHang, email, sdt]
+      [maKhachHang, email, sdt, cccd, emailChanged, phoneChanged, identityChanged]
     );
 
     if (duplicate.rows[0]?.field === "email") {
@@ -559,6 +585,10 @@ export class CustomerService {
 
     if (duplicate.rows[0]?.field === "sdt") {
       throw new HttpError(409, "Số điện thoại đã được sử dụng bởi hồ sơ khách hàng khác.");
+    }
+
+    if (duplicate.rows[0]?.field === "cccd") {
+      throw new HttpError(409, "CCCD/CMND đã được sử dụng bởi hồ sơ khách hàng khác.");
     }
 
     const result = await query<{
@@ -573,9 +603,15 @@ export class CustomerService {
     }>(
       `
         UPDATE khachhang
-        SET email = $2,
-            sdt = $3,
-            diachi = $4
+        SET tenkh = $2,
+            email = $3,
+            sdt = $4,
+            cccd = $5,
+            diachi = $6,
+            trangthaiekyc = CASE
+              WHEN $7::boolean THEN 'ChuaXacThuc'::khachhang_trangthaiekyc
+              ELSE trangthaiekyc
+            END
         WHERE makhachhang = $1
         RETURNING
           makhachhang AS id,
@@ -587,7 +623,7 @@ export class CustomerService {
           loaikhach AS "loaiKhach",
           trangthaiekyc AS "trangThaiEkyc"
       `,
-      [maKhachHang, email, sdt, diaChi || null]
+      [maKhachHang, tenKh, email, sdt, cccd, diaChi || null, identityChanged]
     );
 
     if (!result.rows[0]) {

@@ -405,6 +405,353 @@
     outline:3px solid rgba(255,255,255,.72);
     border-color:#ffffff;
   }
+
+  /* UC2 final UI/UX pass: clean OTA-style check-in workspace, UI only. */
+  body {
+    background: linear-gradient(180deg, #eaf4ff 0%, #f5f9fe 52%, #edf6ff 100%) !important;
+    color: #243044;
+  }
+
+  .checkin-shell {
+    --ux-border: #d6e4f2;
+    --ux-border-strong: #9cc7f2;
+    --ux-text: #243044;
+    --ux-heading: #0f172a;
+    --ux-muted: #64748b;
+    --ux-cyan-strong: #006ce4;
+    max-width: 1260px;
+    padding: 18px 18px 34px;
+    color: #243044;
+    background: transparent !important;
+  }
+
+  .checkin-title {
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .checkin-title h1 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .checkin-chip,
+  .checkin-title > div > .checkin-muted,
+  #formSearch > .checkin-muted,
+  #formCheckin > input[type="hidden"] + input[type="hidden"] + .checkin-muted {
+    display: none;
+  }
+
+  .checkin-card,
+  .checkin-shell > form.checkin-card:first-of-type,
+  .checkin-shell > form.checkin-card:nth-of-type(2) {
+    margin-bottom: 16px;
+    padding: 18px;
+    color: #243044;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: 0 10px 28px rgba(15, 36, 66, 0.08);
+  }
+
+  .checkin-card h2,
+  .checkin-shell > form.checkin-card h2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    color: #0f172a;
+    border-bottom: 1px solid #e5edf6;
+    font-size: 19px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .checkin-tag,
+  .checkin-shell > form.checkin-card .checkin-tag {
+    flex: 0 0 auto;
+    margin-left: 0;
+    padding: 4px 9px;
+    color: #004cb8;
+    border: 1px solid #cfe4ff;
+    border-radius: 999px;
+    background: #eef6ff;
+    font-size: 11px;
+    font-weight: 800;
+    text-shadow: none;
+  }
+
+  .checkin-muted,
+  .checkin-card > .checkin-muted {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+    text-shadow: none;
+  }
+
+  .checkin-search-grid {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .checkin-search-actions {
+    gap: 8px;
+    padding-bottom: 0;
+  }
+
+  .checkin-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .checkin-field {
+    min-width: 0;
+    gap: 5px;
+    margin: 0;
+  }
+
+  .checkin-field label,
+  .checkin-shell > form.checkin-card .checkin-field label {
+    color: #243044;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.3;
+    text-shadow: none;
+  }
+
+  .checkin-field input,
+  .checkin-shell > form.checkin-card .checkin-field input {
+    min-height: 42px;
+    width: 100%;
+    padding: 10px 12px;
+    color: #0f172a;
+    border: 1px solid #c9d8e8;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: none;
+    font-size: 14px;
+  }
+
+  .checkin-field input[disabled],
+  .checkin-shell > form.checkin-card .checkin-field input[disabled] {
+    color: #475569;
+    border-color: #d6e4f2;
+    background: #f8fbff !important;
+  }
+
+  .checkin-field input:hover,
+  .checkin-shell > form.checkin-card .checkin-field input:hover {
+    border-color: #9cc7f2;
+    box-shadow: none;
+  }
+
+  .checkin-field input:focus,
+  .checkin-shell > form.checkin-card .checkin-field input:focus {
+    border-color: #006ce4;
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, 0.13);
+  }
+
+  .checkin-error-msg {
+    min-height: 14px;
+    color: #be123c;
+    font-size: 12px;
+  }
+
+  .checkin-table-wrap,
+  .checkin-shell > form.checkin-card .checkin-table-wrap {
+    margin-top: 12px;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .checkin-table,
+  .checkin-shell > form.checkin-card .checkin-table {
+    min-width: 920px;
+    color: #243044;
+    background: #ffffff;
+    font-size: 13px;
+  }
+
+  .checkin-table th,
+  .checkin-shell > form.checkin-card .checkin-table th {
+    padding: 10px 12px;
+    color: #334155;
+    border-bottom: 1px solid #dfeaf5;
+    background: #f1f6fb;
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .checkin-table td,
+  .checkin-shell > form.checkin-card .checkin-table td {
+    padding: 11px 12px;
+    color: #243044;
+    border-bottom: 1px solid #e5edf6;
+    background: #ffffff;
+  }
+
+  .checkin-table tbody tr:hover td,
+  .checkin-shell > form.checkin-card .checkin-table tbody tr:hover td {
+    background: #f8fbff;
+  }
+
+  .checkin-badge {
+    color: #004cb8;
+    border-color: #cfe4ff;
+    background: #eef6ff;
+  }
+
+  .badge-green,
+  .checkin-badge--green {
+    color: #047857;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+  }
+
+  .badge-red,
+  .checkin-badge--red {
+    color: #be123c;
+    border-color: #fecdd3;
+    background: #fff1f2;
+  }
+
+  .checkin-scope,
+  .checkin-confirm {
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .checkin-scope label,
+  .checkin-confirm label,
+  .checkin-shell > form.checkin-card .checkin-scope label,
+  .checkin-shell > form.checkin-card .checkin-confirm label {
+    gap: 9px;
+    padding: 11px 12px;
+    color: #243044;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #f8fbff;
+    box-shadow: none;
+  }
+
+  .checkin-scope label:has(input:checked),
+  .checkin-confirm label:has(input:checked),
+  .checkin-shell > form.checkin-card .checkin-scope label:has(input:checked),
+  .checkin-shell > form.checkin-card .checkin-confirm label:has(input:checked) {
+    color: #0f2442;
+    border-color: #8cc8ff;
+    background: #eef6ff;
+    outline: none;
+  }
+
+  .checkin-table input[type="checkbox"],
+  .checkin-scope input,
+  .checkin-confirm input {
+    accent-color: #006ce4;
+  }
+
+  .checkin-actions {
+    align-items: center;
+    margin-top: 14px;
+  }
+
+  .checkin-actions__right {
+    gap: 8px;
+  }
+
+  .checkin-shell .button,
+  .checkin-shell > form.checkin-card .checkin-search-actions .button:not(.button--primary) {
+    min-height: 42px;
+    padding: 10px 14px;
+    color: #0f2442;
+    border: 1px solid #cbd8e6;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .checkin-shell .button--primary,
+  .checkin-shell > form.checkin-card .button--primary {
+    color: #ffffff;
+    border-color: #006ce4;
+    background: #006ce4;
+    box-shadow: none;
+  }
+
+  .checkin-alert {
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .input-error {
+    border-color: #e11d48 !important;
+    background: #fff7f8 !important;
+  }
+
+  @media (max-width: 900px) {
+    .checkin-title,
+    .checkin-actions {
+      align-items: stretch;
+    }
+
+    .checkin-search-grid,
+    .checkin-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .checkin-search-actions,
+    .checkin-actions__right {
+      justify-content: stretch;
+    }
+
+    .checkin-shell .button {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .checkin-shell {
+      padding: 12px 10px 28px;
+    }
+
+    .checkin-title h1 {
+      font-size: 25px;
+    }
+
+    .checkin-card,
+    .checkin-shell > form.checkin-card:first-of-type,
+    .checkin-shell > form.checkin-card:nth-of-type(2) {
+      padding: 14px;
+    }
+
+    .checkin-card h2,
+    .checkin-shell > form.checkin-card h2 {
+      align-items: flex-start;
+      flex-wrap: wrap;
+      font-size: 18px;
+    }
+
+    .checkin-table,
+    .checkin-shell > form.checkin-card .checkin-table {
+      min-width: 820px;
+    }
+  }
   @keyframes checkin-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
   @media (max-width:900px){.checkin-search-grid{grid-template-columns:1fr}.checkin-search-actions{justify-content:flex-start;padding-bottom:0;white-space:normal}}
 </style>

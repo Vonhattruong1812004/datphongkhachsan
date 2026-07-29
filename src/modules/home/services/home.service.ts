@@ -1,6 +1,8 @@
 import { query } from "../../../config/database";
 import fs from "node:fs";
 import path from "node:path";
+import { NewsService, type DestinationNewsArticle } from "../../news/services/news.service";
+import { TourService, type TourPackage } from "../../tours/services/tour.service";
 
 export interface FeaturedRoom {
   id: number;
@@ -11,6 +13,7 @@ export interface FeaturedRoom {
   loaiGiuong: string | null;
   soKhachToiDa: number;
   khachSan: string;
+  loaiLuuTruTen: string | null;
   tinhThanh: string;
   hinhAnh: string | null;
   imageUrl: string;
@@ -30,9 +33,14 @@ export interface HomePageData {
   bedTypes: string[];
   roomTypes: string[];
   viewTypes: string[];
+  accommodationTypes: Array<{ code: string; name: string }>;
+  news: DestinationNewsArticle[];
+  tours: TourPackage[];
 }
 
 export class HomeService {
+  private readonly newsService = new NewsService();
+  private readonly tourService = new TourService();
   private readonly appRoot = path.resolve(__dirname, "../../../..");
   private readonly roomUploadDir = path.resolve(this.appRoot, "uploads/phong");
   private readonly roomFallbackImages = [
@@ -68,10 +76,12 @@ export class HomeService {
           p.loaigiuong AS "loaiGiuong",
           p.sokhachtoida AS "soKhachToiDa",
           ks.tenkhachsan AS "khachSan",
+          lt.tenloai AS "loaiLuuTruTen",
           ks.tinhthanh AS "tinhThanh",
           p.hinhanh AS "hinhAnh"
         FROM phong p
         INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+        LEFT JOIN loaicosoluutru lt ON lt.maloai = ks.maloailuutru
         WHERE p.trangthai = 'Trong'
         ORDER BY p.douutienhienthi DESC, p.gia ASC, p.maphong DESC
         LIMIT $1
@@ -94,13 +104,16 @@ export class HomeService {
   }
 
   async getHomePageData(): Promise<HomePageData> {
-    const [rooms, hotelCities, hotels, bedTypes, roomTypes, viewTypes] = await Promise.all([
+    const [rooms, hotelCities, hotels, bedTypes, roomTypes, viewTypes, accommodationTypes, news, tours] = await Promise.all([
       this.getFeaturedRooms(9),
       this.getHotelCities(),
       this.getHotels(),
       this.getDistinctValues("loaigiuong"),
       this.getDistinctValues("loaiphong"),
-      this.getDistinctValues("viewphong")
+      this.getDistinctValues("viewphong"),
+      this.getAccommodationTypes(),
+      this.newsService.getFeaturedArticles(3),
+      this.tourService.getFeaturedPackages(3)
     ]);
 
     return {
@@ -110,7 +123,10 @@ export class HomeService {
       hotels,
       bedTypes,
       roomTypes,
-      viewTypes
+      viewTypes,
+      accommodationTypes,
+      news,
+      tours
     };
   }
 
@@ -140,6 +156,18 @@ export class HomeService {
           tinhthanh AS "tinhThanh"
         FROM khachsan
         ORDER BY tenkhachsan
+      `
+    );
+
+    return result.rows;
+  }
+
+  private async getAccommodationTypes() {
+    const result = await query<{ code: string; name: string }>(
+      `
+        SELECT ma AS code, tenloai AS name
+        FROM loaicosoluutru
+        ORDER BY thutu ASC, tenloai ASC
       `
     );
 

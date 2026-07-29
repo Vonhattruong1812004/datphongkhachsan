@@ -43,13 +43,13 @@
   <section class="review-card review-hero">
     <div>
       <span class="review-chip"><%= isCskhAssist ? "CSKH hỗ trợ · Bước 3" : "Bước 3 · Kiểm tra trước khi đặt" %></span>
-      <h1>Xác nhận thông tin booking.</h1>
-      <p class="review-muted">Kiểm tra lại phòng, ngày ở, thông tin liên hệ, khuyến mãi, tổng tiền và khoản cọc. Sau bước này hệ thống chỉ tạo mã giữ phòng, booking thật chờ SePay xác nhận.</p>
+      <h1>Xác nhận thông tin đặt phòng.</h1>
+      <p class="review-muted">Kiểm tra lại phòng, ngày ở, thông tin liên hệ, khuyến mãi, tổng tiền và khoản cọc. Sau bước này hệ thống chỉ tạo mã giữ phòng, đặt phòng thật chờ SePay xác nhận.</p>
       <div class="review-flow" aria-label="Luồng cọc SePay">
         <div><span>Hold</span><strong>Giữ phòng 10 phút</strong></div>
         <div><span>Cọc</span><strong>Thanh toán 50%</strong></div>
-        <div><span>Webhook</span><strong>Đối chiếu nội dung</strong></div>
-        <div><span>Booking</span><strong>Tạo giao dịch thật</strong></div>
+        <div><span>SePay</span><strong>Đối chiếu nội dung</strong></div>
+        <div><span>Đặt phòng</span><strong>Tạo giao dịch thật</strong></div>
       </div>
     </div>
     <img class="review-img" src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
@@ -76,7 +76,7 @@
         <% }) %>
       <% } %>
       <div class="review-line"><span>Tổng dịch vụ</span><strong><%= summary.serviceAmountFormatted %></strong></div>
-      <div class="review-line"><span>Khuyến mãi</span><strong><%= preview.promotion ? preview.promotion.tenChuongTrinh : "Không áp dụng" %> · -<%= summary.discountFormatted %></strong></div>
+      <div class="review-line"><span>Khuyến mãi</span><strong><%= preview.promotion ? `${preview.promotion.maGiamGia ? `${preview.promotion.maGiamGia} · ` : ""}${preview.promotion.tenChuongTrinh}` : "Không áp dụng" %> · -<%= summary.discountFormatted %></strong></div>
       <div class="review-line review-line--total"><span>Tổng cần xác nhận</span><strong><%= summary.totalFormatted %></strong></div>
       <div class="review-line review-line--total"><span>Cọc cần thanh toán</span><strong><%= summary.depositAmountFormatted %></strong></div>
     </div>

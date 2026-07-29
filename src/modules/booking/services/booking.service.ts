@@ -8,6 +8,7 @@ import { customerBookingHoldStore, type CustomerBookingAccount, type CustomerBoo
 import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, parseSepayMetadata, replaceSepayMetadata } from "../../payment/sepay";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
+import { expireOutdatedPromotions } from "../../../shared/promotions/promotion-maintenance";
 import { calculatePromotionDiscount, isCustomerCancelableBooking, isCustomerEditableBooking } from "./booking-rules";
 
 const CUSTOMER_ACCOUNT_PASSWORD_HASH_ROUNDS = 12;
@@ -81,7 +82,12 @@ export const searchBookingSchema = z.object({
   loai_phong: textField,
   loai_giuong: textField,
   view_phong: textField,
+  dia_diem: textField,
+  loai_luu_tru: textField,
+  user_lat: numberField,
+  user_lng: numberField,
   hotel_city: textField,
+  hotel_district: textField,
   hotel_name: textField,
   so_khach: numberField,
   gia_goi_y: numberField,
@@ -89,7 +95,7 @@ export const searchBookingSchema = z.object({
   gia_den: numberField,
   ngay_nhan: textField,
   ngay_tra: textField,
-  sort_by: z.preprocess(emptyToUndefinedFirstFormValue, z.enum(["ai", "price_asc", "price_desc", "capacity_fit"]).optional().default("ai"))
+  sort_by: z.preprocess(emptyToUndefinedFirstFormValue, z.enum(["ai", "distance", "price_asc", "price_desc", "capacity_fit"]).optional().default("ai"))
 });
 
 export type SearchBookingInput = z.infer<typeof searchBookingSchema>;
@@ -190,11 +196,26 @@ export interface SearchRoomRow {
   tinhTrangPhong: string;
   ghiChu?: string | null;
   khachSan: string;
+  loaiLuuTruMa?: string | null;
+  loaiLuuTruTen?: string | null;
+  quanHuyen?: string | null;
   tinhThanh: string;
   diaChi: string | null;
+  hotelLatitude?: number | string | null;
+  hotelLongitude?: number | string | null;
+  userDistanceKm?: number | string | null;
+  userDistanceLabel?: string;
   hinhAnh: string | null;
   imageUrl?: string;
   priceFormatted?: string;
+  nearbyPlaceId?: number | null;
+  nearbyPlaceName?: string | null;
+  nearbyPlaceType?: string | null;
+  nearbyPlaceImageUrl?: string | null;
+  nearbyDistanceKm?: number | string | null;
+  nearbyDistanceLabel?: string;
+  nearbyTravelMinutes?: number | null;
+  nearbyTravelTimeLabel?: string;
   latestBooking?: LatestRoomBooking | null;
 }
 
@@ -219,6 +240,7 @@ interface LatestRoomBooking {
 
 interface PromotionRow {
   id: number;
+  maGiamGia?: string | null;
   tenChuongTrinh: string;
   ngayBatDau: string | null;
   ngayKetThuc: string | null;
@@ -360,7 +382,52 @@ function parseDateOnly(value: string) {
   return parsed.isValid() && parsed.format("YYYY-MM-DD") === value ? parsed : null;
 }
 
+function normalizeLocationKeyword(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s.-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatDistanceKm(value: unknown) {
+  const distance = Number(value || 0);
+  if (!Number.isFinite(distance) || distance <= 0) {
+    return "";
+  }
+
+  if (distance < 1) {
+    return `${Math.round(distance * 1000)} m`;
+  }
+
+  return `${distance.toLocaleString("vi-VN", { maximumFractionDigits: 1 })} km`;
+}
+
+function formatTravelMinutes(value: unknown) {
+  const minutes = Number(value || 0);
+  return Number.isFinite(minutes) && minutes > 0 ? `${Math.round(minutes)} phút` : "";
+}
+
 function validateSearchFilters(filters: SearchBookingInput) {
+  const hasOnlyOneUserCoordinate = (filters.user_lat && !filters.user_lng) || (!filters.user_lat && filters.user_lng);
+  if (hasOnlyOneUserCoordinate) {
+    throw new HttpError(422, "Vị trí hiện tại chưa đủ tọa độ. Vui lòng bấm lấy vị trí lại.");
+  }
+
+  if (filters.user_lat || filters.user_lng) {
+    if (!Number.isFinite(filters.user_lat) || filters.user_lat < -90 || filters.user_lat > 90) {
+      throw new HttpError(422, "Vĩ độ vị trí hiện tại không hợp lệ.");
+    }
+
+    if (!Number.isFinite(filters.user_lng) || filters.user_lng < -180 || filters.user_lng > 180) {
+      throw new HttpError(422, "Kinh độ vị trí hiện tại không hợp lệ.");
+    }
+  }
+
   if (!Number.isFinite(filters.so_khach) || !Number.isInteger(filters.so_khach) || filters.so_khach < 0) {
     throw new HttpError(422, "Số khách phải là số nguyên từ 1 trở lên nếu có nhập.");
   }
@@ -466,6 +533,8 @@ function calculateSearchNights(filters: SearchBookingInput) {
 
 function searchSortLabel(sortBy: SearchBookingInput["sort_by"]) {
   switch (sortBy) {
+    case "distance":
+      return "Gần vị trí của bạn";
     case "price_asc":
       return "Giá thấp trước";
     case "price_desc":
@@ -495,15 +564,145 @@ function distributeGuests(totalGuests: number, rooms: Array<SearchRoomRow & { am
 }
 
 export class BookingService {
+  async getAccommodationTypeOptions() {
+    const result = await query<{ code: string; name: string }>(
+      `
+        SELECT ma AS code, tenloai AS name
+        FROM loaicosoluutru
+        ORDER BY thutu ASC, tenloai ASC
+      `
+    );
+
+    return result.rows;
+  }
+
+  async getHotelCityOptions() {
+    const result = await query<{ value: string }>(
+      `
+        SELECT DISTINCT ks.tinhthanh AS value
+        FROM khachsan ks
+        INNER JOIN phong p ON p.makhachsan = ks.makhachsan
+        WHERE COALESCE(ks.tinhthanh, '') <> ''
+          AND p.trangthai = 'Trong'
+          AND COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') = 'Tot'
+          AND COALESCE(NULLIF(p.trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
+        ORDER BY value ASC
+      `
+    );
+
+    return result.rows.map((item) => item.value).filter(Boolean);
+  }
+
+  async getHotelDistrictOptions() {
+    const result = await query<{ city: string; value: string }>(
+      `
+        SELECT DISTINCT ks.tinhthanh AS city, ks.quanhuyen AS value
+        FROM khachsan ks
+        INNER JOIN phong p ON p.makhachsan = ks.makhachsan
+        WHERE COALESCE(ks.tinhthanh, '') <> ''
+          AND COALESCE(ks.quanhuyen, '') <> ''
+          AND p.trangthai = 'Trong'
+          AND COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') = 'Tot'
+          AND COALESCE(NULLIF(p.trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')
+        ORDER BY ks.tinhthanh ASC, ks.quanhuyen ASC
+      `
+    );
+
+    return result.rows;
+  }
+
+  async getPopularDestinationSuggestions(limit = 8) {
+    try {
+      const result = await query<{
+        id: number;
+        name: string;
+        city: string | null;
+        type: string | null;
+        imageUrl: string | null;
+        hotelCount: number;
+        minDistanceKm: number | string | null;
+      }>(
+        `
+          SELECT
+            dd.madiadiem AS id,
+            dd.tendiadiem AS name,
+            dd.tinhthanh AS city,
+            dd.loaihinh AS type,
+            dd.hinhanh AS "imageUrl",
+            COUNT(DISTINCT ksd.makhachsan)::int AS "hotelCount",
+            MIN(ksd.khoangcachkm) AS "minDistanceKm"
+          FROM diadiemdulich dd
+          LEFT JOIN khachsan_diadiem ksd ON ksd.madiadiem = dd.madiadiem
+          WHERE COALESCE(NULLIF(dd.trangthai, ''), 'HoatDong') = 'HoatDong'
+          GROUP BY dd.madiadiem, dd.tendiadiem, dd.tinhthanh, dd.loaihinh, dd.hinhanh
+          ORDER BY COUNT(DISTINCT ksd.makhachsan) DESC, MIN(ksd.khoangcachkm) ASC NULLS LAST, dd.tendiadiem ASC
+          LIMIT $1
+        `,
+        [limit]
+      );
+
+      return result.rows.map((item) => ({
+        ...item,
+        distanceLabel: formatDistanceKm(item.minDistanceKm)
+      }));
+    } catch {
+      return [];
+    }
+  }
+
   async searchRooms(rawFilters: unknown) {
     const filters = searchBookingSchema.parse(rawFilters ?? {});
     validateSearchFilters(filters);
+    const locationTerm = filters.dia_diem.trim();
+    const hasUserLocation = Boolean(filters.user_lat && filters.user_lng);
+    const hasSearchScope = Boolean(locationTerm || filters.hotel_city || filters.hotel_district || filters.hotel_name.trim() || hasUserLocation);
+
+    if (!hasSearchScope) {
+      const estimatedNights = calculateSearchNights(filters);
+
+      return {
+        filters,
+        count: 0,
+        summary: {
+          hasStayDates: Boolean(filters.ngay_nhan && filters.ngay_tra),
+          checkinLabel: filters.ngay_nhan ? formatDate(filters.ngay_nhan) : "Chưa chọn",
+          checkoutLabel: filters.ngay_tra ? formatDate(filters.ngay_tra) : "Chưa chọn",
+          nights: estimatedNights,
+          heldRoomCount: 0,
+          sortLabel: searchSortLabel(filters.sort_by),
+          bestPrice: 0,
+          bestPriceFormatted: "Chưa có",
+          depositPolicyLabel: "Cọc 50% qua SePay, giữ phòng 10 phút"
+        },
+        items: []
+      };
+    }
+
     const params: unknown[] = [];
     const where: string[] = [
       "p.trangthai IN ('Trong', 'Booked')",
       "COALESCE(NULLIF(p.tinhtrangphong::text, ''), 'Tot') = 'Tot'",
       "COALESCE(NULLIF(p.trangthairealtime::text, ''), 'Available') NOT IN ('Stayed', 'Cleaning', 'Maintenance')"
     ];
+    const hasLocationSearch = Boolean(locationTerm);
+    let locationPatternIndex = 0;
+    let normalizedLocationPatternIndex = 0;
+    let userLatIndex = 0;
+    let userLngIndex = 0;
+
+    if (hasLocationSearch) {
+      params.push(`%${locationTerm.toLowerCase()}%`);
+      locationPatternIndex = params.length;
+      params.push(`%${normalizeLocationKeyword(locationTerm)}%`);
+      normalizedLocationPatternIndex = params.length;
+    }
+
+    if (hasUserLocation) {
+      params.push(filters.user_lat);
+      userLatIndex = params.length;
+      params.push(filters.user_lng);
+      userLngIndex = params.length;
+    }
 
     if (filters.loai_phong) {
       params.push(filters.loai_phong);
@@ -525,9 +724,33 @@ export class BookingService {
       where.push(`ks.tinhthanh = $${params.length}`);
     }
 
+    if (filters.hotel_district) {
+      params.push(filters.hotel_district);
+      where.push(`ks.quanhuyen = $${params.length}`);
+    }
+
     if (filters.hotel_name) {
       params.push(`%${filters.hotel_name}%`);
       where.push(`ks.tenkhachsan ILIKE $${params.length}`);
+    }
+
+    if (filters.loai_luu_tru) {
+      params.push(filters.loai_luu_tru.toLowerCase());
+      where.push(`(
+        lower(COALESCE(lt.ma, '')) = $${params.length}
+        OR lower(COALESCE(lt.tenloai, '')) = $${params.length}
+      )`);
+    }
+
+    if (hasLocationSearch) {
+      where.push(`(
+        nearby."nearbyPlaceId" IS NOT NULL
+        OR lower(COALESCE(ks.tenkhachsan, '')) LIKE $${locationPatternIndex}
+        OR lower(COALESCE(ks.tinhthanh, '')) LIKE $${locationPatternIndex}
+        OR lower(COALESCE(ks.quanhuyen, '')) LIKE $${locationPatternIndex}
+        OR lower(COALESCE(ks.diachi, '')) LIKE $${locationPatternIndex}
+        OR lower(COALESCE(p.vitri, '')) LIKE $${locationPatternIndex}
+      )`);
     }
 
     if (filters.so_khach > 0) {
@@ -571,21 +794,89 @@ export class BookingService {
       where.push("p.trangthai = 'Trong'");
     }
 
+    const locationJoin = hasLocationSearch
+      ? `
+        LEFT JOIN LATERAL (
+          SELECT
+            dd.madiadiem AS "nearbyPlaceId",
+            dd.tendiadiem AS "nearbyPlaceName",
+            dd.loaihinh AS "nearbyPlaceType",
+            dd.hinhanh AS "nearbyPlaceImageUrl",
+            ksd.khoangcachkm AS "nearbyDistanceKm",
+            ksd.thoigiandichuyenphut AS "nearbyTravelMinutes"
+          FROM khachsan_diadiem ksd
+          INNER JOIN diadiemdulich dd ON dd.madiadiem = ksd.madiadiem
+          WHERE ksd.makhachsan = ks.makhachsan
+            AND COALESCE(NULLIF(dd.trangthai, ''), 'HoatDong') = 'HoatDong'
+            AND (
+              lower(COALESCE(dd.tendiadiem, '')) LIKE $${locationPatternIndex}
+              OR lower(COALESCE(dd.tukhoa, '')) LIKE $${locationPatternIndex}
+              OR lower(COALESCE(dd.tukhoa, '')) LIKE $${normalizedLocationPatternIndex}
+              OR lower(COALESCE(dd.tinhthanh, '')) LIKE $${locationPatternIndex}
+              OR lower(COALESCE(dd.quanhuyen, '')) LIKE $${locationPatternIndex}
+            )
+          ORDER BY ksd.khoangcachkm ASC, dd.tendiadiem ASC
+          LIMIT 1
+        ) nearby ON true
+      `
+      : "";
+    const nearbySelect = hasLocationSearch
+      ? `
+          nearby."nearbyPlaceId",
+          nearby."nearbyPlaceName",
+          nearby."nearbyPlaceType",
+          nearby."nearbyPlaceImageUrl",
+          nearby."nearbyDistanceKm",
+          nearby."nearbyTravelMinutes",
+      `
+      : `
+          NULL::integer AS "nearbyPlaceId",
+          NULL::varchar AS "nearbyPlaceName",
+          NULL::varchar AS "nearbyPlaceType",
+          NULL::varchar AS "nearbyPlaceImageUrl",
+          NULL::numeric AS "nearbyDistanceKm",
+          NULL::integer AS "nearbyTravelMinutes",
+      `;
+    const locationOrderPrefix = hasLocationSearch
+      ? `CASE WHEN nearby."nearbyPlaceId" IS NULL THEN 1 ELSE 0 END ASC, COALESCE(nearby."nearbyDistanceKm", 9999) ASC,`
+      : "";
+    const userDistanceExpression = hasUserLocation
+      ? `
+        CASE
+          WHEN ks.vido IS NULL OR ks.kinhdo IS NULL THEN NULL
+          ELSE 6371 * acos(
+            LEAST(1, GREATEST(-1,
+              cos(radians($${userLatIndex}::double precision))
+              * cos(radians(ks.vido::double precision))
+              * cos(radians(ks.kinhdo::double precision) - radians($${userLngIndex}::double precision))
+              + sin(radians($${userLatIndex}::double precision))
+              * sin(radians(ks.vido::double precision))
+            ))
+          )
+        END
+      `
+      : "NULL::numeric";
+    const userDistanceOrderPrefix = hasUserLocation
+      ? `CASE WHEN ${userDistanceExpression} IS NULL THEN 1 ELSE 0 END ASC, ${userDistanceExpression} ASC,`
+      : "";
+
     const orderBy = (() => {
       switch (filters.sort_by) {
+        case "distance":
+          return `${locationOrderPrefix}${userDistanceOrderPrefix} p.douutienhienthi DESC, p.gia ASC, p.maphong DESC`;
         case "price_asc":
-          return `p.gia ASC, p.douutienhienthi DESC, p.maphong DESC`;
+          return `${locationOrderPrefix} p.gia ASC, p.douutienhienthi DESC, p.maphong DESC`;
         case "price_desc":
-          return `p.gia DESC, p.douutienhienthi DESC, p.maphong DESC`;
+          return `${locationOrderPrefix} p.gia DESC, p.douutienhienthi DESC, p.maphong DESC`;
         case "capacity_fit":
           if (filters.so_khach > 0) {
             params.push(filters.so_khach);
-            return `ABS(p.sokhachtoida - $${params.length}) ASC, p.gia ASC, p.maphong DESC`;
+            return `${locationOrderPrefix} ABS(p.sokhachtoida - $${params.length}) ASC, p.gia ASC, p.maphong DESC`;
           }
-          return `p.sokhachtoida ASC, p.gia ASC, p.maphong DESC`;
+          return `${locationOrderPrefix} p.sokhachtoida ASC, p.gia ASC, p.maphong DESC`;
         case "ai":
         default:
-          return `p.douutienhienthi DESC, p.gia ASC, p.maphong DESC`;
+          return `${locationOrderPrefix} p.douutienhienthi DESC, p.gia ASC, p.maphong DESC`;
       }
     })();
 
@@ -607,11 +898,20 @@ export class BookingService {
           p.tinhtrangphong AS "tinhTrangPhong",
           p.ghichu AS "ghiChu",
           ks.tenkhachsan AS "khachSan",
+          lt.ma AS "loaiLuuTruMa",
+          lt.tenloai AS "loaiLuuTruTen",
+          ks.quanhuyen AS "quanHuyen",
           ks.tinhthanh AS "tinhThanh",
           ks.diachi AS "diaChi",
+          ks.vido AS "hotelLatitude",
+          ks.kinhdo AS "hotelLongitude",
+          ${userDistanceExpression} AS "userDistanceKm",
+          ${nearbySelect}
           p.hinhanh AS "hinhAnh"
         FROM phong p
         INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+        LEFT JOIN loaicosoluutru lt ON lt.maloai = ks.maloailuutru
+        ${locationJoin}
         WHERE ${where.join("\n AND ")}
         ORDER BY ${orderBy}
       `,
@@ -647,6 +947,9 @@ export class BookingService {
         ...room,
         imageUrl: this.resolveRoomImage(room.hinhAnh),
         priceFormatted: formatMoney(room.gia),
+        userDistanceLabel: formatDistanceKm(room.userDistanceKm),
+        nearbyDistanceLabel: formatDistanceKm(room.nearbyDistanceKm),
+        nearbyTravelTimeLabel: formatTravelMinutes(room.nearbyTravelMinutes),
         estimatedNights,
         estimatedTotal: estimatedNights ? Number(room.gia) * estimatedNights : 0,
         estimatedTotalFormatted: estimatedNights ? formatMoney(Number(room.gia) * estimatedNights) : "",
@@ -678,11 +981,17 @@ export class BookingService {
           p.tinhtrangphong AS "tinhTrangPhong",
           p.ghichu AS "ghiChu",
           ks.tenkhachsan AS "khachSan",
+          lt.ma AS "loaiLuuTruMa",
+          lt.tenloai AS "loaiLuuTruTen",
+          ks.quanhuyen AS "quanHuyen",
           ks.tinhthanh AS "tinhThanh",
           ks.diachi AS "diaChi",
+          ks.vido AS "hotelLatitude",
+          ks.kinhdo AS "hotelLongitude",
           p.hinhanh AS "hinhAnh"
         FROM phong p
         INNER JOIN khachsan ks ON ks.makhachsan = p.makhachsan
+        LEFT JOIN loaicosoluutru lt ON lt.maloai = ks.maloailuutru
         WHERE p.maphong = $1
         LIMIT 1
       `,
@@ -884,6 +1193,7 @@ export class BookingService {
     const subtotal = Number(room.gia) * nights;
     const { services, serviceAmount } = await this.resolveSelectedServices(booking.services, new Set([Number(room.id)]), Number(room.id));
     const promotion = booking.ma_km ? await this.getPromotionById(booking.ma_km) : null;
+    this.assertPromotionCanBeApplied(booking.ma_km, promotion);
     const discount = calculatePromotionDiscount(subtotal + serviceAmount, promotion);
     const total = Math.max(0, subtotal + serviceAmount - discount);
     const depositAmount = Math.ceil(total * 0.5);
@@ -939,6 +1249,7 @@ export class BookingService {
 
     const roomAmount = rooms.reduce((sum, room) => sum + Number(room.gia || 0) * nights, 0);
     const promotion = booking.ma_km ? await this.getPromotionById(booking.ma_km) : null;
+    this.assertPromotionCanBeApplied(booking.ma_km, promotion);
     const discount = calculatePromotionDiscount(roomAmount + serviceAmount, promotion);
     const total = Math.max(0, roomAmount + serviceAmount - discount);
     const depositAmount = Math.ceil(total * 0.5);
@@ -1894,10 +2205,12 @@ export class BookingService {
   }
 
   async getActivePromotions() {
+    await expireOutdatedPromotions();
     const result = await query<PromotionRow>(
       `
         SELECT
           makhuyenmai AS id,
+          magiamgia AS "maGiamGia",
           tenchuongtrinh AS "tenChuongTrinh",
           ngaybatdau AS "ngayBatDau",
           ngayketthuc AS "ngayKetThuc",
@@ -1907,6 +2220,8 @@ export class BookingService {
           doituong AS "doiTuong"
         FROM khuyenmai
         WHERE trangthai = 'DangApDung'
+          AND (ngaybatdau IS NULL OR ngaybatdau <= CURRENT_DATE)
+          AND (ngayketthuc IS NULL OR ngayketthuc >= CURRENT_DATE)
         ORDER BY makhuyenmai DESC
       `
     );
@@ -2782,10 +3097,12 @@ export class BookingService {
   }
 
   private async getPromotionById(maKhuyenMai: number) {
+    await expireOutdatedPromotions();
     const result = await query<PromotionRow>(
       `
         SELECT
           makhuyenmai AS id,
+          magiamgia AS "maGiamGia",
           tenchuongtrinh AS "tenChuongTrinh",
           ngaybatdau AS "ngayBatDau",
           ngayketthuc AS "ngayKetThuc",
@@ -2801,6 +3118,25 @@ export class BookingService {
     );
 
     return result.rows[0] ?? null;
+  }
+
+  private assertPromotionCanBeApplied(maKhuyenMai: number | null | undefined, promotion: PromotionRow | null) {
+    if (!maKhuyenMai) return;
+    const today = dayjs().startOf("day");
+    const startsAt = promotion?.ngayBatDau ? dayjs(promotion.ngayBatDau).startOf("day") : null;
+    const endsAt = promotion?.ngayKetThuc ? dayjs(promotion.ngayKetThuc).startOf("day") : null;
+
+    if (!promotion || promotion.trangThai !== "DangApDung") {
+      throw new HttpError(422, "Khuyến mãi đã chọn không tồn tại hoặc không còn áp dụng.");
+    }
+
+    if (startsAt && today.isBefore(startsAt, "day")) {
+      throw new HttpError(422, "Khuyến mãi đã chọn chưa tới ngày áp dụng.");
+    }
+
+    if (endsAt && today.isAfter(endsAt, "day")) {
+      throw new HttpError(422, "Khuyến mãi đã chọn đã hết hạn.");
+    }
   }
 
   private async loadEditableBookingRows(maGiaoDich: number, maKhachHang: number, client?: any, forUpdate = false) {

@@ -1,5 +1,5 @@
 {
-  "name": "Bento Resort",
+  "name": "Bento Booking",
   "short_name": "Bento",
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
@@ -8,7 +8,7 @@
   "orientation": "portrait-primary",
   "background_color": "#07111f",
   "theme_color": "#0ea5e9",
-  "description": "Bento Resort chạy nhất quán trên web và app: tìm phòng, đặt phòng, mobile hub và snapshot offline.",
+  "description": "Bento Booking chạy nhất quán trên web và app: tìm phòng trên toàn quốc, đặt phòng, mobile hub và snapshot offline.",
   "categories": ["travel", "business", "productivity"],
   "icons": [
     {

@@ -1,0 +1,375 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const formatDate = (value) => {
+    try {
+      return new Date(value).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    } catch (_error) {
+      return value;
+    }
+  };
+%>
+
+<style>
+  .news-detail {
+    min-height: calc(100vh - 76px);
+    padding: 24px 0 58px;
+    background: linear-gradient(180deg, #eaf4ff 0%, #f8fbff 280px, #ffffff 100%);
+    color: #102033;
+  }
+
+  .news-detail-shell {
+    width: min(1180px, calc(100vw - 32px));
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .news-article,
+  .news-forum,
+  .news-related {
+    border: 1px solid #cfe5ff;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 14px 34px rgba(0, 59, 149, .08);
+  }
+
+  .news-article {
+    overflow: hidden;
+  }
+
+  .news-article__hero {
+    position: relative;
+    min-height: 420px;
+  }
+
+  .news-article__hero img {
+    width: 100%;
+    height: 420px;
+    object-fit: cover;
+    display: block;
+    background: #dbeafe;
+  }
+
+  .news-article__overlay {
+    position: absolute;
+    inset: auto 18px 18px;
+    padding: 18px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: 0 18px 42px rgba(15, 36, 66, .14);
+  }
+
+  .news-article h1 {
+    margin: 9px 0;
+    color: #102033 !important;
+    font-size: 40px;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+  }
+
+  .news-article__overlay p,
+  .news-body p,
+  .news-comment p,
+  .news-related p {
+    color: #64748b !important;
+  }
+
+  .news-meta,
+  .news-tags,
+  .news-reactions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .news-meta {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .news-pill {
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    padding: 5px 9px;
+    color: #075eb8;
+    background: #eff6ff;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .news-pill--green {
+    color: #047857;
+    background: #f0fdf4;
+    border-color: #a7f3d0;
+  }
+
+  .news-body {
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .news-body p {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.8;
+  }
+
+  .news-source {
+    border-top: 1px solid #e0efff;
+    padding-top: 16px;
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  .news-source a {
+    color: #003b95;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  .news-forum {
+    margin-top: 16px;
+    padding: 18px;
+  }
+
+  .news-forum h2,
+  .news-related h2 {
+    margin: 0 0 12px;
+    color: #003b95 !important;
+    font-size: 22px;
+  }
+
+  .news-reaction-form {
+    display: contents;
+  }
+
+  .news-reaction-button,
+  .news-submit,
+  .news-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #003b95;
+    background: #eff6ff;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .news-reaction-button:hover,
+  .news-link:hover {
+    border-color: #006ce4;
+    box-shadow: 0 8px 18px rgba(0, 108, 228, .12);
+  }
+
+  .news-submit {
+    border-color: transparent;
+    color: #ffffff;
+    background: #006ce4;
+  }
+
+  .news-comment-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .news-comment-form input,
+  .news-comment-form textarea {
+    width: 100%;
+    border: 1px solid #d8e1ec;
+    border-radius: 8px;
+    padding: 11px 12px;
+    color: #102033;
+    background: #ffffff;
+    font: inherit;
+  }
+
+  .news-comment-form textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+
+  .news-comment-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .news-comment {
+    border: 1px solid #e0efff;
+    border-radius: 8px;
+    padding: 12px;
+    background: #f8fbff;
+  }
+
+  .news-comment strong {
+    display: block;
+    color: #102033;
+  }
+
+  .news-comment span {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .news-comment p {
+    margin: 8px 0 0;
+    line-height: 1.55;
+  }
+
+  .news-related {
+    position: sticky;
+    top: 88px;
+    padding: 14px;
+  }
+
+  .news-related-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .news-related-item {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .news-related-item img {
+    width: 88px;
+    height: 68px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+
+  .news-related-item strong {
+    display: block;
+    color: #102033;
+    line-height: 1.2;
+  }
+
+  .news-related-item span {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  @media (max-width: 980px) {
+    .news-detail-shell {
+      grid-template-columns: 1fr;
+    }
+    .news-related {
+      position: static;
+    }
+    .news-article h1 {
+      font-size: 30px;
+    }
+    .news-article__hero,
+    .news-article__hero img {
+      min-height: 360px;
+      height: 360px;
+    }
+  }
+</style>
+
+<main class="news-detail">
+  <div class="news-detail-shell">
+    <div>
+      <article class="news-article">
+        <div class="news-article__hero">
+          <img src="<%= article.imageUrl %>" alt="<%= article.imageAlt %>" loading="eager" onerror="this.onerror=null;this.src='/uploads/phong/22.png';" />
+          <div class="news-article__overlay">
+            <div class="news-meta">
+              <span class="news-pill news-pill--green"><%= article.category %></span>
+              <span><%= article.location %></span>
+              <span>Cập nhật <%= formatDate(article.updatedAt) %></span>
+              <span><%= article.readingMinutes %> phút đọc</span>
+            </div>
+            <h1><%= article.title %></h1>
+            <p><%= article.summary %></p>
+          </div>
+        </div>
+
+        <div class="news-body">
+          <% article.body.forEach((paragraph) => { %>
+            <p><%= paragraph %></p>
+          <% }) %>
+          <div class="news-tags">
+            <% article.tags.forEach((tag) => { %>
+              <span class="news-pill"><%= tag %></span>
+            <% }) %>
+          </div>
+          <div class="news-source">
+            Dữ liệu được tổng hợp và viết lại từ nguồn công khai:
+            <a href="<%= article.sourceUrl %>" target="_blank" rel="noreferrer"><%= article.sourceName %></a>.
+          </div>
+        </div>
+      </article>
+
+      <section class="news-forum" id="news-reactions">
+        <h2>Cảm xúc của cộng đồng</h2>
+        <div class="news-reactions">
+          <% Object.keys(reactionLabels).forEach((key) => { %>
+            <form class="news-reaction-form" action="/news/<%= article.slug %>/reactions" method="post">
+              <input type="hidden" name="reaction" value="<%= key %>" />
+              <button class="news-reaction-button" type="submit"><%= reactionLabels[key] %> · <%= article.reactions[key] %></button>
+            </form>
+          <% }) %>
+        </div>
+      </section>
+
+      <section class="news-forum" id="news-comments">
+        <h2>Bình luận bàn tán</h2>
+        <form class="news-comment-form" action="/news/<%= article.slug %>/comments" method="post">
+          <% if (!currentUser) { %>
+            <input type="text" name="author" maxlength="80" placeholder="Tên hiển thị" />
+          <% } %>
+          <textarea name="message" maxlength="500" required placeholder="Bạn thấy điểm đến này thế nào?"></textarea>
+          <button class="news-submit" type="submit">Gửi bình luận</button>
+        </form>
+
+        <div class="news-comment-list">
+          <% article.comments.forEach((comment) => { %>
+            <article class="news-comment">
+              <strong><%= comment.author %></strong>
+              <span><%= formatDate(comment.createdAt) %></span>
+              <p><%= comment.message %></p>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    </div>
+
+    <aside class="news-related">
+      <h2>Tin liên quan</h2>
+      <div class="news-related-list">
+        <% relatedArticles.forEach((item) => { %>
+          <a class="news-related-item" href="/news/<%= item.slug %>">
+            <img src="<%= item.imageUrl %>" alt="<%= item.imageAlt %>" loading="lazy" onerror="this.onerror=null;this.src='/uploads/phong/48.png';" />
+            <span>
+              <strong><%= item.title %></strong>
+              <span><%= item.location %> · <%= item.comments.length %> bình luận</span>
+            </span>
+          </a>
+        <% }) %>
+      </div>
+      <div style="margin-top:14px;">
+        <a class="news-link" href="/news">Tất cả tin tức</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

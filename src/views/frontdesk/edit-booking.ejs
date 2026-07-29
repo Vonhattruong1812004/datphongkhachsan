@@ -376,6 +376,416 @@
     border-color:rgba(225,29,72,.22);
     color:#9f1239;
   }
+
+  /* UC4 final UI/UX pass: clean OTA-style edit-booking workspace, UI only. */
+  body {
+    background: linear-gradient(180deg, #eaf4ff 0%, #f5f9fe 52%, #edf6ff 100%) !important;
+    color: #243044;
+  }
+
+  .edit-booking-shell {
+    --ux-border: #d6e4f2;
+    --ux-border-strong: #9cc7f2;
+    --ux-text: #243044;
+    --ux-heading: #0f172a;
+    --ux-muted: #64748b;
+    --ux-cyan: #006ce4;
+    --ux-green: #00a884;
+    --ux-red: #e11d48;
+    --ux-shadow: 0 10px 28px rgba(15, 36, 66, 0.08);
+    max-width: 1180px;
+    padding: 18px 18px 34px;
+    color: #243044;
+    background: transparent !important;
+  }
+
+  .edit-booking-title {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .edit-booking-title h1 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 30px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .edit-chip,
+  .edit-booking-title > div > .edit-muted,
+  #formSearch > .edit-muted {
+    display: none;
+  }
+
+  .edit-card,
+  #formSearch.edit-card,
+  #formEditBooking.edit-card,
+  .edit-booking-shell > section.edit-card,
+  #formEditBooking > section.edit-card--payment,
+  #formEditBooking > section.edit-card--payment:last-of-type {
+    margin-bottom: 16px;
+    padding: 18px;
+    color: #243044;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: 0 10px 28px rgba(15, 36, 66, 0.08) !important;
+  }
+
+  .edit-card h2,
+  #formSearch.edit-card h2,
+  #formEditBooking.edit-card > h2,
+  #formEditBooking > section.edit-card--payment h2,
+  .edit-booking-shell > section.edit-card h2,
+  #formEditBooking.edit-card > h2[style] {
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    color: #0f172a;
+    border-bottom: 1px solid #e5edf6;
+    font-size: 19px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .edit-card .tag {
+    margin-left: 6px;
+    padding: 4px 9px;
+    color: #004cb8;
+    border: 1px solid #cfe4ff;
+    border-radius: 999px;
+    background: #eef6ff;
+    font-size: 11px;
+    font-weight: 800;
+    text-shadow: none;
+  }
+
+  .edit-muted,
+  #formEditBooking.edit-card > .edit-row .edit-muted,
+  #formEditBooking > section.edit-card--payment > .edit-muted,
+  #formEditBooking > section.edit-card--payment .edit-actions .edit-muted,
+  .edit-booking-shell > section.edit-card > .edit-muted {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+    text-shadow: none;
+  }
+
+  .edit-muted strong,
+  #formEditBooking.edit-card > .edit-row .edit-muted strong,
+  #formEditBooking > section.edit-card--payment > .edit-muted strong,
+  .edit-booking-shell > section.edit-card > .edit-muted strong {
+    color: #0f172a;
+  }
+
+  .edit-search-grid {
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .edit-search-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding-bottom: 14px;
+    white-space: normal;
+  }
+
+  .edit-search-actions .button {
+    min-width: 0;
+  }
+
+  .edit-row,
+  .edit-row--4,
+  .payment-grid {
+    gap: 10px;
+  }
+
+  .edit-field {
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .edit-field label,
+  #formSearch.edit-card .edit-field label,
+  #formEditBooking.edit-card > .edit-row .edit-field label,
+  #formEditBooking > section.edit-card--payment .edit-field label {
+    color: #243044;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.3;
+    text-shadow: none;
+  }
+
+  .edit-field input,
+  .edit-field select,
+  .edit-table select,
+  .edit-table input {
+    min-height: 42px;
+    width: 100%;
+    padding: 10px 12px;
+    color: #0f172a;
+    border: 1px solid #c9d8e8;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: none;
+    font-size: 14px;
+  }
+
+  .edit-field input[readonly],
+  .edit-field input:disabled,
+  .edit-field select:disabled {
+    color: #475569;
+    border-color: #d6e4f2;
+    background: #f8fbff !important;
+  }
+
+  .edit-field input:hover,
+  .edit-field select:hover,
+  .edit-table select:hover,
+  .edit-table input:hover {
+    border-color: #9cc7f2;
+    box-shadow: none;
+  }
+
+  .edit-field input:focus,
+  .edit-field select:focus,
+  .edit-table select:focus,
+  .edit-table input:focus {
+    border-color: #006ce4;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, 0.13);
+  }
+
+  .edit-error-msg {
+    min-height: 14px;
+    color: #be123c;
+    font-size: 12px;
+  }
+
+  .edit-info-grid {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 10px;
+    margin: 12px 0 16px;
+  }
+
+  .edit-info-tile {
+    padding: 12px;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #f8fbff;
+    box-shadow: none;
+  }
+
+  .edit-info-tile small {
+    color: #64748b;
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .edit-info-tile strong {
+    color: #0f172a;
+    font-size: 15px;
+  }
+
+  .edit-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0 10px;
+    color: #0f172a !important;
+    font-size: 14px;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .edit-section-title::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #006ce4;
+  }
+
+  .edit-lock-note,
+  .capacity-hint {
+    border: 1px solid #b7ebd3;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #064e3b;
+    box-shadow: none;
+  }
+
+  .capacity-hint {
+    border-color: #fed7aa;
+    background: #fff7ed;
+    color: #9a3412;
+  }
+
+  .edit-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid #d6e4f2;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+  }
+
+  .edit-table {
+    min-width: 760px;
+    color: #243044;
+    background: #ffffff;
+    font-size: 13px;
+  }
+
+  .edit-table th {
+    padding: 10px 12px;
+    color: #334155;
+    border-bottom: 1px solid #dfeaf5;
+    background: #f1f6fb;
+    font-size: 12px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .edit-table td {
+    padding: 11px 12px;
+    color: #243044;
+    border-bottom: 1px solid #e5edf6;
+    background: #ffffff;
+  }
+
+  .edit-table tbody tr:hover td {
+    background: #f8fbff;
+  }
+
+  .edit-badge {
+    color: #004cb8;
+    border-color: #cfe4ff;
+    background: #eef6ff;
+  }
+
+  .edit-badge--green {
+    color: #047857;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+  }
+
+  .edit-badge--red {
+    color: #be123c;
+    border-color: #fecdd3;
+    background: #fff1f2;
+  }
+
+  .edit-actions {
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .edit-actions__right {
+    gap: 8px;
+  }
+
+  .edit-booking-shell .button,
+  .edit-search-actions .button:not(.button--primary),
+  #formEditBooking .button:not(.button--primary),
+  .edit-booking-shell > section.edit-card .button:not(.button--primary) {
+    min-height: 42px;
+    padding: 10px 14px;
+    color: #0f2442;
+    border: 1px solid #cbd8e6;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: none;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .edit-booking-shell .button:hover {
+    transform: none;
+    border-color: #9cc7f2;
+    box-shadow: none;
+  }
+
+  .edit-booking-shell .button--primary {
+    color: #ffffff;
+    border-color: #006ce4;
+    background: #006ce4;
+    box-shadow: none;
+  }
+
+  .edit-alert {
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .input-error {
+    border-color: #e11d48 !important;
+    background: #fff7f8 !important;
+  }
+
+  @media (max-width: 900px) {
+    .edit-booking-title {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .edit-search-grid,
+    .edit-row,
+    .edit-row--4,
+    .payment-grid,
+    .edit-info-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .edit-search-actions,
+    .edit-actions,
+    .edit-actions__right {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: stretch;
+      padding-bottom: 0;
+    }
+
+    .edit-booking-shell .button {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .edit-booking-shell {
+      padding: 12px 10px 28px;
+    }
+
+    .edit-booking-title h1 {
+      font-size: 25px;
+    }
+
+    .edit-card,
+    #formSearch.edit-card,
+    #formEditBooking.edit-card,
+    .edit-booking-shell > section.edit-card,
+    #formEditBooking > section.edit-card--payment {
+      padding: 14px;
+    }
+
+    .edit-card h2,
+    #formSearch.edit-card h2,
+    #formEditBooking.edit-card > h2,
+    #formEditBooking > section.edit-card--payment h2,
+    .edit-booking-shell > section.edit-card h2 {
+      font-size: 18px;
+    }
+  }
   @keyframes edit-float{from{transform:translate3d(0,0,0) rotate(0)}to{transform:translate3d(24px,20px,0) rotate(14deg)}}
   @media (max-width:800px){.edit-search-grid{grid-template-columns:1fr}.edit-search-actions{justify-content:flex-start;padding-bottom:0;white-space:normal}}
 </style>

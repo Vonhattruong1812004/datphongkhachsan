@@ -16,9 +16,11 @@ import { feedbackApiRouter, feedbackRouter } from "./modules/feedback/routes/fee
 import { frontdeskApiRouter, frontdeskRouter } from "./modules/frontdesk/routes/frontdesk.routes";
 import { homeRouter } from "./modules/home/routes/home.routes";
 import { managerApiRouter, managerRouter } from "./modules/manager/routes/manager.routes";
+import { newsRouter } from "./modules/news/routes/news.routes";
 import { realtimeRouter } from "./modules/realtime/routes/realtime.routes";
 import { serviceApiRouter, serviceRouter } from "./modules/service/routes/service.routes";
 import { systemApiRouter } from "./modules/system/routes/system.routes";
+import { tourRouter } from "./modules/tours/routes/tour.routes";
 import { webhookRouter } from "./modules/webhook/routes/webhook.routes";
 import { csrfProtection } from "./shared/http/csrf";
 import { errorHandler } from "./shared/http/error-handler";
@@ -36,7 +38,7 @@ export function createApp() {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
     next();
   });
   app.use(express.urlencoded({ extended: true }));
@@ -86,6 +88,7 @@ export function createApp() {
 
   app.use((req, res, next) => {
     res.locals.currentUser = req.session.user ?? null;
+    res.locals.currentPath = req.path;
     res.locals.query = req.query;
     next();
   });
@@ -101,6 +104,8 @@ export function createApp() {
   app.use("/feedback", feedbackRouter);
   app.use("/frontdesk", frontdeskRouter);
   app.use("/manager", managerRouter);
+  app.use("/news", newsRouter);
+  app.use("/tours", tourRouter);
   app.use("/service", serviceRouter);
   app.use("/booking", bookingRouter);
   app.use("/api/admin", adminApiRouter);

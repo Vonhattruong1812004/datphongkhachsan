@@ -40,6 +40,17 @@ export async function renderRooms(req: Request, res: Response) {
   return renderRoomsPage(req, res);
 }
 
+export async function renderRoomNew(req: Request, res: Response) {
+  return renderRoomsPage(req, res, { formMode: "create" });
+}
+
+export async function renderRoomEdit(req: Request, res: Response) {
+  return renderRoomsPage(req, res, {
+    formMode: "edit",
+    editRoomId: getPositiveNumber(req.params.id)
+  });
+}
+
 export async function renderPromotions(req: Request, res: Response) {
   return renderPromotionsPage(req, res);
 }
@@ -68,7 +79,6 @@ export async function exportCustomersCsv(req: Request, res: Response) {
     "Email",
     "SDT",
     "CCCD",
-    "LoaiKhach",
     "EKYC",
     "GiaoDich",
     "BookingMo",
@@ -84,7 +94,6 @@ export async function exportCustomersCsv(req: Request, res: Response) {
       row.email || "",
       row.sdt || "",
       row.cccd || "",
-      row.typeLabel,
       row.ekycMeta.label,
       row.transactionCount,
       row.activeBookingCount,
@@ -97,6 +106,135 @@ export async function exportCustomersCsv(req: Request, res: Response) {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="manager-customers-${new Date().toISOString().slice(0, 10)}.csv"`);
   return res.send(`\uFEFF${csv}`);
+}
+
+export async function exportCustomersExcel(req: Request, res: Response) {
+  const rows = await managerService.exportCustomers(req.query);
+  const headers = [
+    "MaKH",
+    "HoTen",
+    "Email",
+    "SDT",
+    "CCCD",
+    "EKYC",
+    "GiaoDich",
+    "BookingMo",
+    "ChiTieu",
+    "PhanHoi",
+    "RatingTB"
+  ];
+  const htmlRows = [
+    `<tr>${headers.map((header) => `<th>${escapeHtmlCell(header)}</th>`).join("")}</tr>`,
+    ...rows.map((row) => `<tr>${[
+      row.id,
+      row.tenKh,
+      row.email || "",
+      row.sdt || "",
+      row.cccd || "",
+      row.ekycMeta.label,
+      row.transactionCount,
+      row.activeBookingCount,
+      row.totalSpent,
+      row.feedbackCount,
+      row.avgRatingFormatted
+    ].map((value) => `<td>${escapeHtmlCell(value)}</td>`).join("")}</tr>`)
+  ].join("");
+  const workbook = `<!doctype html><html><head><meta charset="utf-8" /></head><body><table>${htmlRows}</table></body></html>`;
+
+  res.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="manager-customers-${new Date().toISOString().slice(0, 10)}.xls"`);
+  return res.send(`\uFEFF${workbook}`);
+}
+
+export async function exportRoomsCsv(_req: Request, res: Response) {
+  const rows = await managerService.listRooms();
+  const headers = [
+    "MaPhong",
+    "CoSo",
+    "SoPhong",
+    "LoaiPhong",
+    "DienTich",
+    "LoaiGiuong",
+    "View",
+    "Gia",
+    "SucChua",
+    "KhaiThac",
+    "Realtime",
+    "TinhTrang",
+    "GiaoDich",
+    "BookingMo",
+    "GhiChu"
+  ];
+  const csv = [
+    headers.join(","),
+    ...rows.map((row) => [
+      row.id,
+      row.hotelName,
+      row.soPhong,
+      row.loaiPhong,
+      row.dienTich,
+      row.loaiGiuong,
+      normalizeRoomView(row.viewPhong),
+      row.gia,
+      row.soKhachToiDa,
+      getRoomStatusLabel(row.trangThai),
+      getRoomRealtimeLabel(row.trangThaiRealtime),
+      getRoomConditionLabel(row.tinhTrangPhong),
+      row.transactionCount,
+      row.activeBookingCount,
+      row.ghiChu || ""
+    ].map(toCsvCell).join(","))
+  ].join("\n");
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="manager-rooms-${new Date().toISOString().slice(0, 10)}.csv"`);
+  return res.send(`\uFEFF${csv}`);
+}
+
+export async function exportRoomsExcel(_req: Request, res: Response) {
+  const rows = await managerService.listRooms();
+  const headers = [
+    "MaPhong",
+    "CoSo",
+    "SoPhong",
+    "LoaiPhong",
+    "DienTich",
+    "LoaiGiuong",
+    "View",
+    "Gia",
+    "SucChua",
+    "KhaiThac",
+    "Realtime",
+    "TinhTrang",
+    "GiaoDich",
+    "BookingMo",
+    "GhiChu"
+  ];
+  const htmlRows = [
+    `<tr>${headers.map((header) => `<th>${escapeHtmlCell(header)}</th>`).join("")}</tr>`,
+    ...rows.map((row) => `<tr>${[
+      row.id,
+      row.hotelName,
+      row.soPhong,
+      row.loaiPhong,
+      row.dienTich,
+      row.loaiGiuong,
+      normalizeRoomView(row.viewPhong),
+      row.gia,
+      row.soKhachToiDa,
+      getRoomStatusLabel(row.trangThai),
+      getRoomRealtimeLabel(row.trangThaiRealtime),
+      getRoomConditionLabel(row.tinhTrangPhong),
+      row.transactionCount,
+      row.activeBookingCount,
+      row.ghiChu || ""
+    ].map((value) => `<td>${escapeHtmlCell(value)}</td>`).join("")}</tr>`)
+  ].join("");
+  const workbook = `<!doctype html><html><head><meta charset="utf-8" /></head><body><table>${htmlRows}</table></body></html>`;
+
+  res.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="manager-rooms-${new Date().toISOString().slice(0, 10)}.xls"`);
+  return res.send(`\uFEFF${workbook}`);
 }
 
 export async function renderCustomerEdit(req: Request, res: Response) {
@@ -218,6 +356,8 @@ async function renderRoomsPage(req: Request, res: Response, options: {
   errorMessage?: string;
   successMessage?: string;
   roomDraft?: Record<string, unknown> | null;
+  formMode?: "list" | "create" | "edit";
+  editRoomId?: number;
 } = {}) {
   const [hotels, roomItems] = await Promise.all([
     managerService.listHotels(),
@@ -225,8 +365,9 @@ async function renderRoomsPage(req: Request, res: Response, options: {
   ]);
 
   const roomDraft = options.roomDraft || null;
-  const requestedEditId = getPositiveNumber(roomDraft?.room_id ?? req.query.edit_room);
+  const requestedEditId = getPositiveNumber(options.editRoomId ?? roomDraft?.room_id ?? req.query.edit_room);
   const focusedRoomId = getPositiveNumber(req.query.focus_room ?? req.query.edit_room);
+  const formMode = options.formMode || (requestedEditId ? "edit" : (roomDraft ? "create" : "list"));
   const normalizedRooms = roomItems.map((room) => ({
     ...room,
     imageUrl: resolveRoomImageUrl(room.hinhAnh),
@@ -274,7 +415,8 @@ async function renderRoomsPage(req: Request, res: Response, options: {
       roomConditionOptions,
       roomViewOptions,
       editRoomId: requestedEditId,
-      focusedRoomId
+      focusedRoomId,
+      formMode
     },
     query: req.query,
     roomDraft,
@@ -444,6 +586,14 @@ function toCsvCell(value: unknown) {
   return /[",\n\r]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
 }
 
+function escapeHtmlCell(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function normalizeRoomView(value: unknown) {
   const raw = String(value || "").trim();
   if (raw === "Bien") return "Biển";
@@ -461,6 +611,15 @@ function getRoomStatusTone(value: unknown) {
   return "slate";
 }
 
+function getRoomStatusLabel(value: unknown) {
+  const raw = String(value || "");
+  if (raw === "Trong") return "Trống";
+  if (raw === "Booked") return "Đã đặt";
+  if (raw === "Stayed") return "Đang ở";
+  if (raw === "BaoTri") return "Bảo trì";
+  return raw || "Không rõ";
+}
+
 function getRoomConditionTone(value: unknown) {
   const raw = String(value || "");
   if (raw === "Tot") return "green";
@@ -468,6 +627,16 @@ function getRoomConditionTone(value: unknown) {
   if (raw === "HuHaiNhe") return "cyan";
   if (raw === "HuHaiNang" || raw === "DangBaoTri") return "rose";
   return "slate";
+}
+
+function getRoomConditionLabel(value: unknown) {
+  const raw = String(value || "");
+  if (raw === "Tot") return "Tốt";
+  if (raw === "CanVeSinh") return "Cần vệ sinh";
+  if (raw === "HuHaiNhe") return "Hư hại nhẹ";
+  if (raw === "HuHaiNang") return "Hư hại nặng";
+  if (raw === "DangBaoTri") return "Đang bảo trì";
+  return raw || "Không rõ";
 }
 
 function getRoomRealtimeTone(value: unknown) {
@@ -478,6 +647,16 @@ function getRoomRealtimeTone(value: unknown) {
   if (raw === "Cleaning") return "amber";
   if (raw === "Maintenance") return "rose";
   return "slate";
+}
+
+function getRoomRealtimeLabel(value: unknown) {
+  const raw = String(value || "");
+  if (raw === "Available") return "Sẵn sàng";
+  if (raw === "Booked") return "Đã giữ chỗ";
+  if (raw === "Stayed") return "Đang lưu trú";
+  if (raw === "Cleaning") return "Chờ vệ sinh";
+  if (raw === "Maintenance") return "Bảo trì";
+  return raw || "Không rõ";
 }
 
 function formatRoomFormError(error: unknown) {
@@ -589,12 +768,13 @@ export async function saveRoomAction(req: Request, res: Response) {
   try {
     const savedRoom = await managerService.saveRoom(draft);
     const success = draft.room_id ? "Cập nhật phòng thành công." : "Thêm phòng thành công.";
-    return res.redirect(`/manager/rooms?edit_room=${encodeURIComponent(String(savedRoom.id))}&focus_room=${encodeURIComponent(String(savedRoom.id))}&success=${encodeURIComponent(success)}`);
+    return res.redirect(`/manager/rooms?focus_room=${encodeURIComponent(String(savedRoom.id))}&success=${encodeURIComponent(success)}`);
   } catch (error) {
     return renderRoomsPage(req, res, {
       status: error instanceof ZodError ? 422 : error instanceof HttpError ? error.statusCode : 400,
       errorMessage: formatRoomFormError(error),
-      roomDraft: draft
+      roomDraft: draft,
+      formMode: draft.room_id ? "edit" : "create"
     });
   }
 }

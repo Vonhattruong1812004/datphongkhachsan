@@ -47,7 +47,7 @@
     <section class="cust-edit-card">
       <span class="cust-edit-chip">Khách hàng · Quản lý đặt phòng</span>
       <h1>Cập nhật thông tin đặt phòng.</h1>
-      <p class="cust-edit-muted">Bạn có thể sửa thông tin liên hệ, số khách, ngày nhận/trả và khuyến mãi khi booking còn ở trạng thái giữ phòng. Nếu cần đổi phòng hoặc booking nhiều phòng, vui lòng liên hệ lễ tân.</p>
+      <p class="cust-edit-muted">Bạn có thể sửa thông tin liên hệ, số khách, ngày nhận/trả và khuyến mãi khi đặt phòng còn ở trạng thái giữ phòng. Nếu cần đổi phòng hoặc đặt nhiều phòng, vui lòng liên hệ lễ tân.</p>
       <% if (errorMessage) { %>
         <div class="cust-edit-alert"><%= errorMessage %></div>
       <% } %>
@@ -116,7 +116,7 @@
         <p class="cust-edit-muted"><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View nội khu" %> · tối đa <%= room.soKhachToiDa %> khách.</p>
         <strong class="cust-edit-price"><%= Number(room.gia).toLocaleString("vi-VN") %> đ / đêm</strong>
         <div class="cust-edit-note">
-          <div>Mã booking: <strong><%= booking.bookingCode || `GD-${booking.id}` %></strong></div>
+          <div>Mã đặt phòng: <strong><%= booking.bookingCode || `GD-${booking.id}` %></strong></div>
           <div>Tổng hiện tại: <strong><%= booking.totalFormatted %></strong></div>
           <div class="cust-edit-policy">Chính sách hủy hiện tại: <strong><%= booking.cancelPreview?.policy?.label || "Đang tính" %></strong> · dự kiến hoàn <strong><%= booking.cancelPreview?.refundAmountFormatted || "0 đ" %></strong>.</div>
           <div>Hệ thống kiểm tra trùng lịch trước khi lưu. Nếu đổi ngày, chính sách hủy sẽ không được dùng để né phí đã phát sinh theo mốc ngày nhận cũ.</div>
