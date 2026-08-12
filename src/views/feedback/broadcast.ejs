@@ -8,915 +8,332 @@
   const channels = payload.channels || [];
   const preview = payload.preview || { items: [], total: 0 };
   const recentCampaigns = payload.recentCampaigns || [];
-  const selectedCampaign = payload.selectedCampaign || null;
   const previewTotal = Number(preview.total || 0);
+  const previewChannelReady = Number(preview.channelReadyTotal || 0);
   const previewSendable = Number(preview.sendableTotal || 0);
   const previewBlocked = Number(preview.blockedByChannel || 0);
   const previewDeduped = Number(preview.dedupedCount || 0);
   const templatesJson = JSON.stringify(templates).replace(/</g, "\\u003c");
+
+  function numberText(value) {
+    return Number(value || 0).toLocaleString("vi-VN");
+  }
+
+  function selectedAttr(actual, expected) {
+    return String(actual || "") === String(expected) ? "selected" : "";
+  }
+
+  function templateActive(actual, expected) {
+    return String(actual || "") === String(expected) ? "is-active" : "";
+  }
+
+  function campaignTone(status) {
+    return ({
+      Queued: "pending",
+      Sending: "processing",
+      Sent: "done",
+      PartialFailed: "warning",
+      Failed: "danger"
+    }[status] || "neutral");
+  }
+
+  function channelTone(channel) {
+    return ({
+      Email: "blue",
+      SMS: "green",
+      Zalo: "processing",
+      Mixed: "neutral"
+    }[channel] || "neutral");
+  }
 %>
 
 <style>
-  .care-broadcast {
-    --care-ink: #132238;
-    --care-muted: #617086;
-    --care-line: rgba(19, 34, 56, .10);
-    --care-panel: rgba(255, 255, 255, .82);
-    --care-shadow: 0 28px 86px rgba(18, 38, 63, .16);
-    min-height: calc(100vh - 84px);
-    padding: 34px 18px 58px;
-    color: var(--care-ink);
-    background:
-      radial-gradient(circle at 10% 10%, rgba(24, 191, 242, .16), transparent 26%),
-      radial-gradient(circle at 92% 12%, rgba(255, 111, 163, .18), transparent 24%),
-      radial-gradient(circle at 50% 110%, rgba(255, 209, 102, .22), transparent 34%),
-      linear-gradient(135deg, #fffdfb 0%, #f7fbff 52%, #fff6f8 100%);
-  }
-
-  .care-broadcast__wrap {
-    max-width: 1240px;
-    margin: 0 auto;
-  }
-
-  .care-broadcast__hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.04fr) 340px;
-    gap: 18px;
-    margin-bottom: 18px;
-  }
-
-  .care-broadcast__card,
-  .care-broadcast__panel,
-  .care-broadcast__side,
-  .care-broadcast__stat,
-  .care-broadcast__list,
-  .care-broadcast__campaign {
-    border: 1px solid var(--care-line);
-    background: var(--care-panel);
-    box-shadow: var(--care-shadow);
-    backdrop-filter: blur(20px);
-  }
-
-  .care-broadcast__card {
-    border-radius: 32px;
-    padding: 30px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .care-broadcast__eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 999px;
-    padding: 8px 12px;
-    color: #be185d;
-    border: 1px solid rgba(236, 72, 153, .18);
-    background: rgba(236, 72, 153, .08);
-    font-size: 12px;
-    font-weight: 1000;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-  }
-
-  .care-broadcast__pulse {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: #ec4899;
-    box-shadow: 0 0 0 7px rgba(236, 72, 153, .14);
-  }
-
-  .care-broadcast__card h1 {
-    margin: 22px 0 12px;
-    font-size: clamp(38px, 5vw, 64px);
-    line-height: .94;
-    letter-spacing: 0;
-  }
-
-  .care-broadcast__card h1 span {
-    color: transparent;
-    background: linear-gradient(95deg, #ec4899 0%, #f59e0b 40%, #14b8a6 76%, #0ea5e9 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-  }
-
-  .care-broadcast__lead {
-    max-width: 760px;
-    margin: 0;
-    color: var(--care-muted);
-    font-size: 15px;
-    line-height: 1.72;
-  }
-
-  .care-broadcast__chips,
-  .care-broadcast__hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .care-broadcast__chips {
-    margin-top: 22px;
-  }
-
-  .care-broadcast__chip {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 8px 11px;
-    background: rgba(255, 255, 255, .86);
-    border: 1px solid rgba(19, 34, 56, .08);
-    font-size: 12px;
-    font-weight: 900;
-  }
-
-  .care-broadcast__hero-actions {
-    margin-top: 26px;
-  }
-
-  .care-broadcast__button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    text-decoration: none;
-    border: 1px solid rgba(19, 34, 56, .12);
-    color: var(--care-ink);
-    background: rgba(255, 255, 255, .86);
-    font-size: 14px;
-    font-weight: 900;
-    cursor: pointer;
-  }
-
-  .care-broadcast__button--primary {
-    color: #fff;
-    border-color: transparent;
-    background: linear-gradient(135deg, #ec4899, #f59e0b);
-    box-shadow: 0 18px 42px rgba(236, 72, 153, .22);
-  }
-
-  .care-broadcast__stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 30px;
-  }
-
-  .care-broadcast__stat {
-    border-radius: 24px;
-    padding: 16px;
-  }
-
-  .care-broadcast__stat strong {
-    display: block;
-    font-size: 28px;
-    letter-spacing: -.05em;
-  }
-
-  .care-broadcast__stat span {
-    display: block;
-    margin-top: 8px;
-    color: var(--care-muted);
-    font-size: 12px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-  }
-
-  .care-broadcast__side {
-    border-radius: 34px;
-    padding: 22px;
-    background:
-      linear-gradient(155deg, rgba(255,255,255,.88), rgba(255,244,248,.68)),
-      radial-gradient(circle at top right, rgba(236,72,153,.18), transparent 34%);
-  }
-
-  .care-broadcast__side h2,
-  .care-broadcast__panel h2,
-  .care-broadcast__section h2 {
-    margin: 0;
-    font-size: 20px;
-    letter-spacing: -.03em;
-  }
-
-  .care-broadcast__side p,
-  .care-broadcast__meta,
-  .care-broadcast__hint,
-  .care-broadcast__panel p {
-    color: var(--care-muted);
-    font-size: 13px;
-    line-height: 1.62;
-  }
-
-  .care-broadcast__stack {
-    display: grid;
-    gap: 12px;
-    margin-top: 16px;
-  }
-
-  .care-broadcast__mini {
-    border-radius: 22px;
-    padding: 14px;
-    border: 1px solid rgba(19, 34, 56, .08);
-    background: rgba(255, 255, 255, .84);
-  }
-
-  .care-broadcast__mini strong {
-    display: block;
-    font-size: 14px;
-  }
-
-  .care-broadcast__section {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
-    gap: 18px;
-    align-items: start;
-  }
-
-  .care-broadcast__panel {
-    border-radius: 30px;
-    padding: 24px;
-  }
-
-  .care-broadcast__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 18px;
-  }
-
-  .care-broadcast__field {
-    display: grid;
-    gap: 8px;
-  }
-
-  .care-broadcast__field--full {
-    grid-column: 1 / -1;
-  }
-
-  .care-broadcast__field label {
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--care-muted);
-  }
-
-  .care-broadcast__field input,
-  .care-broadcast__field select,
-  .care-broadcast__field textarea {
-    width: 100%;
-    border-radius: 16px;
-    border: 1px solid rgba(19, 34, 56, .12);
-    padding: 12px 14px;
-    background: rgba(255,255,255,.92);
-    color: var(--care-ink);
-    font: inherit;
-  }
-
-  .care-broadcast__field textarea {
-    min-height: 160px;
-    resize: vertical;
-  }
-
-  .care-broadcast__template-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 16px;
-  }
-
-  .care-broadcast__template {
-    border-radius: 22px;
-    padding: 14px;
-    border: 1px solid rgba(19, 34, 56, .10);
-    background: rgba(255,255,255,.82);
-    color: var(--care-ink);
-    text-align: left;
-    cursor: pointer;
-    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
-  }
-
-  .care-broadcast__template:hover,
-  .care-broadcast__template.is-active {
-    transform: translateY(-2px);
-    border-color: rgba(236, 72, 153, .28);
-    box-shadow: 0 18px 42px rgba(236, 72, 153, .13);
-  }
-
-  .care-broadcast__template strong {
-    display: block;
-    font-size: 15px;
-    margin-bottom: 6px;
-  }
-
-  .care-broadcast__template span {
-    display: block;
-    color: var(--care-muted);
-    font-size: 12px;
-    line-height: 1.55;
-  }
-
-  .care-broadcast__template small {
-    display: inline-flex;
-    margin-top: 10px;
-    border-radius: 999px;
-    padding: 5px 8px;
-    background: rgba(20, 184, 166, .12);
-    color: #0f766e;
-    font-size: 11px;
-    font-weight: 1000;
-  }
-
-  .care-broadcast__metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin: 14px 0;
-  }
-
-  .care-broadcast__metric {
-    border-radius: 18px;
-    padding: 12px;
-    border: 1px solid rgba(19, 34, 56, .08);
-    background: rgba(255, 255, 255, .74);
-  }
-
-  .care-broadcast__metric strong {
-    display: block;
-    font-size: 22px;
-    letter-spacing: 0;
-  }
-
-  .care-broadcast__metric span {
-    display: block;
-    margin-top: 5px;
-    color: var(--care-muted);
-    font-size: 11px;
-    font-weight: 900;
-    text-transform: uppercase;
-  }
-
-  .care-broadcast__tokens,
-  .care-broadcast__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .care-broadcast__tokens {
-    margin-top: 10px;
-  }
-
-  .care-broadcast__token {
-    border-radius: 999px;
-    padding: 6px 9px;
-    background: rgba(14, 165, 233, .10);
-    color: #0369a1;
-    font-size: 11px;
-    font-weight: 950;
-  }
-
-  .care-broadcast__actions {
-    justify-content: space-between;
-  }
-
-  .care-broadcast__count {
-    color: var(--care-muted);
-    font-size: 12px;
-    font-weight: 850;
-  }
-
-  .care-broadcast__preview-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .care-broadcast__list {
-    border-radius: 26px;
-    padding: 10px;
-  }
-
-  .care-broadcast__recipient,
-  .care-broadcast__campaign {
-    display: grid;
-    gap: 6px;
-    border-radius: 20px;
-    padding: 14px;
-    background: rgba(255,255,255,.78);
-    border: 1px solid rgba(19, 34, 56, .08);
-  }
-
-  .care-broadcast__recipient + .care-broadcast__recipient,
-  .care-broadcast__campaign + .care-broadcast__campaign {
-    margin-top: 10px;
-  }
-
-  .care-broadcast__row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px 12px;
-  }
-
-  .care-broadcast__badge {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 999px;
-    padding: 5px 9px;
-    background: rgba(236, 72, 153, .11);
-    color: #be185d;
-    font-size: 11px;
-    font-weight: 1000;
-    letter-spacing: .04em;
-  }
-
-  .care-broadcast__empty {
-    border: 1px dashed rgba(19, 34, 56, .16);
-    border-radius: 24px;
-    padding: 22px;
-    text-align: center;
-    color: var(--care-muted);
-    background: rgba(255,255,255,.64);
-  }
-
-  .care-broadcast__flash {
-    margin-bottom: 16px;
-    padding: 14px 16px;
-    border-radius: 18px;
-    font-weight: 700;
-  }
-
-  .care-broadcast__flash--success {
-    color: #0f766e;
-    background: rgba(16, 185, 129, .12);
-    border: 1px solid rgba(16, 185, 129, .20);
-  }
-
-  .care-broadcast__flash--error {
-    color: #b91c1c;
-    background: rgba(239, 68, 68, .10);
-    border: 1px solid rgba(239, 68, 68, .18);
-  }
-
-  @media (max-width: 1200px) {
-    .care-broadcast__hero,
-    .care-broadcast__section {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 860px) {
-    .care-broadcast__stats,
-    .care-broadcast__grid,
-    .care-broadcast__template-grid,
-    .care-broadcast__metrics {
-      grid-template-columns: 1fr;
-    }
-
-    .care-broadcast {
-      padding: 22px 12px 42px;
-    }
-
-    .care-broadcast__card,
-    .care-broadcast__side,
-    .care-broadcast__panel {
-      padding: 20px;
-      border-radius: 24px;
-    }
-  }
-
-  /* CSKH UC3 visual pass only: broadcast workspace color separation. */
-  body {
-    background:
-      radial-gradient(circle at 12% 14%, rgba(34, 211, 238, .18), transparent 28%),
-      radial-gradient(circle at 80% 8%, rgba(168, 85, 247, .22), transparent 32%),
-      linear-gradient(135deg, #04111f 0%, #11153c 48%, #210c35 100%);
-    color: #f8fafc;
-  }
-
-  .care-broadcast {
-    --care-ink: #f8fafc;
-    --care-muted: #dbeafe;
-    --care-line: rgba(125, 211, 252, .36);
-    --care-panel: rgba(8, 18, 36, .92);
-    --care-shadow: 0 28px 78px rgba(0, 0, 0, .36);
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 8% 22%, rgba(255, 255, 255, .70) 0 1px, transparent 2px),
-      radial-gradient(circle at 30% 64%, rgba(125, 211, 252, .72) 0 1px, transparent 2px),
-      radial-gradient(circle at 54% 18%, rgba(255, 255, 255, .64) 0 1px, transparent 2px),
-      radial-gradient(circle at 76% 36%, rgba(253, 230, 138, .72) 0 1px, transparent 2px),
-      radial-gradient(circle at 92% 76%, rgba(255, 255, 255, .66) 0 1px, transparent 2px),
-      radial-gradient(circle at 12% 12%, rgba(34, 211, 238, .18), transparent 30%),
-      radial-gradient(circle at 84% 10%, rgba(168, 85, 247, .20), transparent 34%),
-      radial-gradient(circle at 74% 92%, rgba(251, 113, 133, .14), transparent 34%),
-      linear-gradient(135deg, #04111f 0%, #101843 52%, #220d35 100%);
-  }
-
-  .care-broadcast::after {
-    content: "";
-    position: absolute;
-    right: -260px;
-    bottom: -380px;
-    z-index: -1;
-    width: 780px;
-    height: 780px;
-    border-radius: 999px;
-    background:
-      radial-gradient(circle at 42% 45%, rgba(103, 232, 249, .24), transparent 0 24%, rgba(167, 139, 250, .18) 25% 42%, transparent 43%),
-      conic-gradient(from 140deg, rgba(34, 211, 238, .24), rgba(251, 113, 133, .18), rgba(250, 204, 21, .14), rgba(34, 211, 238, .24));
-    opacity: .46;
-  }
-
-  .care-broadcast__wrap {
-    max-width: 1280px;
-  }
-
-  .care-broadcast__hero,
-  .care-broadcast__section {
-    gap: 22px;
-  }
-
-  .care-broadcast__card,
-  .care-broadcast__panel,
-  .care-broadcast__side {
-    border: 1px solid rgba(125, 211, 252, .36);
-    background:
-      radial-gradient(circle at 10% 15%, rgba(34, 211, 238, .17), transparent 28%),
-      radial-gradient(circle at 88% 10%, rgba(168, 85, 247, .18), transparent 32%),
-      linear-gradient(145deg, rgba(8, 18, 36, .96), rgba(18, 20, 54, .90));
-    box-shadow: 0 26px 72px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .08);
-    backdrop-filter: blur(22px);
-  }
-
-  .care-broadcast__card {
-    border-radius: 28px;
-    padding: 34px;
-  }
-
-  .care-broadcast__card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(120deg, rgba(255, 255, 255, .12), transparent 25%),
-      radial-gradient(circle at 86% 24%, rgba(253, 230, 138, .18), transparent 28%);
-  }
-
-  .care-broadcast__card > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .care-broadcast__eyebrow {
-    border: 1px solid rgba(253, 230, 138, .48);
-    background: rgba(15, 23, 42, .74);
-    color: #fde68a;
-    letter-spacing: 0;
-    box-shadow: 0 16px 34px rgba(250, 204, 21, .12);
-  }
-
-  .care-broadcast__pulse {
-    background: #facc15;
-    box-shadow: 0 0 0 7px rgba(250, 204, 21, .16);
-  }
-
-  .care-broadcast__card h1 {
-    max-width: 760px;
-    color: #ffffff;
-    text-shadow: 0 12px 34px rgba(0, 0, 0, .38);
-  }
-
-  .care-broadcast__card h1 span {
-    background: linear-gradient(96deg, #67e8f9 0%, #86efac 34%, #fde68a 66%, #f9a8d4 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-  }
-
-  .care-broadcast__lead,
-  .care-broadcast__side p,
-  .care-broadcast__meta,
-  .care-broadcast__hint,
-  .care-broadcast__panel p {
-    color: #dbeafe;
-    font-weight: 800;
-  }
-
-  .care-broadcast__button {
-    min-height: 48px;
-    border: 1px solid rgba(186, 230, 253, .44);
-    background: rgba(255, 255, 255, .94);
-    color: #071626;
-    font-weight: 1000;
-    box-shadow: 0 14px 36px rgba(0, 0, 0, .18);
-  }
-
-  .care-broadcast__button--primary {
-    color: #061826;
-    background: linear-gradient(135deg, #22d3ee 0%, #a78bfa 48%, #fb7185 100%);
-    box-shadow: 0 20px 54px rgba(103, 232, 249, .24);
-  }
-
-  .care-broadcast__chips,
-  .care-broadcast__stats {
-    gap: 14px;
-  }
-
-  .care-broadcast__chip,
-  .care-broadcast__mini {
-    border: 2px solid rgba(186, 230, 253, .70);
-    background: rgba(255, 255, 255, .94);
-    color: #0f2d42;
-    box-shadow: 0 14px 34px rgba(0, 0, 0, .14);
-  }
-
-  .care-broadcast__stat,
-  .care-broadcast__metric {
-    border: 2px solid rgba(255, 255, 255, .34);
-    color: #ffffff;
-    box-shadow: 0 18px 42px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .24);
-  }
-
-  .care-broadcast__stat:nth-child(1),
-  .care-broadcast__metric:nth-child(1) {
-    background: linear-gradient(135deg, #20dfc0 0%, #2da9ff 100%);
-  }
-
-  .care-broadcast__stat:nth-child(2),
-  .care-broadcast__metric:nth-child(2) {
-    background: linear-gradient(135deg, #84f68b 0%, #16c7d6 100%);
-  }
-
-  .care-broadcast__stat:nth-child(3),
-  .care-broadcast__metric:nth-child(3) {
-    background: linear-gradient(135deg, #fb7185 0%, #f97316 100%);
-  }
-
-  .care-broadcast__metric:nth-child(4) {
-    background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%);
-  }
-
-  .care-broadcast__stat span,
-  .care-broadcast__metric span,
-  .care-broadcast__stat strong,
-  .care-broadcast__metric strong {
-    color: #ffffff;
-    letter-spacing: 0;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, .30);
-  }
-
-  .care-broadcast__panel,
-  .care-broadcast__side {
-    border-radius: 26px;
-    padding: 24px;
-  }
-
-  .care-broadcast__side h2,
-  .care-broadcast__panel h2,
-  .care-broadcast__section h2 {
-    color: #ffffff;
-    letter-spacing: 0;
-    text-shadow: 0 10px 30px rgba(0, 0, 0, .28);
-  }
-
-  .care-broadcast__grid,
-  .care-broadcast__template-grid {
-    gap: 16px;
-  }
-
-  .care-broadcast__field,
-  .care-broadcast__grid > * {
-    min-width: 0;
-  }
-
-  .care-broadcast__field label {
-    color: #e0f2fe;
-    font-size: 13px;
-    letter-spacing: 0;
-  }
-
-  .care-broadcast__field input,
-  .care-broadcast__field select,
-  .care-broadcast__field textarea {
-    max-width: 100%;
-    min-height: 56px;
-    border: 2px solid rgba(153, 246, 228, .92);
-    border-radius: 18px;
-    background: #ffffff;
-    color: #0f2d42;
-    font-weight: 900;
-    box-shadow: 0 10px 0 rgba(13, 148, 136, .16), 0 16px 34px rgba(0, 0, 0, .13);
-    box-sizing: border-box;
-  }
-
-  .care-broadcast__field textarea {
-    min-height: 168px;
-    line-height: 1.65;
-  }
-
-  .care-broadcast__field input:focus,
-  .care-broadcast__field select:focus,
-  .care-broadcast__field textarea:focus {
-    border-color: #facc15;
-    outline: none;
-    box-shadow: 0 0 0 5px rgba(250, 204, 21, .20), 0 12px 0 rgba(8, 47, 73, .16), 0 18px 38px rgba(0, 0, 0, .16);
-  }
-
-  .care-broadcast__template {
-    min-height: 150px;
-    border: 2px solid rgba(255, 255, 255, .34);
-    color: #ffffff;
-    box-shadow: 0 18px 44px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .22);
-  }
-
-  .care-broadcast__template:nth-child(1) { background: linear-gradient(135deg, #20dfc0 0%, #2da9ff 100%); }
-  .care-broadcast__template:nth-child(2) { background: linear-gradient(135deg, #facc15 0%, #fb7185 100%); }
-  .care-broadcast__template:nth-child(3) { background: linear-gradient(135deg, #84f68b 0%, #16c7d6 100%); }
-  .care-broadcast__template:nth-child(4) { background: linear-gradient(135deg, #a78bfa 0%, #f472b6 100%); }
-  .care-broadcast__template:nth-child(5) { background: linear-gradient(135deg, #fdba74 0%, #fb7185 54%, #8b5cf6 100%); }
-
-  .care-broadcast__template:hover,
-  .care-broadcast__template.is-active {
-    border-color: #fef08a;
-    box-shadow: 0 24px 58px rgba(250, 204, 21, .20), inset 0 1px 0 rgba(255, 255, 255, .26);
-  }
-
-  .care-broadcast__template strong,
-  .care-broadcast__template span,
-  .care-broadcast__template small {
-    color: #ffffff;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, .30);
-  }
-
-  .care-broadcast__template small {
-    background: rgba(15, 23, 42, .24);
-    border: 1px solid rgba(255, 255, 255, .28);
-  }
-
-  .care-broadcast__list {
-    border: 2px solid rgba(186, 230, 253, .50);
-    background: rgba(8, 18, 36, .56);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
-  }
-
-  .care-broadcast__recipient,
-  .care-broadcast__campaign,
-  .care-broadcast__empty {
-    border: 2px solid rgba(186, 230, 253, .72);
-    background: rgba(255, 255, 255, .95);
-    color: #0f2d42;
-    box-shadow: 0 14px 36px rgba(0, 0, 0, .13);
-  }
-
-  .care-broadcast__recipient .care-broadcast__meta,
-  .care-broadcast__campaign .care-broadcast__meta,
-  .care-broadcast__empty {
-    color: #5b7184;
-    font-weight: 800;
-  }
-
-  .care-broadcast__recipient strong,
-  .care-broadcast__campaign strong {
-    color: #0f2d42;
-  }
-
-  .care-broadcast__badge {
-    background: rgba(14, 165, 233, .15);
-    color: #075985;
-    border: 1px solid rgba(14, 165, 233, .24);
-    letter-spacing: 0;
-  }
-
-  .care-broadcast__token {
-    border: 1px solid rgba(34, 211, 238, .28);
-    background: rgba(34, 211, 238, .16);
-    color: #cffafe;
-  }
-
-  .care-broadcast__count {
-    color: #dbeafe;
-  }
-
-  .care-broadcast__flash {
-    margin: 0 0 16px;
-    border: 2px solid rgba(186, 230, 253, .70);
-    background: rgba(255, 255, 255, .95);
-    color: #0f2d42;
-  }
-
-  @media (max-width: 860px) {
-    .care-broadcast {
-      padding: 20px 12px 46px;
-    }
-
-    .care-broadcast__hero,
-    .care-broadcast__section {
-      gap: 18px;
-    }
-
-    .care-broadcast__card,
-    .care-broadcast__side,
-    .care-broadcast__panel {
-      border-radius: 22px;
-      padding: 18px;
-    }
-
-    .care-broadcast__card h1 {
-      font-size: 42px;
-    }
-
-    .care-broadcast__button {
-      width: 100%;
-    }
+  body{background:#eef6ff;color:#102033}
+  .broadcast-page{
+    --blue:#0575e6;
+    --blue-dark:#034ea2;
+    --ink:#102033;
+    --muted:#65758b;
+    --line:#cfe2f7;
+    --soft:#f4f9ff;
+    --green:#07875f;
+    --red:#c0263d;
+    --amber:#b45309;
+    width:min(1380px,calc(100vw - 40px));
+    margin:0 auto;
+    padding:28px 0 56px;
+  }
+  .bc-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    border-radius:12px;
+    padding:20px 24px;
+    background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+    color:#fff;
+    box-shadow:0 18px 42px rgba(0,90,190,.18);
+  }
+  .bc-title h1{margin:0;font-size:34px;line-height:1.08;color:#fff}
+  .bc-title h1::before{content:"";display:inline-block;width:6px;height:38px;border-radius:999px;background:#fff;margin-right:12px;vertical-align:-7px}
+  .bc-title p{margin:5px 0 0;color:rgba(255,255,255,.86);font-weight:750}
+  .bc-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .bc-btn{
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:0 14px;
+    background:#fff;
+    color:#06479d;
+    text-decoration:none;
+    font:inherit;
+    font-weight:850;
+    cursor:pointer;
+  }
+  .bc-btn:hover{background:#f0f7ff;border-color:#9ecbff}
+  .bc-btn.is-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .bc-btn.is-danger{background:#fff;border-color:#ffc4c4;color:#b91c1c}
+  .bc-alert{margin-top:14px;border-radius:10px;padding:12px 14px;border:1px solid var(--line);background:#fff;font-weight:800}
+  .bc-alert.is-success{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+  .bc-alert.is-error{border-color:#fecaca;background:#fff1f2;color:#be123c}
+  .bc-stats{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin:14px 0;
+  }
+  .bc-stat,.bc-panel,.bc-template,.bc-recipient,.bc-campaign,.bc-empty{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.96);
+    box-shadow:0 18px 45px rgba(15,23,42,.08);
+  }
+  .bc-stat{
+    border-radius:12px;
+    padding:14px;
+  }
+  .bc-stat strong{display:block;font-size:26px;color:var(--ink);letter-spacing:0}
+  .bc-stat span{display:block;margin-top:5px;color:var(--muted);font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:.02em}
+  .bc-layout{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 410px;
+    gap:14px;
+    align-items:start;
+  }
+  .bc-panel{
+    border-radius:12px;
+    padding:18px;
+  }
+  .bc-panel + .bc-panel{margin-top:14px}
+  .bc-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .bc-head h2,.bc-panel h3{margin:0;color:var(--ink)}
+  .bc-head h2{font-size:24px}
+  .bc-panel h3{font-size:19px}
+  .bc-muted,.bc-note,.bc-meta{color:var(--muted);font-weight:750;line-height:1.5}
+  .bc-note{font-size:13px}
+  .bc-meta{font-size:13px}
+  .bc-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:28px;
+    border-radius:999px;
+    padding:0 9px;
+    border:1px solid var(--line);
+    background:#f8fbff;
+    color:#475569;
+    font-size:12px;
+    font-weight:850;
+    white-space:nowrap;
+  }
+  .bc-badge.is-done,.bc-badge.is-green{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+  .bc-badge.is-processing,.bc-badge.is-blue{border-color:#bae6fd;background:#ecfeff;color:#0369a1}
+  .bc-badge.is-pending,.bc-badge.is-warning{border-color:#fde68a;background:#fffbeb;color:#92400e}
+  .bc-badge.is-danger{border-color:#fecaca;background:#fff1f2;color:#be123c}
+  .bc-badge.is-neutral{border-color:#dbe4ef;background:#f8fafc;color:#475569}
+  .bc-template-grid{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .bc-template{
+    min-height:116px;
+    border-radius:10px;
+    padding:12px;
+    text-align:left;
+    color:var(--ink);
+    cursor:pointer;
+    transition:border-color .16s ease, background .16s ease, transform .16s ease;
+  }
+  .bc-template:hover,.bc-template.is-active{
+    border-color:#83bfff;
+    background:#f4fbff;
+    transform:translateY(-1px);
+  }
+  .bc-template strong{display:block;font-size:14px;color:#06479d}
+  .bc-template span{display:block;margin-top:6px;color:var(--ink);font-size:13px;font-weight:800;line-height:1.35}
+  .bc-template small{display:inline-flex;margin-top:8px;color:var(--muted);font-size:12px;font-weight:850}
+  .bc-form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px;
+  }
+  .bc-field{display:grid;gap:6px;min-width:0}
+  .bc-field.is-full{grid-column:1 / -1}
+  .bc-field label{font-size:13px;font-weight:850;color:var(--ink)}
+  .bc-field input,.bc-field select,.bc-field textarea{
+    width:100%;
+    min-height:42px;
+    border:1px solid var(--line);
+    border-radius:9px;
+    background:#fff;
+    padding:0 12px;
+    font:inherit;
+    font-weight:700;
+    color:var(--ink);
+    box-sizing:border-box;
+    outline:none;
+  }
+  .bc-field textarea{min-height:132px;padding:12px;line-height:1.5;resize:vertical}
+  .bc-field input:focus,.bc-field select:focus,.bc-field textarea:focus{border-color:#83bfff;box-shadow:0 0 0 4px rgba(5,117,230,.12)}
+  .bc-readonly{
+    min-height:42px;
+    display:flex;
+    align-items:center;
+    border:1px solid #e3edf8;
+    border-radius:9px;
+    background:#f8fbff;
+    padding:0 12px;
+    color:#334155;
+    font-weight:850;
+  }
+  .bc-token-row,.bc-form-actions,.bc-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+  }
+  .bc-token-row{margin-top:8px}
+  .bc-token{
+    display:inline-flex;
+    align-items:center;
+    min-height:26px;
+    border:1px solid #bae6fd;
+    border-radius:999px;
+    padding:0 8px;
+    background:#ecfeff;
+    color:#0369a1;
+    font-size:12px;
+    font-weight:850;
+  }
+  .bc-count{margin-left:auto;color:var(--muted);font-size:12px;font-weight:850}
+  .bc-form-actions{justify-content:space-between;margin-top:2px}
+  .bc-preview-metrics{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .bc-metric{
+    border:1px solid #e3edf8;
+    border-radius:10px;
+    background:#f8fbff;
+    padding:10px;
+  }
+  .bc-metric strong{display:block;color:var(--ink);font-size:22px}
+  .bc-metric span{display:block;margin-top:3px;color:var(--muted);font-size:12px;font-weight:850;text-transform:uppercase}
+  .bc-list{display:grid;gap:8px}
+  .bc-recipient,.bc-campaign,.bc-empty{
+    border-radius:10px;
+    padding:12px;
+    box-shadow:none;
+  }
+  .bc-row{justify-content:space-between}
+  .bc-recipient strong,.bc-campaign strong{color:var(--ink)}
+  .bc-empty{
+    border-style:dashed;
+    text-align:center;
+    color:var(--muted);
+    font-weight:800;
+    background:#f8fbff;
+  }
+  .bc-campaign-message{
+    margin-top:7px;
+    padding:9px 10px;
+    border-radius:8px;
+    background:#f8fbff;
+    color:#334155;
+    font-size:13px;
+    font-weight:700;
+    line-height:1.45;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  @media(max-width:1180px){
+    .bc-layout{grid-template-columns:1fr}
+    .bc-template-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+  @media(max-width:760px){
+    .broadcast-page{width:min(100% - 24px,900px)}
+    .bc-title{display:block;padding:18px}
+    .bc-title h1{font-size:28px}
+    .bc-actions{justify-content:flex-start;margin-top:12px}
+    .bc-stats,.bc-form-grid,.bc-template-grid,.bc-preview-metrics{grid-template-columns:1fr}
+    .bc-form-actions{display:grid}
+    .bc-btn{width:100%}
+    .bc-count{margin-left:0}
   }
 </style>
 
-<main class="care-broadcast">
-  <div class="care-broadcast__wrap">
-    <% if (successMessage) { %>
-      <div class="care-broadcast__flash care-broadcast__flash--success"><%= successMessage %></div>
-    <% } %>
-    <% if (errorMessage) { %>
-      <div class="care-broadcast__flash care-broadcast__flash--error"><%= errorMessage %></div>
-    <% } %>
+<main class="broadcast-page">
+  <section class="bc-title">
+    <div>
+      <h1>Gửi tin nhắn hàng loạt</h1>
+      <p>Chọn tệp khách, kiểm tra kênh liên hệ, chống gửi trùng và gửi chiến dịch CSKH tự động.</p>
+    </div>
+    <div class="bc-actions">
+      <a class="bc-btn" href="/dashboard/cskh">Dashboard CSKH</a>
+      <a class="bc-btn" href="/feedback/manage">Quản lý phản hồi</a>
+      <a class="bc-btn" href="/feedback/advisory/manage">Trả lời tư vấn</a>
+    </div>
+  </section>
 
-    <section class="care-broadcast__hero">
-      <div class="care-broadcast__card">
-        <div class="care-broadcast__eyebrow"><span class="care-broadcast__pulse"></span> Broadcast CSKH</div>
-        <h1>Gửi <span>tin nhắn hàng loạt</span> để giữ chân khách</h1>
-        <p class="care-broadcast__lead">
-          Chọn đúng tệp khách, đúng kênh liên hệ và gửi tự động cho các tình huống trước lưu trú,
-          sau lưu trú, xác nhận booking hoặc chăm sóc lại khách cũ.
-        </p>
+  <% if (successMessage) { %><div class="bc-alert is-success"><%= successMessage %></div><% } %>
+  <% if (errorMessage) { %><div class="bc-alert is-error"><%= errorMessage %></div><% } %>
 
-        <div class="care-broadcast__chips">
-          <span class="care-broadcast__chip"><%= Number(stats.contactableCustomers || 0).toLocaleString("vi-VN") %> khách có thể liên hệ</span>
-          <span class="care-broadcast__chip"><%= Number(stats.upcomingCheckinCount || 0).toLocaleString("vi-VN") %> khách sắp check-in</span>
-          <span class="care-broadcast__chip"><%= Number(stats.todayCheckoutCount || 0).toLocaleString("vi-VN") %> khách check-out hôm nay</span>
-        </div>
+  <section class="bc-stats" aria-label="Tổng quan tệp khách CSKH">
+    <article class="bc-stat"><strong><%= numberText(stats.contactableCustomers) %></strong><span>Khách có liên hệ</span></article>
+    <article class="bc-stat"><strong><%= numberText(stats.upcomingCheckinCount) %></strong><span>Sắp check-in</span></article>
+    <article class="bc-stat"><strong><%= numberText(stats.todayCheckoutCount) %></strong><span>Check-out hôm nay</span></article>
+    <article class="bc-stat"><strong><%= numberText(stats.winbackCount) %></strong><span>Cần chăm sóc lại</span></article>
+  </section>
 
-        <div class="care-broadcast__hero-actions">
-          <a class="care-broadcast__button care-broadcast__button--primary" href="#broadcast-form">Soạn chiến dịch</a>
-          <a class="care-broadcast__button" href="/dashboard/cskh">Về dashboard CSKH</a>
-          <a class="care-broadcast__button" href="/feedback/advisory/manage">Qua inbox tư vấn</a>
-        </div>
-
-        <div class="care-broadcast__stats">
-          <div class="care-broadcast__stat"><strong><%= Number(stats.totalCustomers || 0).toLocaleString("vi-VN") %></strong><span>Tổng khách</span></div>
-          <div class="care-broadcast__stat"><strong><%= Number(stats.withEmail || 0).toLocaleString("vi-VN") %></strong><span>Có email</span></div>
-          <div class="care-broadcast__stat"><strong><%= Number(stats.withPhone || 0).toLocaleString("vi-VN") %></strong><span>Có số điện thoại</span></div>
-        </div>
-      </div>
-
-      <aside class="care-broadcast__side">
-        <h2>Tín hiệu outbound</h2>
-        <p class="care-broadcast__meta">Các tệp có thể gửi ngay theo dữ liệu booking hiện tại.</p>
-        <div class="care-broadcast__stack">
-          <div class="care-broadcast__mini">
-            <strong><%= Number(stats.winbackCount || 0).toLocaleString("vi-VN") %> khách cần chăm sóc lại</strong>
-          </div>
-          <div class="care-broadcast__mini">
-            <strong><%= Number(stats.upcomingCheckinCount || 0).toLocaleString("vi-VN") %> khách sắp check-in</strong>
-          </div>
-          <div class="care-broadcast__mini">
-            <strong><%= Number(stats.todayCheckoutCount || 0).toLocaleString("vi-VN") %> khách check-out hôm nay</strong>
-          </div>
-        </div>
-      </aside>
-    </section>
-
-    <section class="care-broadcast__section">
-      <div class="care-broadcast__panel" id="broadcast-form">
-        <div class="care-broadcast__preview-head">
+  <section class="bc-layout">
+    <div>
+      <article class="bc-panel" id="broadcast-form">
+        <div class="bc-head">
           <div>
-            <h2>Soạn chiến dịch gửi hàng loạt</h2>
-            <p class="care-broadcast__meta">Mẫu, tệp khách và kênh gửi quyết định số khách được hệ thống gửi tự động.</p>
+            <h2>Soạn chiến dịch</h2>
+            <p class="bc-muted" style="margin:6px 0 0">Quy trình đúng: chọn mẫu, xác định tệp khách, chọn kênh, xem preview rồi gửi.</p>
           </div>
+          <span class="bc-badge is-blue">CSKH outbound</span>
         </div>
 
-        <div class="care-broadcast__template-grid">
+        <div class="bc-template-grid" aria-label="Mẫu chiến dịch">
           <% templates.forEach((item) => { %>
-            <button
-              class="care-broadcast__template <%= form.template_key === item.key ? "is-active" : "" %>"
-              type="button"
-              data-template-key="<%= item.key %>"
-              data-audience-key="<%= item.key %>"
-              data-channel="<%= item.channel %>"
-              data-title="<%= item.title %>"
-              data-message="<%= item.message %>"
-            >
+            <button class="bc-template <%= templateActive(form.template_key, item.key) %>" type="button" data-template-key="<%= item.key %>">
               <strong><%= item.label %></strong>
               <span><%= item.title %></span>
               <small><%= item.channel %></small>
@@ -924,43 +341,37 @@
           <% }) %>
         </div>
 
-        <form id="broadcast-compose" method="post" action="/feedback/broadcast/send" class="care-broadcast__grid">
-          <div class="care-broadcast__field">
+        <form id="broadcast-compose" method="post" action="/feedback/broadcast/send" class="bc-form-grid">
+          <input type="hidden" name="send_timing" value="now" />
+
+          <div class="bc-field">
             <label for="template_key">Mẫu chiến dịch</label>
             <select id="template_key" name="template_key">
               <% templates.forEach((item) => { %>
-                <option value="<%= item.key %>" <%= form.template_key === item.key ? "selected" : "" %>><%= item.label %></option>
+                <option value="<%= item.key %>" <%= selectedAttr(form.template_key, item.key) %>><%= item.label %></option>
               <% }) %>
             </select>
           </div>
 
-          <div class="care-broadcast__field">
+          <div class="bc-field">
             <label for="audience_key">Tệp khách nhận tin</label>
             <select id="audience_key" name="audience_key">
               <% audiences.forEach((item) => { %>
-                <option value="<%= item.value %>" <%= form.audience_key === item.value ? "selected" : "" %>><%= item.label %></option>
+                <option value="<%= item.value %>" <%= selectedAttr(form.audience_key, item.value) %>><%= item.label %></option>
               <% }) %>
             </select>
           </div>
 
-          <div class="care-broadcast__field">
+          <div class="bc-field">
             <label for="channel">Kênh gửi</label>
             <select id="channel" name="channel">
               <% channels.forEach((item) => { %>
-                <option value="<%= item.value %>" <%= form.channel === item.value ? "selected" : "" %>><%= item.label %></option>
+                <option value="<%= item.value %>" <%= selectedAttr(form.channel, item.value) %>><%= item.label %></option>
               <% }) %>
             </select>
           </div>
 
-          <div class="care-broadcast__field">
-            <label for="send_timing">Nhịp gửi</label>
-            <select id="send_timing" name="send_timing">
-              <option value="now" <%= form.send_timing === "now" ? "selected" : "" %>>Gửi tự động ngay</option>
-              <option value="shift" <%= form.send_timing === "shift" ? "selected" : "" %>>Gửi tự động theo ca</option>
-            </select>
-          </div>
-
-          <div class="care-broadcast__field">
+          <div class="bc-field">
             <label for="dedupe_days">Chống gửi trùng</label>
             <select id="dedupe_days" name="dedupe_days">
               <% [0, 1, 3, 7, 14, 30].forEach((days) => { %>
@@ -969,111 +380,135 @@
             </select>
           </div>
 
-          <div class="care-broadcast__field care-broadcast__field--full">
+          <div class="bc-field">
+            <label>Nhịp gửi thực tế</label>
+            <div class="bc-readonly">Gửi tự động ngay sau khi bấm gửi</div>
+          </div>
+
+          <div class="bc-field">
+            <label>Điều kiện gửi hiện tại</label>
+            <div class="bc-readonly"><%= preview.channelRequirement || "Thông tin liên hệ hợp lệ" %></div>
+          </div>
+
+          <div class="bc-field is-full">
             <label for="title">Tiêu đề chiến dịch</label>
             <input id="title" name="title" maxlength="140" value="<%= form.title || "" %>" />
           </div>
 
-          <div class="care-broadcast__field care-broadcast__field--full">
+          <div class="bc-field is-full">
             <label for="campaign_goal">Mục tiêu gửi</label>
-            <input id="campaign_goal" name="campaign_goal" maxlength="180" value="<%= form.campaign_goal || "" %>" placeholder="Ví dụ: giảm no-show, nhắc hoàn tất eKYC, kéo khách cũ quay lại..." />
+            <input id="campaign_goal" name="campaign_goal" maxlength="180" value="<%= form.campaign_goal || "" %>" placeholder="Ví dụ: nhắc hoàn tất eKYC, giảm no-show, kéo khách cũ quay lại..." />
           </div>
 
-          <div class="care-broadcast__field care-broadcast__field--full">
+          <div class="bc-field is-full">
             <label for="message">Nội dung tin nhắn</label>
             <textarea id="message" name="message" maxlength="1200"><%= form.message || "" %></textarea>
-            <div class="care-broadcast__tokens" aria-label="Biến cá nhân hóa">
-              <span class="care-broadcast__token">{{ten_kh}}</span>
-              <span class="care-broadcast__token">{{ma_giao_dich}}</span>
-              <span class="care-broadcast__token">{{khach_san}}</span>
-              <span class="care-broadcast__count" id="message-count">0/1200 ký tự</span>
+            <div class="bc-token-row" aria-label="Biến cá nhân hóa">
+              <span class="bc-token">{{ten_kh}}</span>
+              <span class="bc-token">{{ma_giao_dich}}</span>
+              <span class="bc-token">{{khach_san}}</span>
+              <span class="bc-token">{{ngay_nhan}}</span>
+              <span class="bc-token">{{ngay_tra}}</span>
+              <span class="bc-count" id="message-count">0/1200 ký tự</span>
             </div>
-            <div class="care-broadcast__hint">Viết ngắn, rõ hành động cần khách thực hiện và cá nhân hóa vừa đủ.</div>
+            <div class="bc-note">Nội dung nên nêu rõ lý do liên hệ, hành động khách cần làm và kênh CSKH sẽ tiếp tục theo dõi.</div>
           </div>
 
-          <div class="care-broadcast__field care-broadcast__field--full">
+          <div class="bc-field is-full">
             <label for="internal_note">Ghi chú nội bộ</label>
             <textarea id="internal_note" name="internal_note" maxlength="500" style="min-height:92px"><%= form.internal_note || "" %></textarea>
-            <div class="care-broadcast__hint">Dùng cho ca CSKH sau khi cần follow-up.</div>
+            <div class="bc-note">Ghi chú chỉ dùng cho CSKH/ca sau, không gửi cho khách.</div>
           </div>
 
-          <div class="care-broadcast__field care-broadcast__field--full">
-            <div class="care-broadcast__actions">
-              <button class="care-broadcast__button" type="submit" formmethod="get" formaction="/feedback/broadcast/manage">Cập nhật preview</button>
-              <button class="care-broadcast__button care-broadcast__button--primary" type="submit">Gửi tự động</button>
+          <div class="bc-field is-full">
+            <div class="bc-form-actions">
+              <span class="bc-meta"><%= previewSendable > 0 ? `${numberText(previewSendable)} khách sẽ được đưa vào hàng gửi.` : "Chưa có người nhận phù hợp để gửi." %></span>
+              <div class="bc-row">
+                <button class="bc-btn" type="submit" formmethod="get" formaction="/feedback/broadcast/manage">Cập nhật preview</button>
+                <button class="bc-btn is-primary" type="submit" <%= previewSendable <= 0 ? "disabled" : "" %>>Gửi chiến dịch</button>
+              </div>
             </div>
           </div>
         </form>
-      </div>
+      </article>
+    </div>
 
-      <aside class="care-broadcast__panel">
-        <div class="care-broadcast__preview-head">
+    <aside>
+      <article class="bc-panel">
+        <div class="bc-head">
           <div>
             <h2>Preview tệp khách</h2>
-            <p class="care-broadcast__meta"><%= preview.audienceLabel %> · <%= preview.channelLabel %> · <%= preview.channelRequirement %>.</p>
+            <p class="bc-muted" style="margin:6px 0 0"><%= preview.audienceLabel || "Tệp khách" %> · <%= preview.channelLabel || "Kênh gửi" %></p>
           </div>
+          <span class="bc-badge is-<%= channelTone(preview.channel) %>"><%= preview.channelLabel || "Kênh" %></span>
         </div>
 
-        <div class="care-broadcast__metrics">
-          <div class="care-broadcast__metric"><strong><%= previewTotal.toLocaleString("vi-VN") %></strong><span>Trong tệp</span></div>
-          <div class="care-broadcast__metric"><strong><%= previewSendable.toLocaleString("vi-VN") %></strong><span>Gửi được</span></div>
-          <div class="care-broadcast__metric"><strong><%= previewBlocked.toLocaleString("vi-VN") %></strong><span>Lệch kênh</span></div>
-          <div class="care-broadcast__metric"><strong><%= previewDeduped.toLocaleString("vi-VN") %></strong><span>Chống trùng</span></div>
+        <div class="bc-preview-metrics">
+          <div class="bc-metric"><strong><%= numberText(previewTotal) %></strong><span>Trong tệp</span></div>
+          <div class="bc-metric"><strong><%= numberText(previewChannelReady) %></strong><span>Đúng kênh</span></div>
+          <div class="bc-metric"><strong><%= numberText(previewSendable) %></strong><span>Gửi được</span></div>
+          <div class="bc-metric"><strong><%= numberText(previewBlocked + previewDeduped) %></strong><span>Bị loại</span></div>
         </div>
 
-        <div class="care-broadcast__list">
+        <div class="bc-list">
           <% if (preview.items && preview.items.length) { %>
             <% preview.items.forEach((item) => { %>
-              <article class="care-broadcast__recipient">
-                <div class="care-broadcast__row">
+              <article class="bc-recipient">
+                <div class="bc-row">
                   <strong><%= item.customerName %></strong>
-                  <span class="care-broadcast__badge"><%= item.bookingLabel %></span>
+                  <span class="bc-badge is-blue"><%= item.bookingLabel %></span>
                 </div>
-                <div class="care-broadcast__meta"><%= item.target %></div>
-                <div class="care-broadcast__meta"><%= item.reason || "Tệp outbound phù hợp" %></div>
-                <div class="care-broadcast__row care-broadcast__meta">
+                <div class="bc-meta"><%= item.target %></div>
+                <div class="bc-meta"><%= item.reason || "Phù hợp với tệp outbound" %></div>
+                <div class="bc-row bc-meta">
                   <span><%= item.hotelLabel %></span>
                   <span><%= item.checkinLabel || "-" %> -> <%= item.checkoutLabel || "-" %></span>
                 </div>
               </article>
             <% }) %>
           <% } else { %>
-            <div class="care-broadcast__empty">Chưa có khách gửi được theo tệp, kênh và khoảng chống trùng hiện tại.</div>
+            <div class="bc-empty">Chưa có khách gửi được theo tệp, kênh và khoảng chống trùng hiện tại.</div>
           <% } %>
         </div>
 
-        <div style="margin-top:16px">
-          <h2>Lịch sử chiến dịch gần đây</h2>
-          <p class="care-broadcast__meta">Không hiển thị dữ liệu smoke test; chiến dịch lưu trạng thái gửi tự động để CSKH đối soát.</p>
+        <% if (previewBlocked || previewDeduped) { %>
+          <p class="bc-note" style="margin:12px 0 0"><%= numberText(previewBlocked) %> khách thiếu thông tin đúng kênh · <%= numberText(previewDeduped) %> khách bị chặn do chống gửi trùng.</p>
+        <% } %>
+      </article>
+
+      <article class="bc-panel">
+        <div class="bc-head">
+          <div>
+            <h2>Lịch sử chiến dịch</h2>
+            <p class="bc-muted" style="margin:6px 0 0">Đối soát chiến dịch đã gửi và số khách đã xử lý.</p>
+          </div>
         </div>
 
-        <div class="care-broadcast__list" style="margin-top:12px">
+        <div class="bc-list">
           <% if (recentCampaigns.length) { %>
             <% recentCampaigns.forEach((item) => { %>
-              <article class="care-broadcast__campaign">
-                <div class="care-broadcast__row">
+              <article class="bc-campaign">
+                <div class="bc-row">
                   <strong><%= item.title %></strong>
-                  <span class="care-broadcast__badge"><%= item.statusLabel %></span>
+                  <span class="bc-badge is-<%= campaignTone(item.status) %>"><%= item.statusLabel %></span>
                 </div>
-                <div class="care-broadcast__meta"><%= item.audienceLabel %> · <%= item.channelLabel %> · <%= item.recipientSummary %></div>
-                <div class="care-broadcast__meta"><%= item.goalLabel %> · <%= item.sendTimingLabel %></div>
-                <% if (item.skippedSummary) { %>
-                  <div class="care-broadcast__meta"><%= item.skippedSummary %></div>
-                <% } %>
-                <div class="care-broadcast__row care-broadcast__meta">
+                <div class="bc-meta"><%= item.audienceLabel %> · <%= item.channelLabel %> · <%= item.recipientSummary %></div>
+                <div class="bc-meta"><%= item.goalLabel %></div>
+                <% if (item.skippedSummary) { %><div class="bc-meta"><%= item.skippedSummary %></div><% } %>
+                <div class="bc-row bc-meta">
                   <span><%= item.createdByName || "Hệ thống / CSKH" %></span>
                   <span><%= item.createdAtLabel %></span>
                 </div>
+                <% if (item.message) { %><div class="bc-campaign-message"><%= item.message %></div><% } %>
               </article>
             <% }) %>
           <% } else { %>
-            <div class="care-broadcast__empty">Chưa có chiến dịch outbound nào được tạo.</div>
+            <div class="bc-empty">Chưa có chiến dịch outbound nào được tạo.</div>
           <% } %>
         </div>
-
-      </aside>
-    </section>
-  </div>
+      </article>
+    </aside>
+  </section>
 </main>
 
 <script>
@@ -1085,7 +520,7 @@
     const titleInput = document.getElementById("title");
     const messageInput = document.getElementById("message");
     const count = document.getElementById("message-count");
-    const cards = Array.from(document.querySelectorAll(".care-broadcast__template"));
+    const cards = Array.from(document.querySelectorAll(".bc-template"));
 
     function updateCount() {
       if (!messageInput || !count) return;
