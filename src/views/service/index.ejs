@@ -5,8 +5,9 @@
   const transaction = fd?.transaction || null;
   const rooms = fd?.rooms || [];
   const catalog = fd?.catalog || payload.catalog || [];
-  const recentOrders = isFrontdesk ? (fd?.recentOrders || []) : (fd?.recentOrders || payload.recentOrders || []);
-  const aiAddon = fd?.aiAddon || { available: false, count: 0, headline: "AI service preselect", summary: "Booking này chưa có AI add-on nào để gợi ý cho lễ tân.", items: [] };
+  const canUseServiceOrder = Boolean(canOrderService);
+  const recentOrders = canUseServiceOrder ? (fd?.recentOrders || []) : (fd?.recentOrders || payload.recentOrders || []);
+  const aiAddon = fd?.aiAddon || { available: false, count: 0, headline: "AI gợi ý", summary: "Booking này chưa có gợi ý dịch vụ đi kèm.", items: [] };
   const drafts = serviceDrafts || {};
 %>
 
@@ -850,36 +851,32 @@
 
     <section class="svc-hero">
       <div class="svc-hero-main">
-        <div class="svc-eyebrow"><span class="svc-dot"></span> <%= isFrontdesk ? "Đặt dịch vụ · Lễ tân" : "Dịch vụ ops" %></div>
-        <h1><%= isFrontdesk ? "Đăng ký dịch vụ" : "Room operations" %> <span><%= isFrontdesk ? "cho khách đang ở" : "live board." %></span></h1>
+        <div class="svc-eyebrow"><span class="svc-dot"></span> Đặt dịch vụ</div>
+        <h1>Đăng ký dịch vụ <span>cho khách đang ở</span></h1>
         <p class="svc-lead">
-          <% if (isFrontdesk) { %>
+          <% if (canUseServiceOrder) { %>
             Tìm giao dịch đã check-in, chọn phòng đang ở và thêm nhiều dịch vụ trong một lần.
           <% } else { %>
-            Chọn nhanh màn cần xử lý: dịch vụ, kiểm tra phòng hoặc room board live.
+            Màn này dùng để lễ tân thêm dịch vụ vào giao dịch đang lưu trú.
           <% } %>
         </p>
-        <% if (!isFrontdesk) { %>
+        <% if (!canUseServiceOrder) { %>
         <div class="svc-actions">
           <a class="svc-button svc-button--primary" href="/dashboard/dichvu">Quay lại dashboard</a>
-          <% if (!isFrontdesk) { %><a class="svc-button" href="/service/catalog/manage">Quản lý dịch vụ</a><% } %>
-          <% if (!isFrontdesk) { %><a class="svc-button" href="/service/room-inspection">Kiểm tra phòng</a><% } %>
-          <% if (!isFrontdesk) { %><a class="svc-button" href="/service/room-board-live">Theo dõi Room board live</a><% } %>
-          <a class="svc-button" href="/api/service/room-feed">Room board API</a>
         </div>
         <% } %>
       </div>
       <aside class="svc-orbit" aria-label="Minh họa đặt dịch vụ">
         <div class="svc-orbit-stage">
-          <span class="svc-orbit-word">Stayed</span>
-          <span class="svc-orbit-word">CheckedIn</span>
-          <span class="svc-orbit-word">Service</span>
-          <span class="svc-orbit-word">Invoice</span>
+          <span class="svc-orbit-word">Tìm giao dịch</span>
+          <span class="svc-orbit-word">Chọn phòng</span>
+          <span class="svc-orbit-word">Thêm dịch vụ</span>
+          <span class="svc-orbit-word">Cộng hóa đơn</span>
         </div>
       </aside>
     </section>
 
-    <% if (isFrontdesk) { %>
+    <% if (canUseServiceOrder) { %>
       <form method="post" action="/service/orders" id="formSearch" class="svc-card">
         <h2>Tìm kiếm giao dịch</h2>
         <p class="svc-muted">Nhập mã giao dịch, mã đặt chỗ, CMND/CCCD hoặc số điện thoại của trưởng đoàn/khách trong phòng. Chỉ giao dịch trạng thái <strong>Stayed</strong> mới được đặt dịch vụ.</p>
@@ -924,7 +921,7 @@
             <p class="svc-muted">Phòng hợp lệ: <%= rooms.map((room) => `P${room.soPhong} (${room.trangThai})`).join(", ") %></p>
             <div class="svc-card" style="box-shadow:none;margin:14px 0 0;background:rgba(255,255,255,.48)">
               <span class="svc-badge svc-badge--blue"><%= aiAddon.headline || "AI service preselect" %></span>
-              <p class="svc-muted" style="margin:10px 0 0"><%= aiAddon.summary || "Booking này chưa có AI add-on nào để gợi ý cho lễ tân." %></p>
+              <p class="svc-muted" style="margin:10px 0 0"><%= aiAddon.summary || "Booking này chưa có gợi ý dịch vụ đi kèm." %></p>
             </div>
           <% } else { %>
             <div class="svc-empty">Chưa có giao dịch nào được chọn. Vui lòng tìm kiếm ở bước trên.</div>
@@ -1047,25 +1044,8 @@
       <% } %>
     <% } else { %>
       <section class="svc-card">
-        <h2>Chọn việc cần xử lý</h2>
-        <p class="svc-muted">Mở nhanh màn quản lý dịch vụ, kiểm tra phòng hoặc room board live.</p>
-        <div class="svc-grid">
-          <a class="svc-action" href="/service/catalog/manage" style="--card-accent:#14b8a6;--card-glow:rgba(20,184,166,.22)">
-            <span class="svc-badge">01</span>
-            <h3>Quản lý dịch vụ</h3>
-            <p>Thêm, sửa, ngưng bán/xóa dịch vụ, quản lý giá, mô tả, hình ảnh và trạng thái.</p>
-          </a>
-          <a class="svc-action" href="/service/room-inspection" style="--card-accent:#0ea5e9;--card-glow:rgba(14,165,233,.20)">
-            <span class="svc-badge svc-badge--blue">02</span>
-            <h3>Kiểm tra tình trạng phòng</h3>
-            <p>Chọn phòng, cập nhật tình trạng thực tế, ghi log và phát realtime cho các bộ phận.</p>
-          </a>
-          <a class="svc-action" href="/service/room-board-live" style="--card-accent:#a3e635;--card-glow:rgba(163,230,53,.20)">
-            <span class="svc-badge">03</span>
-            <h3>Theo dõi Room board live</h3>
-            <p>Theo dõi snapshot phòng realtime: Stayed, Booked, Cleaning, Maintenance và phòng cần ưu tiên.</p>
-          </a>
-        </div>
+        <h2>Không có quyền đặt dịch vụ</h2>
+        <div class="svc-empty">Tài khoản hiện tại chỉ có thể xem màn này. Vui lòng đăng nhập bằng tài khoản lễ tân để thêm dịch vụ cho khách.</div>
       </section>
     <% } %>
   </div>

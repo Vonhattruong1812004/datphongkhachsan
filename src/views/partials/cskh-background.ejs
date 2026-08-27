@@ -1,0 +1,85 @@
+<style id="cskh-background-override">
+  html,
+  body {
+    background: #dceeff url("/images/dulich-1757292000061879518539.webp?v=4") center / cover fixed no-repeat !important;
+  }
+
+  body::before,
+  body::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  main.care-page,
+  main.feedback-page,
+  main.fb-detail-page,
+  main.broadcast-page,
+  main.promo-home {
+    position: relative !important;
+    isolation: isolate !important;
+    background: transparent !important;
+  }
+
+  main.care-page::before,
+  main.feedback-page::before,
+  main.fb-detail-page::before,
+  main.broadcast-page::before,
+  main.promo-home::before {
+    content: "" !important;
+    display: block !important;
+    position: fixed !important;
+    inset: -10px !important;
+    z-index: -2 !important;
+    background: url("/images/dulich-1757292000061879518539.webp?v=4") center / cover fixed no-repeat !important;
+    filter: saturate(1.22) contrast(1.14) brightness(.96) !important;
+    transform: scale(1.01) !important;
+    pointer-events: none !important;
+  }
+
+  main.care-page::after,
+  main.feedback-page::after,
+  main.fb-detail-page::after,
+  main.broadcast-page::after,
+  main.promo-home::after {
+    content: "" !important;
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    background: rgba(238, 246, 255, .04) !important;
+    pointer-events: none !important;
+  }
+
+  main.care-page [class*="-sidebar"],
+  main.care-page [class*="-panel"],
+  main.care-page [class*="-card"],
+  main.care-page [class*="-event"],
+  main.care-page [class*="-today"],
+  main.care-page [class*="-link"],
+  main.feedback-page [class*="-panel"],
+  main.feedback-page [class*="-card"],
+  main.feedback-page [class*="-table"],
+  main.feedback-page [class*="-row"],
+  main.feedback-page [class*="-empty"],
+  main.fb-detail-page [class*="-panel"],
+  main.fb-detail-page [class*="-card"],
+  main.fb-detail-page [class*="-box"],
+  main.fb-detail-page [class*="-thread"],
+  main.broadcast-page [class*="-panel"],
+  main.broadcast-page [class*="-stat"],
+  main.broadcast-page [class*="-template"],
+  main.broadcast-page [class*="-recipient"],
+  main.broadcast-page [class*="-campaign"],
+  main.broadcast-page [class*="-metric"],
+  main.broadcast-page [class*="-empty"],
+  main.promo-home [class*="-panel"],
+  main.promo-home [class*="-stat"],
+  main.promo-home [class*="-table"],
+  main.promo-home [class*="-preview"],
+  main.promo-home [class*="-insight"],
+  main.promo-home [class*="-empty"] {
+    background: rgba(255, 255, 255, .72) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+</style>

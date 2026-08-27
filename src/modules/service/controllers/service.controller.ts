@@ -81,12 +81,14 @@ async function renderServiceState(
 ) {
   const keyword = readText(options.keyword ?? req.query.keyword);
   const activeHotelId = Number(req.query.hotel_id || req.body?.hotel_id || 0);
-  const isFrontdesk = req.session.user?.maVaiTro === ROLE.LE_TAN;
+  const roleId = req.session.user?.maVaiTro;
+  const isFrontdesk = roleId === ROLE.LE_TAN;
+  const canOrderService = roleId === ROLE.LE_TAN;
   const payload = await serviceModuleService.buildPagePayload({ hotelId: activeHotelId });
   let frontdeskPayload = options.frontdeskPayload ?? null;
   let error = readText(options.error ?? req.query.error);
 
-  if (isFrontdesk && keyword && !frontdeskPayload) {
+  if (canOrderService && keyword && !frontdeskPayload) {
     try {
       frontdeskPayload = await serviceModuleService.getFrontdeskServicePayload(keyword);
     } catch (err: any) {
@@ -95,9 +97,10 @@ async function renderServiceState(
   }
 
   return res.render("service/index", {
-    title: isFrontdesk ? "Đặt dịch vụ - Lễ tân" : "Dịch vụ và kiểm tra phòng",
+    title: isFrontdesk ? "Đặt dịch vụ - Lễ tân" : "Đặt dịch vụ",
     payload,
     isFrontdesk,
+    canOrderService,
     keyword,
     frontdeskPayload,
     serviceDrafts: options.serviceDrafts || {},
@@ -134,6 +137,65 @@ async function renderCatalogState(
     notice: {
       success: readText(options.success ?? req.query.success),
       error: readText(options.error ?? req.query.error)
+    }
+  });
+}
+
+async function renderCatalogFormState(
+  req: Request,
+  res: Response,
+  options: {
+    success?: string;
+    error?: string;
+    catalogDraft?: Record<string, unknown>;
+  } = {}
+) {
+  const serviceId = Number(options.catalogDraft?.service_id || req.params.id || req.body?.service_id || 0);
+  const activeHotelId = Number(req.query.hotel_id || req.body?.hotel_id || 0);
+  const [payload, editingPayload] = await Promise.all([
+    serviceModuleService.buildPagePayload({ hotelId: activeHotelId }),
+    serviceId ? serviceModuleService.getCatalogItemById(serviceId) : Promise.resolve(null)
+  ]);
+  const editingService = editingPayload?.item || null;
+  const draft = options.catalogDraft || {};
+  const catalogForm = {
+    service_id: draft.service_id || editingService?.id || "",
+    hotel_id: Number(draft.hotel_id || editingService?.hotelId || activeHotelId || 0),
+    ten_dich_vu: draft.ten_dich_vu || editingService?.tenDichVu || "",
+    gia_dich_vu: draft.gia_dich_vu || editingService?.giaDichVu || "",
+    trang_thai: draft.trang_thai || editingService?.trangThai || "HoatDong",
+    mo_ta: draft.mo_ta || editingService?.moTa || "",
+    hinh_anh: draft.hinh_anh || editingService?.hinhAnh || ""
+  };
+
+  return res.render("service/catalog-form", {
+    title: serviceId ? "Chỉnh sửa dịch vụ" : "Thêm dịch vụ",
+    payload,
+    editingService,
+    catalogForm,
+    notice: {
+      success: readText(options.success ?? req.query.success),
+      error: readText(options.error ?? req.query.error)
+    }
+  });
+}
+
+async function renderCatalogDetailState(req: Request, res: Response) {
+  const serviceId = Number(req.params.id || 0);
+  const activeHotelId = Number(req.query.hotel_id || 0);
+  const [{ item }, payload] = await Promise.all([
+    serviceModuleService.getCatalogItemById(serviceId),
+    serviceModuleService.buildPagePayload({ hotelId: activeHotelId })
+  ]);
+
+  return res.render("service/catalog-detail", {
+    title: "Chi tiết dịch vụ",
+    payload,
+    service: item,
+    listUrl: activeHotelId ? `/service/manage?hotel_id=${activeHotelId}` : "/service/manage",
+    notice: {
+      success: readText(req.query.success),
+      error: readText(req.query.error)
     }
   });
 }
@@ -187,6 +249,18 @@ export async function renderServicePage(req: Request, res: Response) {
 
 export async function renderCatalogManagePage(req: Request, res: Response) {
   return renderCatalogState(req, res);
+}
+
+export async function renderCatalogCreatePage(req: Request, res: Response) {
+  return renderCatalogFormState(req, res);
+}
+
+export async function renderCatalogEditPage(req: Request, res: Response) {
+  return renderCatalogFormState(req, res);
+}
+
+export async function renderCatalogDetailPage(req: Request, res: Response) {
+  return renderCatalogDetailState(req, res);
 }
 
 export async function renderRoomInspectionPage(req: Request, res: Response) {
@@ -299,12 +373,42 @@ export async function saveCatalogItemAction(req: Request, res: Response) {
 
     const message = req.body.service_id ? "Cập nhật dịch vụ thành công." : "Thêm dịch vụ thành công.";
     const hotelQuery = req.body.hotel_id ? `&hotel_id=${encodeURIComponent(String(req.body.hotel_id))}` : "";
-    return res.redirect(`/service/catalog/manage?success=${encodeURIComponent(message)}${hotelQuery}`);
+    const redirectTo = readText(req.body.redirect_to);
+    if (redirectTo.startsWith("/service/manage/")) {
+      const separator = redirectTo.includes("?") ? "&" : "?";
+      return res.redirect(`${redirectTo}${separator}success=${encodeURIComponent(message)}`);
+    }
+    return res.redirect(`/service/manage?success=${encodeURIComponent(message)}${hotelQuery}`);
   } catch (error: any) {
     await cleanupUploadedFile(file);
-    return renderCatalogState(req, res, {
+    return renderCatalogFormState(req, res, {
       error: String(error?.message || "Không thể lưu dịch vụ."),
       catalogDraft: req.body
+    });
+  }
+}
+
+export async function importCatalogItemsAction(req: Request, res: Response) {
+  const file = (req as Request & { file?: Express.Multer.File }).file;
+  try {
+    const result = await serviceModuleService.importCatalogItems({
+      originalname: file?.originalname || "",
+      mimetype: file?.mimetype,
+      buffer: file?.buffer || Buffer.alloc(0)
+    }, {
+      hotelId: Number(req.body.hotel_id || req.query.hotel_id || 0)
+    });
+
+    const messageParts = [`Import thành công ${result.created} dịch vụ`];
+    if (result.skipped) {
+      messageParts.push(`bỏ qua ${result.skipped} dòng`);
+    }
+    const hotelId = req.body.hotel_id || req.query.hotel_id;
+    const hotelQuery = hotelId ? `&hotel_id=${encodeURIComponent(String(hotelId))}` : "";
+    return res.redirect(`/service/manage?success=${encodeURIComponent(`${messageParts.join(", ")}.`)}${hotelQuery}`);
+  } catch (error: any) {
+    return renderCatalogState(req, res, {
+      error: String(error?.message || "Không thể import dịch vụ.")
     });
   }
 }
@@ -313,7 +417,7 @@ export async function deleteCatalogItemAction(req: Request, res: Response) {
   try {
     await serviceModuleService.deleteCatalogItem(Number(req.params.id || req.body.service_id || 0));
     const hotelQuery = req.body.hotel_id ? `&hotel_id=${encodeURIComponent(String(req.body.hotel_id))}` : "";
-    return res.redirect(`/service/catalog/manage?success=${encodeURIComponent("Xóa dịch vụ thành công.")}${hotelQuery}`);
+    return res.redirect(`/service/manage?success=${encodeURIComponent("Xóa dịch vụ thành công.")}${hotelQuery}`);
   } catch (error: any) {
     return renderCatalogState(req, res, {
       error: String(error?.message || "Không thể xóa dịch vụ.")
@@ -322,16 +426,13 @@ export async function deleteCatalogItemAction(req: Request, res: Response) {
 }
 
 export async function createServiceOrderAction(req: Request, res: Response) {
-  if (req.session.user?.maVaiTro !== ROLE.LE_TAN) {
-    await serviceModuleService.createServiceOrder(req.body);
-    return res.redirect("/service");
-  }
-
   const action = readText(req.body.btn_action || "save");
   const keyword = readText(req.body.search_keyword || req.body.keyword || req.query.keyword);
+  const isFrontdesk = req.session.user?.maVaiTro === ROLE.LE_TAN;
+  const cancelTarget = isFrontdesk ? "/frontdesk" : "/dashboard/dichvu";
 
   if (action === "cancel") {
-    return res.redirect("/frontdesk");
+    return res.redirect(cancelTarget);
   }
 
   if (action === "search") {

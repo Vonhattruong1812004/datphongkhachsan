@@ -1,0 +1,135 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const item = service || {};
+  const editUrl = `/service/manage/${item.id}/edit`;
+  const statusClass = (status) => status === "HoatDong" ? "pill ok" : (status === "BaoTri" ? "pill warn" : "pill danger");
+%>
+
+<style>
+  .svc-detail-page{
+    --blue:#0575e6;
+    --blue-dark:#034ea2;
+    --ink:#102033;
+    --muted:#65758b;
+    --line:#cfe2f7;
+    --green:#07875f;
+    --danger:#be123c;
+    min-height:calc(100vh - 84px);
+    padding:28px 18px 56px;
+    color:var(--ink);
+    background:
+      linear-gradient(180deg,rgba(235,246,255,.88),rgba(247,251,255,.96)),
+      url("/images/san-pham-du-lich.webp") center/cover fixed;
+  }
+  .svc-detail-shell{width:min(1220px,calc(100vw - 40px));margin:0 auto;display:grid;gap:18px}
+  .title-band,.panel{border:1px solid var(--line);background:rgba(255,255,255,.94);box-shadow:0 18px 45px rgba(15,23,42,.08)}
+  .title-band{border-radius:12px;padding:20px 24px;background:linear-gradient(135deg,#087cf0,#034ea2);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .title-band h1{margin:0;font-size:34px;line-height:1.05;letter-spacing:0}
+  .title-band h1::before{content:"";display:inline-block;width:6px;height:38px;border-radius:999px;background:#fff;margin-right:12px;vertical-align:-7px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;text-decoration:none;cursor:pointer;padding:0 16px}
+  .btn.primary{background:var(--blue);border-color:transparent;color:#fff}
+  .btn.danger{color:var(--danger);border-color:#fecdd3;background:#fff1f2}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .alert{border-radius:10px;padding:12px 14px;font-weight:850}
+  .alert.error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+  .alert.success{background:#ecfdf5;color:#047857;border:1px solid #bbf7d0}
+  .detail-grid{display:grid;grid-template-columns:minmax(0,1.35fr) 360px;gap:16px;align-items:start}
+  .panel{border-radius:12px;padding:20px}
+  .service-head{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;align-items:start}
+  .service-img,.service-img-fallback{width:180px;height:132px;border-radius:12px;border:1px solid var(--line);background:#edf6ff;object-fit:cover}
+  .service-img-fallback{display:grid;place-items:center;color:#06479d;font-weight:950;font-size:28px}
+  .service-title{margin:0;color:var(--ink);font-size:32px;line-height:1.08;letter-spacing:0}
+  .sub{display:block;color:var(--muted);font-size:14px;line-height:1.45}
+  .price{margin-top:14px;color:var(--green);font-size:30px;font-weight:950}
+  .pill{display:inline-flex;align-items:center;width:max-content;border-radius:999px;padding:6px 10px;background:#eef2f7;color:#475569;font-size:12px;font-weight:900}
+  .pill.ok{background:#e9fbf1;color:#07875f}
+  .pill.warn{background:#fff7ed;color:#c2410c}
+  .pill.danger{background:#fff1f2;color:#be123c}
+  .pill.blue{background:#eaf6ff;color:#0369a1}
+  .info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+  .info-box{border:1px solid var(--line);border-radius:10px;background:#f8fbff;padding:13px}
+  .info-box span{display:block;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase}
+  .info-box strong{display:block;margin-top:6px;color:var(--ink);font-size:17px;line-height:1.3}
+  .ops{display:grid;gap:10px}
+  .ops h2{margin:0 0 4px;color:var(--ink);font-size:24px}
+  .ops form{display:grid}
+  .note{margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+  .description{margin:18px 0 0;border-top:1px solid var(--line);padding-top:16px;color:#334155;font-size:15px;line-height:1.65}
+  @media(max-width:860px){
+    .detail-grid,.service-head,.info-grid{grid-template-columns:1fr}
+    .service-img,.service-img-fallback{width:100%;height:220px}
+    .title-band{align-items:stretch;flex-direction:column}
+  }
+</style>
+
+<main class="svc-detail-page">
+  <div class="svc-detail-shell">
+    <section class="title-band">
+      <h1>Chi tiết dịch vụ</h1>
+      <a class="btn" href="<%= listUrl %>">Quay về</a>
+    </section>
+
+    <% if (notice?.error) { %><div class="alert error"><%= notice.error %></div><% } %>
+    <% if (notice?.success) { %><div class="alert success"><%= notice.success %></div><% } %>
+
+    <section class="detail-grid">
+      <article class="panel">
+        <div class="service-head">
+          <% if (item.imageUrl) { %>
+            <img class="service-img" src="<%= item.imageUrl %>" alt="Ảnh <%= item.tenDichVu %>" />
+          <% } else { %>
+            <div class="service-img-fallback" aria-hidden="true">DV</div>
+          <% } %>
+          <div>
+            <span class="<%= statusClass(item.trangThai) %>"><%= item.statusLabel || item.trangThai %></span>
+            <h2 class="service-title"><%= item.tenDichVu %></h2>
+            <span class="sub"><%= item.hotelLabel || "Toàn hệ thống" %></span>
+            <div class="price"><%= item.giaDichVuFormatted %></div>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box"><span>Mã dịch vụ</span><strong>#<%= item.id %></strong></div>
+          <div class="info-box"><span>Nhóm</span><strong><%= item.category?.label || "Trải nghiệm khác" %></strong></div>
+          <div class="info-box"><span>Tổng lượt dùng</span><strong><%= item.orderCount || 0 %></strong></div>
+          <div class="info-box"><span>Lượt dùng 30 ngày</span><strong><%= item.orderCount30Days || 0 %></strong></div>
+          <div class="info-box"><span>Order đang mở</span><strong><%= item.openOrderCount || 0 %></strong></div>
+          <div class="info-box"><span>Doanh thu 30 ngày</span><strong><%= item.revenue30DaysFormatted || "0 đ" %></strong></div>
+        </div>
+
+        <p class="description"><%= item.moTa || "Dịch vụ chưa có mô tả chi tiết." %></p>
+      </article>
+
+      <aside class="panel ops" aria-label="Thao tác dịch vụ">
+        <h2>Thao tác</h2>
+        <a class="btn primary" href="<%= editUrl %>">Sửa thông tin</a>
+        <% if (item.trangThai !== "NgungBan") { %>
+          <form method="post" action="/service/manage">
+            <% if (typeof csrfToken !== "undefined" && csrfToken) { %><input type="hidden" name="_csrf" value="<%= csrfToken %>" /><% } %>
+            <input type="hidden" name="service_id" value="<%= item.id %>" />
+            <input type="hidden" name="hotel_id" value="<%= item.hotelId || 0 %>" />
+            <input type="hidden" name="ten_dich_vu" value="<%= item.tenDichVu %>" />
+            <input type="hidden" name="gia_dich_vu" value="<%= item.giaDichVu %>" />
+            <input type="hidden" name="mo_ta" value="<%= item.moTa || "" %>" />
+            <input type="hidden" name="hinh_anh" value="<%= item.hinhAnh || "" %>" />
+            <input type="hidden" name="trang_thai" value="NgungBan" />
+            <input type="hidden" name="redirect_to" value="/service/manage/<%= item.id %>" />
+            <button class="btn" type="submit">Ngưng bán</button>
+          </form>
+        <% } %>
+        <form method="post" action="/service/manage/<%= item.id %>/delete" onsubmit="return confirm('Xóa dịch vụ này? Chỉ dịch vụ chưa phát sinh giao dịch mới được xóa.');">
+          <input type="hidden" name="hotel_id" value="<%= item.hotelId || 0 %>" />
+          <button class="btn danger" type="submit" <%= Number(item.orderCount || 0) > 0 ? "disabled title='Dịch vụ đã phát sinh, hãy ngưng bán thay vì xóa.'" : "" %>>Xóa dịch vụ</button>
+        </form>
+        <% if (Number(item.orderCount || 0) > 0) { %>
+          <p class="note">Dịch vụ đã phát sinh giao dịch nên không thể xóa trực tiếp. Hãy ngưng bán để giữ lịch sử checkout.</p>
+        <% } else { %>
+          <p class="note">Dịch vụ chưa phát sinh giao dịch, có thể xóa nếu nhập sai hoặc không còn sử dụng.</p>
+        <% } %>
+      </aside>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

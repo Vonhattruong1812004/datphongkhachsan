@@ -1,0 +1,364 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+
+<%
+  const expense = payload.expense || {};
+  const statusOptions = payload.statusOptions || [];
+  const categoryOptions = payload.categoryOptions || [];
+  const paymentOptions = payload.paymentOptions || [];
+  const hotelOptions = payload.hotelOptions || [];
+  const notice = typeof locals !== "undefined" && locals.notice ? locals.notice : {};
+%>
+
+<style>
+  body {
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 52%, #f8fbff 100%) !important;
+  }
+
+  .expense-detail-page {
+    min-height: calc(100vh - 96px);
+    padding: 24px 18px 54px;
+    color: #0f2442;
+  }
+
+  .expense-detail-wrap {
+    width: min(1280px, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+  }
+
+  .expense-detail-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 68px;
+    border: 1px solid #9cc9ff;
+    border-radius: 10px;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, #0078f0 0%, #0049a8 100%);
+    box-shadow: 0 14px 30px rgba(0, 82, 180, .18);
+  }
+
+  .expense-detail-hero h1 {
+    margin: 0;
+    padding-left: 16px;
+    border-left: 5px solid rgba(255, 255, 255, .9);
+    color: #ffffff;
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 850;
+    line-height: 1;
+  }
+
+  .expense-detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .expense-detail-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border: 1px solid #b9d8ff;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #003b95;
+    font-size: 13px;
+    font-weight: 750;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .expense-detail-button--primary {
+    border-color: transparent;
+    background: #006ce4;
+    color: #ffffff;
+  }
+
+  .expense-detail-notice {
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #f0fdf4;
+    color: #047857;
+    font-weight: 700;
+  }
+
+  .expense-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .expense-detail-card {
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    padding: 18px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .expense-detail-card h2 {
+    margin: 0 0 14px;
+    color: #0f2442;
+    font-size: 22px;
+    font-weight: 850;
+  }
+
+  .expense-detail-code {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid #c9e0fb;
+    border-radius: 999px;
+    background: #f4f9ff;
+    color: #003b95;
+    font-weight: 800;
+  }
+
+  .expense-detail-title {
+    margin: 12px 0 6px;
+    color: #0f2442;
+    font-size: clamp(28px, 3vw, 42px);
+    font-weight: 850;
+    line-height: 1.05;
+  }
+
+  .expense-detail-money {
+    margin: 14px 0 0;
+    color: #047857;
+    font-size: clamp(26px, 2.6vw, 38px);
+    font-weight: 1000;
+  }
+
+  .expense-detail-muted {
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .expense-detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .expense-detail-badge {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    padding: 0 12px;
+    border: 1px solid #c9e0fb;
+    border-radius: 999px;
+    background: #f4f9ff;
+    color: #003b95;
+    font-weight: 750;
+  }
+
+  .expense-detail-form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .expense-detail-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .expense-detail-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .expense-detail-field.is-wide {
+    grid-column: 1 / -1;
+  }
+
+  .expense-detail-field label {
+    color: #0f2442;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .expense-detail-field input,
+  .expense-detail-field select,
+  .expense-detail-field textarea {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #c9e0fb;
+    border-radius: 8px;
+    padding: 0 12px;
+    background: #ffffff;
+    color: #0f2442;
+    font-size: 14px;
+    font-weight: 500;
+    outline: none;
+  }
+
+  .expense-detail-field textarea {
+    min-height: 96px;
+    padding: 12px;
+    resize: vertical;
+  }
+
+  .expense-detail-field input:focus,
+  .expense-detail-field select:focus,
+  .expense-detail-field textarea:focus {
+    border-color: #006ce4;
+    outline: 3px solid rgba(0, 108, 228, .12);
+  }
+
+  .expense-detail-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+  }
+
+  @media (max-width: 920px) {
+    .expense-detail-hero,
+    .expense-detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .expense-detail-actions,
+    .expense-detail-form-actions {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .expense-detail-page {
+      padding: 18px 12px 42px;
+    }
+
+    .expense-detail-fields {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+<%- include("../partials/accounting-background") %>
+
+<main class="expense-detail-page">
+  <section class="accounting-uc-layout">
+    <%- include("../partials/accounting-uc-sidebar", { activeHref: "/accounting/expenses" }) %>
+    <div class="accounting-uc-main">
+  <div class="expense-detail-wrap">
+    <section class="expense-detail-hero" aria-label="Chi tiết phiếu chi">
+      <h1>Chi tiết phiếu chi</h1>
+      <div class="expense-detail-actions">
+        <a class="expense-detail-button" href="/accounting/expenses">Quay lại danh sách</a>
+      </div>
+    </section>
+
+    <% if (notice.success) { %>
+      <section class="expense-detail-notice"><%= notice.success %></section>
+    <% } %>
+
+    <section class="expense-detail-grid">
+      <aside class="expense-detail-card">
+        <span class="expense-detail-code">CP-<%= expense.id %></span>
+        <h2 class="expense-detail-title"><%= expense.tenChiPhi %></h2>
+        <div class="expense-detail-muted"><%= expense.ngayChiLabel %> · <%= expense.hotelLabel %></div>
+        <div class="expense-detail-money"><%= expense.soTienFormatted %></div>
+        <div class="expense-detail-badges">
+          <span class="expense-detail-badge"><%= expense.statusMeta.label %></span>
+          <span class="expense-detail-badge"><%= expense.categoryMeta.label %></span>
+          <span class="expense-detail-badge"><%= expense.evidenceMeta.label %></span>
+        </div>
+      </aside>
+
+      <section class="expense-detail-card">
+        <h2>Chỉnh sửa phiếu chi</h2>
+        <form class="expense-detail-form" method="post" action="/accounting/expenses/<%= expense.id %>">
+          <div class="expense-detail-fields">
+            <div class="expense-detail-field is-wide">
+              <label for="ten_chi_phi">Tên chi phí</label>
+              <input id="ten_chi_phi" name="ten_chi_phi" required value="<%= expense.tenChiPhi %>" />
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="ngay_chi">Ngày chi</label>
+              <input id="ngay_chi" type="date" name="ngay_chi" required value="<%= expense.ngayChiInput %>" />
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="so_tien">Số tiền</label>
+              <input id="so_tien" name="so_tien" type="number" min="0" step="1000" required value="<%= expense.soTien %>" />
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="loai_chi_phi">Nhóm chi phí</label>
+              <select id="loai_chi_phi" name="loai_chi_phi">
+                <% categoryOptions.forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= expense.categoryKey === option.value ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="trang_thai">Trạng thái</label>
+              <select id="trang_thai" name="trang_thai">
+                <% statusOptions.forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= expense.trangThai === option.value ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="hotel_id">Cơ sở ghi nhận</label>
+              <select id="hotel_id" name="hotel_id">
+                <option value="0" <%= !expense.hotelId ? "selected" : "" %>>Chi phí dùng chung</option>
+                <% hotelOptions.forEach((hotel) => { %>
+                  <option value="<%= hotel.id %>" <%= Number(expense.hotelId || 0) === Number(hotel.id) ? "selected" : "" %>>
+                    <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                  </option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="phuong_thuc_chi">Phương thức chi</label>
+              <select id="phuong_thuc_chi" name="phuong_thuc_chi">
+                <% paymentOptions.forEach((option) => { %>
+                  <option value="<%= option.value %>" <%= (expense.phuongThucChi || "ChuyenKhoan") === option.value ? "selected" : "" %>><%= option.label %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="nha_cung_cap">Nhà cung cấp</label>
+              <input id="nha_cung_cap" name="nha_cung_cap" value="<%= expense.nhaCungCap || "" %>" />
+            </div>
+
+            <div class="expense-detail-field">
+              <label for="so_hoa_don">Số chứng từ</label>
+              <input id="so_hoa_don" name="so_hoa_don" value="<%= expense.soHoaDon || "" %>" />
+            </div>
+
+            <div class="expense-detail-field is-wide">
+              <label for="noi_dung">Nội dung</label>
+              <textarea id="noi_dung" name="noi_dung"><%= expense.noiDung || "" %></textarea>
+            </div>
+          </div>
+
+          <div class="expense-detail-form-actions">
+            <a class="expense-detail-button" href="/accounting/expenses">Hủy</a>
+            <button class="expense-detail-button expense-detail-button--primary" type="submit">Lưu thay đổi</button>
+          </div>
+        </form>
+      </section>
+    </section>
+  </div>
+    </div>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

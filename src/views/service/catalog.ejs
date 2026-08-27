@@ -1,22 +1,13 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
 <%
+  const safeQuery = (typeof query !== "undefined" && query) ? query : {};
+  const pageNotice = (typeof notice !== "undefined" && notice) ? notice : {};
   const catalog = payload.catalog || [];
   const serviceHotelScopeSupported = Boolean(payload.serviceHotelScopeSupported);
   const hotelOptions = payload.hotelOptions || [];
   const filters = payload.filters || {};
-  const activeHotelId = Number(payload.activeHotelId || filters.hotelId || query?.hotel_id || 0);
-  const catalogStats = payload.catalogStats || {
-    total: catalog.length,
-    active: catalog.filter((item) => item.trangThai === "HoatDong").length,
-    maintenance: catalog.filter((item) => item.trangThai === "BaoTri").length,
-    stopped: catalog.filter((item) => item.trangThai === "NgungBan").length,
-    linked: catalog.filter((item) => Number(item.orderCount || 0) > 0).length,
-    missingImage: catalog.filter((item) => !item.imageUrl).length,
-    openOrders: catalog.reduce((sum, item) => sum + Number(item.openOrderCount || 0), 0),
-    orders30Days: catalog.reduce((sum, item) => sum + Number(item.orderCount30Days || 0), 0),
-    revenue30DaysFormatted: "0 đ"
-  };
+  const activeHotelId = Number(payload.activeHotelId || filters.hotelId || safeQuery.hotel_id || 0);
   const categoryOptions = payload.categoryOptions || [
     { key: "all", label: "Tất cả nhóm" },
     { key: "wellness", label: "Wellness" },
@@ -25,22 +16,9 @@
     { key: "dining", label: "Ẩm thực" },
     { key: "other", label: "Trải nghiệm khác" }
   ];
-  const categorySummary = payload.categorySummary || [];
-  const catalogDraftData = (typeof catalogDraft !== "undefined" && catalogDraft) ? catalogDraft : {};
-  const editServiceId = Number(catalogDraftData.service_id || query?.edit_service || 0);
-  const editingService = editServiceId ? catalog.find((item) => Number(item.id) === editServiceId) : null;
-  const catalogForm = {
-    service_id: catalogDraftData.service_id || editingService?.id || "",
-    hotel_id: Number(catalogDraftData.hotel_id || editingService?.hotelId || activeHotelId || 0),
-    ten_dich_vu: catalogDraftData.ten_dich_vu || editingService?.tenDichVu || "",
-    gia_dich_vu: catalogDraftData.gia_dich_vu || editingService?.giaDichVu || "",
-    trang_thai: catalogDraftData.trang_thai || editingService?.trangThai || "HoatDong",
-    mo_ta: catalogDraftData.mo_ta || editingService?.moTa || "",
-    hinh_anh: catalogDraftData.hinh_anh || editingService?.hinhAnh || ""
-  };
   const selectedAttr = (value, expected) => String(value || "all") === String(expected) ? "selected" : "";
   const checkedFilter = (key) => String(filters.attention || "all") === key ? "selected" : "";
-  const statusClass = (status) => status === "HoatDong" ? "is-active" : (status === "BaoTri" ? "is-maintenance" : "is-stopped");
+  const statusClass = (status) => status === "HoatDong" ? "pill ok" : (status === "BaoTri" ? "pill warn" : "pill danger");
   const baseQuery = new URLSearchParams();
   if (filters.keyword) baseQuery.set("keyword", filters.keyword);
   if (filters.status && filters.status !== "all") baseQuery.set("status", filters.status);
@@ -49,634 +27,378 @@
   if (activeHotelId) baseQuery.set("hotel_id", String(activeHotelId));
   const withEditQuery = (id) => {
     const params = new URLSearchParams(baseQuery.toString());
-    params.set("edit_service", String(id));
     const qs = params.toString();
-    return qs ? `?${qs}` : "";
+    return `/service/manage/${id}/edit${qs ? `?${qs}` : ""}`;
   };
-  const resetUrl = activeHotelId ? `/service/catalog/manage?hotel_id=${activeHotelId}` : "/service/catalog/manage";
+  const addUrl = `/service/manage/new${baseQuery.toString() ? `?${baseQuery.toString()}` : ""}`;
+  const resetUrl = activeHotelId ? `/service/manage?hotel_id=${activeHotelId}` : "/service/manage";
 %>
 
 <style>
-  .catalog-shell{
+  .catalog-page{
+    --blue:#0575e6;
+    --blue-dark:#034ea2;
     --ink:#102033;
-    --muted:#64748b;
-    --line:rgba(16,32,51,.10);
-    --card:rgba(255,255,255,.86);
-    --teal:#14b8a6;
-    --blue:#0ea5e9;
-    --lime:#84cc16;
-    --rose:#fb7185;
-    --amber:#f59e0b;
-    --violet:#8b5cf6;
-    --shadow:0 22px 64px rgba(15,23,42,.14);
+    --muted:#65758b;
+    --line:#cfe2f7;
+    --soft:#f3f8ff;
+    --green:#07875f;
     min-height:calc(100vh - 84px);
-    padding:30px 18px 54px;
+    padding:28px 18px 56px;
     color:var(--ink);
     background:
-      radial-gradient(circle at 8% 10%,rgba(20,184,166,.24),transparent 30%),
-      radial-gradient(circle at 86% 14%,rgba(14,165,233,.20),transparent 32%),
-      radial-gradient(circle at 50% 102%,rgba(132,204,22,.16),transparent 42%),
-      linear-gradient(135deg,#fbfffb 0%,#ecfdf5 44%,#f8fbff 100%);
+      linear-gradient(180deg,rgba(235,246,255,.88),rgba(247,251,255,.96)),
+      url("/images/san-pham-du-lich.webp") center/cover fixed;
   }
-  .catalog-wrap{max-width:1240px;margin:0 auto}
-  .catalog-panel,.catalog-hero,.catalog-card,.catalog-stat,.catalog-service-card,.catalog-alert{border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
-  .catalog-hero{position:relative;overflow:hidden;border-radius:28px;padding:28px;margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(240,253,250,.76))}
-  .catalog-hero::before{content:"";position:absolute;inset:auto -80px -120px auto;width:420px;height:260px;background:linear-gradient(135deg,rgba(14,165,233,.18),rgba(20,184,166,.22),rgba(132,204,22,.18));transform:rotate(-8deg);border-radius:42px;pointer-events:none}
-  .catalog-chip{display:inline-flex;align-items:center;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.22);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
-  .catalog-hero h1{position:relative;max-width:760px;margin:18px 0 10px;font-size:clamp(36px,5vw,62px);line-height:.95;letter-spacing:-.06em}
-  .catalog-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 48%,#65a30d);-webkit-background-clip:text;background-clip:text}
-  .catalog-lead{position:relative;max-width:790px;margin:0;color:var(--muted);font-size:15px;line-height:1.68}
-  .catalog-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-  .catalog-button,.catalog-mini-button{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;text-decoration:none;font-weight:950;cursor:pointer;white-space:nowrap}
-  .catalog-button{min-height:42px;padding:10px 16px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.78);color:var(--ink)}
-  .catalog-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 16px 34px rgba(20,184,166,.22)}
-  .catalog-button--ghost{background:rgba(255,255,255,.46)}
-  .catalog-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px}
-  .catalog-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}
-  .catalog-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
-  .catalog-grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:16px;align-items:start}
-  .catalog-card{border-radius:26px;padding:20px;margin-bottom:16px}
-  .catalog-card h2{margin:0 0 7px;font-size:22px;letter-spacing:-.035em}
-  .catalog-muted{color:var(--muted);font-size:13px;line-height:1.55}
-  .catalog-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .catalog-field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-  .catalog-field--full{grid-column:1/-1}
-  .catalog-field label{font-size:12px;font-weight:950;color:#344054}
-  .catalog-field input,.catalog-field select,.catalog-field textarea{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.78);color:var(--ink);font:inherit;outline:none}
-  .catalog-field textarea{min-height:86px;resize:vertical}
-  .catalog-field input:focus,.catalog-field select:focus,.catalog-field textarea:focus{border-color:rgba(14,165,233,.52);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
-  .catalog-filter{display:grid;grid-template-columns:1.1fr .74fr .78fr .78fr .86fr;gap:10px;align-items:end}
-  .catalog-filter .catalog-field{margin-top:0}
-  .catalog-filter-actions{display:flex;gap:8px}
-  .catalog-filter-actions .catalog-button{width:100%}
-  .catalog-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 16px}
-  .catalog-stat{border-radius:20px;padding:15px;background:rgba(255,255,255,.68)}
-  .catalog-stat strong{display:block;font-size:26px;line-height:1;letter-spacing:-.045em}
-  .catalog-stat span{display:block;margin-top:8px;color:var(--muted);font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}
-  .catalog-img{width:78px;height:78px;border-radius:18px;object-fit:cover;border:1px solid rgba(16,32,51,.10);background:rgba(255,255,255,.72)}
-  .catalog-img--lg{width:100%;height:170px;max-width:none}
-  .catalog-img-fallback{display:grid;place-items:center;width:78px;height:78px;border-radius:18px;border:1px solid rgba(16,32,51,.10);background:linear-gradient(135deg,rgba(20,184,166,.18),rgba(14,165,233,.18),rgba(250,204,21,.16));color:#0f766e;font-weight:1000}
-  .catalog-img-fallback--lg{width:100%;height:170px;max-width:none}
-  .catalog-category-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-  .catalog-badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;background:rgba(20,184,166,.12);color:#0f766e;font-size:11px;font-weight:1000;letter-spacing:.03em}
-  .catalog-badge--blue{background:rgba(14,165,233,.12);color:#0369a1}
-  .catalog-badge--amber{background:rgba(245,158,11,.13);color:#b45309}
-  .catalog-badge--danger{background:rgba(251,113,133,.14);color:#be123c}
-  .catalog-badge--violet{background:rgba(139,92,246,.12);color:#6d28d9}
-  .catalog-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-  .catalog-service-card{position:relative;overflow:hidden;border-radius:24px;padding:16px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.72))}
-  .catalog-service-card::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--teal),var(--blue),var(--lime))}
-  .catalog-service-card.is-maintenance::before{background:linear-gradient(90deg,var(--amber),#f97316)}
-  .catalog-service-card.is-stopped::before{background:linear-gradient(90deg,var(--rose),var(--violet))}
-  .catalog-service-head{display:grid;grid-template-columns:78px minmax(0,1fr);gap:13px;align-items:start}
-  .catalog-service-title{margin:0;color:var(--ink);font-size:18px;line-height:1.15;letter-spacing:-.025em}
-  .catalog-service-meta{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
-  .catalog-price{display:block;margin-top:10px;color:#0f766e;font-size:20px;font-weight:1000;letter-spacing:-.035em}
-  .catalog-rec{margin:12px 0 0;padding:11px 12px;border-radius:16px;background:rgba(248,250,252,.88);border:1px solid rgba(16,32,51,.08);color:#475569;font-size:12px;line-height:1.5}
-  .catalog-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
-  .catalog-metric{border-radius:15px;padding:10px;background:rgba(255,255,255,.62);border:1px solid rgba(16,32,51,.08)}
-  .catalog-metric strong{display:block;font-size:17px;color:var(--ink);letter-spacing:-.03em}
-  .catalog-metric span{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}
-  .catalog-inline-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:13px}
-  .catalog-mini-button{min-height:34px;padding:8px 12px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.78);color:var(--ink);font-size:13px}
-  .catalog-mini-button--danger{color:#be123c;border-color:rgba(251,113,133,.28);background:rgba(255,241,242,.74)}
-  .catalog-mini-button[disabled]{opacity:.55;cursor:not-allowed}
-  .catalog-empty{border:1px dashed rgba(16,32,51,.16);border-radius:20px;padding:22px;background:rgba(255,255,255,.60);color:var(--muted)}
-  @media(max-width:1120px){.catalog-grid{grid-template-columns:1fr}.catalog-filter{grid-template-columns:repeat(2,minmax(0,1fr))}.catalog-list{grid-template-columns:1fr}}
-  @media(max-width:760px){.catalog-shell{padding:20px 12px 42px}.catalog-hero{padding:22px}.catalog-hero h1{font-size:38px}.catalog-summary,.catalog-form-grid,.catalog-filter,.catalog-metrics{grid-template-columns:1fr}.catalog-filter-actions{flex-direction:column}.catalog-service-head{grid-template-columns:64px 1fr}.catalog-img,.catalog-img-fallback{width:64px;height:64px}}
-
-  /* Service UC1 visual pass only: galaxy theme with clear form/card separation. */
-  .catalog-shell{
-    --ink:#f8fbff;
-    --ink-dark:#102033;
-    --muted:#b8cbe1;
-    --muted-dark:#607487;
-    --line:rgba(148,210,255,.24);
-    --card:rgba(9,22,49,.78);
-    --teal:#34d399;
-    --blue:#22d3ee;
-    --lime:#bef264;
-    --rose:#fb7185;
-    --amber:#facc15;
-    --violet:#a78bfa;
-    --field:#ffffff;
-    --field-line:#b7cfe1;
-    --shadow:0 30px 90px rgba(0,0,0,.38);
-    position:relative;
-    isolation:isolate;
-    overflow:hidden;
-    color:var(--ink);
-    background:
-      radial-gradient(circle at 10% 8%,rgba(34,211,238,.22),transparent 27%),
-      radial-gradient(circle at 84% 12%,rgba(167,139,250,.18),transparent 30%),
-      radial-gradient(circle at 72% 92%,rgba(251,113,133,.14),transparent 30%),
-      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
-  }
-  .catalog-shell::before,
-  .catalog-shell::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:-1;
-  }
-  .catalog-shell::before{
-    opacity:.84;
-    background-image:
-      radial-gradient(circle,#f8fbff 0 1.1px,transparent 1.7px),
-      radial-gradient(circle,#93e8ff 0 1px,transparent 1.5px),
-      radial-gradient(circle,rgba(255,255,255,.86) 0 1px,transparent 1.5px);
-    background-size:120px 120px,180px 180px,260px 260px;
-    background-position:12px 24px,70px 42px,28px 96px;
-    animation:catalog-star-drift 46s linear infinite;
-  }
-  .catalog-shell::after{
-    opacity:.55;
-    background:
-      linear-gradient(112deg,transparent 0 38%,rgba(34,211,238,.16) 39%,transparent 40% 100%),
-      linear-gradient(26deg,transparent 0 63%,rgba(250,204,21,.11) 64%,transparent 65% 100%),
-      radial-gradient(circle at 18% 90%,rgba(52,211,153,.12),transparent 28%);
-  }
-  .catalog-wrap{position:relative;z-index:1;max-width:1320px}
-  .catalog-panel,
-  .catalog-hero,
-  .catalog-card,
-  .catalog-stat,
-  .catalog-service-card,
-  .catalog-alert{
-    border-color:var(--line);
-    background:linear-gradient(180deg,rgba(12,28,61,.88),rgba(6,16,36,.78));
-    box-shadow:var(--shadow);
-    backdrop-filter:blur(18px);
-  }
-  .catalog-hero{
-    border-radius:34px;
-    padding:34px;
-    margin-bottom:20px;
-    min-height:260px;
-  }
-  .catalog-hero::before{
-    inset:auto -76px -110px auto;
-    width:430px;
-    height:260px;
-    border-radius:999px;
-    background:
-      radial-gradient(circle at 36% 32%,rgba(255,255,255,.30) 0 5%,transparent 11%),
-      radial-gradient(circle at 62% 68%,rgba(52,211,153,.44) 0 14%,transparent 27%),
-      linear-gradient(135deg,#2563eb 0%,#0891b2 48%,#05235f 100%);
-    box-shadow:inset -28px -22px 42px rgba(0,0,0,.34),0 0 60px rgba(34,211,238,.24);
-    transform:rotate(-14deg);
-  }
-  .catalog-hero::after{
-    content:"";
-    position:absolute;
-    right:62px;
-    bottom:42px;
-    width:280px;
-    height:78px;
-    border-radius:50%;
-    border:1px solid rgba(148,210,255,.32);
-    transform:rotate(-16deg);
-    pointer-events:none;
-  }
-  .catalog-chip{
-    border-color:rgba(34,211,238,.36);
-    background:rgba(34,211,238,.14);
-    color:#cffafe;
-    box-shadow:0 0 0 7px rgba(34,211,238,.07);
-  }
-  .catalog-hero h1{
-    color:#f8fbff;
-    font-size:clamp(42px,5.5vw,72px);
-    letter-spacing:-.045em;
-  }
-  .catalog-hero h1 span{
-    background:linear-gradient(96deg,#22d3ee 0%,#34d399 40%,#facc15 70%,#fb7185 100%);
-    -webkit-background-clip:text;
-    background-clip:text;
-  }
-  .catalog-lead,
-  .catalog-muted{
-    color:#c4d7ea;
-  }
-  .catalog-button{
-    color:#f8fbff;
-    border-color:rgba(148,210,255,.24);
-    background:rgba(255,255,255,.08);
-    box-shadow:0 14px 34px rgba(0,0,0,.16);
-  }
-  .catalog-button--primary{
-    color:#04111f;
-    background:linear-gradient(135deg,#22d3ee,#34d399);
-    box-shadow:0 20px 48px rgba(52,211,153,.24);
-  }
-  .catalog-button--ghost{background:rgba(255,255,255,.08)}
-  .catalog-alert--error{
-    color:#ffe4e6;
-    background:linear-gradient(135deg,rgba(225,29,72,.22),rgba(251,113,133,.16));
-    border-color:rgba(251,113,133,.36);
-  }
-  .catalog-alert--success{
-    color:#d1fae5;
-    background:linear-gradient(135deg,rgba(16,185,129,.24),rgba(6,182,212,.18));
-    border-color:rgba(52,211,153,.35);
-  }
-  .catalog-summary{gap:14px;margin-bottom:20px}
-  .catalog-stat{
-    position:relative;
-    overflow:hidden;
-    min-height:118px;
-    border-color:rgba(255,255,255,.18);
-    background:linear-gradient(135deg,#22d3ee,#2563eb);
-  }
-  .catalog-stat:nth-child(2){background:linear-gradient(135deg,#34d399,#14b8a6)}
-  .catalog-stat:nth-child(3){background:linear-gradient(135deg,#facc15,#fb923c)}
-  .catalog-stat:nth-child(4){background:linear-gradient(135deg,#fb7185,#a78bfa)}
-  .catalog-stat::before{
-    content:"";
-    position:absolute;
-    right:16px;
-    top:14px;
-    width:52px;
-    height:52px;
-    border-radius:18px;
-    background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.24);
-    transform:rotate(10deg);
-  }
-  .catalog-stat strong,
-  .catalog-stat span{
-    position:relative;
-    z-index:1;
-    color:#fff;
-    text-shadow:0 1px 12px rgba(0,0,0,.18);
-  }
-  .catalog-stat strong{font-size:30px}
-  .catalog-stat span{color:rgba(255,255,255,.86)}
-  .catalog-grid{grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:20px}
-  .catalog-card{
-    border-radius:28px;
-    padding:22px;
-  }
-  .catalog-card h2{
-    color:#f8fbff;
-    font-size:25px;
-    letter-spacing:-.025em;
-  }
-  .catalog-field label{
-    color:#d8e7f7;
-    font-size:13px;
-    letter-spacing:.02em;
-  }
-  .catalog-field input,
-  .catalog-field select,
-  .catalog-field textarea{
-    min-height:48px;
-    border:2px solid var(--field-line);
-    border-radius:16px;
-    background:var(--field);
-    color:var(--ink-dark);
-    box-shadow:0 9px 0 rgba(148,210,255,.10),0 16px 34px rgba(0,0,0,.10);
-  }
-  .catalog-field input:focus,
-  .catalog-field select:focus,
-  .catalog-field textarea:focus{
-    border-color:#22d3ee;
-    box-shadow:0 0 0 5px rgba(34,211,238,.18),0 16px 34px rgba(0,0,0,.12);
-  }
-  .catalog-filter{gap:12px}
-  .catalog-badge{
-    color:#d1fae5;
-    background:rgba(52,211,153,.15);
-    border:1px solid rgba(52,211,153,.26);
-  }
-  .catalog-badge--blue{color:#cffafe;background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.26)}
-  .catalog-badge--amber{color:#fef3c7;background:rgba(250,204,21,.14);border-color:rgba(250,204,21,.28)}
-  .catalog-badge--danger{color:#ffe4e6;background:rgba(251,113,133,.15);border-color:rgba(251,113,133,.28)}
-  .catalog-badge--violet{color:#ede9fe;background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.28)}
-  .catalog-img,
-  .catalog-img-fallback{
-    border-color:rgba(183,207,225,.78);
-    background:#ffffff;
-    color:#0b253f;
-    box-shadow:0 12px 28px rgba(0,0,0,.12);
-  }
-  .catalog-img-fallback{
-    background:linear-gradient(135deg,#e0f2fe,#d1fae5);
-  }
-  .catalog-service-card{
-    border-color:rgba(183,207,225,.78);
-    background:linear-gradient(180deg,#ffffff,#eef8ff);
-    color:var(--ink-dark);
-    box-shadow:0 20px 48px rgba(0,0,0,.18);
-  }
-  .catalog-service-card::before{height:7px;background:linear-gradient(90deg,#22d3ee,#34d399,#facc15)}
-  .catalog-service-card.is-maintenance::before{background:linear-gradient(90deg,#facc15,#fb923c)}
-  .catalog-service-card.is-stopped::before{background:linear-gradient(90deg,#fb7185,#a78bfa)}
-  .catalog-service-title,
-  .catalog-metric strong{
-    color:#0b253f;
-  }
-  .catalog-price{color:#047857}
-  .catalog-rec,
-  .catalog-metric,
-  .catalog-empty{
-    border-color:rgba(183,207,225,.75);
-    background:linear-gradient(180deg,#ffffff,#f4fbff);
-    color:var(--muted-dark);
-  }
-  .catalog-service-card .catalog-muted{
-    color:#607487;
-  }
-  .catalog-mini-button{
-    color:#0b253f;
-    border-color:rgba(183,207,225,.85);
-    background:#ffffff;
-    box-shadow:0 10px 22px rgba(0,0,0,.08);
-  }
-  .catalog-mini-button--danger{
-    color:#be123c;
-    border-color:#fda4af;
-    background:#fff1f2;
-  }
-  @keyframes catalog-star-drift{
-    from{background-position:12px 24px,70px 42px,28px 96px}
-    to{background-position:132px 144px,250px 222px,288px 356px}
-  }
+  .catalog-shell{width:min(1400px,calc(100vw - 40px));margin:0 auto;display:grid;grid-template-columns:1fr;gap:18px}
+  .side-card,.title-band,.toolbar,.panel{border:1px solid var(--line);background:rgba(255,255,255,.94);box-shadow:0 18px 45px rgba(15,23,42,.08)}
+  .side-card{align-self:start;border-radius:12px;padding:12px;position:sticky;top:104px;background:rgba(255,255,255,.9);backdrop-filter:blur(14px) saturate(1.08)}
+  .side-card h2{margin:2px 4px 10px;font-size:20px;line-height:1.1;color:var(--ink)}
+  .side-nav{display:grid;gap:8px}
+  .side-nav a{min-height:48px;display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:0 12px;color:#06479d;text-decoration:none;font-size:14px;font-weight:850;background:#fff;transition:background .15s ease,border-color .15s ease,color .15s ease,transform .15s ease}
+  .side-nav a:hover{background:#edf6ff;border-color:#9ecbff;transform:translateX(2px)}
+  .side-nav a.is-active{background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border-color:transparent;box-shadow:0 12px 24px rgba(0,108,228,.18)}
+  .title-band{border-radius:12px;padding:20px 24px;background:linear-gradient(135deg,#087cf0,#034ea2);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .title-band h1{margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em}
+  .title-band h1::before{content:"";display:inline-block;width:6px;height:38px;border-radius:999px;background:#fff;margin-right:12px;vertical-align:-7px}
+  .alert{margin-top:12px;border-radius:10px;padding:12px 14px;font-weight:850}
+  .alert.error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+  .alert.success{background:#ecfdf5;color:#047857;border:1px solid #bbf7d0}
+  .toolbar{border-radius:12px;padding:14px;margin:14px 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .searchbar{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+  .toolbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+  .import-form{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  details.filter{position:relative}
+  details.filter summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;padding:12px 16px;min-width:112px}
+  details.filter summary::-webkit-details-marker{display:none}
+  .filter-pop{position:absolute;z-index:20;top:54px;left:0;width:720px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 22px 50px rgba(15,23,42,.18);padding:16px}
+  .filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .field{display:grid;gap:6px}
+  .field label{font-size:12px;color:#334155;font-weight:900}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:11px 12px;color:var(--ink);font:inherit}
+  .field textarea{min-height:104px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#0b83ef;box-shadow:0 0 0 3px rgba(11,131,239,.12)}
+  .field.search-input{max-width:560px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .btn,.icon-btn{border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;text-decoration:none;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 16px}
+  .icon-btn{width:48px;height:48px;display:inline-grid;place-items:center}
+  .btn.primary,.icon-btn.primary{background:var(--blue);border-color:transparent;color:#fff}
+  .btn.danger{color:#be123c;border-color:#fecdd3;background:#fff1f2}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .content-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+  .panel{border-radius:12px;overflow:hidden}
+  .table-wrap{overflow:auto}
+  .catalog-table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;min-width:980px}
+  .catalog-table thead th{background:#edf3f9;color:#334155;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:14px;border-bottom:1px solid var(--line)}
+  .catalog-table tbody td{padding:14px;border-bottom:1px solid #e4eef8;vertical-align:middle}
+  .catalog-table tbody tr{background:rgba(255,255,255,.9);cursor:pointer}
+  .catalog-table tbody tr:hover{background:#f4f9ff}
+  .service-cell{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center}
+  .service-img,.service-img-fallback{width:64px;height:64px;border-radius:10px;border:1px solid var(--line);background:#edf6ff;object-fit:cover}
+  .service-img-fallback{display:grid;place-items:center;color:#06479d;font-weight:950}
+  .service-name{display:block;color:#06479d;font-weight:950;font-size:17px;line-height:1.2;text-decoration:none}
+  .service-name:hover{text-decoration:underline}
+  .sub{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .price{color:#07875f;font-weight:950;font-size:17px}
+  .pill{display:inline-flex;align-items:center;width:max-content;border-radius:999px;padding:6px 10px;background:#eef2f7;color:#475569;font-size:12px;font-weight:900}
+  .pill.ok{background:#e9fbf1;color:#07875f}
+  .pill.warn{background:#fff7ed;color:#c2410c}
+  .pill.danger{background:#fff1f2;color:#be123c}
+  .pill.blue{background:#eaf6ff;color:#0369a1}
+  .row-actions{display:flex;justify-content:center}
+  .row-menu{width:38px;height:38px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;text-decoration:none;font-size:24px;line-height:1;font-weight:950}
+  .row-menu:hover{background:#edf6ff;border-color:#9ecbff}
+  .empty{padding:24px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);background:#f8fbff}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .list-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap}
+  .list-footer-info{color:#334155;font-weight:700;font-size:14px}
+  .list-footer-info strong{color:var(--ink)}
+  .pagination-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .page-size{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:850}
+  .page-size select{height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);padding:0 10px;font:inherit;font-weight:850}
+  .page-buttons{display:flex;align-items:center;gap:6px}
+  .page-btn{min-width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;cursor:pointer}
+  .page-btn.is-active{background:var(--blue);border-color:var(--blue);color:#fff}
+  .page-btn:disabled{opacity:.45;cursor:not-allowed;background:#f8fafc;color:#94a3b8}
   @media(max-width:1120px){
-    .catalog-grid{grid-template-columns:1fr}
-    .catalog-filter{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .catalog-list{grid-template-columns:1fr}
+    .catalog-shell,.content-grid{grid-template-columns:1fr}
+    .side-card{position:static}
+    .side-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
-  @media(max-width:760px){
-    .catalog-shell{padding:22px 12px 44px}
-    .catalog-hero{padding:24px;border-radius:28px}
-    .catalog-hero::before{width:250px;height:170px;right:-100px;bottom:-78px}
-    .catalog-hero::after{display:none}
-    .catalog-hero h1{font-size:42px}
-    .catalog-summary,
-    .catalog-form-grid,
-    .catalog-filter,
-    .catalog-metrics{grid-template-columns:1fr}
-    .catalog-filter-actions{flex-direction:column}
-    .catalog-service-head{grid-template-columns:64px 1fr}
-    .catalog-img,
-    .catalog-img-fallback{width:64px;height:64px}
-    .catalog-img--lg,
-    .catalog-img-fallback--lg{width:100%;height:160px}
-    .catalog-button{width:100%}
-  }
-
-  /* Keep the galaxy background continuous while scrolling or entering the page. */
-  html,
-  body{
-    min-height:100%;
-    background:#061321;
-    overscroll-behavior-y:none;
-  }
-  body{
-    background:
-      radial-gradient(circle at 10% 8%,rgba(34,211,238,.18),transparent 27%),
-      radial-gradient(circle at 84% 12%,rgba(167,139,250,.15),transparent 30%),
-      radial-gradient(circle at 72% 92%,rgba(251,113,133,.12),transparent 30%),
-      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
-  }
-  .catalog-shell{
-    min-height:100vh;
-    min-height:100dvh;
-    overflow-x:hidden;
-    overflow-y:visible;
-    background-color:#061321;
-    background-attachment:fixed;
+  @media(max-width:720px){
+    .catalog-page{padding:18px 10px 42px}
+    .catalog-shell{width:100%}
+    .title-band,.toolbar{align-items:stretch;flex-direction:column}
+    .title-band h1{font-size:28px}
+    .searchbar,.toolbar-actions{width:100%;flex-wrap:wrap}
+    .toolbar-actions .btn{flex:1}
+    .filter-pop{width:calc(100vw - 36px)}
+    .filter-grid,.side-nav{grid-template-columns:1fr}
   }
 </style>
 
-<main class="catalog-shell">
-  <div class="catalog-wrap">
-    <% if (notice?.error) { %><div class="catalog-alert catalog-alert--error"><%= notice.error %></div><% } %>
-    <% if (notice?.success) { %><div class="catalog-alert catalog-alert--success"><%= notice.success %></div><% } %>
+<main class="catalog-page">
+  <div class="catalog-shell">
+      <section>
+        <section class="title-band">
+          <h1>Quản lý dịch vụ</h1>
+        </section>
 
-    <section class="catalog-hero" aria-label="Quản lý dịch vụ">
-      <span class="catalog-chip">Service catalog</span>
-      <h1>Quản lý <span>dịch vụ resort.</span></h1>
-      <p class="catalog-lead">Quản lý dịch vụ bán thêm: cơ sở, giá, ảnh, trạng thái và lượt dùng.</p>
-      <div class="catalog-actions">
-        <a class="catalog-button catalog-button--primary" href="/dashboard/dichvu">Quay lại dashboard</a>
-        <a class="catalog-button" href="/service">Dịch vụ</a>
-      </div>
-    </section>
+      <% if (pageNotice.error) { %><div class="alert error"><%= pageNotice.error %></div><% } %>
+      <% if (pageNotice.success) { %><div class="alert success"><%= pageNotice.success %></div><% } %>
 
-    <section class="catalog-summary" aria-label="Tổng quan danh mục dịch vụ">
-      <div class="catalog-stat"><strong><%= catalogStats.total %></strong><span>Dịch vụ theo lọc</span></div>
-      <div class="catalog-stat"><strong><%= catalogStats.active %></strong><span>Đang phục vụ</span></div>
-      <div class="catalog-stat"><strong><%= catalogStats.orders30Days %></strong><span>Lượt dùng 30 ngày</span></div>
-      <div class="catalog-stat"><strong><%= catalogStats.revenue30DaysFormatted %></strong><span>Doanh thu dịch vụ 30 ngày</span></div>
-    </section>
-
-    <section class="catalog-card">
-      <h2>Lọc danh mục</h2>
-      <p class="catalog-muted">Lọc danh sách và thống kê.</p>
-      <form method="get" action="/service/catalog/manage" class="catalog-filter">
-        <div class="catalog-field">
-          <label for="filter_keyword">Tìm kiếm</label>
-          <input id="filter_keyword" name="keyword" value="<%= filters.keyword || "" %>" placeholder="Tên dịch vụ, mô tả..." />
-        </div>
-        <% if (serviceHotelScopeSupported) { %>
-          <div class="catalog-field">
-            <label for="filter_hotel">Cơ sở</label>
-            <select id="filter_hotel" name="hotel_id">
-              <option value="0">Toàn hệ thống</option>
-              <% hotelOptions.forEach((hotel) => { %>
-                <option value="<%= hotel.id %>" <%= Number(activeHotelId) === Number(hotel.id) ? "selected" : "" %>>
-                  <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
-                </option>
-              <% }) %>
-            </select>
+      <form class="toolbar" method="get" action="/service/manage">
+        <div class="searchbar">
+          <details class="filter">
+            <summary>Bộ lọc</summary>
+            <div class="filter-pop">
+              <div class="filter-grid">
+                <% if (serviceHotelScopeSupported) { %>
+                  <div class="field">
+                    <label for="filter_hotel">Cơ sở</label>
+                    <select id="filter_hotel" name="hotel_id">
+                      <option value="0">Toàn hệ thống</option>
+                      <% hotelOptions.forEach((hotel) => { %>
+                        <option value="<%= hotel.id %>" <%= Number(activeHotelId) === Number(hotel.id) ? "selected" : "" %>>
+                          <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+                <% } %>
+                <div class="field">
+                  <label for="filter_status">Trạng thái</label>
+                  <select id="filter_status" name="status">
+                    <option value="all" <%= selectedAttr(filters.status, "all") %>>Tất cả</option>
+                    <option value="HoatDong" <%= selectedAttr(filters.status, "HoatDong") %>>Đang phục vụ</option>
+                    <option value="BaoTri" <%= selectedAttr(filters.status, "BaoTri") %>>Bảo trì</option>
+                    <option value="NgungBan" <%= selectedAttr(filters.status, "NgungBan") %>>Ngưng bán</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="filter_category">Nhóm dịch vụ</label>
+                  <select id="filter_category" name="category">
+                    <% categoryOptions.forEach((item) => { %>
+                      <option value="<%= item.key %>" <%= selectedAttr(filters.category, item.key) %>><%= item.label %></option>
+                    <% }) %>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="filter_attention">Cần chú ý</label>
+                  <select id="filter_attention" name="attention">
+                    <option value="all" <%= checkedFilter("all") %>>Tất cả</option>
+                    <option value="missing_image" <%= checkedFilter("missing_image") %>>Thiếu ảnh</option>
+                    <option value="inactive" <%= checkedFilter("inactive") %>>Bảo trì / ngưng bán</option>
+                    <option value="open_orders" <%= checkedFilter("open_orders") %>>Còn order mở</option>
+                    <option value="ordered" <%= checkedFilter("ordered") %>>Đã phát sinh</option>
+                    <option value="no_usage" <%= checkedFilter("no_usage") %>>Chưa phát sinh</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-actions">
+                <a class="btn" href="<%= resetUrl %>">Đặt lại</a>
+                <button class="btn primary" type="submit">Áp dụng</button>
+              </div>
+            </div>
+          </details>
+          <div class="field search-input">
+            <label class="sr-only" for="filter_keyword">Tìm dịch vụ</label>
+            <input id="filter_keyword" name="keyword" value="<%= filters.keyword || "" %>" placeholder="Tìm tên dịch vụ, mô tả..." />
           </div>
-        <% } %>
-        <div class="catalog-field">
-          <label for="filter_status">Trạng thái</label>
-          <select id="filter_status" name="status">
-            <option value="all" <%= selectedAttr(filters.status, "all") %>>Tất cả</option>
-            <option value="HoatDong" <%= selectedAttr(filters.status, "HoatDong") %>>Đang phục vụ</option>
-            <option value="BaoTri" <%= selectedAttr(filters.status, "BaoTri") %>>Bảo trì</option>
-            <option value="NgungBan" <%= selectedAttr(filters.status, "NgungBan") %>>Ngưng bán</option>
-          </select>
+          <button class="icon-btn primary" type="submit" aria-label="Tìm kiếm">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.15a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
         </div>
-        <div class="catalog-field">
-          <label for="filter_category">Nhóm dịch vụ</label>
-          <select id="filter_category" name="category">
-            <% categoryOptions.forEach((item) => { %>
-              <option value="<%= item.key %>" <%= selectedAttr(filters.category, item.key) %>><%= item.label %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="catalog-field">
-          <label for="filter_attention">Cần chú ý</label>
-          <select id="filter_attention" name="attention">
-            <option value="all" <%= checkedFilter("all") %>>Tất cả</option>
-            <option value="missing_image" <%= checkedFilter("missing_image") %>>Thiếu ảnh</option>
-            <option value="inactive" <%= checkedFilter("inactive") %>>Bảo trì / ngưng</option>
-            <option value="open_orders" <%= checkedFilter("open_orders") %>>Còn order mở</option>
-            <option value="ordered" <%= checkedFilter("ordered") %>>Đã phát sinh</option>
-            <option value="no_usage" <%= checkedFilter("no_usage") %>>Chưa có lượt dùng</option>
-          </select>
-        </div>
-        <div class="catalog-filter-actions">
-          <button class="catalog-button catalog-button--primary" type="submit">Áp dụng</button>
-          <a class="catalog-button" href="<%= resetUrl %>">Đặt lại</a>
+        <div class="toolbar-actions">
+          <button class="btn" type="button" data-service-import-trigger>Import dịch vụ mới</button>
+          <a class="btn primary" href="<%= addUrl %>">Thêm dịch vụ</a>
         </div>
       </form>
-      <% if (categorySummary.length) { %>
-        <div class="catalog-category-row">
-          <% categorySummary.forEach((item) => { %>
-            <span class="catalog-badge catalog-badge--blue"><%= item.label %>: <%= item.total %></span>
-          <% }) %>
-          <% if (catalogStats.missingImage) { %><span class="catalog-badge catalog-badge--amber">Thiếu ảnh: <%= catalogStats.missingImage %></span><% } %>
-          <% if (catalogStats.openOrders) { %><span class="catalog-badge catalog-badge--violet">Order mở: <%= catalogStats.openOrders %></span><% } %>
-        </div>
-      <% } %>
-    </section>
+      <form class="import-form" method="post" action="/service/manage/import?hotel_id=<%= activeHotelId || 0 %>" enctype="multipart/form-data" data-service-import-form>
+        <input type="hidden" name="hotel_id" value="<%= activeHotelId || 0 %>" />
+        <input type="file" name="import_file" accept=".csv,.xlsx,.xls" data-service-import-input aria-label="Chọn file import dịch vụ" />
+      </form>
 
-    <% if (!serviceHotelScopeSupported) { %>
-      <div class="catalog-alert catalog-alert--success">
-        Bảng <strong>dichvu</strong> chưa có cột <strong>makhachsan</strong>, nên danh mục dịch vụ đang dùng chung toàn hệ thống.
-      </div>
-    <% } %>
-
-    <div class="catalog-grid">
-      <aside class="catalog-card">
-        <h2><%= catalogForm.service_id ? "Chỉnh sửa dịch vụ" : "Tạo dịch vụ mới" %></h2>
-        <p class="catalog-muted">Dịch vụ đã phát sinh giao dịch không thể xóa.</p>
-
-        <form method="post" action="/service/catalog" enctype="multipart/form-data" id="catalogForm">
-          <input type="hidden" name="service_id" value="<%= catalogForm.service_id %>" />
-          <input type="hidden" name="hinh_anh" value="<%= catalogForm.hinh_anh %>" />
-          <input type="hidden" name="keyword" value="<%= filters.keyword || "" %>" />
-          <input type="hidden" name="status" value="<%= filters.status || "all" %>" />
-          <input type="hidden" name="category" value="<%= filters.category || "all" %>" />
-          <input type="hidden" name="attention" value="<%= filters.attention || "all" %>" />
-
-          <div class="catalog-form-grid">
-            <% if (serviceHotelScopeSupported) { %>
-              <div class="catalog-field catalog-field--full">
-                <label for="catalog_hotel">Cơ sở <span style="color:#be123c">*</span></label>
-                <select id="catalog_hotel" name="hotel_id" required>
-                  <option value="">-- Chọn cơ sở --</option>
-                  <% hotelOptions.forEach((hotel) => { %>
-                    <option value="<%= hotel.id %>" <%= Number(catalogForm.hotel_id) === Number(hotel.id) ? "selected" : "" %>>
-                      <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
-                    </option>
-                  <% }) %>
-                </select>
-              </div>
+      <section class="content-grid">
+        <section class="panel">
+          <div class="table-wrap">
+            <% if (!catalog.length) { %>
+              <div class="empty">Không có dịch vụ nào khớp bộ lọc hiện tại.</div>
             <% } else { %>
-              <input type="hidden" name="hotel_id" value="0" />
-            <% } %>
-            <div class="catalog-field catalog-field--full">
-              <label for="catalog_name">Tên dịch vụ <span style="color:#be123c">*</span></label>
-              <input id="catalog_name" name="ten_dich_vu" value="<%= catalogForm.ten_dich_vu %>" required maxlength="160" placeholder="VD: Massage đá nóng, đưa đón sân bay..." />
-            </div>
-            <div class="catalog-field">
-              <label for="catalog_price">Giá dịch vụ <span style="color:#be123c">*</span></label>
-              <input id="catalog_price" name="gia_dich_vu" type="number" min="0" step="1000" value="<%= catalogForm.gia_dich_vu %>" required />
-            </div>
-            <div class="catalog-field">
-              <label for="catalog_status">Trạng thái</label>
-              <select id="catalog_status" name="trang_thai" required>
-                <option value="HoatDong" <%= catalogForm.trang_thai === "HoatDong" ? "selected" : "" %>>Đang phục vụ</option>
-                <option value="NgungBan" <%= catalogForm.trang_thai === "NgungBan" ? "selected" : "" %>>Ngưng bán</option>
-                <option value="BaoTri" <%= catalogForm.trang_thai === "BaoTri" ? "selected" : "" %>>Bảo trì</option>
-              </select>
-            </div>
-            <div class="catalog-field catalog-field--full">
-              <label for="catalog_desc">Mô tả / điều kiện phục vụ</label>
-              <textarea id="catalog_desc" name="mo_ta" placeholder="Mô tả ngắn, thời gian chuẩn bị, điều kiện áp dụng hoặc lưu ý nội bộ..."><%= catalogForm.mo_ta %></textarea>
-            </div>
-            <div class="catalog-field catalog-field--full">
-              <label for="catalog_image">Hình ảnh dịch vụ</label>
-              <% if (editingService?.imageUrl) { %>
-                <img class="catalog-img catalog-img--lg" src="<%= editingService.imageUrl %>" alt="Ảnh dịch vụ đang chỉnh sửa" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'catalog-img-fallback catalog-img-fallback--lg', textContent: 'DV' }))" />
-              <% } else { %>
-                <div class="catalog-img-fallback catalog-img-fallback--lg" aria-hidden="true">DV</div>
-              <% } %>
-              <input id="catalog_image" name="hinh_anh_file" type="file" accept="image/jpeg,image/png,image/webp" />
-              <div class="catalog-muted">JPG, PNG, WEBP. Khi sửa mà bỏ trống, hệ thống giữ ảnh hiện tại.</div>
-            </div>
-          </div>
-
-          <div class="catalog-actions">
-            <button class="catalog-button catalog-button--primary" type="submit"><%= catalogForm.service_id ? "Lưu thay đổi" : "Tạo dịch vụ" %></button>
-            <% if (catalogForm.service_id) { %>
-              <a class="catalog-button" href="/service/catalog/manage<%= baseQuery.toString() ? `?${baseQuery.toString()}` : "" %>">Tạo mới</a>
-            <% } %>
-          </div>
-        </form>
-      </aside>
-
-      <section class="catalog-card">
-        <h2>Danh sách dịch vụ</h2>
-        <p class="catalog-muted">Hiển thị <strong><%= catalog.length %></strong> dịch vụ phù hợp bộ lọc. Mỗi card cho thấy trạng thái, lượt phát sinh, doanh thu 30 ngày và hướng xử lý.</p>
-
-        <% if (!catalog.length) { %>
-          <div class="catalog-empty">Không có dịch vụ nào khớp bộ lọc hiện tại.</div>
-        <% } else { %>
-          <div class="catalog-list">
-            <% catalog.forEach((item) => { %>
-              <article class="catalog-service-card <%= statusClass(item.trangThai) %>">
-                <div class="catalog-service-head">
-                  <% if (item.imageUrl) { %>
-                    <img class="catalog-img" src="<%= item.imageUrl %>" alt="Ảnh <%= item.tenDichVu %>" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'catalog-img-fallback', textContent: 'DV' }))" />
-                  <% } else { %>
-                    <div class="catalog-img-fallback" aria-hidden="true">DV</div>
-                  <% } %>
-                  <div>
-                    <h3 class="catalog-service-title"><%= item.tenDichVu %></h3>
-                    <div class="catalog-service-meta">
-                      <span class="catalog-badge <%= item.trangThai === "HoatDong" ? "" : (item.trangThai === "BaoTri" ? "catalog-badge--amber" : "catalog-badge--danger") %>"><%= item.statusLabel %></span>
-                      <span class="catalog-badge catalog-badge--blue"><%= item.category?.label || "Trải nghiệm khác" %></span>
-                      <% if (serviceHotelScopeSupported) { %><span class="catalog-badge catalog-badge--violet"><%= item.hotelLabel %></span><% } %>
-                    </div>
-                    <strong class="catalog-price"><%= item.giaDichVuFormatted %></strong>
+              <table class="catalog-table">
+                <thead>
+                  <tr>
+                    <th>Dịch vụ</th>
+                    <th>Cơ sở</th>
+                    <th>Nhóm</th>
+                    <th>Giá</th>
+                    <th>Trạng thái</th>
+                    <th>Lượt dùng</th>
+                    <th>Doanh thu 30 ngày</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% catalog.forEach((item) => { %>
+                    <tr data-service-row data-edit-url="<%= withEditQuery(item.id) %>">
+                      <td>
+                        <div class="service-cell">
+                          <% if (item.imageUrl) { %>
+                            <img class="service-img" src="<%= item.imageUrl %>" alt="Ảnh <%= item.tenDichVu %>" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'service-img-fallback', textContent: 'DV' }))" />
+                          <% } else { %>
+                            <div class="service-img-fallback" aria-hidden="true">DV</div>
+                          <% } %>
+                          <div>
+                            <a class="service-name" href="<%= withEditQuery(item.id) %>"><%= item.tenDichVu %></a>
+                            <span class="sub"><%= item.moTa || "Chưa có mô tả" %></span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <strong><%= item.hotelLabel || "Toàn hệ thống" %></strong>
+                        <% if (item.openOrderCount) { %><span class="sub"><%= item.openOrderCount %> order mở</span><% } %>
+                      </td>
+                      <td><span class="pill blue"><%= item.category?.label || "Trải nghiệm khác" %></span></td>
+                      <td><span class="price"><%= item.giaDichVuFormatted %></span></td>
+                      <td><span class="<%= statusClass(item.trangThai) %>"><%= item.statusLabel %></span></td>
+                      <td>
+                        <strong><%= item.orderCount || 0 %></strong>
+                        <span class="sub">30 ngày: <%= item.orderCount30Days || 0 %></span>
+                      </td>
+                      <td><strong><%= item.revenue30DaysFormatted %></strong></td>
+                      <td>
+                        <div class="row-actions">
+                          <a class="row-menu" href="<%= withEditQuery(item.id) %>" aria-label="Chỉnh sửa <%= item.tenDichVu %>">...</a>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+              <footer class="list-footer" data-service-pagination>
+                <div class="list-footer-info" data-service-page-info>
+                  Hiển thị <strong>0-0</strong> trong tổng số <strong><%= catalog.length %></strong> bản ghi
+                </div>
+                <div class="pagination-controls">
+                  <label class="page-size">
+                    <span>Hiển thị</span>
+                    <select data-service-page-size aria-label="Số dòng hiển thị">
+                      <option value="10" selected>10</option>
+                      <option value="20">20</option>
+                      <option value="50">50</option>
+                    </select>
+                  </label>
+                  <div class="page-buttons">
+                    <button class="page-btn" type="button" data-service-prev>Trước</button>
+                    <span data-service-pages></span>
+                    <button class="page-btn" type="button" data-service-next>Sau</button>
                   </div>
                 </div>
-
-                <p class="catalog-rec"><%= item.recommendation %></p>
-                <div class="catalog-metrics">
-                  <div class="catalog-metric"><strong><%= item.orderCount || 0 %></strong><span>Tổng lượt</span></div>
-                  <div class="catalog-metric"><strong><%= item.orderCount30Days || 0 %></strong><span>30 ngày</span></div>
-                  <div class="catalog-metric"><strong><%= item.revenue30DaysFormatted %></strong><span>Doanh thu 30 ngày</span></div>
-                </div>
-                <div class="catalog-muted" style="margin-top:10px">
-                  <%= item.moTa || "Chưa có mô tả. Nên bổ sung để lễ tân/khách hiểu rõ điều kiện phục vụ." %>
-                </div>
-
-                <div class="catalog-inline-actions">
-                  <a class="catalog-mini-button" href="/service/catalog/manage<%= withEditQuery(item.id) %>">Sửa</a>
-                  <% if (Number(item.orderCount || 0) > 0 && item.trangThai !== "NgungBan") { %>
-                    <form method="post" action="/service/catalog">
-                      <input type="hidden" name="service_id" value="<%= item.id %>" />
-                      <input type="hidden" name="hotel_id" value="<%= item.hotelId || 0 %>" />
-                      <input type="hidden" name="ten_dich_vu" value="<%= item.tenDichVu %>" />
-                      <input type="hidden" name="gia_dich_vu" value="<%= item.giaDichVu %>" />
-                      <input type="hidden" name="mo_ta" value="<%= item.moTa || "" %>" />
-                      <input type="hidden" name="hinh_anh" value="<%= item.hinhAnh || "" %>" />
-                      <input type="hidden" name="trang_thai" value="NgungBan" />
-                      <button class="catalog-mini-button" type="submit">Ngưng bán</button>
-                    </form>
-                  <% } %>
-                  <form method="post" action="/service/catalog/<%= item.id %>/delete" onsubmit="return confirm('Xóa dịch vụ này? Chỉ dịch vụ chưa phát sinh giao dịch mới được xóa.');">
-                    <input type="hidden" name="hotel_id" value="<%= activeHotelId || item.hotelId || 0 %>" />
-                    <button class="catalog-mini-button catalog-mini-button--danger" type="submit" <%= Number(item.orderCount || 0) > 0 ? "disabled title='Dịch vụ đã phát sinh, hãy ngưng bán thay vì xóa.'" : "" %>>Xóa</button>
-                  </form>
-                </div>
-              </article>
-            <% }) %>
+              </footer>
+            <% } %>
           </div>
-        <% } %>
+        </section>
+
       </section>
-    </div>
+    </section>
   </div>
 </main>
+
+<script>
+  (() => {
+    const importTrigger = document.querySelector("[data-service-import-trigger]");
+    const importInput = document.querySelector("[data-service-import-input]");
+    const importForm = document.querySelector("[data-service-import-form]");
+    if (importTrigger && importInput && importForm) {
+      importTrigger.addEventListener("click", () => importInput.click());
+      importInput.addEventListener("change", () => {
+        if (!importInput.files || !importInput.files.length) return;
+        importTrigger.textContent = "Đang import...";
+        importTrigger.setAttribute("disabled", "disabled");
+        importForm.submit();
+      });
+    }
+
+    const rows = Array.from(document.querySelectorAll("[data-service-row]"));
+    const pagination = document.querySelector("[data-service-pagination]");
+    const pageInfo = document.querySelector("[data-service-page-info]");
+    const pageSizeSelect = document.querySelector("[data-service-page-size]");
+    const pagePrev = document.querySelector("[data-service-prev]");
+    const pageNext = document.querySelector("[data-service-next]");
+    const pageNumbers = document.querySelector("[data-service-pages]");
+    let currentPage = 1;
+
+    if (!rows.length || !pagination || !pageInfo || !pageSizeSelect || !pagePrev || !pageNext || !pageNumbers) {
+      return;
+    }
+
+    rows.forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("a,button,input,select,textarea,summary")) return;
+        const editUrl = row.getAttribute("data-edit-url");
+        if (editUrl) window.location.href = editUrl;
+      });
+    });
+
+    const getPageSize = () => Math.max(1, Number(pageSizeSelect.value || 10));
+    const renderPageButton = (page, totalPages) => {
+      if (page === "...") return '<span class="page-ellipsis">...</span>';
+      return `<button class="page-btn ${page === currentPage ? "is-active" : ""}" type="button" data-page="${page}" ${page === currentPage ? 'aria-current="page"' : ""}>${page}</button>`;
+    };
+
+    const visiblePages = (totalPages) => {
+      const pages = new Set([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+      return [...pages]
+        .filter((page) => page >= 1 && page <= totalPages)
+        .sort((a, b) => a - b)
+        .reduce((items, page, index, array) => {
+          if (index > 0 && page - array[index - 1] > 1) items.push("...");
+          items.push(page);
+          return items;
+        }, []);
+    };
+
+    const render = () => {
+      const totalRows = rows.length;
+      const pageSize = getPageSize();
+      const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+      currentPage = Math.min(Math.max(1, currentPage), totalPages);
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalRows);
+
+      rows.forEach((row, index) => {
+        row.style.display = index >= startIndex && index < endIndex ? "" : "none";
+      });
+
+      pageInfo.innerHTML = `Hiển thị <strong>${totalRows ? startIndex + 1 : 0}-${endIndex}</strong> trong tổng số <strong>${totalRows}</strong> bản ghi`;
+      pagePrev.disabled = currentPage <= 1;
+      pageNext.disabled = currentPage >= totalPages;
+      pageNumbers.innerHTML = visiblePages(totalPages).map((page) => renderPageButton(page, totalPages)).join("");
+      pagination.style.display = "";
+    };
+
+    pageSizeSelect.addEventListener("change", () => {
+      currentPage = 1;
+      render();
+    });
+    pagePrev.addEventListener("click", () => {
+      currentPage -= 1;
+      render();
+    });
+    pageNext.addEventListener("click", () => {
+      currentPage += 1;
+      render();
+    });
+    pageNumbers.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-page]");
+      if (!button) return;
+      currentPage = Number(button.getAttribute("data-page") || 1);
+      render();
+    });
+
+    render();
+  })();
+</script>
 
 <%- include("../partials/footer") %>

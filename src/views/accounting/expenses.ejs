@@ -3,30 +3,21 @@
 <%
   const filters = payload.filters || {};
   const rows = payload.rows || [];
-  const summary = payload.summary || {};
   const statusOptions = payload.statusOptions || [];
-  const statusBreakdown = payload.statusBreakdown || [];
   const categoryOptions = payload.categoryOptions || [];
-  const dailyTrend = payload.dailyTrend || [];
-  const categoryBreakdown = payload.categoryBreakdown || [];
-  const vendorBreakdown = payload.vendorBreakdown || [];
-  const hotelBreakdown = payload.hotelBreakdown || [];
-  const highValueRows = payload.highValueRows || [];
-  const actionItems = payload.actionItems || [];
-  const chartPayload = payload.chartPayload || {};
   const hotelOptions = payload.hotelOptions || [];
   const page = Number(payload.currentPage || 1);
   const totalPages = Number(payload.totalPages || 1);
+  const totalRecords = Number(payload.totalRecords || 0);
+  const currentLimit = Number(filters.limit || 10);
+  const displayFrom = totalRecords > 0 ? ((page - 1) * currentLimit) + 1 : 0;
+  const displayTo = totalRecords > 0 ? Math.min(displayFrom + rows.length - 1, totalRecords) : 0;
   const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
   const csvQuery = makeQuery({ format: "csv" });
-  const jsonQuery = makeQuery({ format: "json" });
   const pages = [];
   const firstPage = Math.max(1, page - 2);
   const lastPage = Math.min(totalPages, page + 2);
   for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
-  const maxTrend = Math.max(...dailyTrend.map((item) => Number(item.total || 0)), 1);
-  const maxCategory = Math.max(...categoryBreakdown.map((item) => Number(item.total || 0)), 1);
-  const maxVendor = Math.max(...vendorBreakdown.map((item) => Number(item.total || 0)), 1);
 %>
 
 <style>
@@ -1205,36 +1196,831 @@
   .exp-table tbody tr:nth-child(even) td {
     background: #f0fdf4 !important;
   }
+
+  /* Accounting expense final scope: operation-first, no dashboard duplication. */
+  body {
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 48%, #f8fbff 100%) !important;
+  }
+
+  .exp-home {
+    min-height: calc(100vh - 96px);
+    padding: 24px 18px 54px;
+    color: #0f2442;
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 52%, #f8fbff 100%) !important;
+  }
+
+  .exp-wrap {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+  }
+
+  .exp-hero,
+  .exp-layout {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+  }
+
+  .exp-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .exp-layout {
+    grid-template-columns: 380px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .exp-hero-main,
+  .exp-form,
+  .exp-table-panel,
+  .exp-alert {
+    border: 1px solid #c9e0fb !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #0f2442 !important;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07) !important;
+    backdrop-filter: none !important;
+  }
+
+  .exp-hero-main {
+    padding: 12px 18px !important;
+    border: 1px solid #9cc9ff !important;
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, #0078f0 0%, #0049a8 100%) !important;
+    box-shadow: 0 14px 30px rgba(0, 82, 180, .18) !important;
+  }
+
+  .exp-hero-main::before {
+    display: none !important;
+  }
+
+  .exp-chip,
+  .exp-tag,
+  .exp-pill,
+  .exp-status,
+  .exp-cat {
+    border: 1px solid #c9e0fb !important;
+    background: #f4f9ff !important;
+    color: #003b95 !important;
+    box-shadow: none !important;
+  }
+
+  .exp-spark {
+    background: #10b981;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, .14);
+  }
+
+  .exp-hero h1 {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0 0 0 16px;
+    border-left: 5px solid rgba(255, 255, 255, .9);
+    border-radius: 0;
+    background: transparent;
+    color: #ffffff;
+    font-size: clamp(22px, 2vw, 30px);
+    line-height: 1;
+    box-shadow: none;
+    text-shadow: none !important;
+  }
+
+  .exp-hero h1 span {
+    color: #006ce4;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+
+  .exp-lead,
+  .exp-table-head p,
+  .exp-muted {
+    color: #64748b !important;
+    text-shadow: none !important;
+  }
+
+  .exp-form,
+  .exp-table-panel {
+    padding: 18px !important;
+  }
+
+  .exp-hero-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 18px;
+    align-items: center;
+  }
+
+  .exp-hero-copy {
+    min-width: 0;
+  }
+
+  .exp-hero-content .exp-actions {
+    align-self: center;
+    justify-content: flex-end;
+  }
+
+  .exp-lead {
+    max-width: 780px;
+    margin-bottom: 10px;
+  }
+
+  .exp-form h2,
+  .exp-table-panel h2 {
+    margin: 0 0 10px;
+    color: #0f2442 !important;
+    font-size: 22px;
+    text-shadow: none !important;
+  }
+
+  .exp-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .exp-field label {
+    color: #0f2442 !important;
+    font-size: 12px;
+    text-shadow: none;
+  }
+
+  .exp-field input,
+  .exp-field select,
+  .exp-status-form select {
+    min-height: 44px;
+    border: 1px solid #c9e0fb !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    color: #0f2442 !important;
+    box-shadow: none !important;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .exp-field input:focus,
+  .exp-field select:focus,
+  .exp-status-form select:focus {
+    border-color: #006ce4 !important;
+    outline: 3px solid rgba(0, 108, 228, .12);
+  }
+
+  .exp-button,
+  .exp-page {
+    min-height: 40px;
+    border-radius: 8px !important;
+    border: 1px solid #b9d8ff !important;
+    background: #ffffff !important;
+    color: #003b95 !important;
+    box-shadow: none !important;
+    text-decoration: none;
+  }
+
+  .exp-button--primary,
+  .exp-page.is-active {
+    border-color: transparent !important;
+    background: #006ce4 !important;
+    color: #ffffff !important;
+  }
+
+  .exp-button--mini {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .exp-button:hover,
+  .exp-page:hover {
+    transform: translateY(-1px);
+    border-color: #006ce4 !important;
+  }
+
+  .exp-table-wrap {
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  .exp-table {
+    min-width: 1040px;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+  .exp-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 13px 14px;
+    background: #f1f7ff;
+    color: #0f2442 !important;
+    border-bottom: 1px solid #c9e0fb;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+
+  .exp-table td,
+  .exp-table tbody tr:nth-child(odd) td,
+  .exp-table tbody tr:nth-child(even) td {
+    padding: 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid #e0edfb !important;
+    background: #ffffff !important;
+    color: #0f2442 !important;
+    box-shadow: none !important;
+    font-size: 14px;
+  }
+
+  .exp-table tbody tr:hover td {
+    background: #f4f9ff !important;
+  }
+
+  .exp-status-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+  }
+
+  .exp-status-form select {
+    min-width: 132px;
+    min-height: 34px;
+    font-size: 13px;
+  }
+
+  .exp-expense-list {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid #d7e8fb;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  .exp-expense-header,
+  .exp-expense-item {
+    display: grid;
+    grid-template-columns: minmax(210px, 1.3fr) 120px 120px minmax(190px, 1fr) minmax(180px, .95fr) 130px 126px 56px;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .exp-expense-header {
+    min-height: 50px;
+    padding: 0 14px;
+    border-bottom: 1px solid #d7e8fb;
+    background: #f1f7ff;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .exp-expense-sort {
+    color: #b8c4d4;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+
+  .exp-expense-item {
+    min-height: 58px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e0edfb;
+    background: #ffffff;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .exp-expense-item:last-child {
+    border-bottom: 0;
+  }
+
+  .exp-expense-item:hover {
+    background: #f8fbff;
+  }
+
+  .exp-expense-main,
+  .exp-expense-meta,
+  .exp-expense-status,
+  .exp-expense-item > span,
+  .exp-expense-item > strong {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .exp-expense-main strong,
+  .exp-expense-money {
+    display: block;
+    color: #0f2442;
+    font-weight: 1000;
+  }
+
+  .exp-expense-title {
+    display: block;
+    color: #0f2442;
+    font-weight: 1000;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .exp-expense-title:hover {
+    color: #003b95;
+  }
+
+  .exp-expense-money {
+    color: #047857;
+    text-align: left;
+    white-space: nowrap;
+    font-weight: 1000;
+  }
+
+  .exp-expense-item .exp-cat,
+  .exp-expense-item .exp-status {
+    width: max-content;
+    max-width: 100%;
+    min-height: 28px;
+    padding: 0 12px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .exp-expense-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .exp-expense-sub {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .exp-expense-meta strong {
+    display: block;
+    min-width: 0;
+    color: #0f2442;
+    font-weight: 900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .exp-list-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 14px;
+    color: #0f2442;
+    font-size: 14px;
+    font-weight: 750;
+  }
+
+  .exp-list-count strong {
+    font-weight: 1000;
+  }
+
+  .exp-list-controls,
+  .exp-limit-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .exp-list-controls {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .exp-limit-label {
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .exp-limit-select {
+    min-height: 36px;
+    min-width: 72px;
+    border: 1px solid #d7e8fb;
+    border-radius: 8px;
+    padding: 0 10px;
+    background: #ffffff;
+    color: #0f2442;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .exp-list-footer .exp-pagination {
+    margin-top: 0;
+    gap: 6px;
+  }
+
+  .exp-list-footer .exp-page {
+    min-height: 36px;
+    min-width: 40px;
+    padding: 0 12px;
+    border-radius: 8px !important;
+    font-size: 13px;
+  }
+
+  .exp-page.is-disabled {
+    pointer-events: none;
+    opacity: .48;
+    color: #94a3b8 !important;
+  }
+
+  .exp-expense-label {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .exp-workbench {
+    grid-template-columns: 1fr !important;
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .exp-hero {
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .exp-toolbar-panel {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: flex-start;
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    padding: 12px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .exp-toolbar-panel > .exp-filter-menu {
+    flex: 0 0 auto;
+  }
+
+  .exp-toolbar-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .exp-quick-search {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .exp-quick-search input {
+    width: min(360px, 34vw);
+    min-height: 34px;
+    border: 1px solid #c9e0fb;
+    border-right: 0;
+    border-radius: 8px 0 0 8px;
+    padding: 0 12px;
+    background: #ffffff;
+    color: #0f2442;
+    font-size: 13px;
+    font-weight: 800;
+    outline: none;
+  }
+
+  .exp-quick-search input:focus {
+    border-color: #006ce4;
+    box-shadow: inset 0 0 0 2px rgba(0, 108, 228, .08);
+  }
+
+  .exp-search-button {
+    width: 38px;
+    min-width: 38px !important;
+    min-height: 34px !important;
+    padding: 0 !important;
+    border-radius: 0 8px 8px 0 !important;
+  }
+
+  .exp-search-button svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.6;
+  }
+
+  .exp-filter-menu > summary {
+    gap: 8px;
+  }
+
+  .exp-filter-menu > summary svg,
+  .exp-icon-button svg {
+    width: 17px;
+    height: 17px;
+    stroke-width: 2.2;
+  }
+
+  .exp-filter-inline {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    z-index: 24;
+    width: min(860px, calc(100vw - 48px));
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    align-items: end;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 20px 42px rgba(15, 36, 66, .14);
+  }
+
+  .exp-filter-inline .exp-field {
+    min-width: 0;
+  }
+
+  .exp-filter-inline .exp-field label {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .exp-filter-inline .exp-field input,
+  .exp-filter-inline .exp-field select {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .exp-filter-inline .exp-button {
+    min-height: 38px;
+    padding: 0 14px;
+    white-space: nowrap;
+  }
+
+  .exp-filter-search input {
+    min-width: 0;
+  }
+
+  .exp-filter-menu,
+  .exp-create-menu {
+    position: relative;
+  }
+
+  .exp-filter-menu > summary,
+  .exp-create-menu > summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 142px;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .exp-filter-menu > summary::-webkit-details-marker,
+  .exp-create-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .exp-filter-menu[open] > summary {
+    border-color: transparent !important;
+    background: #006ce4 !important;
+    color: #ffffff !important;
+  }
+
+  .exp-create-menu {
+    justify-self: end;
+  }
+
+  .exp-toolbar-actions {
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: max-content;
+    margin-left: auto;
+  }
+
+  .exp-toolbar-actions .exp-button,
+  .exp-filter-menu > summary,
+  .exp-create-menu > summary {
+    min-height: 34px;
+    min-width: 112px;
+    padding: 0 12px;
+    border-radius: 8px !important;
+    font-size: 13px;
+  }
+
+  .exp-toolbar-actions .exp-icon-button,
+  .exp-create-menu > summary.exp-icon-button {
+    width: 40px;
+    min-width: 40px;
+    padding: 0;
+  }
+
+  .exp-icon-button {
+    gap: 0;
+  }
+
+  .exp-create-menu[open] > summary {
+    background: #0057bd !important;
+  }
+
+  .exp-form--create {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 25;
+    width: min(720px, calc(100vw - 48px));
+    padding: 16px !important;
+  }
+
+  .exp-form--create h2 {
+    font-size: 20px;
+  }
+
+  .exp-form--create .exp-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exp-list-stack {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .exp-list-stack .exp-table-panel {
+    width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  .exp-list-stack .exp-table-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .exp-list-stack .exp-table-head h2 {
+    margin-bottom: 2px;
+  }
+
+  @media (max-width: 1180px) {
+    .exp-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .exp-toolbar-panel {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .exp-toolbar-left {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .exp-quick-search input {
+      width: 100%;
+    }
+
+    .exp-filter-menu,
+    .exp-create-menu {
+      justify-self: stretch;
+    }
+
+    .exp-toolbar-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      justify-content: stretch;
+    }
+
+    .exp-toolbar-actions > .exp-button,
+    .exp-filter-menu > summary,
+    .exp-create-menu > summary {
+      width: 100%;
+    }
+
+    .exp-filter-inline {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .exp-expense-item {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+    }
+
+    .exp-expense-header {
+      display: none;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .exp-home {
+      padding: 18px 12px 42px;
+    }
+
+    .exp-field-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .exp-filter-inline,
+    .exp-form--create .exp-field-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .exp-filter-inline {
+      position: static;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .exp-form--create {
+      position: static;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .exp-table-head,
+    .exp-status-form {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .exp-expense-item {
+      grid-template-columns: 1fr;
+    }
+
+    .exp-list-footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .exp-list-controls {
+      justify-content: flex-start;
+    }
+
+    .exp-hero-content {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+
+    .exp-hero-content .exp-actions {
+      justify-content: flex-start;
+    }
+
+    .exp-expense-money {
+      text-align: left;
+    }
+  }
 </style>
+<%- include("../partials/accounting-background") %>
 
 <main class="exp-home">
+  <section class="accounting-uc-layout">
+    <%- include("../partials/accounting-uc-sidebar", { activeHref: "/accounting/expenses" }) %>
+    <div class="accounting-uc-main">
   <div class="exp-wrap">
     <section class="exp-hero" aria-label="Quản lý chi phí">
       <div class="exp-hero-main">
         <div class="exp-hero-content">
-          <div class="exp-chip"><span class="exp-spark"></span> Expense control</div>
-          <h1>Quản lý <span>chi phí</span></h1>
-          <p class="exp-lead">Kiểm soát phiếu chi vận hành, trạng thái duyệt, nhóm chi phí và xu hướng phát sinh theo kỳ.</p>
-          <div class="exp-tags">
-            <span class="exp-tag"><%= payload.rangeLabel %></span>
-            <span class="exp-tag"><%= payload.hotelContext.label %></span>
-            <span class="exp-tag"><%= payload.totalRecords %> phiếu chi</span>
-            <span class="exp-tag">Cập nhật <%= payload.generatedAtLabel %></span>
-          </div>
-          <div class="exp-actions">
-            <a class="exp-button exp-button--primary" href="/api/accounting/expenses?<%= csvQuery %>">Xuất CSV</a>
-            <a class="exp-button" href="/api/accounting/expenses?<%= jsonQuery %>">JSON</a>
-            <a class="exp-button exp-button--mint" href="/accounting/reports?loai_baocao=chiphi&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Xem báo cáo chi phí</a>
+          <div class="exp-hero-copy">
+            <h1>Quản lý chi phí</h1>
           </div>
         </div>
       </div>
-
-      <aside class="exp-kpi-grid" aria-label="KPI chi phí">
-        <article class="exp-kpi is-orange"><span>Chi phí còn hiệu lực</span><strong><%= summary.totalExpenseFormatted %></strong></article>
-        <article class="exp-kpi is-green"><span>Đã duyệt</span><strong><%= summary.approvedExpenseFormatted %></strong></article>
-        <article class="exp-kpi is-sun"><span>Chờ duyệt</span><strong><%= summary.pendingExpenseFormatted %></strong></article>
-        <article class="exp-kpi is-violet"><span>Tỷ lệ duyệt</span><strong><%= summary.approvalRateFormatted %></strong></article>
-      </aside>
     </section>
 
     <% if (payload.warnings && payload.warnings.length) { %>
@@ -1245,109 +2031,17 @@
       </section>
     <% } %>
 
-    <section class="exp-insight-grid" aria-label="Việc cần xử lý chi phí">
-      <% if (!actionItems.length) { %>
-        <article class="exp-insight">
-          <span class="exp-status exp-status--green">Ổn định</span>
-          <strong>Không có cảnh báo lớn</strong>
-          <p>Chi phí trong kỳ chưa có phiếu thiếu chứng từ hoặc khoản chờ duyệt đáng chú ý.</p>
-        </article>
-      <% } %>
-      <% actionItems.forEach((item) => { %>
-        <article class="exp-insight">
-          <span class="exp-status exp-status--<%= item.tone %>">Cần chú ý</span>
-          <strong><%= item.title %></strong>
-          <p><%= item.note %></p>
-        </article>
-      <% }) %>
-      <article class="exp-insight">
-        <span class="exp-status exp-status--slate">Kiểm soát</span>
-        <strong><%= summary.missingEvidenceCount || 0 %> thiếu chứng từ</strong>
-        <p>Phiếu chi nên có hóa đơn, nhà cung cấp hoặc ghi chú đối soát trước khi duyệt.</p>
-      </article>
-      <article class="exp-insight">
-        <span class="exp-status exp-status--sun">Quy mô</span>
-        <strong><%= summary.averageExpenseFormatted %> / phiếu</strong>
-        <p><%= summary.activeCount || 0 %> phiếu còn hiệu lực, <%= summary.cancelledCount || 0 %> phiếu đã hủy.</p>
-      </article>
-    </section>
-
-    <section class="exp-layout">
-      <aside class="exp-side-stack">
-        <section class="exp-form">
-          <h2>Thêm phiếu chi</h2>
-          <form method="post" action="/accounting/expenses">
-            <div class="exp-field-grid">
-              <div class="exp-field is-wide">
-                <label for="ten_chi_phi">Tên chi phí</label>
-                <input id="ten_chi_phi" name="ten_chi_phi" required placeholder="Ví dụ: Chi phí bảo trì phòng" />
-              </div>
-              <div class="exp-field">
-                <label for="ngay_chi">Ngày chi</label>
-                <input id="ngay_chi" type="date" name="ngay_chi" required value="<%= filters.den_ngay %>" />
-              </div>
-              <div class="exp-field">
-                <label for="so_tien">Số tiền</label>
-                <input id="so_tien" name="so_tien" type="number" min="0" step="1000" required placeholder="0" />
-              </div>
-              <div class="exp-field">
-                <label for="loai_chi_phi">Nhóm chi phí</label>
-                <select id="loai_chi_phi" name="loai_chi_phi">
-                  <% categoryOptions.filter((option) => option.value !== "all").forEach((option) => { %>
-                    <option value="<%= option.value %>"><%= option.label %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="exp-field">
-                <label for="trang_thai_create">Trạng thái</label>
-                <select id="trang_thai_create" name="trang_thai">
-                  <option value="ChoDuyet">Chờ duyệt</option>
-                  <option value="DaDuyet">Đã duyệt</option>
-                  <option value="Huy">Đã hủy</option>
-                </select>
-              </div>
-              <div class="exp-field">
-                <label for="hotel_id_create">Cơ sở ghi nhận</label>
-                <select id="hotel_id_create" name="hotel_id">
-                  <option value="0">Chi phí dùng chung</option>
-                  <% hotelOptions.forEach((hotel) => { %>
-                    <option value="<%= hotel.id %>"><%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="exp-field">
-                <label for="phuong_thuc_chi">Phương thức chi</label>
-                <select id="phuong_thuc_chi" name="phuong_thuc_chi">
-                  <option value="ChuyenKhoan">Chuyển khoản</option>
-                  <option value="TienMat">Tiền mặt</option>
-                  <option value="The">Thẻ</option>
-                  <option value="ViDienTu">Ví điện tử</option>
-                  <option value="CongNo">Công nợ NCC</option>
-                </select>
-              </div>
-              <div class="exp-field">
-                <label for="nha_cung_cap">Nhà cung cấp</label>
-                <input id="nha_cung_cap" name="nha_cung_cap" placeholder="Tên nhà cung cấp..." />
-              </div>
-              <div class="exp-field">
-                <label for="so_hoa_don">Số chứng từ</label>
-                <input id="so_hoa_don" name="so_hoa_don" placeholder="Hóa đơn/phiếu chi..." />
-              </div>
-              <div class="exp-field is-wide">
-                <label for="noi_dung">Nội dung</label>
-                <input id="noi_dung" name="noi_dung" placeholder="Ghi chú chứng từ, nhà cung cấp hoặc lý do chi..." />
-              </div>
-            </div>
-            <div class="exp-form-actions">
-              <button class="exp-button exp-button--primary" type="submit">Thêm chi phí</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="exp-form">
-          <h2>Bộ lọc</h2>
-          <form method="get" action="/accounting/expenses">
-            <div class="exp-field-grid">
+    <section class="exp-layout exp-workbench">
+      <section class="exp-toolbar-panel">
+        <div class="exp-toolbar-left">
+          <details class="exp-filter-menu">
+            <summary class="exp-button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 5h16l-6 7v5l-4 2v-7L4 5Z" stroke="currentColor" stroke-linejoin="round"></path>
+              </svg>
+              Bộ lọc
+            </summary>
+            <form class="exp-filter-inline" method="get" action="/accounting/expenses">
               <div class="exp-field">
                 <label for="tu_ngay">Từ ngày</label>
                 <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
@@ -1365,7 +2059,7 @@
                 </select>
               </div>
               <div class="exp-field">
-                <label for="nhom">Nhóm chi phí</label>
+                <label for="nhom">Nhóm</label>
                 <select id="nhom" name="nhom">
                   <% categoryOptions.forEach((option) => { %>
                     <option value="<%= option.value %>" <%= filters.nhom === option.value ? "selected" : "" %>><%= option.label %></option>
@@ -1373,14 +2067,6 @@
                 </select>
               </div>
               <div class="exp-field">
-                <label for="limit">Hiển thị</label>
-                <select id="limit" name="limit">
-                  <% [15, 25, 50, 100].forEach((limit) => { %>
-                    <option value="<%= limit %>" <%= Number(filters.limit) === limit ? "selected" : "" %>><%= limit %> dòng</option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="exp-field is-wide">
                 <label for="hotel_id">Cơ sở</label>
                 <select id="hotel_id" name="hotel_id">
                   <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
@@ -1391,407 +2077,210 @@
                   <% }) %>
                 </select>
               </div>
-              <div class="exp-field is-wide">
+              <div class="exp-field">
+                <label for="limit">Hiển thị</label>
+                <select id="limit" name="limit">
+                  <% [10, 20, 30].forEach((limit) => { %>
+                    <option value="<%= limit %>" <%= Number(filters.limit) === limit ? "selected" : "" %>><%= limit %> dòng</option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="exp-field exp-filter-search">
                 <label for="search">Tìm kiếm</label>
-                <input id="search" name="search" value="<%= filters.search %>" placeholder="Mã phiếu, tên chi phí hoặc nội dung..." />
+                <input id="search" name="search" value="<%= filters.search %>" placeholder="Mã phiếu, tên chi phí, chứng từ..." />
               </div>
-            </div>
-            <input type="hidden" name="page" value="1" />
-            <div class="exp-form-actions">
-              <button class="exp-button exp-button--primary" type="submit">Lọc chi phí</button>
+              <input type="hidden" name="page" value="1" />
+              <button class="exp-button exp-button--primary" type="submit">Áp dụng</button>
               <a class="exp-button" href="/accounting/expenses">Đặt lại</a>
-            </div>
+            </form>
+          </details>
+          <form class="exp-quick-search" method="get" action="/accounting/expenses">
+            <input type="hidden" name="tu_ngay" value="<%= filters.tu_ngay %>" />
+            <input type="hidden" name="den_ngay" value="<%= filters.den_ngay %>" />
+            <input type="hidden" name="trang_thai" value="<%= filters.trang_thai %>" />
+            <input type="hidden" name="nhom" value="<%= filters.nhom %>" />
+            <input type="hidden" name="hotel_id" value="<%= filters.hotel_id %>" />
+            <input type="hidden" name="limit" value="<%= filters.limit %>" />
+            <input type="hidden" name="page" value="1" />
+            <input id="quick_search" name="search" value="<%= filters.search %>" placeholder="Tìm mã phiếu, tên chi phí..." aria-label="Tìm kiếm phiếu chi" />
+            <button class="exp-button exp-button--primary exp-search-button" type="submit" aria-label="Tìm kiếm">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor"></circle>
+                <path d="M16.5 16.5L21 21" stroke="currentColor" stroke-linecap="round"></path>
+              </svg>
+            </button>
           </form>
-        </section>
+        </div>
 
-        <section class="exp-panel">
-          <h2>Trạng thái phiếu chi</h2>
-          <div class="exp-breakdown">
-            <% if (!statusBreakdown.length) { %>
-              <div class="exp-empty">Chưa có dữ liệu trạng thái trong kỳ này.</div>
-            <% } %>
-            <% statusBreakdown.forEach((item) => {
-              const pct = summary.totalExpense > 0 ? Math.round((Number(item.total || 0) / Number(summary.totalExpense || 1)) * 100) : 0;
-            %>
-              <div class="exp-break-row">
-                <span class="exp-status exp-status--<%= item.meta.tone %>"><%= item.meta.label %></span>
-                <div class="exp-meter"><span style="width:<%= Math.max(5, pct) %>%"></span></div>
-                <span class="exp-pill"><%= item.count %> · <%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-        </section>
-      </aside>
-
-      <section class="exp-side-stack">
-        <section class="exp-chart-grid" aria-label="Biểu đồ phân tích chi phí">
-          <article class="exp-chart-card">
-            <h2>Xu hướng chi phí</h2>
-            <p>Theo dõi tổng chi còn hiệu lực, đã duyệt và chờ duyệt theo ngày.</p>
-            <div class="exp-chart-box">
-              <canvas id="expenseTrendChart" aria-label="Xu hướng chi phí theo ngày"></canvas>
-            </div>
-          </article>
-          <article class="exp-chart-card">
-            <h2>Cơ cấu nhóm chi</h2>
-            <p>Tỷ trọng nhóm chi phí để phát hiện nhóm tăng bất thường.</p>
-            <div class="exp-chart-box is-compact">
-              <canvas id="expenseCategoryChart" aria-label="Cơ cấu nhóm chi phí"></canvas>
-            </div>
-          </article>
-        </section>
-
-        <section class="exp-panel">
-          <h2>Nhóm chi phí</h2>
-          <div class="exp-cats">
-            <% if (!categoryBreakdown.length) { %>
-              <div class="exp-empty">Chưa có dữ liệu nhóm chi phí.</div>
-            <% } %>
-            <% categoryBreakdown.forEach((item) => { %>
-              <article class="exp-cat-row">
-                <div>
-                  <span class="exp-cat exp-cat--<%= item.meta.tone %>"><%= item.meta.label %></span>
-                  <span style="margin-top:7px"><%= item.count %> phiếu · <%= item.share %>%</span>
-                  <div class="exp-meter is-thin"><span style="width:<%= Math.max(4, Math.round((Number(item.total || 0) / maxCategory) * 100)) %>%"></span></div>
+        <div class="exp-toolbar-actions">
+          <a class="exp-button exp-icon-button" href="/api/accounting/expenses?<%= csvQuery %>" aria-label="Xuất file CSV" title="Xuất file CSV">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 4v10" stroke="currentColor" stroke-linecap="round"></path>
+              <path d="M8 10l4 4 4-4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M5 19h14" stroke="currentColor" stroke-linecap="round"></path>
+            </svg>
+          </a>
+          <details class="exp-create-menu">
+            <summary class="exp-button exp-button--primary exp-icon-button" aria-label="Thêm phiếu chi" title="Thêm phiếu chi">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 5v14" stroke="currentColor" stroke-linecap="round"></path>
+                <path d="M5 12h14" stroke="currentColor" stroke-linecap="round"></path>
+              </svg>
+            </summary>
+            <section class="exp-form exp-form--create">
+              <h2>Thêm phiếu chi</h2>
+              <form method="post" action="/accounting/expenses">
+                <div class="exp-field-grid">
+                  <div class="exp-field is-wide">
+                    <label for="ten_chi_phi">Tên chi phí</label>
+                    <input id="ten_chi_phi" name="ten_chi_phi" required placeholder="Ví dụ: Chi phí bảo trì phòng" />
+                  </div>
+                  <div class="exp-field">
+                    <label for="ngay_chi">Ngày chi</label>
+                    <input id="ngay_chi" type="date" name="ngay_chi" required value="<%= filters.den_ngay %>" />
+                  </div>
+                  <div class="exp-field">
+                    <label for="so_tien">Số tiền</label>
+                    <input id="so_tien" name="so_tien" type="number" min="0" step="1000" required placeholder="0" />
+                  </div>
+                  <div class="exp-field">
+                    <label for="loai_chi_phi">Nhóm chi phí</label>
+                    <select id="loai_chi_phi" name="loai_chi_phi">
+                      <% categoryOptions.filter((option) => option.value !== "all").forEach((option) => { %>
+                        <option value="<%= option.value %>"><%= option.label %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <input type="hidden" name="trang_thai" value="ChoDuyet" />
+                  <div class="exp-field">
+                    <label for="hotel_id_create">Cơ sở ghi nhận</label>
+                    <select id="hotel_id_create" name="hotel_id">
+                      <option value="0">Chi phí dùng chung</option>
+                      <% hotelOptions.forEach((hotel) => { %>
+                        <option value="<%= hotel.id %>"><%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %></option>
+                      <% }) %>
+                    </select>
+                  </div>
+                  <div class="exp-field">
+                    <label for="phuong_thuc_chi">Phương thức chi</label>
+                    <select id="phuong_thuc_chi" name="phuong_thuc_chi">
+                      <option value="ChuyenKhoan">Chuyển khoản</option>
+                      <option value="TienMat">Tiền mặt</option>
+                      <option value="The">Thẻ</option>
+                      <option value="ViDienTu">Ví điện tử</option>
+                      <option value="CongNo">Công nợ NCC</option>
+                    </select>
+                  </div>
+                  <div class="exp-field">
+                    <label for="nha_cung_cap">Nhà cung cấp</label>
+                    <input id="nha_cung_cap" name="nha_cung_cap" placeholder="Tên nhà cung cấp..." />
+                  </div>
+                  <div class="exp-field">
+                    <label for="so_hoa_don">Số chứng từ</label>
+                    <input id="so_hoa_don" name="so_hoa_don" placeholder="Hóa đơn/phiếu chi..." />
+                  </div>
+                  <div class="exp-field is-wide">
+                    <label for="noi_dung">Nội dung</label>
+                    <input id="noi_dung" name="noi_dung" placeholder="Ghi chú chứng từ, nhà cung cấp hoặc lý do chi..." />
+                  </div>
                 </div>
-                <strong class="exp-money"><%= item.totalFormatted %></strong>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="exp-panel">
-          <h2>Nhà cung cấp & cơ sở</h2>
-          <div class="exp-analysis-grid">
-            <div>
-              <p class="exp-muted">Top nhà cung cấp theo chi phí còn hiệu lực.</p>
-              <div class="exp-cats">
-                <% if (!vendorBreakdown.length) { %><div class="exp-empty">Chưa có dữ liệu nhà cung cấp.</div><% } %>
-                <% vendorBreakdown.forEach((vendor) => { %>
-                  <article class="exp-mini-row">
-                    <div>
-                      <strong><%= vendor.vendorName %></strong>
-                      <small><%= vendor.count %> phiếu</small>
-                      <div class="exp-meter is-thin"><span style="width:<%= Math.max(4, Math.round((Number(vendor.total || 0) / maxVendor) * 100)) %>%"></span></div>
-                    </div>
-                    <span class="exp-money"><%= vendor.totalFormatted %></span>
-                  </article>
-                <% }) %>
-              </div>
-            </div>
-            <div>
-              <p class="exp-muted">Phân bổ chi phí theo cơ sở resort.</p>
-              <div class="exp-cats">
-                <% if (!hotelBreakdown.length) { %><div class="exp-empty">Chưa có dữ liệu cơ sở.</div><% } %>
-                <% hotelBreakdown.forEach((hotel) => { %>
-                  <article class="exp-mini-row">
-                    <div>
-                      <strong><%= hotel.hotelLabel %></strong>
-                      <small><%= hotel.count %> phiếu · chờ duyệt <%= hotel.pendingFormatted %></small>
-                    </div>
-                    <span class="exp-money"><%= hotel.totalFormatted %></span>
-                  </article>
-                <% }) %>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="exp-panel">
-          <h2>Xu hướng theo ngày</h2>
-          <div class="exp-trend">
-            <% if (!dailyTrend.length) { %>
-              <div class="exp-empty">Không có xu hướng để hiển thị.</div>
-            <% } %>
-            <% dailyTrend.slice(-10).forEach((item) => { %>
-              <div class="exp-trend-row">
-                <strong><%= item.dateLabel %></strong>
-                <div class="exp-meter"><span style="width:<%= Math.max(5, Math.round((Number(item.total || 0) / maxTrend) * 100)) %>%"></span></div>
-                <span class="exp-money"><%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-          <% if (payload.highestDay) { %>
-            <p class="exp-muted" style="margin:14px 0 0">Ngày chi nhiều nhất: <strong><%= payload.highestDay.dateLabel %></strong> với <strong><%= payload.highestDay.totalFormatted %></strong>.</p>
-          <% } %>
-        </section>
-
-        <section class="exp-panel">
-          <h2>Khoản chi cần rà soát</h2>
-          <div class="exp-cats">
-            <% if (!highValueRows.length) { %>
-              <div class="exp-empty">Chưa có khoản chi giá trị cao trong bộ lọc hiện tại.</div>
-            <% } %>
-            <% highValueRows.forEach((row) => { %>
-              <article class="exp-mini-row">
-                <div>
-                  <span class="exp-cat exp-cat--<%= row.categoryMeta.tone %>"><%= row.categoryMeta.label %></span>
-                  <strong style="margin-top:8px">CP-<%= row.id %> · <%= row.tenChiPhi %></strong>
-                  <small><%= row.ngayChiLabel %> · <%= row.vendorLabel %> · <%= row.invoiceLabel %></small>
+                <div class="exp-form-actions">
+                  <button class="exp-button exp-button--primary" type="submit">Lưu phiếu chi</button>
                 </div>
-                <span class="exp-money"><%= row.soTienFormatted %></span>
-              </article>
-            <% }) %>
-          </div>
-        </section>
+              </form>
+            </section>
+          </details>
+        </div>
+      </section>
 
+      <section class="exp-side-stack exp-list-stack">
         <section class="exp-table-panel">
-          <div class="exp-table-head">
-            <div>
-              <h2>Danh sách phiếu chi</h2>
-              <p>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRecords %> bản ghi.</p>
-            </div>
-            <span class="exp-pill">Đã hủy: <%= summary.cancelledExpenseFormatted %></span>
-          </div>
-
           <% if (!payload.hasData) { %>
             <div class="exp-empty">Không có phiếu chi phù hợp với bộ lọc hiện tại.</div>
           <% } else { %>
-            <div class="exp-table-wrap">
-              <table class="exp-table">
-                <thead>
-                  <tr>
-                    <th>Mã phiếu</th>
-                    <th>Ngày chi</th>
-                    <th>Chi phí</th>
-                    <th>Nhóm</th>
-                    <th>Nhà cung cấp</th>
-                    <th>Cơ sở</th>
-                    <th>Chứng từ</th>
-                    <th>Số tiền</th>
-                    <th>Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% rows.forEach((row) => { %>
-                    <tr>
-                      <td>
-                        <span class="exp-code">
-                          CP-<%= row.id %>
-                          <span class="exp-muted">#<%= row.id %></span>
-                        </span>
-                      </td>
-                      <td><%= row.ngayChiLabel %></td>
-                      <td>
-                        <strong><%= row.tenChiPhi %></strong>
-                        <% if (row.isHighValue) { %><span class="exp-status exp-status--rose" style="margin-left:6px">Giá trị cao</span><% } %>
-                        <div class="exp-muted"><%= row.noiDung || "Không có nội dung" %></div>
-                      </td>
-                      <td><span class="exp-cat exp-cat--<%= row.categoryMeta.tone %>"><%= row.categoryMeta.label %></span></td>
-                      <td>
-                        <strong><%= row.vendorLabel %></strong>
-                        <div class="exp-muted"><%= row.phuongThucChiLabel %></div>
-                      </td>
-                      <td><%= row.hotelLabel %></td>
-                      <td>
-                        <span class="exp-status exp-status--<%= row.evidenceMeta.tone %>"><%= row.evidenceMeta.label %></span>
-                        <div class="exp-muted" style="margin-top:5px"><%= row.invoiceLabel %></div>
-                      </td>
-                      <td class="exp-money"><%= row.soTienFormatted %></td>
-                      <td>
-                        <span class="exp-status exp-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
-                        <div class="exp-muted" style="margin-top:5px"><%= row.statusMeta.hint %></div>
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
+            <div class="exp-expense-list">
+              <div class="exp-expense-header" aria-hidden="true">
+                <span>Phiếu chi <span class="exp-expense-sort">↕</span></span>
+                <span>Ngày chi <span class="exp-expense-sort">↕</span></span>
+                <span>Nhóm <span class="exp-expense-sort">↕</span></span>
+                <span>Cơ sở <span class="exp-expense-sort">↕</span></span>
+                <span>Chứng từ <span class="exp-expense-sort">↕</span></span>
+                <span>Số tiền <span class="exp-expense-sort">↕</span></span>
+                <span>Trạng thái <span class="exp-expense-sort">↕</span></span>
+                <span></span>
+              </div>
+              <% rows.forEach((row) => { %>
+                <a class="exp-expense-item" href="/accounting/expenses/<%= row.id %>" aria-label="Mở phiếu chi CP-<%= row.id %>">
+                  <div class="exp-expense-main">
+                    <strong class="exp-expense-title"><%= row.tenChiPhi %></strong>
+                    <span class="exp-expense-sub">CP-<%= row.id %> · <%= row.noiDung || "Không có nội dung" %></span>
+                  </div>
+                  <span><%= row.ngayChiLabel %></span>
+                  <div class="exp-expense-meta">
+                    <span class="exp-cat exp-cat--<%= row.categoryMeta.tone %>"><%= row.categoryMeta.label %></span>
+                  </div>
+                  <span><%= row.hotelLabel %></span>
+                  <div class="exp-expense-meta">
+                    <strong><%= row.vendorLabel %></strong>
+                    <span class="exp-expense-sub"><%= row.phuongThucChiLabel %> · <%= row.invoiceLabel %></span>
+                  </div>
+                  <strong class="exp-expense-money"><%= row.soTienFormatted %></strong>
+                  <span class="exp-status exp-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
+                  <span class="exp-expense-action" aria-hidden="true">☰</span>
+                </a>
+              <% }) %>
             </div>
 
-            <% if (totalPages > 1) { %>
-              <nav class="exp-pagination" aria-label="Phân trang chi phí">
-                <% if (page > 1) { %>
-                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: page - 1 }) %>">Trước</a>
-                <% } %>
-                <% if (firstPage > 1) { %>
-                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: 1 }) %>">1</a>
-                <% } %>
-                <% pages.forEach((item) => { %>
-                  <a class="exp-page <%= item === page ? "is-active" : "" %>" href="/accounting/expenses?<%= makeQuery({ page: item }) %>"><%= item %></a>
-                <% }) %>
-                <% if (lastPage < totalPages) { %>
-                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a>
-                <% } %>
-                <% if (page < totalPages) { %>
-                  <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: page + 1 }) %>">Tiếp</a>
-                <% } %>
-              </nav>
-            <% } %>
+            <div class="exp-list-footer">
+              <div class="exp-list-count">
+                Hiển thị <strong><%= displayFrom %>-<%= displayTo %></strong> trong tổng số <strong><%= totalRecords %></strong> bản ghi
+              </div>
+              <div class="exp-list-controls">
+                <form class="exp-limit-form" method="get" action="/accounting/expenses">
+                  <span class="exp-limit-label">Hiển thị</span>
+                  <input type="hidden" name="tu_ngay" value="<%= filters.tu_ngay %>" />
+                  <input type="hidden" name="den_ngay" value="<%= filters.den_ngay %>" />
+                  <input type="hidden" name="trang_thai" value="<%= filters.trang_thai %>" />
+                  <input type="hidden" name="nhom" value="<%= filters.nhom %>" />
+                  <input type="hidden" name="hotel_id" value="<%= filters.hotel_id %>" />
+                  <input type="hidden" name="search" value="<%= filters.search %>" />
+                  <input type="hidden" name="page" value="1" />
+                  <select class="exp-limit-select" name="limit" onchange="this.form.submit()" aria-label="Số dòng hiển thị">
+                    <% [10, 20, 30].forEach((limit) => { %>
+                      <option value="<%= limit %>" <%= currentLimit === limit ? "selected" : "" %>><%= limit %></option>
+                    <% }) %>
+                  </select>
+                </form>
+                <nav class="exp-pagination" aria-label="Phân trang chi phí">
+                  <% if (page > 1) { %>
+                    <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: page - 1 }) %>">Trước</a>
+                  <% } else { %>
+                    <span class="exp-page is-disabled">Trước</span>
+                  <% } %>
+                  <% if (firstPage > 1) { %>
+                    <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: 1 }) %>">1</a>
+                  <% } %>
+                  <% pages.forEach((item) => { %>
+                    <a class="exp-page <%= item === page ? "is-active" : "" %>" href="/accounting/expenses?<%= makeQuery({ page: item }) %>"><%= item %></a>
+                  <% }) %>
+                  <% if (lastPage < totalPages) { %>
+                    <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a>
+                  <% } %>
+                  <% if (page < totalPages) { %>
+                    <a class="exp-page" href="/accounting/expenses?<%= makeQuery({ page: page + 1 }) %>">Sau</a>
+                  <% } else { %>
+                    <span class="exp-page is-disabled">Sau</span>
+                  <% } %>
+                </nav>
+              </div>
+            </div>
           <% } %>
         </section>
       </section>
     </section>
   </div>
+    </div>
+  </section>
 </main>
-
-<script>
-  (() => {
-    const chartPayload = <%- JSON.stringify(chartPayload).replace(/</g, "\\u003c") %>;
-    const colors = ["#f97316", "#10b981", "#12bff3", "#ff6aa2", "#8068ff", "#ffd166", "#65a30d", "#14b8a6"];
-    const moneyShort = (value) => {
-      const amount = Number(value || 0);
-      if (Math.abs(amount) >= 1000000000) return `${(amount / 1000000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ`;
-      if (Math.abs(amount) >= 1000000) return `${(amount / 1000000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tr`;
-      if (Math.abs(amount) >= 1000) return `${(amount / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}k`;
-      return amount.toLocaleString("vi-VN");
-    };
-    const setup = (id) => {
-      const canvas = document.getElementById(id);
-      if (!canvas) return null;
-      const parent = canvas.parentElement;
-      const width = Math.max(parent.clientWidth, 280);
-      const height = Math.max(parent.clientHeight, 220);
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.floor(width * ratio);
-      canvas.height = Math.floor(height * ratio);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      ctx.clearRect(0, 0, width, height);
-      return { ctx, width, height };
-    };
-    const text = (ctx, value, x, y, size = 12, color = "#667085", weight = 800, align = "left") => {
-      ctx.fillStyle = color;
-      ctx.font = `${weight} ${size}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
-      ctx.textAlign = align;
-      ctx.textBaseline = "middle";
-      ctx.fillText(String(value), x, y);
-    };
-    const roundRect = (ctx, x, y, width, height, radius) => {
-      const r = Math.min(radius, width / 2, height / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.arcTo(x + width, y, x + width, y + height, r);
-      ctx.arcTo(x + width, y + height, x, y + height, r);
-      ctx.arcTo(x, y + height, x, y, r);
-      ctx.arcTo(x, y, x + width, y, r);
-      ctx.closePath();
-    };
-    const empty = (ctx, width, height) => {
-      roundRect(ctx, 18, 18, width - 36, height - 36, 18);
-      ctx.fillStyle = "rgba(255,255,255,.62)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(19,32,51,.12)";
-      ctx.stroke();
-      text(ctx, "Chưa có dữ liệu biểu đồ", width / 2, height / 2, 13, "#667085", 900, "center");
-    };
-    const drawTrend = () => {
-      const chart = setup("expenseTrendChart");
-      if (!chart) return;
-      const { ctx, width, height } = chart;
-      const rows = chartPayload.trend || [];
-      if (!rows.length) return empty(ctx, width, height);
-      const pad = { left: 70, right: 34, top: 26, bottom: 48 };
-      const plotW = width - pad.left - pad.right;
-      const plotH = height - pad.top - pad.bottom;
-      const max = Math.max(1, ...rows.flatMap((row) => [row.total, row.approved, row.pending]));
-      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (index / (rows.length - 1)) * plotW);
-      const y = (value) => pad.top + plotH - (Number(value || 0) / max) * plotH;
-
-      for (let i = 0; i <= 4; i += 1) {
-        const gy = pad.top + (plotH / 4) * i;
-        ctx.strokeStyle = "rgba(19,32,51,.10)";
-        ctx.beginPath();
-        ctx.moveTo(pad.left, gy);
-        ctx.lineTo(width - pad.right, gy);
-        ctx.stroke();
-        text(ctx, moneyShort(max - (max / 4) * i), pad.left - 14, gy, 11, "#667085", 800, "right");
-      }
-      rows.forEach((row, index) => {
-        if (index % Math.ceil(rows.length / 6) === 0 || index === rows.length - 1) {
-          text(ctx, row.dateLabel, x(index), height - 22, 11, "#667085", 800, "center");
-        }
-      });
-      const drawSeries = (key, color, widthLine = 3, fill = false) => {
-        const points = rows.map((row, index) => ({ x: x(index), y: y(row[key]) }));
-        ctx.beginPath();
-        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
-        if (fill) {
-          const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
-          gradient.addColorStop(0, `${color}3d`);
-          gradient.addColorStop(1, `${color}05`);
-          ctx.lineTo(points[points.length - 1].x, pad.top + plotH);
-          ctx.lineTo(points[0].x, pad.top + plotH);
-          ctx.closePath();
-          ctx.fillStyle = gradient;
-          ctx.fill();
-        }
-        ctx.beginPath();
-        points.forEach((point, index) => index ? ctx.lineTo(point.x, point.y) : ctx.moveTo(point.x, point.y));
-        ctx.strokeStyle = color;
-        ctx.lineWidth = widthLine;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.shadowColor = `${color}35`;
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        points.forEach((point, index) => {
-          if (index === points.length - 1 || index % Math.ceil(points.length / 5) === 0) {
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, 3.8, 0, Math.PI * 2);
-            ctx.fillStyle = "#fff";
-            ctx.fill();
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.stroke();
-          }
-        });
-      };
-      drawSeries("total", "#f97316", 4, true);
-      drawSeries("approved", "#10b981", 3);
-      drawSeries("pending", "#ff6aa2", 3);
-      text(ctx, "Tổng chi", width - 112, 26, 12, "#f97316", 1000);
-      text(ctx, "Đã duyệt", width - 112, 45, 12, "#10b981", 1000);
-      text(ctx, "Chờ duyệt", width - 112, 64, 12, "#ff6aa2", 1000);
-    };
-    const drawCategory = () => {
-      const chart = setup("expenseCategoryChart");
-      if (!chart) return;
-      const { ctx, width, height } = chart;
-      const rows = (chartPayload.categories || []).filter((row) => Number(row.total || 0) > 0);
-      if (!rows.length) return empty(ctx, width, height);
-      const total = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
-      const cx = Math.min(width * .35, 135);
-      const cy = height / 2;
-      const radius = Math.min(width * .22, height * .32, 78);
-      const inner = radius * .62;
-      let start = -Math.PI / 2;
-      ctx.lineWidth = radius - inner;
-      ctx.lineCap = "round";
-      rows.forEach((row, index) => {
-        const share = Number(row.total || 0) / total;
-        const end = start + share * Math.PI * 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, (radius + inner) / 2, start + .025, end - .025);
-        ctx.strokeStyle = colors[index % colors.length];
-        ctx.shadowColor = `${colors[index % colors.length]}35`;
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        start = end;
-      });
-      text(ctx, "Tổng chi", cx, cy - 9, 12, "#667085", 900, "center");
-      text(ctx, moneyShort(total), cx, cy + 13, 16, "#132033", 1000, "center");
-      const lx = Math.min(width * .62, cx + radius + 28);
-      rows.slice(0, 5).forEach((row, index) => {
-        const y = 42 + index * 30;
-        ctx.fillStyle = colors[index % colors.length];
-        ctx.beginPath();
-        ctx.arc(lx, y, 5.5, 0, Math.PI * 2);
-        ctx.fill();
-        text(ctx, row.meta?.label || row.categoryKey, lx + 14, y - 5, 12, "#132033", 900);
-        text(ctx, `${Math.round((Number(row.total || 0) / total) * 100)}% · ${moneyShort(row.total)}`, lx + 14, y + 10, 11);
-      });
-    };
-    const renderCharts = () => {
-      drawTrend();
-      drawCategory();
-    };
-    renderCharts();
-    window.addEventListener("resize", () => window.requestAnimationFrame(renderCharts), { passive: true });
-  })();
-</script>
 
 <%- include("../partials/footer") %>

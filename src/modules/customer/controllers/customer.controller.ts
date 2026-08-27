@@ -119,7 +119,7 @@ export async function renderCustomerAdvisory(req: Request, res: Response) {
   const payload = await customerService.buildAdvisoryPortal(maKhachHang);
 
   return res.render("customer/advisory", {
-    title: "Tu van va ho tro",
+    title: "Nhận tư vấn và hỗ trợ",
     payload,
     user: req.session.user
   });

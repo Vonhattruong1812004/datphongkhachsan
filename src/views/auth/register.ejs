@@ -1515,19 +1515,17 @@
           </div>
           <span class="travel-auth__secure">Xác thực thông tin</span>
         </div>
-        <div class="section-eyebrow">Đăng ký</div>
         <h2>Tạo tài khoản khách hàng</h2>
+        <p class="travel-auth__intro">Vui lòng nhập thông tin cá nhân</p>
 
         <%- include("../partials/flash") %>
 
         <form method="post" action="/auth/register" class="travel-auth__grid" autocomplete="on">
-          <div class="travel-auth__form-section">Thông tin cá nhân</div>
           <div class="travel-auth__field travel-auth__field--full">
             <label for="fullname">Họ và tên</label>
             <input id="fullname" name="fullname" autocomplete="name" minlength="5" maxlength="80" required />
           </div>
 
-          <div class="travel-auth__form-section">Tài khoản liên hệ</div>
           <div class="travel-auth__field">
             <label for="username">Tên đăng nhập</label>
             <input id="username" name="username" autocomplete="username" minlength="5" maxlength="30" pattern="[A-Za-z][A-Za-z0-9_]{4,29}" title="Tên đăng nhập dài 5-30 ký tự, bắt đầu bằng chữ và chỉ gồm chữ, số hoặc dấu gạch dưới." required />
@@ -1548,7 +1546,6 @@
             <input id="cccd" name="cccd" inputmode="numeric" pattern="([0-9]{9}|[0-9]{12})" title="CCCD/CMND phải gồm đúng 9 hoặc 12 chữ số." required />
           </div>
 
-          <div class="travel-auth__form-section">Bảo mật</div>
           <div class="travel-auth__field">
             <label for="password">Mật khẩu</label>
             <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,72}" title="Mật khẩu 8-72 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt." required />

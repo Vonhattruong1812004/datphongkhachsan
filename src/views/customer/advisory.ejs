@@ -398,18 +398,498 @@
     .adv-step-head,
     .adv-ticket-head{display:grid}
   }
+
+  /* Final customer advisory UI: clean white-blue support workspace. */
+  body{
+    background:#f4f8ff!important;
+    color:#102033!important;
+  }
+  body:has(.adv-shell) .floating-assist{
+    display:none!important;
+  }
+  .adv-shell{
+    width:min(1420px, calc(100vw - 36px));
+    max-width:1420px;
+    margin:0 auto;
+    padding:10px 18px 32px!important;
+    gap:12px!important;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden!important;
+    background:linear-gradient(180deg,#eaf4ff 0,#f7fbff 138px,#ffffff 100%);
+    color:#102033!important;
+  }
+  .adv-shell::before,
+  .adv-shell::after,
+  .adv-hero::before,
+  .adv-card::before{
+    display:none!important;
+    content:none!important;
+    width:0!important;
+    height:0!important;
+    animation:none!important;
+    opacity:0!important;
+  }
+  .adv-shell,
+  .adv-shell *,
+  .adv-shell *::before,
+  .adv-shell *::after{
+    box-sizing:border-box!important;
+    max-width:100%;
+  }
+  .adv-hero,
+  .adv-status,
+  .adv-panel,
+  .adv-card,
+  .adv-step,
+  .adv-ticket,
+  .adv-channel,
+  .adv-booking,
+  .adv-line,
+  .adv-empty{
+    border:1px solid #c9e0fb!important;
+    border-radius:14px!important;
+    background:#ffffff!important;
+    color:#102033!important;
+    box-shadow:0 8px 22px rgba(0,59,149,.07)!important;
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
+  .adv-hero{
+    min-height:70px!important;
+    padding:14px 18px 14px 30px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:12px!important;
+    align-items:center!important;
+    overflow:hidden!important;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 52%,#003b95 100%)!important;
+    position:relative!important;
+  }
+  .adv-hero::after{
+    content:""!important;
+    display:block!important;
+    position:absolute;
+    left:16px;
+    top:13px;
+    bottom:13px;
+    width:5px;
+    border-radius:999px;
+    background:#ffffff;
+  }
+  .adv-hero > div{
+    position:relative;
+    z-index:2;
+    min-width:0;
+  }
+  .adv-hero .adv-kicker,
+  .adv-hero .adv-muted,
+  .adv-dot,
+  .adv-focus{
+    display:none!important;
+  }
+  .adv-hero h1{
+    margin:0!important;
+    max-width:none!important;
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    background:none!important;
+    font-size:32px!important;
+    line-height:1.1!important;
+    letter-spacing:0!important;
+    text-shadow:none!important;
+  }
+  .adv-hero h1 span{
+    color:#ffffff!important;
+    -webkit-text-fill-color:#ffffff!important;
+    background:none!important;
+    -webkit-background-clip:initial!important;
+    background-clip:initial!important;
+  }
+  .adv-hero .adv-actions{
+    margin:0!important;
+    position:relative;
+    z-index:2;
+    justify-content:flex-end;
+  }
+  .adv-hero .adv-button{
+    min-height:34px!important;
+    padding:7px 11px!important;
+    border-color:rgba(255,255,255,.58)!important;
+    background:#ffffff!important;
+    color:#003b95!important;
+    font-size:12px!important;
+    box-shadow:0 10px 22px rgba(0,59,149,.14)!important;
+  }
+  .adv-hero .adv-button:not(:last-child){
+    display:none!important;
+  }
+  .adv-status{
+    margin:0!important;
+    padding:14px 16px!important;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto!important;
+    gap:12px!important;
+    align-items:center!important;
+    background:#ffffff!important;
+  }
+  .adv-status h2{
+    color:#102033!important;
+    font-size:22px!important;
+    line-height:1.15!important;
+    margin:0!important;
+    letter-spacing:0!important;
+    text-shadow:none!important;
+  }
+  .adv-status p,
+  .adv-muted,
+  .adv-card p,
+  .adv-channel p,
+  .adv-booking p,
+  .adv-step p,
+  .adv-ticket p,
+  .adv-line p,
+  .adv-line span,
+  .adv-empty{
+    color:#64748b!important;
+    font-size:13px!important;
+    font-weight:750!important;
+    line-height:1.5!important;
+    text-shadow:none!important;
+  }
+  .adv-status .adv-actions{
+    margin:0!important;
+  }
+  .adv-stats{
+    display:none!important;
+  }
+  .adv-layout{
+    grid-template-columns:minmax(0,1fr) 390px!important;
+    gap:14px!important;
+    align-items:start!important;
+  }
+  .adv-panel{
+    padding:16px!important;
+  }
+  .adv-panel + .adv-panel{
+    margin-top:14px!important;
+  }
+  .adv-panel-head{
+    margin-bottom:12px!important;
+    padding-bottom:10px!important;
+    border-bottom:1px solid #dbeafe!important;
+    align-items:center!important;
+  }
+  .adv-panel h2{
+    color:#102033!important;
+    font-size:24px!important;
+    line-height:1.18!important;
+    letter-spacing:0!important;
+    text-shadow:none!important;
+  }
+  .adv-panel-head .adv-muted{
+    display:none!important;
+  }
+  .adv-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:12px!important;
+  }
+  .adv-card{
+    min-height:0!important;
+    padding:14px!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .adv-card h3,
+  .adv-channel h3,
+  .adv-booking h3,
+  .adv-step h3,
+  .adv-ticket h3,
+  .adv-line strong{
+    color:#102033!important;
+    font-size:18px!important;
+    line-height:1.22!important;
+    letter-spacing:0!important;
+    text-shadow:none!important;
+    overflow-wrap:anywhere;
+  }
+  .adv-card .adv-card-actions{
+    margin-top:auto!important;
+    padding-top:12px!important;
+  }
+  .adv-card .adv-button{
+    flex:1;
+  }
+  .adv-badge,
+  .adv-mini,
+  .adv-chip,
+  .adv-tone{
+    min-height:28px!important;
+    border:1px solid #bfdbfe!important;
+    border-radius:999px!important;
+    background:#eff6ff!important;
+    color:#003b95!important;
+    padding:5px 9px!important;
+    font-size:11px!important;
+    font-weight:950!important;
+    letter-spacing:0!important;
+    text-transform:none!important;
+    box-shadow:none!important;
+    text-shadow:none!important;
+  }
+  .adv-tone.is-done{border-color:#bbf7d0!important;background:#dcfce7!important;color:#047857!important}
+  .adv-tone.is-active{border-color:#bae6fd!important;background:#e0f2fe!important;color:#0369a1!important}
+  .adv-tone.is-warn{border-color:#fde68a!important;background:#fef3c7!important;color:#92400e!important}
+  .adv-actions,
+  .adv-card-actions,
+  .adv-meta-row,
+  .adv-chip-grid{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:8px!important;
+  }
+  .adv-button{
+    min-height:40px!important;
+    border:1px solid #bfdbfe!important;
+    border-radius:8px!important;
+    background:#ffffff!important;
+    color:#003b95!important;
+    padding:8px 13px!important;
+    font-size:13px!important;
+    font-weight:950!important;
+    box-shadow:0 8px 18px rgba(0,59,149,.08)!important;
+    transform:none!important;
+  }
+  .adv-button:hover{
+    border-color:#006ce4!important;
+    background:#eff6ff!important;
+    box-shadow:0 12px 24px rgba(0,108,228,.12)!important;
+  }
+  .adv-button--primary{
+    border-color:#006ce4!important;
+    background:#006ce4!important;
+    color:#ffffff!important;
+  }
+  .adv-button--support{
+    border-color:#13c2c2!important;
+    background:#ecfeff!important;
+    color:#075985!important;
+  }
+  .adv-step-list,
+  .adv-ticket-list,
+  .adv-channel-list,
+  .adv-booking-list,
+  .adv-moments{
+    gap:10px!important;
+  }
+  .adv-step,
+  .adv-ticket,
+  .adv-channel,
+  .adv-booking,
+  .adv-line{
+    padding:12px!important;
+  }
+  .adv-step-head,
+  .adv-ticket-head{
+    align-items:flex-start!important;
+  }
+  .adv-line{
+    box-shadow:none!important;
+    background:#f8fbff!important;
+  }
+  .adv-channel .adv-button,
+  .adv-booking .adv-button,
+  .adv-step .adv-button{
+    margin-top:10px!important;
+  }
+  .adv-empty{
+    padding:16px!important;
+    background:#f8fbff!important;
+    border-style:dashed!important;
+  }
+  @media(max-width:1080px){
+    .adv-layout{
+      grid-template-columns:1fr!important;
+    }
+  }
+  @media(max-width:760px){
+    .adv-shell{
+      width:min(100%, calc(100vw - 24px));
+      padding:10px 12px 28px!important;
+    }
+    .adv-hero{
+      grid-template-columns:1fr!important;
+      min-height:58px!important;
+      gap:10px!important;
+      padding:13px 16px 13px 28px!important;
+    }
+    .adv-hero h1{
+      font-size:28px!important;
+    }
+    .adv-hero .adv-actions{
+      justify-content:flex-start!important;
+    }
+    .adv-status{
+      grid-template-columns:1fr!important;
+    }
+    .adv-grid{
+      grid-template-columns:1fr!important;
+    }
+    .adv-button{
+      width:100%!important;
+    }
+  }
+
+  /* Customer advisory final layout: compact, white-blue, action focused. */
+  body:has(.adv-shell) .floating-assist{
+    display:block!important;
+  }
+  .adv-status,
+  .adv-hidden-panel{
+    display:none!important;
+  }
+  .adv-shell{
+    width:min(1360px, calc(100vw - 32px));
+    max-width:1360px;
+    padding:14px 16px 36px!important;
+    background:linear-gradient(180deg,#edf6ff 0,#f8fbff 170px,#ffffff 100%)!important;
+  }
+  .adv-hero{
+    min-height:64px!important;
+    border-radius:8px!important;
+    padding:13px 16px 13px 28px!important;
+    background:linear-gradient(135deg,#0071e8 0%,#006ce4 54%,#003b95 100%)!important;
+  }
+  .adv-hero h1{
+    font-size:28px!important;
+    font-weight:1000!important;
+  }
+  .adv-hero .adv-button{
+    width:auto!important;
+    min-height:34px!important;
+    border-radius:8px!important;
+    padding:7px 12px!important;
+  }
+  .adv-layout{
+    grid-template-columns:minmax(0,1fr) 360px!important;
+    gap:14px!important;
+  }
+  .adv-panel{
+    border-radius:8px!important;
+    padding:14px!important;
+  }
+  .adv-panel + .adv-panel{
+    margin-top:12px!important;
+  }
+  .adv-panel-head{
+    margin-bottom:10px!important;
+    padding-bottom:10px!important;
+  }
+  .adv-panel h2{
+    font-size:22px!important;
+    font-weight:1000!important;
+  }
+  .adv-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  .adv-card{
+    min-height:190px!important;
+    padding:12px!important;
+    border-radius:8px!important;
+  }
+  .adv-card:last-child:nth-child(odd){
+    grid-column:1 / -1!important;
+    min-height:150px!important;
+  }
+  .adv-card h3,
+  .adv-channel h3,
+  .adv-booking h3,
+  .adv-step h3,
+  .adv-ticket h3{
+    margin:9px 0 6px!important;
+    font-size:17px!important;
+  }
+  .adv-card p,
+  .adv-channel p,
+  .adv-booking p,
+  .adv-ticket p{
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .adv-booking p{
+    -webkit-line-clamp:1;
+  }
+  .adv-badge,
+  .adv-mini,
+  .adv-chip,
+  .adv-tone{
+    width:max-content!important;
+    min-height:24px!important;
+    padding:4px 8px!important;
+    font-size:11px!important;
+  }
+  .adv-button{
+    min-height:36px!important;
+    border-radius:8px!important;
+    padding:7px 11px!important;
+    font-size:12px!important;
+  }
+  .adv-button--primary{
+    background:#006ce4!important;
+  }
+  .adv-step,
+  .adv-ticket,
+  .adv-channel,
+  .adv-booking{
+    border-radius:8px!important;
+    padding:12px!important;
+  }
+  .adv-channel-list,
+  .adv-booking-list,
+  .adv-ticket-list{
+    gap:9px!important;
+  }
+  #advisoryTickets{
+    margin-top:12px!important;
+  }
+  @media(max-width:1080px){
+    .adv-layout{
+      grid-template-columns:1fr!important;
+    }
+  }
+  @media(max-width:760px){
+    .adv-shell{
+      width:min(100%, calc(100vw - 20px));
+      padding:10px 10px 28px!important;
+    }
+    .adv-hero{
+      grid-template-columns:1fr!important;
+    }
+    .adv-hero h1{
+      font-size:24px!important;
+    }
+    .adv-grid{
+      grid-template-columns:1fr!important;
+    }
+    .adv-hero .adv-button,
+    .adv-button{
+      width:100%!important;
+    }
+  }
 </style>
 
 <main class="adv-shell">
   <section class="adv-hero">
     <div>
-      <span class="adv-kicker"><span class="adv-dot"></span> Tư vấn & hỗ trợ</span>
-      <h1>Hỏi nhanh mọi điều <span>trước, trong và sau chuyến đi.</span></h1>
-      <p class="adv-muted">Một nơi riêng để bạn hỏi về chọn phòng, đặt phòng, nhận phòng, eKYC, dịch vụ và các thắc mắc cần CSKH hỗ trợ. Trợ lý AI trả lời trước, còn khi cần người thật hệ thống sẽ đưa bạn sang đúng kênh CSKH.</p>
+      <span class="adv-kicker"><span class="adv-dot"></span> Khách hàng</span>
+      <h1>Nhận tư vấn và hỗ trợ</h1>
+      <p class="adv-muted">Hỏi nhanh bằng AI, gửi yêu cầu CSKH hoặc chọn đúng kênh hỗ trợ theo đặt phòng của bạn.</p>
       <div class="adv-actions">
-        <button class="adv-button adv-button--primary" type="button" data-open-ai>Chat với trợ lý AI</button>
-        <a class="adv-button adv-button--support" href="/feedback/advisory/new">Gửi yêu cầu cho CSKH</a>
-        <a class="adv-button" href="/customer/dashboard">Về trang khách hàng</a>
+        <a class="adv-button" href="/customer/dashboard">Quay về dashboard</a>
       </div>
     </div>
     <aside class="adv-focus">
@@ -472,7 +952,7 @@
         </div>
       </section>
 
-      <section class="adv-panel" style="margin-top:18px;">
+      <section class="adv-panel adv-hidden-panel" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
             <h2>Checklist hỗ trợ</h2>
@@ -496,7 +976,7 @@
       <section class="adv-panel" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
-            <h2>Đặt phòng để hỏi đúng ngữ cảnh</h2>
+            <h2>Hỏi theo đặt phòng</h2>
             <p class="adv-muted">AI và CSKH sẽ hỗ trợ nhanh hơn nếu bạn bám vào đặt phòng gần nhất hoặc lịch lưu trú sắp tới.</p>
           </div>
         </div>
@@ -527,7 +1007,7 @@
     </div>
 
     <div>
-      <section class="adv-panel">
+      <section class="adv-panel adv-hidden-panel">
         <div class="adv-panel-head">
           <div>
             <h2>Chọn đúng kênh</h2>
@@ -549,7 +1029,7 @@
         </div>
       </section>
 
-      <section class="adv-panel" style="margin-top:18px;">
+      <section class="adv-panel adv-hidden-panel" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
             <h2>Tình huống nổi bật</h2>
@@ -577,7 +1057,7 @@
       <section class="adv-panel" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
-            <h2>Kênh hỗ trợ</h2>
+            <h2>Chọn kênh hỗ trợ</h2>
             <p class="adv-muted">Chọn đúng kênh theo mức độ cần hỗ trợ: AI trước, CSKH khi cần theo dõi trực tiếp.</p>
           </div>
         </div>
@@ -588,7 +1068,7 @@
               <h3><%= channel.label %></h3>
               <p><%= channel.description %></p>
               <% if (channel.key === "ai") { %>
-                <button class="adv-button adv-button--primary" type="button" data-open-ai>Mở trợ lý AI</button>
+                <button class="adv-button adv-button--primary" type="button" data-open-ai>Mở trợ lý đặt phòng</button>
               <% } else if (channel.key === "zalo") { %>
                 <a class="adv-button" href="<%= channel.href %>" target="_blank" rel="noreferrer">Mở Zalo hỗ trợ</a>
               <% } else { %>
@@ -602,7 +1082,7 @@
       <section class="adv-panel" id="advisoryTickets" style="margin-top:18px;">
         <div class="adv-panel-head">
           <div>
-            <h2>Yêu cầu gần đây</h2>
+            <h2>Theo dõi yêu cầu gần đây</h2>
             <p class="adv-muted">Theo dõi các câu hỏi đã gửi CSKH để tránh tạo trùng ticket.</p>
           </div>
         </div>
@@ -657,4 +1137,5 @@
   })();
 </script>
 
+<%- include("../partials/customer-background") %>
 <%- include("../partials/footer") %>

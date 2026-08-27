@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { z } from "zod";
 import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
+import { notificationService } from "../../notifications/services/notification.service";
 import { directBookingHoldStore } from "../../payment/direct-booking-hold-store";
 import { customerBookingHoldStore, type CustomerBookingAccount, type CustomerBookingHold } from "../../payment/customer-booking-hold-store";
 import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, parseSepayMetadata, replaceSepayMetadata } from "../../payment/sepay";
@@ -217,6 +218,12 @@ export interface SearchRoomRow {
   nearbyTravelMinutes?: number | null;
   nearbyTravelTimeLabel?: string;
   latestBooking?: LatestRoomBooking | null;
+  estimatedNights?: number;
+  estimatedTotal?: number;
+  estimatedTotalFormatted?: string;
+  estimatedDeposit?: number;
+  estimatedDepositFormatted?: string;
+  capacityFitLabel?: string;
 }
 
 interface LatestRoomBooking {
@@ -2662,7 +2669,7 @@ export class BookingService {
         );
       }
 
-      await client.query(
+      const refundRequest = await client.query(
         `
           INSERT INTO refund_requests (
             magiaodich,
@@ -2716,6 +2723,7 @@ export class BookingService {
             'ChoQuanLyDuyet'::text,
             'KhachHang'::text
           )
+          RETURNING id
         `,
         [
           header.maGiaoDich,
@@ -2742,7 +2750,8 @@ export class BookingService {
           refundQuote.policy.note,
           refundQuote.refundAmount
         ]
-      );
+      ) as { rows: Array<{ id: number }> };
+      const refundRequestId = Number(refundRequest.rows[0]?.id || 0);
 
       await client.query(
         `
@@ -2787,10 +2796,12 @@ export class BookingService {
       return {
         id: header.maGiaoDich,
         bookingCode: header.maDatCho,
+        customerName: header.customerName || "",
         total: Number(header.tongTien || 0),
         reason,
         refund: {
           ...refundQuote,
+          refundRequestId,
           refundCode,
           refundAmountFormatted: formatMoney(refundQuote.refundAmount),
           retainedDepositFormatted: formatMoney(refundQuote.retainedDeposit),
@@ -2803,6 +2814,15 @@ export class BookingService {
         }))
       };
     });
+
+    await notificationService.notifyCustomerCancellationRequiresRefundReview({
+      refundId: cancellation.refund.refundRequestId,
+      refundCode: cancellation.refund.refundCode,
+      transactionId: cancellation.id,
+      bookingCode: cancellation.bookingCode,
+      customerName: cancellation.customerName,
+      amountFormatted: cancellation.refund.refundAmountFormatted
+    }).catch(() => undefined);
 
     realtimeHub.publish({
       type: "booking_cancelled_customer",

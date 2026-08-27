@@ -6,6 +6,7 @@ import { formatDate, formatMoney } from "../../../shared/utils/format";
 import { expireOutdatedPromotions } from "../../../shared/promotions/promotion-maintenance";
 import { parseSepayMetadata } from "../../payment/sepay";
 import { realtimeHub } from "../../realtime/services/realtime.service";
+import { notificationService } from "../../notifications/services/notification.service";
 
 const CUSTOMER_NAME_REGEX = /^(?=.*\p{L})[\p{L}\d\s'.-]{2,80}$/u;
 const CUSTOMER_PHONE_REGEX = /^(?:0(?:3|5|7|8|9)\d{8}|\+84(?:3|5|7|8|9)\d{8})$/;
@@ -236,11 +237,19 @@ export class ManagerService {
     await this.ensureRefundRequestTable();
     await this.backfillMissingCustomerRefundRequests();
     const filters = this.normalizeRefundApprovalFilters(rawFilters);
-    const params: unknown[] = [filters.tu_ngay, filters.den_ngay];
-    const where = [
-      "DATE(rr.created_at) >= $1",
-      "DATE(rr.created_at) <= $2"
-    ];
+    const params: unknown[] = [];
+    const where: string[] = [];
+
+    if (filters.refund_id) {
+      params.push(filters.refund_id);
+      where.push(`rr.id = $${params.length}`);
+    } else {
+      params.push(filters.tu_ngay, filters.den_ngay);
+      where.push(
+        "DATE(rr.created_at) >= $1",
+        "DATE(rr.created_at) <= $2"
+      );
+    }
 
     if (filters.trang_thai !== "all") {
       params.push(filters.trang_thai);
@@ -499,6 +508,23 @@ export class ManagerService {
         amountFormatted: formatMoney(result.amount)
       }
     });
+
+    if (result.action === "approve") {
+      await notificationService.notifyRefundApprovedForAccounting({
+        refundId: result.id,
+        refundCode: result.refundCode,
+        transactionId: result.transactionId,
+        amountFormatted: formatMoney(result.amount)
+      }).catch(() => undefined);
+    } else {
+      await notificationService.notifyRefundCompletedForCustomer({
+        refundId: result.id,
+        refundCode: result.refundCode,
+        transactionId: result.transactionId,
+        amountFormatted: formatMoney(result.amount),
+        rejected: true
+      }).catch(() => undefined);
+    }
 
     return {
       ...result,
@@ -2223,11 +2249,13 @@ export class ManagerService {
     const rawStatus = String(source.trang_thai || "ChoQuanLyDuyet").trim();
     const tuNgay = String(source.tu_ngay || "").trim();
     const denNgay = String(source.den_ngay || "").trim();
+    const refundId = Math.max(0, Number(source.refund_id || 0) || 0);
 
     return {
+      refund_id: Number.isInteger(refundId) ? refundId : 0,
       tu_ngay: isDate(tuNgay) ? tuNgay : dateOnly(fromDefault),
       den_ngay: isDate(denNgay) ? denNgay : dateOnly(today),
-      trang_thai: allowedStatuses.has(rawStatus) ? rawStatus : "ChoQuanLyDuyet",
+      trang_thai: refundId ? (allowedStatuses.has(rawStatus) ? rawStatus : "all") : (allowedStatuses.has(rawStatus) ? rawStatus : "ChoQuanLyDuyet"),
       search: String(source.search || "").trim().slice(0, 120),
       page: Math.max(1, Number(source.page || 1) || 1),
       limit: Math.min(100, Math.max(5, Number(source.limit || 20) || 20))

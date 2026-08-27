@@ -6,558 +6,317 @@
   const priorityQueue = roomFeed.priorityQueue || [];
   const hotelGroups = roomFeed.byHotel || [];
   const summary = roomFeed.summary || {};
-  const statusTone = (room) => room.priorityTone || (
-    room.trangThaiRealtime === "Maintenance" ? "danger"
-      : room.trangThaiRealtime === "Cleaning" ? "cleaning"
-        : room.trangThaiRealtime === "Stayed" ? "stayed"
-          : room.trangThaiRealtime === "Booked" ? "booked"
-            : "ok"
-  );
-  const realtimeScopeByRole = {
-    1: "admin",
-    2: "letan",
-    4: "dichvu",
-    6: "quanly"
-  };
-  const realtimeScope = realtimeScopeByRole[Number(currentUser?.maVaiTro || 0)] || "dichvu";
+  const pageNotice = (typeof notice !== "undefined" && notice) ? notice : {};
+  const roleId = Number((typeof currentUser !== "undefined" && currentUser && currentUser.maVaiTro) || 0);
+  const realtimeScopeByRole = { 1: "admin", 2: "letan", 4: "dichvu", 6: "quanly" };
+  const realtimeScope = realtimeScopeByRole[roleId] || "dichvu";
   const generatedAtLabel = roomFeed.generatedAt
     ? new Date(roomFeed.generatedAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })
     : "Đang tải";
+  const statusOrder = ["Maintenance", "Cleaning", "Booked", "Stayed", "Available"];
+  const statusText = (value) => ({
+    Available: "Sẵn sàng",
+    Cleaning: "Cần vệ sinh",
+    Maintenance: "Bảo trì",
+    Booked: "Đã đặt",
+    Stayed: "Đang ở"
+  }[value] || value || "Chưa rõ");
+  const statusClass = (value) => {
+    if (value === "Available") return "pill ok";
+    if (value === "Cleaning") return "pill info";
+    if (value === "Maintenance") return "pill warn";
+    if (value === "Booked") return "pill purple";
+    if (value === "Stayed") return "pill teal";
+    return "pill";
+  };
+  const statusCount = (state) => Number(summary[
+    state === "Maintenance" ? "maintenance" :
+      state === "Cleaning" ? "cleaning" :
+        state === "Booked" ? "booked" :
+          state === "Stayed" ? "stayed" : "available"
+  ] || rooms.filter((room) => room.trangThaiRealtime === state).length || 0);
+  const boardGroups = statusOrder.map((state) => ({
+    state,
+    label: statusText(state),
+    count: statusCount(state),
+    rooms: rooms.filter((room) => room.trangThaiRealtime === state).slice(0, 8)
+  }));
+  const visibleQueue = priorityQueue.length
+    ? priorityQueue.slice(0, 10)
+    : rooms.filter((room) => room.trangThaiRealtime !== "Available").slice(0, 10);
+  const generatedAtIso = roomFeed.generatedAt || new Date().toISOString();
 %>
 
 <style>
-  .board-shell{
+  .roomboard-page{
+    --blue:#0575e6;
+    --blue-dark:#034ea2;
     --ink:#102033;
-    --muted:#64748b;
-    --line:rgba(16,32,51,.10);
-    --card:rgba(255,255,255,.84);
-    --teal:#14b8a6;
-    --blue:#0ea5e9;
-    --lime:#84cc16;
-    --amber:#f59e0b;
-    --rose:#fb7185;
-    --violet:#8b5cf6;
-    --shadow:0 22px 64px rgba(15,23,42,.14);
+    --muted:#65758b;
+    --line:#cfe2f7;
+    --soft:#f3f8ff;
+    --green:#07875f;
     min-height:calc(100vh - 84px);
-    padding:30px 18px 54px;
+    padding:28px 18px 56px;
     color:var(--ink);
     background:
-      radial-gradient(circle at 7% 8%,rgba(20,184,166,.24),transparent 31%),
-      radial-gradient(circle at 84% 10%,rgba(14,165,233,.22),transparent 34%),
-      radial-gradient(circle at 48% 105%,rgba(132,204,22,.17),transparent 40%),
-      linear-gradient(135deg,#fbfffb 0%,#ecfdf5 42%,#f8fbff 100%);
+      linear-gradient(180deg,rgba(235,246,255,.82),rgba(247,251,255,.92)),
+      url("/images/san-pham-du-lich.webp") center/cover fixed;
   }
-  .board-wrap{max-width:1260px;margin:0 auto}
-  .board-hero,.board-card,.board-stat,.board-room,.board-queue-card,.board-filter{border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);backdrop-filter:blur(22px)}
-  .board-hero{position:relative;overflow:hidden;border-radius:28px;padding:28px;margin-bottom:16px;background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(240,253,250,.74))}
-  .board-hero::before{content:"";position:absolute;right:-120px;bottom:-120px;width:420px;height:270px;border-radius:44px;background:linear-gradient(135deg,rgba(14,165,233,.18),rgba(20,184,166,.24),rgba(132,204,22,.16));transform:rotate(-8deg);pointer-events:none}
-  .board-chip{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:7px 12px;background:rgba(20,184,166,.12);border:1px solid rgba(20,184,166,.22);color:#0f766e;font-size:12px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
-  .board-live-dot{width:8px;height:8px;border-radius:999px;background:#14b8a6;box-shadow:0 0 0 7px rgba(20,184,166,.12);animation:board-pulse 1.8s ease-in-out infinite}
-  .board-hero h1{position:relative;max-width:790px;margin:18px 0 10px;font-size:clamp(36px,5vw,64px);line-height:.95;letter-spacing:-.06em}
-  .board-hero h1 span{color:transparent;background:linear-gradient(100deg,#0284c7,#0f766e 52%,#65a30d);-webkit-background-clip:text;background-clip:text}
-  .board-lead{position:relative;max-width:820px;margin:0;color:var(--muted);font-size:15px;line-height:1.68}
-  .board-actions{position:relative;display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-  .board-button,.board-mini{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;text-decoration:none;font-weight:950;cursor:pointer;white-space:nowrap}
-  .board-button{min-height:42px;padding:10px 16px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.78);color:var(--ink)}
-  .board-button--primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,#0891b2,#14b8a6);box-shadow:0 16px 34px rgba(20,184,166,.22)}
-  .board-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent}
-  .board-alert--error{background:rgba(251,113,133,.14);color:#be123c;border-color:rgba(251,113,133,.30)}
-  .board-alert--success{background:rgba(20,184,166,.14);color:#0f766e;border-color:rgba(20,184,166,.30)}
-  .board-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:16px}
-  .board-stat{border-radius:20px;padding:15px;background:rgba(255,255,255,.68)}
-  .board-stat strong{display:block;font-size:26px;line-height:1;letter-spacing:-.045em}
-  .board-stat span{display:block;margin-top:8px;color:var(--muted);font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.06em}
-  .board-stat--attention strong{color:#be123c}
-  .board-filter{border-radius:24px;padding:18px;margin-bottom:16px}
-  .board-filter-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
-  .board-filter h2,.board-card h2{margin:0 0 7px;font-size:22px;letter-spacing:-.035em}
-  .board-muted{color:var(--muted);font-size:13px;line-height:1.55}
-  .board-form{display:grid;grid-template-columns:minmax(0,1.2fr) .78fr .74fr .74fr auto;gap:10px;align-items:end}
-  .board-field{display:flex;flex-direction:column;gap:6px}
-  .board-field label{font-size:12px;font-weight:950;color:#344054}
-  .board-field input,.board-field select{width:100%;border:1px solid rgba(16,32,51,.14);border-radius:14px;padding:11px 12px;background:rgba(255,255,255,.78);color:var(--ink);font:inherit;outline:none}
-  .board-field input:focus,.board-field select:focus{border-color:rgba(14,165,233,.52);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
-  .board-layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
-  .board-card{border-radius:26px;padding:20px;margin-bottom:16px}
-  .board-queue{display:grid;gap:10px;margin-top:12px}
-  .board-queue-card{position:relative;border-radius:20px;padding:14px;background:rgba(255,255,255,.72);overflow:hidden}
-  .board-queue-card::before,.board-room::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;background:linear-gradient(90deg,var(--accent,#14b8a6),transparent)}
-  .board-room-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
-  .board-room{position:relative;overflow:hidden;border-radius:22px;padding:15px;background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(255,255,255,.72))}
-  .board-room-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-  .board-room h3,.board-queue-card h3{margin:12px 0 8px;font-size:21px;line-height:1.08;letter-spacing:-.04em}
-  .board-room p,.board-queue-card p{margin:0 0 6px;color:var(--muted);font-size:12px;line-height:1.48}
-  .board-badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;background:rgba(100,116,139,.12);color:#475569;font-size:11px;font-weight:1000;letter-spacing:.03em}
-  .tone-ok{--accent:var(--teal)}.tone-ok .board-badge{background:rgba(20,184,166,.14);color:#0f766e}
-  .tone-cleaning{--accent:var(--blue)}.tone-cleaning .board-badge{background:rgba(14,165,233,.14);color:#0369a1}
-  .tone-danger{--accent:var(--rose)}.tone-danger .board-badge{background:rgba(251,113,133,.15);color:#be123c}
-  .tone-stayed{--accent:var(--lime)}.tone-stayed .board-badge{background:rgba(132,204,22,.16);color:#4d7c0f}
-  .tone-booked{--accent:var(--amber)}.tone-booked .board-badge{background:rgba(245,158,11,.15);color:#b45309}
-  .board-mini-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-  .board-mini{min-height:34px;padding:7px 11px;border:1px solid rgba(16,32,51,.12);background:rgba(255,255,255,.75);color:var(--ink);font-size:12px}
-  .board-mini[aria-disabled="true"]{opacity:.55;pointer-events:none}
-  .board-empty{border:1px dashed rgba(16,32,51,.16);border-radius:20px;padding:22px;background:rgba(255,255,255,.60);color:var(--muted)}
-  .board-hidden{display:none!important}
-  .board-hotel-stack{display:grid;gap:8px;margin-top:12px}
-  .board-hotel-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.60);border:1px solid rgba(16,32,51,.08)}
-  @keyframes board-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.68}}
-  @media(max-width:1120px){.board-layout{grid-template-columns:1fr}.board-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.board-form{grid-template-columns:repeat(2,minmax(0,1fr))}.board-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
-  @media(max-width:760px){.board-shell{padding:20px 12px 42px}.board-hero{padding:22px}.board-hero h1{font-size:38px}.board-summary,.board-form,.board-room-grid{grid-template-columns:1fr}.board-filter-head{display:block}}
-
-  /* Service UC3 visual pass only: galaxy live board with clear realtime cards. */
-  .board-shell{
-    --ink:#f8fbff;
-    --ink-dark:#102033;
-    --muted:#b8cbe1;
-    --muted-dark:#607487;
-    --line:rgba(148,210,255,.24);
-    --card:rgba(9,22,49,.78);
-    --teal:#34d399;
-    --blue:#22d3ee;
-    --lime:#bef264;
-    --amber:#facc15;
-    --rose:#fb7185;
-    --violet:#a78bfa;
-    --field:#ffffff;
-    --field-line:#b7cfe1;
-    --shadow:0 30px 90px rgba(0,0,0,.38);
-    position:relative;
-    isolation:isolate;
-    overflow:hidden;
-    color:var(--ink);
-    background:
-      radial-gradient(circle at 10% 8%,rgba(34,211,238,.22),transparent 27%),
-      radial-gradient(circle at 84% 12%,rgba(167,139,250,.18),transparent 30%),
-      radial-gradient(circle at 72% 92%,rgba(251,113,133,.14),transparent 30%),
-      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
-  }
-  .board-shell::before,
-  .board-shell::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:-1;
-  }
-  .board-shell::before{
-    opacity:.84;
-    background-image:
-      radial-gradient(circle,#f8fbff 0 1.1px,transparent 1.7px),
-      radial-gradient(circle,#93e8ff 0 1px,transparent 1.5px),
-      radial-gradient(circle,rgba(255,255,255,.86) 0 1px,transparent 1.5px);
-    background-size:120px 120px,180px 180px,260px 260px;
-    background-position:12px 24px,70px 42px,28px 96px;
-    animation:board-star-drift 46s linear infinite;
-  }
-  .board-shell::after{
-    opacity:.55;
-    background:
-      linear-gradient(112deg,transparent 0 38%,rgba(34,211,238,.16) 39%,transparent 40% 100%),
-      linear-gradient(26deg,transparent 0 63%,rgba(250,204,21,.11) 64%,transparent 65% 100%),
-      radial-gradient(circle at 18% 90%,rgba(52,211,153,.12),transparent 28%);
-  }
-  .board-wrap{position:relative;z-index:1;max-width:1320px}
-  .board-hero,
-  .board-card,
-  .board-stat,
-  .board-room,
-  .board-queue-card,
-  .board-filter{
-    border-color:var(--line);
-    background:linear-gradient(180deg,rgba(12,28,61,.88),rgba(6,16,36,.78));
-    box-shadow:var(--shadow);
-    backdrop-filter:blur(18px);
-  }
-  .board-hero{
-    border-radius:34px;
-    padding:34px;
-    margin-bottom:20px;
-    min-height:280px;
-  }
-  .board-hero::before{
-    right:-92px;
-    bottom:-120px;
-    width:430px;
-    height:265px;
-    border-radius:999px;
-    background:
-      radial-gradient(circle at 34% 28%,rgba(255,255,255,.30) 0 6%,transparent 12%),
-      radial-gradient(circle at 66% 70%,rgba(52,211,153,.44) 0 14%,transparent 25%),
-      radial-gradient(circle at 38% 62%,rgba(34,211,238,.36) 0 18%,transparent 34%),
-      linear-gradient(135deg,#2563eb 0%,#0891b2 42%,#05235f 100%);
-    box-shadow:inset -28px -22px 42px rgba(0,0,0,.34),0 0 60px rgba(34,211,238,.24);
-    transform:rotate(-14deg);
-  }
-  .board-hero::after{
-    content:"";
-    position:absolute;
-    right:54px;
-    bottom:44px;
-    width:290px;
-    height:78px;
-    border-radius:50%;
-    border:1px solid rgba(148,210,255,.32);
-    transform:rotate(-16deg);
-    pointer-events:none;
-  }
-  .board-chip{
-    border-color:rgba(34,211,238,.36);
-    background:rgba(34,211,238,.14);
-    color:#cffafe;
-    box-shadow:0 0 0 7px rgba(34,211,238,.07);
-  }
-  .board-live-dot{
-    background:#34d399;
-    box-shadow:0 0 0 7px rgba(52,211,153,.14);
-  }
-  .board-hero h1{
-    color:#f8fbff;
-    font-size:clamp(42px,5.5vw,72px);
-    letter-spacing:-.045em;
-  }
-  .board-hero h1 span{
-    background:linear-gradient(96deg,#22d3ee 0%,#34d399 40%,#facc15 70%,#fb7185 100%);
-    -webkit-background-clip:text;
-    background-clip:text;
-  }
-  .board-lead,
-  .board-muted{
-    color:#c4d7ea;
-  }
-  .board-button,
-  .board-mini{
-    color:#f8fbff;
-    border-color:rgba(148,210,255,.24);
-    background:rgba(255,255,255,.08);
-    box-shadow:0 14px 34px rgba(0,0,0,.16);
-  }
-  .board-button--primary{
-    color:#04111f;
-    background:linear-gradient(135deg,#22d3ee,#34d399);
-    box-shadow:0 20px 48px rgba(52,211,153,.24);
-  }
-  .board-alert--error{
-    color:#ffe4e6;
-    background:linear-gradient(135deg,rgba(225,29,72,.22),rgba(251,113,133,.16));
-    border-color:rgba(251,113,133,.36);
-  }
-  .board-alert--success{
-    color:#d1fae5;
-    background:linear-gradient(135deg,rgba(16,185,129,.24),rgba(6,182,212,.18));
-    border-color:rgba(52,211,153,.35);
-  }
-  .board-summary{gap:14px;margin-bottom:20px}
-  .board-stat{
-    position:relative;
-    overflow:hidden;
-    min-height:112px;
-    border-color:rgba(255,255,255,.18);
-    background:linear-gradient(135deg,#22d3ee,#2563eb);
-  }
-  .board-stat:nth-child(2){background:linear-gradient(135deg,#fb7185,#a78bfa)}
-  .board-stat:nth-child(3){background:linear-gradient(135deg,#34d399,#14b8a6)}
-  .board-stat:nth-child(4){background:linear-gradient(135deg,#bef264,#22c55e)}
-  .board-stat:nth-child(5){background:linear-gradient(135deg,#60a5fa,#22d3ee)}
-  .board-stat:nth-child(6){background:linear-gradient(135deg,#facc15,#fb923c)}
-  .board-stat::before{
-    content:"";
-    position:absolute;
-    right:14px;
-    top:13px;
-    width:48px;
-    height:48px;
-    border-radius:18px;
-    background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.24);
-    transform:rotate(10deg);
-  }
-  .board-stat strong,
-  .board-stat span,
-  .board-stat--attention strong{
-    position:relative;
-    z-index:1;
-    color:#fff;
-    text-shadow:0 1px 12px rgba(0,0,0,.18);
-  }
-  .board-stat span{color:rgba(255,255,255,.86)}
-  .board-filter,
-  .board-card{
-    border-radius:28px;
-    padding:22px;
-  }
-  .board-filter h2,
-  .board-card h2{
-    color:#f8fbff;
-    font-size:25px;
-    letter-spacing:-.025em;
-  }
-  .board-field label{
-    color:#d8e7f7;
-    font-size:13px;
-  }
-  .board-field input,
-  .board-field select{
-    min-height:48px;
-    border:2px solid var(--field-line);
-    border-radius:16px;
-    background:var(--field);
-    color:var(--ink-dark);
-    box-shadow:0 9px 0 rgba(148,210,255,.10),0 16px 34px rgba(0,0,0,.10);
-  }
-  .board-field input:focus,
-  .board-field select:focus{
-    border-color:#22d3ee;
-    box-shadow:0 0 0 5px rgba(34,211,238,.18),0 16px 34px rgba(0,0,0,.12);
-  }
-  .board-layout{grid-template-columns:380px minmax(0,1fr);gap:20px}
-  .board-queue-card,
-  .board-room,
-  .board-hotel-row,
-  .board-empty{
-    border:1px solid rgba(183,207,225,.78);
-    background:linear-gradient(180deg,#ffffff,#eef8ff);
-    color:var(--ink-dark);
-    box-shadow:0 20px 48px rgba(0,0,0,.18);
-  }
-  .board-queue-card::before,
-  .board-room::before{
-    height:7px;
-    background:linear-gradient(90deg,var(--accent,#22d3ee),rgba(255,255,255,.20));
-  }
-  .board-room h3,
-  .board-queue-card h3,
-  .board-hotel-row span,
-  .board-hotel-row strong{
-    color:#0b253f;
-  }
-  .board-room p,
-  .board-queue-card p,
-  .board-empty{
-    color:var(--muted-dark);
-  }
-  .board-badge{
-    border:1px solid rgba(100,116,139,.18);
-    background:#eef6ff;
-    color:#334155;
-  }
-  .tone-ok .board-badge{background:#d1fae5;color:#047857;border-color:#86efac}
-  .tone-cleaning .board-badge{background:#cffafe;color:#0e7490;border-color:#67e8f9}
-  .tone-danger .board-badge{background:#ffe4e6;color:#be123c;border-color:#fda4af}
-  .tone-stayed .board-badge{background:#ecfccb;color:#4d7c0f;border-color:#bef264}
-  .tone-booked .board-badge{background:#fff7d6;color:#854d0e;border-color:#fde68a}
-  .board-room .board-mini,
-  .board-queue-card .board-mini{
-    color:#0b253f;
-    border-color:rgba(183,207,225,.85);
-    background:#ffffff;
-    box-shadow:0 10px 22px rgba(0,0,0,.08);
-  }
-  .board-mini[aria-disabled="true"]{
-    color:#64748b;
-    background:#f1f5f9;
-  }
-  @keyframes board-star-drift{
-    from{background-position:12px 24px,70px 42px,28px 96px}
-    to{background-position:132px 144px,250px 222px,288px 356px}
-  }
-  @media(max-width:1120px){
+  .roomboard-shell{width:min(1360px,calc(100vw - 40px));margin:0 auto}
+  .title-band,.toolbar,.panel,.stat-card,.room-card,.hotel-card{border:1px solid var(--line);background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(12px) saturate(1.08)}
+  .title-band{border-radius:12px;padding:20px 24px;background:linear-gradient(135deg,#087cf0,#034ea2);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .title-band h1{margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;color:#fff}
+  .title-band h1::before{content:"";display:inline-block;width:6px;height:38px;border-radius:999px;background:#fff;margin-right:12px;vertical-align:-7px}
+  .title-actions,.live-meta{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+  .live-meta{font-size:13px;font-weight:850}
+  .live-dot{width:10px;height:10px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 7px rgba(34,197,94,.16)}
+  .alert{margin-top:12px;border-radius:10px;padding:12px 14px;font-weight:850}
+  .alert.error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+  .alert.success{background:#ecfdf5;color:#047857;border:1px solid #bbf7d0}
+  .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:14px 0}
+  .stat-card{border-radius:12px;padding:14px 16px;text-decoration:none;color:var(--ink);transition:transform .15s ease,border-color .15s ease;background:rgba(255,255,255,.9)}
+  .stat-card:hover{transform:translateY(-1px);border-color:#9ecbff}
+  .stat-card strong{display:block;color:#034ea2;font-size:28px;line-height:1}
+  .stat-card span{display:block;margin-top:7px;color:var(--muted);font-size:12px;font-weight:850}
+  .stat-card.attention strong{color:#be123c}
+  .toolbar{border-radius:12px;padding:14px;margin:14px 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .searchbar{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+  details.filter{position:relative}
+  details.filter summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;padding:12px 16px;min-width:112px}
+  details.filter summary::-webkit-details-marker{display:none}
+  .filter-pop{position:absolute;z-index:20;top:54px;left:0;width:640px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 22px 50px rgba(15,23,42,.18);padding:16px}
+  .filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .field{display:grid;gap:6px}
+  .field label{font-size:12px;color:#334155;font-weight:900}
+  .field input,.field select{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:11px 12px;color:var(--ink);font:inherit}
+  .field input:focus,.field select:focus{outline:none;border-color:#0b83ef;box-shadow:0 0 0 3px rgba(11,131,239,.12)}
+  .field.search-input{max-width:620px;flex:1}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .btn,.icon-btn{border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;text-decoration:none;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 16px}
+  .icon-btn{width:48px;height:48px;display:inline-grid;place-items:center}
+  .btn.primary,.icon-btn.primary{background:var(--blue);border-color:transparent;color:#fff}
+  .board-layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+  .panel{border-radius:12px;overflow:hidden}
+  .panel-head{padding:18px 18px 0}
+  .panel-head h2{margin:0;font-size:24px}
+  .panel-head p{margin:4px 0 12px;color:var(--muted);font-weight:750}
+  .ops-list{display:grid;gap:10px;padding:18px}
+  .ops-row{display:grid;grid-template-columns:130px 1fr 150px 100px;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px;text-decoration:none;color:var(--ink);transition:background .15s ease,border-color .15s ease,transform .15s ease}
+  .ops-row:hover{background:#f4f9ff;border-color:#9ecbff;transform:translateY(-1px)}
+  .room-code{display:block;color:#06479d;font-weight:950;font-size:19px;line-height:1.1}
+  .sub{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .pill{display:inline-flex;align-items:center;width:max-content;border-radius:999px;padding:6px 10px;background:#eef2f7;color:#475569;font-size:12px;font-weight:900}
+  .pill.ok{background:#e9fbf1;color:#07875f}
+  .pill.info{background:#eaf6ff;color:#0369a1}
+  .pill.warn{background:#fff7ed;color:#c2410c}
+  .pill.purple{background:#f3e8ff;color:#6d28d9}
+  .pill.teal{background:#e6fffb;color:#0f766e}
+  .board-columns{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:14px}
+  .board-column{border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(12px) saturate(1.08);overflow:hidden}
+  .column-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px;background:#edf3f9;border-bottom:1px solid var(--line)}
+  .column-head h3{margin:0;font-size:16px}
+  .column-body{display:grid;gap:8px;padding:12px;min-height:120px}
+  .room-card{display:block;border-radius:10px;padding:10px;text-decoration:none;color:var(--ink);background:#fff;box-shadow:none}
+  .room-card:hover{background:#f4f9ff;border-color:#9ecbff}
+  .room-card strong{display:block;color:#06479d;font-size:17px}
+  .side-stack{display:grid;gap:14px}
+  .hotel-list{display:grid;gap:10px;padding:18px}
+  .hotel-card{border-radius:10px;padding:12px;background:#fff;box-shadow:none}
+  .hotel-card strong{display:block;font-size:16px}
+  .hotel-meter{height:8px;border-radius:999px;background:#e5eef8;overflow:hidden;margin-top:10px}
+  .hotel-meter span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#0ea5e9,#034ea2)}
+  .mini-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .mini-link{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:9px;background:#fff;color:#06479d;text-decoration:none;font-weight:900;min-height:34px;padding:0 10px;font-size:12px}
+  .mini-link[aria-disabled="true"]{opacity:.55;pointer-events:none}
+  .empty{padding:22px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);background:#f8fbff}
+  .hidden{display:none!important}
+  @media(max-width:1200px){
+    .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
     .board-layout{grid-template-columns:1fr}
-    .board-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .board-form{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .board-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .board-columns{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
   @media(max-width:760px){
-    .board-shell{padding:22px 12px 44px}
-    .board-hero{padding:24px;border-radius:28px;min-height:auto}
-    .board-hero::before{width:250px;height:170px;right:-105px;bottom:-78px}
-    .board-hero::after{display:none}
-    .board-hero h1{font-size:42px}
-    .board-summary,
-    .board-form,
-    .board-room-grid{grid-template-columns:1fr}
-    .board-filter-head{display:block}
-    .board-button{width:100%}
-  }
-
-  /* Keep the galaxy background continuous while scrolling or entering the page. */
-  html,
-  body{
-    min-height:100%;
-    background:#061321;
-    overscroll-behavior-y:none;
-  }
-  body{
-    background:
-      radial-gradient(circle at 10% 8%,rgba(34,211,238,.18),transparent 27%),
-      radial-gradient(circle at 84% 12%,rgba(167,139,250,.15),transparent 30%),
-      radial-gradient(circle at 72% 92%,rgba(251,113,133,.12),transparent 30%),
-      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
-  }
-  .board-shell{
-    min-height:100vh;
-    min-height:100dvh;
-    overflow-x:hidden;
-    overflow-y:visible;
-    background-color:#061321;
-    background-attachment:fixed;
+    .roomboard-page{padding:18px 10px 42px}
+    .roomboard-shell{width:100%}
+    .title-band,.toolbar{align-items:stretch;flex-direction:column}
+    .title-band h1{font-size:28px}
+    .title-actions,.searchbar{width:100%;flex-wrap:wrap}
+    .title-actions .btn{flex:1}
+    .filter-pop{width:calc(100vw - 36px)}
+    .filter-grid,.stats,.board-columns,.ops-row{grid-template-columns:1fr}
   }
 </style>
 
-<main class="board-shell">
-  <div class="board-wrap">
-    <% if (notice?.error) { %><div class="board-alert board-alert--error"><%= notice.error %></div><% } %>
-    <% if (notice?.success) { %><div class="board-alert board-alert--success"><%= notice.success %></div><% } %>
-
-    <section class="board-hero" aria-label="Theo dõi Room board live">
-      <span class="board-chip"><span class="board-live-dot"></span> Room board live</span>
-      <h1>Theo dõi <span>phòng theo thời gian thực.</span></h1>
-      <p class="board-lead">Theo dõi phòng cần xử lý, phòng đang ở, phòng sắp nhận khách và phòng sẵn sàng.</p>
-      <div class="board-actions">
-        <a class="board-button board-button--primary" href="/dashboard/dichvu">Quay lại dashboard</a>
-        <a class="board-button" href="/service/room-inspection">Kiểm tra tình trạng phòng</a>
+<main class="roomboard-page">
+  <div class="roomboard-shell">
+    <section class="title-band">
+      <h1>Theo dõi room board</h1>
+      <div class="title-actions">
+        <div class="live-meta">
+          <span class="live-dot"></span>
+          <span>Cập nhật: <strong id="boardUpdatedAt"><%= generatedAtLabel %></strong></span>
+        </div>
+        <a class="btn" href="/dashboard/dichvu">Quay về</a>
+        <a class="btn" href="/service/room-inspection">Kiểm tra phòng</a>
       </div>
     </section>
 
-    <section class="board-summary" aria-label="KPI room board">
-      <div class="board-stat"><strong id="boardTotal"><%= summary.total || rooms.length %></strong><span>Tổng phòng</span></div>
-      <div class="board-stat board-stat--attention"><strong id="boardAttention"><%= summary.needsAttention || 0 %></strong><span>Cần xử lý</span></div>
-      <div class="board-stat"><strong id="boardAvailable"><%= summary.available || 0 %></strong><span>Available</span></div>
-      <div class="board-stat"><strong id="boardStayed"><%= summary.stayed || 0 %></strong><span>Đang ở</span></div>
-      <div class="board-stat"><strong id="boardCleaning"><%= summary.cleaning || 0 %></strong><span>Cleaning</span></div>
-      <div class="board-stat"><strong id="boardMaintenance"><%= summary.maintenance || 0 %></strong><span>Maintenance</span></div>
+    <% if (pageNotice.error) { %><div class="alert error"><%= pageNotice.error %></div><% } %>
+    <% if (pageNotice.success) { %><div class="alert success"><%= pageNotice.success %></div><% } %>
+
+    <section class="stats" aria-label="Tổng quan room board">
+      <div class="stat-card attention"><strong id="boardAttention"><%= summary.needsAttention || 0 %></strong><span>Cần xử lý</span></div>
+      <div class="stat-card"><strong id="boardMaintenance"><%= summary.maintenance || 0 %></strong><span>Bảo trì</span></div>
+      <div class="stat-card"><strong id="boardCleaning"><%= summary.cleaning || 0 %></strong><span>Cần vệ sinh</span></div>
+      <div class="stat-card"><strong id="boardBooked"><%= summary.booked || 0 %></strong><span>Đã đặt</span></div>
+      <div class="stat-card"><strong id="boardAvailable"><%= summary.available || 0 %></strong><span>Sẵn sàng</span></div>
     </section>
 
-    <section class="board-filter">
-      <div class="board-filter-head">
-        <div>
-          <h2>Bộ lọc live board</h2>
-          <p class="board-muted">Cập nhật gần nhất: <strong id="boardUpdatedAt"><%= generatedAtLabel %></strong>.</p>
-        </div>
-        <button class="board-button" type="button" id="boardRefresh">Cập nhật</button>
-      </div>
-      <div class="board-form">
-        <div class="board-field">
-          <label for="boardSearch">Tìm nhanh</label>
-          <input id="boardSearch" placeholder="Phòng, khách, booking, khách sạn..." />
-        </div>
-        <div class="board-field">
-          <label for="boardHotel">Cơ sở</label>
-          <select id="boardHotel">
-            <option value="">Toàn bộ cơ sở</option>
-            <% hotelGroups.forEach((hotel) => { %>
-              <option value="<%= hotel.hotelId %>"><%= hotel.hotelName %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="board-field">
-          <label for="boardStatus">Trạng thái</label>
-          <select id="boardStatus">
-            <option value="">Tất cả</option>
-            <option value="Maintenance">Maintenance</option>
-            <option value="Cleaning">Cleaning</option>
-            <option value="Stayed">Đang ở</option>
-            <option value="Booked">Đã đặt</option>
-            <option value="Available">Available</option>
-          </select>
-        </div>
-        <div class="board-field">
-          <label for="boardPriority">Ưu tiên</label>
-          <select id="boardPriority">
-            <option value="">Tất cả</option>
-            <option value="maintenance">Ưu tiên bảo trì</option>
-            <option value="cleaning">Cần vệ sinh</option>
-            <option value="stayed">Đang có khách</option>
-            <option value="booked">Sắp nhận khách</option>
-            <option value="available">Sẵn sàng</option>
-          </select>
-        </div>
-        <button class="board-button board-button--primary" type="button" id="boardReset">Đặt lại</button>
-      </div>
-    </section>
-
-    <div class="board-layout">
-      <aside>
-        <section class="board-card">
-          <h2>Hàng đợi ưu tiên</h2>
-          <p class="board-muted">Maintenance, Cleaning và Booked.</p>
-          <div class="board-queue" id="priorityQueue">
-            <% if (!priorityQueue.length) { %>
-              <div class="board-empty">Không có phòng cần ưu tiên trong snapshot hiện tại.</div>
-            <% } %>
-            <% priorityQueue.forEach((room) => { %>
-              <article class="board-queue-card tone-<%= statusTone(room) %>">
-                <span class="board-badge"><%= room.statusLabel || room.trangThaiRealtime %></span>
-                <h3>P<%= room.soPhong %> · <%= room.priorityLabel %></h3>
-                <p><%= room.hotelName %><%= room.hotelCity ? ` · ${room.hotelCity}` : "" %></p>
-                <p><%= room.suggestedAction %></p>
-                <div class="board-mini-actions">
-                  <a class="board-mini" href="/service/room-inspection?room_id=<%= room.id %>" <%= room.canInspect ? "" : "aria-disabled='true'" %>>Kiểm tra</a>
-                </div>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="board-card">
-          <h2>Theo cơ sở</h2>
-          <p class="board-muted">Phòng cần xử lý theo từng cơ sở.</p>
-          <div class="board-hotel-stack" id="hotelStack">
-            <% hotelGroups.forEach((hotel) => { %>
-              <div class="board-hotel-row">
-                <span><%= hotel.hotelName %></span>
-                <strong><%= hotel.needsAttention %>/<%= hotel.total %></strong>
+    <section class="toolbar" aria-label="Tìm kiếm room board">
+      <div class="searchbar">
+        <details class="filter">
+          <summary>Bộ lọc</summary>
+          <div class="filter-pop">
+            <div class="filter-grid">
+              <div class="field">
+                <label for="boardHotel">Cơ sở</label>
+                <select id="boardHotel">
+                  <option value="">Tất cả cơ sở</option>
+                  <% hotelGroups.forEach((hotel) => { %>
+                    <option value="<%= hotel.hotelId %>"><%= hotel.hotelName %></option>
+                  <% }) %>
+                </select>
               </div>
+              <div class="field">
+                <label for="boardStatus">Trạng thái</label>
+                <select id="boardStatus">
+                  <option value="">Tất cả trạng thái</option>
+                  <% statusOrder.forEach((status) => { %>
+                    <option value="<%= status %>"><%= statusText(status) %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="field">
+                <label for="boardPriority">Mức xử lý</label>
+                <select id="boardPriority">
+                  <option value="">Tất cả mức xử lý</option>
+                  <option value="maintenance">Ưu tiên bảo trì</option>
+                  <option value="cleaning">Cần vệ sinh</option>
+                  <option value="booked">Sắp nhận khách</option>
+                  <option value="stayed">Đang có khách</option>
+                  <option value="available">Sẵn sàng</option>
+                </select>
+              </div>
+            </div>
+            <div class="mini-actions" style="justify-content:flex-end">
+              <button class="btn" type="button" id="boardReset">Đặt lại</button>
+            </div>
+          </div>
+        </details>
+        <div class="field search-input">
+          <label class="sr-only" for="boardSearch">Tìm phòng</label>
+          <input id="boardSearch" placeholder="Tìm phòng, booking, khách, cơ sở..." />
+        </div>
+        <button class="icon-btn primary" type="button" id="boardSearchButton" aria-label="Tìm kiếm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.15a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <button class="btn primary" type="button" id="boardRefresh">Cập nhật</button>
+    </section>
+
+    <section class="board-layout">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Ưu tiên xử lý</h2>
+          <p>Hiển thị tối đa 10 phòng cần dịch vụ chú ý trong ca.</p>
+        </div>
+        <div class="ops-list" id="priorityRows">
+          <% if (!visibleQueue.length) { %>
+            <div class="empty">Không có phòng cần xử lý trong ca hiện tại.</div>
+          <% } else { %>
+            <% visibleQueue.forEach((room) => { %>
+              <a class="ops-row" href="/service/room-inspection?room_id=<%= room.id %>" data-search="<%= room.searchText || "" %>" data-hotel="<%= room.hotelId || 0 %>" data-status="<%= room.trangThaiRealtime || "" %>" data-priority="<%= room.priorityKey || "" %>">
+                <span>
+                  <span class="room-code"><%= room.soPhong %></span>
+                  <span class="sub"><%= room.loaiPhong || "Chưa rõ loại" %></span>
+                </span>
+                <span>
+                  <strong><%= room.hotelName || "Không rõ cơ sở" %></strong>
+                  <span class="sub"><%= room.suggestedAction || "Theo dõi định kỳ" %></span>
+                </span>
+                <span class="<%= statusClass(room.trangThaiRealtime) %>"><%= statusText(room.trangThaiRealtime) %></span>
+                <span class="mini-link"><%= room.canInspect ? "Kiểm tra" : "Theo dõi" %></span>
+              </a>
             <% }) %>
+          <% } %>
+        </div>
+      </section>
+
+      <aside class="side-stack">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Theo cơ sở</h2>
+            <p>Cơ sở có nhiều phòng cần chú ý sẽ nổi lên trước.</p>
+          </div>
+          <div class="hotel-list" id="hotelRows">
+            <% if (!hotelGroups.length) { %>
+              <div class="empty">Chưa có dữ liệu cơ sở.</div>
+            <% } else { %>
+              <% hotelGroups.slice(0, 6).forEach((hotel) => {
+                const ratio = hotel.total ? Math.round((Number(hotel.needsAttention || 0) / Number(hotel.total || 1)) * 100) : 0;
+              %>
+                <article class="hotel-card">
+                  <strong><%= hotel.hotelName %></strong>
+                  <span class="sub"><%= hotel.needsAttention %> cần xử lý / <%= hotel.total %> phòng</span>
+                  <div class="hotel-meter" aria-hidden="true"><span style="width:<%= ratio %>%"></span></div>
+                </article>
+              <% }) %>
+            <% } %>
           </div>
         </section>
       </aside>
+    </section>
 
-      <section class="board-card">
-        <h2>Room board</h2>
-        <p class="board-muted">Hiển thị <strong id="visibleCount"><%= rooms.length %></strong>/<%= rooms.length %> phòng theo bộ lọc hiện tại.</p>
-        <% if (!rooms.length) { %>
-          <div class="board-empty">Chưa có dữ liệu phòng trong room board.</div>
-        <% } else { %>
-          <div class="board-room-grid" id="roomBoardGrid">
-            <% rooms.forEach((room) => { %>
-              <article class="board-room tone-<%= statusTone(room) %>"
-                data-search="<%= room.searchText || "" %>"
-                data-hotel="<%= room.hotelId || 0 %>"
-                data-status="<%= room.trangThaiRealtime || "" %>"
-                data-priority="<%= room.priorityKey || "" %>">
-                <div class="board-room-head">
-                  <span class="board-badge"><%= room.statusLabel || room.trangThaiRealtime %></span>
-                  <span class="board-badge"><%= room.conditionLabel %></span>
-                </div>
-                <h3><%= room.hotelName %> · P<%= room.soPhong %></h3>
-                <p><%= room.loaiPhong %><%= room.hotelCity ? ` · ${room.hotelCity}` : "" %></p>
-                <p><%= room.occupancyLabel %></p>
-                <p><strong><%= room.priorityLabel %></strong></p>
-                <p><%= room.suggestedAction %></p>
-                <div class="board-mini-actions">
-                  <a class="board-mini" href="/service/room-inspection?room_id=<%= room.id %>" <%= room.canInspect ? "" : "aria-disabled='true'" %>>Kiểm tra phòng</a>
-                </div>
-              </article>
-            <% }) %>
+    <section class="board-columns" id="boardColumns">
+      <% boardGroups.forEach((group) => { %>
+        <section class="board-column" data-column="<%= group.state %>">
+          <div class="column-head">
+            <h3><%= group.label %></h3>
+            <span class="<%= statusClass(group.state) %>"><%= group.count %></span>
           </div>
-        <% } %>
-      </section>
-    </div>
+          <div class="column-body">
+            <% if (!group.rooms.length) { %>
+              <div class="empty">Không có phòng.</div>
+            <% } else { %>
+              <% group.rooms.forEach((room) => { %>
+                <a class="room-card" href="/service/room-inspection?room_id=<%= room.id %>" data-search="<%= room.searchText || "" %>" data-hotel="<%= room.hotelId || 0 %>" data-status="<%= room.trangThaiRealtime || "" %>" data-priority="<%= room.priorityKey || "" %>">
+                  <strong><%= room.soPhong %></strong>
+                  <span class="sub"><%= [room.hotelName, room.loaiPhong].filter(Boolean).join(" · ") %></span>
+                </a>
+              <% }) %>
+            <% } %>
+          </div>
+        </section>
+      <% }) %>
+    </section>
   </div>
 </main>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const searchInput = document.getElementById("boardSearch");
+  const searchButton = document.getElementById("boardSearchButton");
   const hotelSelect = document.getElementById("boardHotel");
   const statusSelect = document.getElementById("boardStatus");
   const prioritySelect = document.getElementById("boardPriority");
   const resetButton = document.getElementById("boardReset");
   const refreshButton = document.getElementById("boardRefresh");
-  const grid = document.getElementById("roomBoardGrid");
-  const visibleCount = document.getElementById("visibleCount");
-  const queue = document.getElementById("priorityQueue");
-  const hotelStack = document.getElementById("hotelStack");
+  const priorityRows = document.getElementById("priorityRows");
+  const boardColumns = document.getElementById("boardColumns");
+  const hotelRows = document.getElementById("hotelRows");
+  const statusOrder = ["Maintenance", "Cleaning", "Booked", "Stayed", "Available"];
 
   function escapeHtml(value) {
     return String(value || "").replace(/[&<>"']/g, (char) => ({
@@ -569,85 +328,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }[char]));
   }
 
-  function tone(room) {
-    return room.priorityTone || (
-      room.trangThaiRealtime === "Maintenance" ? "danger"
-        : room.trangThaiRealtime === "Cleaning" ? "cleaning"
-          : room.trangThaiRealtime === "Stayed" ? "stayed"
-            : room.trangThaiRealtime === "Booked" ? "booked"
-              : "ok"
-    );
+  function statusLabel(value) {
+    return {
+      Available: "Sẵn sàng",
+      Cleaning: "Cần vệ sinh",
+      Maintenance: "Bảo trì",
+      Booked: "Đã đặt",
+      Stayed: "Đang ở"
+    }[value] || value || "Chưa rõ";
   }
 
-  function applyFilters() {
-    if (!grid) return;
-    const keyword = (searchInput?.value || "").trim().toLowerCase();
-    const hotel = hotelSelect?.value || "";
-    const status = statusSelect?.value || "";
-    const priority = prioritySelect?.value || "";
-    let visible = 0;
-    grid.querySelectorAll(".board-room").forEach((card) => {
-      const matchText = !keyword || (card.dataset.search || "").includes(keyword);
-      const matchHotel = !hotel || String(card.dataset.hotel || "") === hotel;
-      const matchStatus = !status || String(card.dataset.status || "") === status;
-      const matchPriority = !priority || String(card.dataset.priority || "") === priority;
-      const show = matchText && matchHotel && matchStatus && matchPriority;
-      card.classList.toggle("board-hidden", !show);
-      if (show) visible += 1;
-    });
-    if (visibleCount) visibleCount.textContent = String(visible);
-  }
-
-  function renderRoom(room) {
-    return `
-      <article class="board-room tone-${escapeHtml(tone(room))}"
-        data-search="${escapeHtml(room.searchText)}"
-        data-hotel="${escapeHtml(room.hotelId || 0)}"
-        data-status="${escapeHtml(room.trangThaiRealtime)}"
-        data-priority="${escapeHtml(room.priorityKey)}">
-        <div class="board-room-head">
-          <span class="board-badge">${escapeHtml(room.statusLabel || room.trangThaiRealtime)}</span>
-          <span class="board-badge">${escapeHtml(room.conditionLabel)}</span>
-        </div>
-        <h3>${escapeHtml(room.hotelName)} · P${escapeHtml(room.soPhong)}</h3>
-        <p>${escapeHtml(room.loaiPhong)}${room.hotelCity ? " · " + escapeHtml(room.hotelCity) : ""}</p>
-        <p>${escapeHtml(room.occupancyLabel)}</p>
-        <p><strong>${escapeHtml(room.priorityLabel)}</strong></p>
-        <p>${escapeHtml(room.suggestedAction)}</p>
-        <div class="board-mini-actions">
-          <a class="board-mini" href="/service/room-inspection?room_id=${encodeURIComponent(room.id)}" ${room.canInspect ? "" : "aria-disabled='true'"}>Kiểm tra phòng</a>
-        </div>
-      </article>
-    `;
-  }
-
-  function renderQueue(items) {
-    if (!queue) return;
-    if (!items.length) {
-      queue.innerHTML = '<div class="board-empty">Không có phòng cần ưu tiên trong snapshot hiện tại.</div>';
-      return;
-    }
-    queue.innerHTML = items.map((room) => `
-      <article class="board-queue-card tone-${escapeHtml(tone(room))}">
-        <span class="board-badge">${escapeHtml(room.statusLabel || room.trangThaiRealtime)}</span>
-        <h3>P${escapeHtml(room.soPhong)} · ${escapeHtml(room.priorityLabel)}</h3>
-        <p>${escapeHtml(room.hotelName)}${room.hotelCity ? " · " + escapeHtml(room.hotelCity) : ""}</p>
-        <p>${escapeHtml(room.suggestedAction)}</p>
-        <div class="board-mini-actions">
-          <a class="board-mini" href="/service/room-inspection?room_id=${encodeURIComponent(room.id)}" ${room.canInspect ? "" : "aria-disabled='true'"}>Kiểm tra</a>
-        </div>
-      </article>
-    `).join("");
-  }
-
-  function renderHotels(items) {
-    if (!hotelStack) return;
-    hotelStack.innerHTML = items.map((hotel) => `
-      <div class="board-hotel-row">
-        <span>${escapeHtml(hotel.hotelName)}</span>
-        <strong>${escapeHtml(hotel.needsAttention)}/${escapeHtml(hotel.total)}</strong>
-      </div>
-    `).join("");
+  function statusClass(value) {
+    if (value === "Available") return "pill ok";
+    if (value === "Cleaning") return "pill info";
+    if (value === "Maintenance") return "pill warn";
+    if (value === "Booked") return "pill purple";
+    if (value === "Stayed") return "pill teal";
+    return "pill";
   }
 
   function setText(id, value) {
@@ -668,6 +365,80 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function rowDataAttrs(room) {
+    return `data-search="${escapeHtml(room.searchText)}" data-hotel="${escapeHtml(room.hotelId || 0)}" data-status="${escapeHtml(room.trangThaiRealtime)}" data-priority="${escapeHtml(room.priorityKey)}"`;
+  }
+
+  function renderPriority(items) {
+    if (!priorityRows) return;
+    if (!items.length) {
+      priorityRows.innerHTML = '<div class="empty">Không có phòng cần xử lý trong ca hiện tại.</div>';
+      return;
+    }
+    priorityRows.innerHTML = items.slice(0, 10).map((room) => `
+      <a class="ops-row" href="/service/room-inspection?room_id=${encodeURIComponent(room.id)}" ${rowDataAttrs(room)}>
+        <span><span class="room-code">${escapeHtml(room.soPhong)}</span><span class="sub">${escapeHtml(room.loaiPhong || "Chưa rõ loại")}</span></span>
+        <span><strong>${escapeHtml(room.hotelName || "Không rõ cơ sở")}</strong><span class="sub">${escapeHtml(room.suggestedAction || "Theo dõi định kỳ")}</span></span>
+        <span class="${statusClass(room.trangThaiRealtime)}">${escapeHtml(statusLabel(room.trangThaiRealtime))}</span>
+        <span class="mini-link">${room.canInspect ? "Kiểm tra" : "Theo dõi"}</span>
+      </a>
+    `).join("");
+  }
+
+  function renderColumns(items) {
+    if (!boardColumns) return;
+    boardColumns.innerHTML = statusOrder.map((state) => {
+      const group = items.filter((room) => room.trangThaiRealtime === state);
+      const cards = group.slice(0, 8).map((room) => `
+        <a class="room-card" href="/service/room-inspection?room_id=${encodeURIComponent(room.id)}" ${rowDataAttrs(room)}>
+          <strong>${escapeHtml(room.soPhong)}</strong>
+          <span class="sub">${escapeHtml([room.hotelName, room.loaiPhong].filter(Boolean).join(" · "))}</span>
+        </a>
+      `).join("") || '<div class="empty">Không có phòng.</div>';
+      return `
+        <section class="board-column" data-column="${escapeHtml(state)}">
+          <div class="column-head">
+            <h3>${escapeHtml(statusLabel(state))}</h3>
+            <span class="${statusClass(state)}">${group.length}</span>
+          </div>
+          <div class="column-body">${cards}</div>
+        </section>
+      `;
+    }).join("");
+  }
+
+  function renderHotels(groups) {
+    if (!hotelRows) return;
+    if (!groups.length) {
+      hotelRows.innerHTML = '<div class="empty">Chưa có dữ liệu cơ sở.</div>';
+      return;
+    }
+    hotelRows.innerHTML = groups.slice(0, 6).map((hotel) => {
+      const ratio = hotel.total ? Math.round((Number(hotel.needsAttention || 0) / Number(hotel.total || 1)) * 100) : 0;
+      return `
+        <article class="hotel-card">
+          <strong>${escapeHtml(hotel.hotelName)}</strong>
+          <span class="sub">${escapeHtml(hotel.needsAttention)} cần xử lý / ${escapeHtml(hotel.total)} phòng</span>
+          <div class="hotel-meter" aria-hidden="true"><span style="width:${Math.max(0, Math.min(ratio, 100))}%"></span></div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function applyFilters() {
+    const keyword = (searchInput?.value || "").trim().toLowerCase();
+    const hotel = hotelSelect?.value || "";
+    const status = statusSelect?.value || "";
+    const priority = prioritySelect?.value || "";
+    document.querySelectorAll("[data-search]").forEach((item) => {
+      const matchText = !keyword || (item.dataset.search || "").includes(keyword);
+      const matchHotel = !hotel || String(item.dataset.hotel || "") === hotel;
+      const matchStatus = !status || String(item.dataset.status || "") === status;
+      const matchPriority = !priority || String(item.dataset.priority || "") === priority;
+      item.classList.toggle("hidden", !(matchText && matchHotel && matchStatus && matchPriority));
+    });
+  }
+
   async function refreshBoard() {
     try {
       const response = await fetch("/api/service/room-feed", { credentials: "same-origin" });
@@ -675,19 +446,21 @@ document.addEventListener("DOMContentLoaded", function () {
       const payload = await response.json();
       if (!payload?.ok || !payload.data) return;
       const data = payload.data;
-      if (grid) grid.innerHTML = (data.items || []).map(renderRoom).join("");
-      renderQueue(data.priorityQueue || []);
+      const queueItems = (data.priorityQueue || []).length
+        ? data.priorityQueue
+        : (data.items || []).filter((room) => room.trangThaiRealtime !== "Available");
+      renderPriority(queueItems);
+      renderColumns(data.items || []);
       renderHotels(data.byHotel || []);
-      setText("boardTotal", data.summary?.total || data.items?.length || 0);
       setText("boardAttention", data.summary?.needsAttention || 0);
-      setText("boardAvailable", data.summary?.available || 0);
-      setText("boardStayed", data.summary?.stayed || 0);
-      setText("boardCleaning", data.summary?.cleaning || 0);
       setText("boardMaintenance", data.summary?.maintenance || 0);
+      setText("boardCleaning", data.summary?.cleaning || 0);
+      setText("boardBooked", data.summary?.booked || 0);
+      setText("boardAvailable", data.summary?.available || 0);
       setUpdatedAt(data.generatedAt);
       applyFilters();
     } catch (_error) {
-      // Giữ snapshot đang hiển thị nếu live refresh tạm thời không lấy được dữ liệu.
+      // Giữ snapshot hiện tại nếu realtime tạm thời lỗi.
     }
   }
 
@@ -695,6 +468,7 @@ document.addEventListener("DOMContentLoaded", function () {
     input?.addEventListener("input", applyFilters);
     input?.addEventListener("change", applyFilters);
   });
+  searchButton?.addEventListener("click", applyFilters);
   resetButton?.addEventListener("click", () => {
     if (searchInput) searchInput.value = "";
     if (hotelSelect) hotelSelect.value = "";
@@ -713,6 +487,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   window.setInterval(refreshBoard, 30000);
   applyFilters();
+  setUpdatedAt("<%= generatedAtIso %>");
 });
 </script>
 

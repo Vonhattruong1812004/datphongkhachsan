@@ -123,10 +123,10 @@ export class CustomerService {
         { key: "history", label: "Lịch sử", href: "/customer/bookings" },
         { key: "profile", label: "Quản lý hồ sơ cá nhân", href: "/customer/profile" },
         { key: "services", label: "Đặt dịch vụ bổ sung", href: "/customer/services" },
-        { key: "advisory", label: "Tư vấn", href: "/customer/advisory" },
+        { key: "advisory", label: "Nhận tư vấn và hỗ trợ", href: "/customer/advisory" },
         { key: "ekyc", label: "eKYC", href: "/ekyc" },
         { key: "feedback", label: "Gửi phản hồi và đánh giá", href: "/feedback/new" },
-        { key: "ai", label: "AI Concierge", href: "/ai/concierge" }
+        { key: "ai", label: "Trợ lý đặt phòng", href: "/ai/concierge" }
       ],
       bookings: bookings.map((item) => ({
         ...item,
@@ -155,7 +155,7 @@ export class CustomerService {
         key: "room",
         title: "Tư vấn chọn phòng",
         prompt: "Tôi cần được tư vấn chọn phòng phù hợp theo ngân sách và số người.",
-        description: "Hỏi AI về loại phòng, view, sức chứa, ngân sách và gợi ý hành trình.",
+        description: "Hỏi AI về loại phòng, view, sức chứa, ngân sách, ngày ở và ưu đãi phù hợp.",
         responseTarget: "AI trả lời ngay",
         channel: "AI"
       },
@@ -298,9 +298,9 @@ export class CustomerService {
       channels: [
         {
           key: "ai",
-          label: "Chat với AI Concierge",
+          label: "Chat với trợ lý đặt phòng",
           href: "#ai-concierge",
-          description: "Hỏi nhanh về phòng, booking, check-in, eKYC hoặc dịch vụ. Phù hợp câu hỏi thông tin và gợi ý."
+          description: "Hỏi nhanh về phòng, ngân sách, booking, check-in, eKYC hoặc dịch vụ. Phù hợp khi cần gợi ý trước khi đặt."
         },
         {
           key: "feedback",
@@ -431,10 +431,10 @@ export class CustomerService {
     return [
       {
         label: "Hỏi thông tin nhanh",
-        channel: "AI Concierge",
+        channel: "Trợ lý đặt phòng",
         target: "Trả lời ngay",
-        detail: "Giá phòng, tiện ích, eKYC, giờ check-in, quy định cơ bản và gợi ý dịch vụ.",
-        prompt: "Tôi muốn hỏi nhanh về quy định, giờ check-in, eKYC và dịch vụ phù hợp cho chuyến đi."
+        detail: "Tư vấn loại phòng, giá, ngày ở, số khách, eKYC, giờ check-in, quy định và dịch vụ đi kèm trước khi đặt.",
+        prompt: "Tôi muốn được tư vấn phòng phù hợp theo ngày ở, số khách, ngân sách và dịch vụ cần dùng."
       },
       {
         label: "Cần kiểm tra dữ liệu",
@@ -463,9 +463,9 @@ export class CustomerService {
       return `Bạn đang có ${input.openTickets.length} yêu cầu tư vấn chưa đóng. Nên xem phản hồi CSKH trước khi tạo yêu cầu mới.`;
     }
     if (input.activeStay) return "Nếu vấn đề ảnh hưởng trực tiếp tới kỳ lưu trú hiện tại, hãy ưu tiên Zalo hoặc ticket CSKH.";
-    if (input.nextStay) return "AI phù hợp để chuẩn bị giấy tờ, giờ đến, dịch vụ thêm; CSKH phù hợp khi cần xác minh booking.";
+    if (input.nextStay) return "Trợ lý đặt phòng phù hợp để chuẩn bị giấy tờ, giờ đến, dịch vụ thêm; CSKH phù hợp khi cần xác minh booking.";
     if (input.latestBooking) return "Có thể hỏi theo booking gần nhất để kiểm tra thanh toán, dịch vụ hoặc lịch sử lưu trú.";
-    return "Bạn có thể bắt đầu bằng AI Concierge để chọn phòng, ngân sách, ngày ở và dịch vụ phù hợp.";
+    return "Bạn có thể bắt đầu bằng trợ lý đặt phòng để tìm phòng, ngân sách, ngày ở và dịch vụ phù hợp.";
   }
 
   private customerAdvisoryStatusLabel(status: string) {

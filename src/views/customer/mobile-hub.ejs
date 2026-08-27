@@ -1,6 +1,6 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
-<main class="container">
+<main class="container customer-mobile-bg">
   <section class="panel">
     <div class="section-eyebrow">Trung tâm di động</div>
     <h2>Ứng dụng PWA cho <%= payload.profile.tenKh || user?.displayName || "Khách hàng" %></h2>
@@ -180,4 +180,5 @@
     }
   })();
 </script>
+<%- include("../partials/customer-background") %>
 <%- include("../partials/footer") %>

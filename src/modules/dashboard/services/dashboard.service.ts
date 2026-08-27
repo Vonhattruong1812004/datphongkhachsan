@@ -71,10 +71,12 @@ interface FinanceBreakdownRow {
 
 const cardsByScope: Record<string, DashboardCard[]> = {
   admin: [
-    { label: "Quản lý tài khoản", value: "Users", note: "Tạo, sửa, khóa/mở tài khoản và gán đúng vai trò truy cập." },
-    { label: "Kiểm tra sức khỏe", value: "Health", note: "Kiểm runtime, database, storage, PWA, AI và readiness hệ thống." },
-    { label: "Sao lưu dữ liệu", value: "Backup", note: "Tạo snapshot SQL, cấu hình auto backup và đọc metadata backup." },
-    { label: "Phục hồi hệ thống", value: "Restore", note: "Chọn snapshot toàn bộ, xác nhận rủi ro và phục hồi có kiểm soát." }
+    { label: "Kiểm soát truy cập", value: "Access", note: "Quản lý tài khoản, vai trò, trạng thái khóa/mở và tài khoản chưa liên kết hồ sơ." },
+    { label: "Sức khỏe runtime", value: "Health", note: "Theo dõi database, storage, môi trường chạy, session và các cảnh báo hệ thống." },
+    { label: "An toàn dữ liệu", value: "Backup", note: "Kiểm tra cấu hình sao lưu, file backup mới nhất và điểm phục hồi khả dụng." },
+    { label: "Readiness hệ thống", value: "Ready", note: "Đối soát mức sẵn sàng của các module: booking, lễ tân, kế toán, AI, PWA và admin." },
+    { label: "AI diagnostics", value: "AI", note: "Kiểm tra provider AI, chat hỗ trợ đặt phòng, recommendation và tín hiệu sử dụng AI trong hệ thống." },
+    { label: "Multi-hotel", value: "Scope", note: "Kiểm tra dữ liệu khách sạn, phòng, nhân viên, dịch vụ và chi phí theo từng cơ sở." }
   ],
   letan: [
     { label: "Đặt tại quầy", value: "Direct V2", note: "Tạo booking trực tiếp theo luồng lễ tân" },
@@ -87,7 +89,7 @@ const cardsByScope: Record<string, DashboardCard[]> = {
     { label: "Xử lý ngoại lệ", value: "Hoàn tiền", note: "Hoàn tiền giữ riêng vì liên kết Lễ tân hủy đặt phòng và Quản lý duyệt hoàn." }
   ],
   dichvu: [
-    { label: "Quản lý dịch vụ", value: "Catalog", note: "Danh sách, thêm, sửa, xóa/ngưng và cập nhật thông tin dịch vụ." },
+    { label: "Quản lý dịch vụ", value: "Dịch vụ", note: "Danh sách, thêm, sửa, xóa/ngưng và cập nhật thông tin dịch vụ." },
     { label: "Kiểm tra tình trạng phòng", value: "Room check", note: "Chọn phòng đang ở để cập nhật tình trạng sau kiểm tra thực tế." },
     { label: "Theo dõi Room board live", value: "Realtime", note: "Theo dõi snapshot phòng và tín hiệu vận hành realtime của bộ phận dịch vụ." }
   ],
@@ -108,7 +110,7 @@ const cardsByScope: Record<string, DashboardCard[]> = {
 const heroByScope: Record<string, { title: string; description: string }> = {
   admin: {
     title: "Xin chào, Admin!",
-    description: "Bảng điều phối gọn cho quyền hệ thống: quản trị tài khoản, kiểm tra sức khỏe runtime, sao lưu và phục hồi dữ liệu."
+    description: "Trung tâm quản trị hệ thống: kiểm soát truy cập, giám sát sức khỏe, bảo vệ dữ liệu và kiểm tra readiness."
   },
   letan: {
     title: "Xin chào, Lễ tân!",
@@ -120,7 +122,7 @@ const heroByScope: Record<string, { title: string; description: string }> = {
   },
   dichvu: {
     title: "Xin chào, Bộ phận dịch vụ!",
-    description: "Tập trung ba màn chính: quản lý dịch vụ, kiểm tra tình trạng phòng và room board live."
+    description: "Tập trung ba màn chính: quản lý danh mục dịch vụ, kiểm tra tình trạng phòng và theo dõi room board live."
   },
   quanly: {
     title: "Xin chào, Quản lý!",
@@ -134,10 +136,12 @@ const heroByScope: Record<string, { title: string; description: string }> = {
 
 const actionsByScope: Record<string, DashboardActionLink[]> = {
   admin: [
-    { label: "Quản lý người dùng & phân quyền", href: "/admin/users", note: "Tạo tài khoản, đổi vai trò và khóa/mở quyền truy cập." },
-    { label: "Kiểm tra sức khỏe hệ thống", href: "/admin/diagnostics", note: "Kiểm runtime, readiness, mobile, AI và multi-hotel từ một cụm." },
-    { label: "Sao lưu dữ liệu", href: "/admin/backups", note: "Tạo backup và cấu hình sao lưu tự động." },
-    { label: "Phục hồi hệ thống", href: "/admin/restore", note: "Khôi phục dữ liệu từ file backup khi cần." }
+    { label: "Quản lý người dùng & phân quyền", href: "/admin/users", note: "Tạo tài khoản, đổi vai trò, khóa/mở truy cập và xử lý tài khoản chưa liên kết hồ sơ." },
+    { label: "Kiểm tra sức khỏe hệ thống", href: "/admin/diagnostics", note: "Tổng hợp runtime, readiness, mobile, AI và multi-hotel để phát hiện điểm rủi ro." },
+    { label: "Sao lưu dữ liệu", href: "/admin/backups", note: "Tạo backup, bật/tắt auto backup và kiểm tra metadata snapshot trước khi thay đổi lớn." },
+    { label: "Phục hồi hệ thống", href: "/admin/restore", note: "Chọn file backup toàn hệ thống, xác nhận rủi ro và restore có tạo pre-restore backup." },
+    { label: "AI diagnostics", href: "/admin/ai-diagnostics", note: "Kiểm provider AI, request hỗ trợ đặt phòng, recommendation và tín hiệu chuyển đổi liên quan AI." },
+    { label: "Multi-hotel diagnostics", href: "/admin/multi-hotel-diagnostics", note: "Kiểm scope khách sạn/phòng/nhân viên/dịch vụ/chi phí để chuẩn bị vận hành nhiều cơ sở." }
   ],
   letan: [
     { label: "Đặt phòng tại quầy", href: "/frontdesk/direct-booking", note: "Tạo booking trực tiếp, chọn phòng, gắn khách, dịch vụ, khuyến mãi và tổng tiền." },
@@ -149,13 +153,15 @@ const actionsByScope: Record<string, DashboardActionLink[]> = {
     { label: "Đặt dịch vụ", href: "/service?from=frontdesk", note: "Bổ sung dịch vụ cho khách đang ở, cộng tiền vào giao dịch đang mở." }
   ],
   ketoan: [
-    { label: "Thống kê tài chính", href: "/accounting/reports", note: "Trực quan hóa doanh thu, chi phí, lợi nhuận và dòng tiền theo kỳ." },
-    { label: "Quản lý doanh thu", href: "/accounting/revenue", note: "Theo dõi giao dịch thu, phương thức thanh toán, tiền đã thu, còn phải thu và công nợ khách." },
+    { label: "Thống kê tài chính", href: "/accounting", note: "Trực quan hóa doanh thu, chi phí, lợi nhuận và dòng tiền theo kỳ." },
+    { label: "Lập báo cáo tài chính", href: "/accounting/financial-reports", note: "Tạo báo cáo theo kỳ từ doanh thu, chi phí, công nợ và hoàn tiền." },
+    { label: "Quản lý doanh thu", href: "/accounting/revenue", note: "Tra cứu sổ doanh thu chi tiết, trạng thái ghi nhận và xuất báo cáo." },
     { label: "Quản lý chi phí", href: "/accounting/expenses", note: "Quản lý phiếu chi, phân loại khoản chi và kiểm soát chứng từ phát sinh." },
+    { label: "Quản lý công nợ", href: "/accounting/debts", note: "Theo dõi khoản còn phải thu, quá hạn, sắp đến hạn và đối soát." },
     { label: "Xử lý hoàn tiền", href: "/accounting/refunds", note: "Nhận yêu cầu đã được quản lý duyệt, hiện QR hoàn tiền, xác nhận chứng từ và ghi phiếu chi." }
   ],
   dichvu: [
-    { label: "Quản lý dịch vụ", href: "/service/catalog/manage", note: "Quản lý danh mục dịch vụ: thêm mới, chỉnh tên, giá, mô tả, hình ảnh và trạng thái hoạt động." },
+    { label: "Quản lý dịch vụ", href: "/service/manage", note: "Quản lý danh mục dịch vụ: thêm mới, chỉnh tên, giá, mô tả, hình ảnh và trạng thái hoạt động." },
     { label: "Kiểm tra tình trạng phòng", href: "/service/room-inspection", note: "Xem phòng đang ở, chọn phòng cần kiểm tra và cập nhật tình trạng sau kiểm tra thực tế." },
     { label: "Theo dõi Room board live", href: "/service/room-board-live", note: "Theo dõi room feed realtime để nắm phòng đang ở, cần vệ sinh, hư hại hoặc bảo trì." }
   ],

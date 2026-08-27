@@ -2,6 +2,7 @@ import { z } from "zod";
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import * as XLSX from "xlsx";
 import { query, withTransaction } from "../../../config/database";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatMoney } from "../../../shared/utils/format";
@@ -73,6 +74,16 @@ interface CatalogFilters {
   status?: ServiceStatus | "all";
   category?: string | "all";
   attention?: "all" | "missing_image" | "inactive" | "ordered" | "no_usage" | "open_orders";
+}
+
+interface CatalogImportFile {
+  originalname: string;
+  buffer: Buffer;
+  mimetype?: string;
+}
+
+interface CatalogImportOptions {
+  hotelId?: number;
 }
 
 interface HotelOptionRow {
@@ -167,6 +178,38 @@ interface FrontdeskServiceInput {
     ma_phong?: string | number;
     note?: string;
   }>;
+}
+
+function normalizeImportKey(value: unknown) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function readImportCell(row: Record<string, unknown>, aliases: string[]) {
+  const normalizedAliases = new Set(aliases.map(normalizeImportKey));
+  const entry = Object.entries(row).find(([key]) => normalizedAliases.has(normalizeImportKey(key)));
+  return entry ? String(entry[1] ?? "").trim() : "";
+}
+
+function parseImportMoney(value: unknown) {
+  const digits = String(value ?? "").replace(/[^\d]/g, "");
+  return digits ? Number(digits) : 0;
+}
+
+function normalizeImportStatus(value: unknown): ServiceStatus {
+  const normalized = normalizeImportKey(value);
+  if (normalized.includes("baotri") || normalized.includes("maintenance")) {
+    return "BaoTri";
+  }
+  if (normalized.includes("ngung") || normalized.includes("dungban") || normalized.includes("inactive")) {
+    return "NgungBan";
+  }
+  return "HoatDong";
 }
 
 export class ServiceModuleService {
@@ -393,6 +436,169 @@ export class ServiceModuleService {
   async listActiveCatalog() {
     const catalog = await this.listCatalog();
     return catalog.filter((item) => item.trangThai === "HoatDong");
+  }
+
+  async importCatalogItems(file: CatalogImportFile, options: CatalogImportOptions = {}) {
+    if (!file?.buffer?.length) {
+      throw new HttpError(422, "Vui lòng chọn file CSV hoặc Excel để import.");
+    }
+
+    const workbook = XLSX.read(file.buffer, { type: "buffer", cellDates: false });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = sheetName ? workbook.Sheets[sheetName] : null;
+    if (!sheet) {
+      throw new HttpError(422, "File import không có dữ liệu.");
+    }
+
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+      defval: "",
+      raw: false
+    });
+
+    if (!rows.length) {
+      throw new HttpError(422, "File import chưa có dòng dịch vụ nào.");
+    }
+
+    const hasHotelScope = await this.supportsServiceHotelScope();
+    const fallbackHotelId = Number(options.hotelId || 0);
+    const hotels = hasHotelScope ? await this.listHotels() : [];
+    const hotelByKey = new Map<string, number>();
+    hotels.forEach((hotel) => {
+      hotelByKey.set(String(hotel.id), Number(hotel.id));
+      hotelByKey.set(normalizeImportKey(hotel.tenKhachSan), Number(hotel.id));
+      hotelByKey.set(normalizeImportKey(`${hotel.tenKhachSan} ${hotel.tinhThanh || ""}`), Number(hotel.id));
+    });
+
+    const resolveHotelId = (rawValue: string) => {
+      if (!hasHotelScope) return 0;
+      const clean = rawValue.trim();
+      if (!clean) return fallbackHotelId;
+      const numeric = Number(clean);
+      if (Number.isInteger(numeric) && numeric > 0) return numeric;
+      return hotelByKey.get(normalizeImportKey(clean)) || 0;
+    };
+
+    const prepared: Array<z.infer<typeof catalogSchema>> = [];
+    const seenKeys = new Set<string>();
+    const errors: string[] = [];
+    const maxRows = 300;
+
+    rows.slice(0, maxRows).forEach((row, index) => {
+      const rowNumber = index + 2;
+      const name = readImportCell(row, ["ten_dich_vu", "tendichvu", "Tên dịch vụ", "Dịch vụ", "Tên"]);
+      const price = parseImportMoney(readImportCell(row, ["gia_dich_vu", "giadichvu", "Giá dịch vụ", "Giá", "Đơn giá"]));
+      const description = readImportCell(row, ["mo_ta", "mota", "Mô tả", "Nội dung", "Ghi chú"]);
+      const status = normalizeImportStatus(readImportCell(row, ["trang_thai", "trangthai", "Trạng thái", "Tình trạng"]));
+      const image = readImportCell(row, ["hinh_anh", "hinhanh", "Ảnh", "Hình ảnh", "Image"]);
+      const hotelValue = readImportCell(row, ["hotel_id", "makhachsan", "Mã cơ sở", "Cơ sở", "Khách sạn", "Tên cơ sở"]);
+      const hotelId = resolveHotelId(hotelValue);
+
+      if (!name) {
+        errors.push(`Dòng ${rowNumber}: thiếu tên dịch vụ.`);
+        return;
+      }
+      if (hasHotelScope && hotelId <= 0) {
+        errors.push(`Dòng ${rowNumber}: thiếu hoặc sai cơ sở lưu trú.`);
+        return;
+      }
+
+      const key = `${hasHotelScope ? hotelId : 0}:${normalizeImportKey(name)}`;
+      if (seenKeys.has(key)) {
+        errors.push(`Dòng ${rowNumber}: trùng tên dịch vụ trong file.`);
+        return;
+      }
+      seenKeys.add(key);
+
+      const parsed = catalogSchema.safeParse({
+        hotel_id: hotelId,
+        ten_dich_vu: name,
+        gia_dich_vu: price,
+        mo_ta: description,
+        trang_thai: status,
+        hinh_anh: image || "default.jpg"
+      });
+
+      if (!parsed.success) {
+        errors.push(`Dòng ${rowNumber}: ${parsed.error.issues[0]?.message || "dữ liệu không hợp lệ."}`);
+        return;
+      }
+
+      prepared.push(parsed.data);
+    });
+
+    if (!prepared.length) {
+      throw new HttpError(422, errors[0] || "Không có dòng dịch vụ hợp lệ để import.");
+    }
+
+    const result = await withTransaction(async (client) => {
+      let created = 0;
+      let skipped = 0;
+
+      for (const item of prepared) {
+        const duplicateParams: unknown[] = [item.ten_dich_vu];
+        const duplicateWhere = hasHotelScope
+          ? "lower(trim(dv.tendichvu)) = lower(trim($1)) AND dv.makhachsan = $2"
+          : "lower(trim(dv.tendichvu)) = lower(trim($1))";
+        if (hasHotelScope) {
+          duplicateParams.push(item.hotel_id);
+        }
+
+        const duplicate = await client.query(
+          `
+            SELECT dv.madichvu AS id
+            FROM dichvu dv
+            WHERE ${duplicateWhere}
+            LIMIT 1
+          `,
+          duplicateParams
+        );
+
+        if (duplicate.rows[0]) {
+          skipped += 1;
+          continue;
+        }
+
+        if (hasHotelScope) {
+          await client.query(
+            `
+              INSERT INTO dichvu (makhachsan, tendichvu, giadichvu, mota, trangthai, hinhanh)
+              VALUES ($1, $2, $3, $4, $5, $6)
+            `,
+            [item.hotel_id, item.ten_dich_vu, item.gia_dich_vu, item.mo_ta || null, item.trang_thai, item.hinh_anh || "default.jpg"]
+          );
+        } else {
+          await client.query(
+            `
+              INSERT INTO dichvu (tendichvu, giadichvu, mota, trangthai, hinhanh)
+              VALUES ($1, $2, $3, $4, $5)
+            `,
+            [item.ten_dich_vu, item.gia_dich_vu, item.mo_ta || null, item.trang_thai, item.hinh_anh || "default.jpg"]
+          );
+        }
+
+        created += 1;
+      }
+
+      return { created, skipped };
+    });
+
+    realtimeHub.publish({
+      type: "service_catalog_imported",
+      scopes: ["admin", "dichvu", "quanly"],
+      data: {
+        fileName: file.originalname,
+        created: result.created,
+        skipped: result.skipped
+      }
+    });
+
+    return {
+      fileName: file.originalname,
+      totalRows: Math.min(rows.length, maxRows),
+      created: result.created,
+      skipped: result.skipped + errors.length,
+      errors
+    };
   }
 
   async listRoomFeed() {
@@ -961,7 +1167,11 @@ export class ServiceModuleService {
           dv.mota AS "moTa",
           dv.trangthai AS "trangThai",
           dv.hinhanh AS "hinhAnh",
-          COUNT(ctdv.mactdv)::int AS "orderCount"
+          COUNT(ctdv.mactdv)::int AS "orderCount",
+          COUNT(ctdv.mactdv) FILTER (WHERE ctdv.ngaydat >= NOW() - INTERVAL '30 days')::int AS "orderCount30Days",
+          COALESCE(SUM(COALESCE(ctdv.thanhtien, 0)) FILTER (WHERE ctdv.ngaydat >= NOW() - INTERVAL '30 days'), 0)::numeric AS "revenue30Days",
+          COUNT(ctdv.mactdv) FILTER (WHERE ctdv.trangthaidichvu IN ('ChuaSuDung', 'DangSuDung'))::int AS "openOrderCount",
+          MAX(ctdv.ngaydat) AS "latestOrderAt"
         FROM dichvu dv
         ${hasHotelScope ? "LEFT JOIN khachsan ks ON ks.makhachsan = dv.makhachsan" : ""}
         LEFT JOIN chitietdichvu ctdv ON ctdv.madichvu = dv.madichvu
@@ -988,9 +1198,16 @@ export class ServiceModuleService {
       raw,
       item: {
         ...raw,
+        orderCount30Days: Number(raw.orderCount30Days || 0),
+        revenue30Days: Number(raw.revenue30Days || 0),
+        openOrderCount: Number(raw.openOrderCount || 0),
         giaDichVuFormatted: formatMoney(raw.giaDichVu),
+        revenue30DaysFormatted: formatMoney(raw.revenue30Days || 0),
         imageUrl: this.resolveServiceImage(raw.hinhAnh),
-        hotelLabel: [raw.hotelName, raw.hotelCity].filter(Boolean).join(" · ") || "Toàn hệ thống"
+        hotelLabel: [raw.hotelName, raw.hotelCity].filter(Boolean).join(" · ") || "Toàn hệ thống",
+        statusLabel: this.formatServiceCatalogStatus(raw.trangThai),
+        category: this.classifyServiceCategory(raw.tenDichVu, raw.moTa),
+        recommendation: this.buildCatalogRecommendation({ ...raw, imageUrl: this.resolveServiceImage(raw.hinhAnh) })
       }
     };
   }

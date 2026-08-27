@@ -4196,20 +4196,1179 @@
     }
   }
 </style>
+<style id="frontdesk-cskh-alignment">
+  html:has(.role-dash.is-letan),
+  body:has(.role-dash.is-letan) {
+    background: #dceeff url("/images/dia-diem-du-lich-hai-phong.png?v=1") center / cover fixed no-repeat !important;
+  }
+
+  .role-dash.is-letan {
+    --letan-ink: #102033;
+    --letan-muted: #65758b;
+    --letan-line: #cfe2f7;
+    --letan-blue: #0575e6;
+    --letan-blue-dark: #034ea2;
+    min-height: calc(100vh - 84px) !important;
+    padding: 28px 18px 56px !important;
+    background: transparent !important;
+    color: var(--letan-ink) !important;
+    overflow: visible !important;
+    isolation: isolate !important;
+  }
+
+  .role-dash.is-letan::before {
+    content: "" !important;
+    position: fixed !important;
+    inset: -10px !important;
+    z-index: -2 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: url("/images/dia-diem-du-lich-hai-phong.png?v=1") center / cover fixed no-repeat !important;
+    filter: saturate(1.18) contrast(1.1) brightness(.96) !important;
+    opacity: 1 !important;
+    transform: scale(1.01) !important;
+    animation: none !important;
+  }
+
+  .role-dash.is-letan::after {
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: rgba(238, 246, 255, .06) !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  .role-dash.is-letan .dash-fantasy-scene,
+  .role-dash.is-letan .dash-orbit,
+  .role-dash.is-letan .dash-eyebrow,
+  .role-dash.is-letan .letan-hero-actions,
+  .role-dash.is-letan .dash-hero-main::before,
+  .role-dash.is-letan .dash-hero-main::after {
+    display: none !important;
+  }
+
+  .role-dash.is-letan .dash-shell {
+    width: min(1360px, calc(100vw - 40px)) !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
+
+  .letan-care-layout {
+    display: grid !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+    gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .letan-care-main {
+    min-width: 0 !important;
+  }
+
+  .letan-care-sidebar,
+  .role-dash.is-letan .dash-hero-main,
+  .role-dash.is-letan .letan-kpi-grid .dash-stat,
+  .role-dash.is-letan .dash-section,
+  .role-dash.is-letan .letan-task-panel,
+  .role-dash.is-letan .letan-task-panel .dash-action {
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    background: rgba(255, 255, 255, .74) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .letan-care-sidebar {
+    position: sticky !important;
+    top: 104px !important;
+    border-radius: 12px !important;
+    padding: 14px !important;
+  }
+
+  .letan-care-sidebar h2 {
+    margin: 0 0 12px !important;
+    color: var(--letan-ink) !important;
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+  }
+
+  .letan-care-nav {
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .letan-care-nav a {
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    border: 1px solid var(--letan-line) !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    background: rgba(255, 255, 255, .82) !important;
+    color: #06479d !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 850 !important;
+  }
+
+  .letan-care-nav a:hover {
+    border-color: #9ecbff !important;
+    background: #edf6ff !important;
+    transform: translateX(2px) !important;
+  }
+
+  .letan-care-nav a.is-active {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--letan-blue), var(--letan-blue-dark)) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 24px rgba(0, 108, 228, .18) !important;
+  }
+
+  .role-dash.is-letan .dash-hero.is-compact {
+    display: block !important;
+    margin: 0 0 14px !important;
+  }
+
+  .role-dash.is-letan .dash-hero-main.is-compact {
+    min-height: 0 !important;
+    border-color: transparent !important;
+    border-radius: 12px !important;
+    padding: 20px 24px !important;
+    background: linear-gradient(135deg, #087cf0, #034ea2) !important;
+    color: #fff !important;
+    overflow: hidden !important;
+  }
+
+  .role-dash.is-letan .dash-hero h1 {
+    margin: 0 0 8px !important;
+    color: #fff !important;
+    font-size: 34px !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .role-dash.is-letan .dash-hero h1::before {
+    content: "" !important;
+    display: inline-block !important;
+    width: 6px !important;
+    height: 38px !important;
+    border-radius: 999px !important;
+    background: #fff !important;
+    margin-right: 12px !important;
+    vertical-align: -7px !important;
+  }
+
+  .role-dash.is-letan .letan-lead {
+    display: block !important;
+    max-width: 760px !important;
+    margin: 0 !important;
+    color: rgba(255, 255, 255, .88) !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    font-weight: 750 !important;
+  }
+
+  .role-dash.is-letan .letan-shift-line {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-top: 14px !important;
+    border: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .role-dash.is-letan .letan-shift-line span {
+    min-height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    border: 1px solid rgba(255, 255, 255, .42) !important;
+    border-radius: 999px !important;
+    padding: 0 12px !important;
+    background: rgba(255, 255, 255, .14) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  .role-dash.is-letan .letan-shift-line {
+    display: none !important;
+  }
+
+  .role-dash.is-letan .letan-kpi-section {
+    margin: 14px 0 !important;
+  }
+
+  .role-dash.is-letan .letan-kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .role-dash.is-letan .letan-kpi-grid .dash-stat {
+    min-height: 104px !important;
+    display: block !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+  }
+
+  .role-dash.is-letan .letan-kpi-grid .dash-stat strong {
+    display: block !important;
+    min-width: 0 !important;
+    color: #034ea2 !important;
+    font-size: 30px !important;
+    line-height: 1 !important;
+  }
+
+  .role-dash.is-letan .letan-kpi-grid .dash-stat h3 {
+    margin: 8px 0 0 !important;
+    color: var(--letan-muted) !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+  }
+
+  .role-dash.is-letan .letan-kpi-grid .dash-stat p {
+    display: block !important;
+    margin: 4px 0 0 !important;
+    color: var(--letan-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .role-dash.is-letan .dash-section.is-compact {
+    margin: 14px 0 0 !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+  }
+
+  .role-dash.is-letan .dash-section-head {
+    margin: 0 0 12px !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .role-dash.is-letan .dash-section-head h2 {
+    margin: 0 !important;
+    color: var(--letan-ink) !important;
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+
+  .role-dash.is-letan .dash-section-head p {
+    margin: 4px 0 0 !important;
+    color: var(--letan-muted) !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+  }
+
+  .role-dash.is-letan .letan-operation-center {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin: 0 0 12px !important;
+  }
+
+  .role-dash.is-letan .letan-operation-card {
+    min-height: 118px !important;
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, .78) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+  }
+
+  .role-dash.is-letan .letan-operation-card span {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 26px !important;
+    border: 1px solid #cfe2f7 !important;
+    border-radius: 999px !important;
+    padding: 0 9px !important;
+    background: #edf6ff !important;
+    color: #06479d !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+    text-transform: uppercase !important;
+  }
+
+  .role-dash.is-letan .letan-operation-card h3 {
+    margin: 10px 0 6px !important;
+    color: var(--letan-ink) !important;
+    font-size: 18px !important;
+    line-height: 1.18 !important;
+  }
+
+  .role-dash.is-letan .letan-operation-card p {
+    margin: 0 !important;
+    color: var(--letan-muted) !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    font-weight: 750 !important;
+  }
+
+  .role-dash.is-letan .letan-overview-center {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .role-dash.is-letan .letan-overview-panel {
+    min-height: 142px !important;
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, .78) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+  }
+
+  .role-dash.is-letan .letan-overview-panel--wide {
+    grid-column: 1 / -1 !important;
+  }
+
+  .role-dash.is-letan .letan-overview-heading {
+    margin: 0 0 10px !important;
+  }
+
+  .role-dash.is-letan .letan-overview-heading span {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 26px !important;
+    border: 1px solid #cfe2f7 !important;
+    border-radius: 999px !important;
+    padding: 0 9px !important;
+    background: #edf6ff !important;
+    color: #06479d !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+    text-transform: uppercase !important;
+  }
+
+  .role-dash.is-letan .letan-overview-heading h3 {
+    margin: 9px 0 0 !important;
+    color: var(--letan-ink) !important;
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+  }
+
+  .role-dash.is-letan .letan-overview-list {
+    display: grid !important;
+    gap: 9px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+  }
+
+  .role-dash.is-letan .letan-overview-list li {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: start !important;
+    color: var(--letan-muted) !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    font-weight: 750 !important;
+  }
+
+  .role-dash.is-letan .letan-overview-list li::before {
+    content: "" !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 999px !important;
+    margin-top: 6px !important;
+    background: #0575e6 !important;
+    box-shadow: 0 0 0 4px rgba(5, 117, 230, .12) !important;
+  }
+
+  .role-dash.is-letan .letan-task-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, .78fr) !important;
+    gap: 14px !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel {
+    border-radius: 12px !important;
+    padding: 14px !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel-head {
+    margin: 0 0 10px !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel-head h3 {
+    margin: 0 !important;
+    color: var(--letan-ink) !important;
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel-head p {
+    display: block !important;
+    margin: 4px 0 0 !important;
+    color: var(--letan-muted) !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid--manager {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid--manager .dash-action,
+  .role-dash.is-letan .letan-task-grid--manager .dash-action:nth-child(n) {
+    min-height: 118px !important;
+    display: block !important;
+    order: 0 !important;
+    grid-column: auto !important;
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, .78) !important;
+    color: var(--letan-ink) !important;
+    text-decoration: none !important;
+    transform: none !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid--manager .dash-code {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    display: inline-flex !important;
+    border: 1px solid #cfe2f7 !important;
+    border-radius: 999px !important;
+    padding: 5px 9px !important;
+    background: #edf6ff !important;
+    color: #06479d !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid--manager .dash-action h3 {
+    margin: 10px 0 6px !important;
+    color: var(--letan-ink) !important;
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid--manager .dash-action p {
+    display: block !important;
+    margin: 0 !important;
+    color: var(--letan-muted) !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    font-weight: 750 !important;
+  }
+
+  .role-dash.is-letan .letan-task-grid--manager .dash-open {
+    position: static !important;
+    display: block !important;
+    min-height: 0 !important;
+    margin-top: 12px !important;
+    border: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #06479d !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel .dash-action,
+  .role-dash.is-letan .letan-task-panel .dash-action:nth-child(n) {
+    min-height: 58px !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    border-radius: 10px !important;
+    padding: 12px !important;
+    color: var(--letan-ink) !important;
+    text-decoration: none !important;
+    transform: none !important;
+    background: rgba(255, 255, 255, .82) !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel .dash-action::before,
+  .role-dash.is-letan .letan-task-panel .dash-action::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel .dash-code {
+    width: auto !important;
+    height: auto !important;
+    min-width: 34px !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    border: 1px solid #cfe2f7 !important;
+    border-radius: 999px !important;
+    padding: 5px 9px !important;
+    background: #edf6ff !important;
+    color: #06479d !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel .dash-action h3 {
+    margin: 0 !important;
+    max-width: none !important;
+    color: var(--letan-ink) !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  .role-dash.is-letan .letan-task-panel .dash-open {
+    position: static !important;
+    min-height: 30px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid var(--letan-line) !important;
+    border-radius: 8px !important;
+    padding: 0 10px !important;
+    background: #fff !important;
+    color: #06479d !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  @media (max-width: 1120px) {
+    .letan-care-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .letan-care-sidebar {
+      position: static !important;
+    }
+
+    .letan-care-nav {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .role-dash.is-letan .letan-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .role-dash.is-letan .letan-task-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .role-dash.is-letan .letan-operation-center {
+      grid-template-columns: 1fr !important;
+    }
+
+    .role-dash.is-letan .letan-overview-center {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .role-dash.is-letan {
+      padding: 18px 10px 42px !important;
+    }
+
+    .role-dash.is-letan .dash-shell {
+      width: 100% !important;
+    }
+
+    .letan-care-nav,
+    .role-dash.is-letan .letan-kpi-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .role-dash.is-letan .dash-hero h1 {
+      font-size: 28px !important;
+    }
+
+    .role-dash.is-letan .letan-task-panel .dash-action {
+      grid-template-columns: auto minmax(0, 1fr) !important;
+    }
+
+    .role-dash.is-letan .letan-task-panel .dash-open {
+      grid-column: 2 !important;
+      justify-self: start !important;
+    }
+  }
+</style>
+<style id="admin-dashboard-alignment">
+  html:has(.role-dash.is-admin),
+  body:has(.role-dash.is-admin) {
+    background: #dceeff url("/images/doc-mien-dat-nuoc-chiem-nguong-canh-dep-viet-nam-19122018-3.jpg?v=1") center / cover fixed no-repeat !important;
+  }
+
+  .role-dash.is-admin {
+    --admin-ink: #102033;
+    --admin-muted: #63758b;
+    --admin-line: #cfe2f7;
+    --admin-blue: #0575e6;
+    --admin-blue-dark: #034ea2;
+    --admin-cyan: #06b6d4;
+    min-height: calc(100vh - 84px) !important;
+    padding: 28px 18px 56px !important;
+    background: transparent !important;
+    color: var(--admin-ink) !important;
+    overflow: visible !important;
+    isolation: isolate !important;
+  }
+
+  .role-dash.is-admin::before {
+    content: "" !important;
+    position: fixed !important;
+    inset: -10px !important;
+    z-index: -2 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: url("/images/doc-mien-dat-nuoc-chiem-nguong-canh-dep-viet-nam-19122018-3.jpg?v=1") center / cover fixed no-repeat !important;
+    filter: saturate(1.1) contrast(1.04) brightness(1.04) !important;
+    opacity: 1 !important;
+    transform: scale(1.01) !important;
+    animation: none !important;
+  }
+
+  .role-dash.is-admin::after {
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: rgba(238, 246, 255, .08) !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  .role-dash.is-admin .dash-shell {
+    width: min(1360px, calc(100vw - 40px)) !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+  }
+
+  .admin-care-layout {
+    display: grid !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+    gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .admin-care-main {
+    min-width: 0 !important;
+  }
+
+  .admin-care-sidebar,
+  .role-dash.is-admin .dash-hero-main,
+  .role-dash.is-admin .dash-section,
+  .admin-overview-panel,
+  .admin-live-panel,
+  .role-dash.is-admin .dash-action,
+  .role-dash.is-admin .dash-stat,
+  .role-dash.is-admin .dash-event,
+  .admin-watch-card {
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    background: rgba(255, 255, 255, .76) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .admin-care-sidebar {
+    position: sticky !important;
+    top: 104px !important;
+    border-radius: 12px !important;
+    padding: 14px !important;
+  }
+
+  .admin-care-sidebar h2 {
+    margin: 0 0 12px !important;
+    color: var(--admin-ink) !important;
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+  }
+
+  .admin-care-nav {
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .admin-care-group {
+    display: block !important;
+    margin: 8px 2px 0 !important;
+    color: #5b7089 !important;
+    font-size: 10px !important;
+    font-weight: 950 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+  }
+
+  .admin-care-nav a {
+    min-height: 46px !important;
+    display: flex !important;
+    align-items: center !important;
+    border: 1px solid var(--admin-line) !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    background: rgba(255, 255, 255, .82) !important;
+    color: #06479d !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 850 !important;
+  }
+
+  .admin-care-nav a:hover {
+    border-color: #9ecbff !important;
+    background: #edf6ff !important;
+    transform: translateX(2px) !important;
+  }
+
+  .admin-care-nav a.is-active {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--admin-blue), var(--admin-blue-dark)) !important;
+    color: #fff !important;
+    box-shadow: 0 12px 24px rgba(0, 108, 228, .18) !important;
+  }
+
+  .admin-side-note {
+    margin-top: 14px !important;
+    border: 1px solid var(--admin-line) !important;
+    border-radius: 8px !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, .76) !important;
+  }
+
+  .admin-side-note strong {
+    display: block !important;
+    color: #034ea2 !important;
+    font-size: 30px !important;
+    line-height: 1 !important;
+  }
+
+  .admin-side-note span {
+    display: block !important;
+    margin-top: 6px !important;
+    color: var(--admin-muted) !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+  }
+
+  .role-dash.is-admin .dash-orbit,
+  .role-dash.is-admin .dash-eyebrow,
+  .role-dash.is-admin .dash-hero-actions,
+  .role-dash.is-admin .dash-pulse-grid,
+  .role-dash.is-admin .dash-hero-main::before,
+  .role-dash.is-admin .dash-hero-main::after {
+    display: none !important;
+  }
+
+  .role-dash.is-admin .dash-hero.is-compact {
+    display: block !important;
+    margin: 0 0 14px !important;
+  }
+
+  .role-dash.is-admin .dash-hero-main.is-compact {
+    min-height: 0 !important;
+    border-color: transparent !important;
+    border-radius: 12px !important;
+    padding: 22px 24px !important;
+    background: linear-gradient(135deg, #087cf0, #034ea2) !important;
+    color: #fff !important;
+    overflow: hidden !important;
+  }
+
+  .role-dash.is-admin .dash-hero h1 {
+    margin: 0 0 8px !important;
+    color: #fff !important;
+    font-size: 34px !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .role-dash.is-admin .dash-hero h1::before {
+    content: "" !important;
+    display: inline-block !important;
+    width: 6px !important;
+    height: 38px !important;
+    border-radius: 999px !important;
+    background: #fff !important;
+    margin-right: 12px !important;
+    vertical-align: -7px !important;
+  }
+
+  .role-dash.is-admin .dash-hero h1 span {
+    color: #fff !important;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+  }
+
+  .role-dash.is-admin .dash-lead {
+    max-width: 860px !important;
+    color: rgba(255, 255, 255, .88) !important;
+    font-size: 15px !important;
+    font-weight: 760 !important;
+    line-height: 1.55 !important;
+  }
+
+  .admin-overview-panel,
+  .admin-control-panel,
+  .admin-live-panel,
+  .role-dash.is-admin .dash-section.is-compact {
+    border-radius: 12px !important;
+    padding: 16px !important;
+    margin-top: 14px !important;
+  }
+
+  .admin-overview-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .admin-overview-head span {
+    display: inline-flex !important;
+    width: max-content !important;
+    border-radius: 999px !important;
+    padding: 5px 9px !important;
+    background: #edf6ff !important;
+    color: #034ea2 !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+  }
+
+  .admin-overview-head h2,
+  .role-dash.is-admin .dash-section-head h2 {
+    margin: 4px 0 0 !important;
+    color: var(--admin-ink) !important;
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .admin-overview-head a {
+    min-height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    background: #0575e6 !important;
+    color: #fff !important;
+    text-decoration: none !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  .role-dash.is-admin .admin-watch {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .role-dash.is-admin .admin-watch-card {
+    min-height: 142px !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+  }
+
+  .role-dash.is-admin .admin-watch-card::before {
+    height: 4px !important;
+    background: linear-gradient(90deg, #0575e6, #06b6d4) !important;
+  }
+
+  .role-dash.is-admin .admin-watch-card strong {
+    color: var(--admin-ink) !important;
+    font-size: 17px !important;
+    line-height: 1.18 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .role-dash.is-admin .admin-watch-card p {
+    margin: 7px 0 0 !important;
+    color: var(--admin-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.42 !important;
+  }
+
+  .admin-control-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .admin-control-card {
+    min-height: 118px !important;
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, .80) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+  }
+
+  .admin-control-card.is-ok {
+    border-left: 5px solid #10b981 !important;
+  }
+
+  .admin-control-card.is-warn {
+    border-left: 5px solid #f59e0b !important;
+    background: rgba(255, 251, 235, .82) !important;
+  }
+
+  .admin-control-card.is-danger {
+    border-left: 5px solid #ef4444 !important;
+    background: rgba(254, 242, 242, .84) !important;
+  }
+
+  .admin-control-card strong {
+    display: block !important;
+    color: #034ea2 !important;
+    font-size: 28px !important;
+    line-height: 1 !important;
+  }
+
+  .admin-control-card h3 {
+    margin: 9px 0 5px !important;
+    color: var(--admin-ink) !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  .admin-control-card p {
+    margin: 0 !important;
+    color: var(--admin-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.38 !important;
+    font-weight: 720 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .admin-flow {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+  }
+
+  .admin-flow article {
+    min-height: 112px !important;
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    border-radius: 10px !important;
+    padding: 13px !important;
+    background: rgba(246, 250, 255, .82) !important;
+  }
+
+  .admin-flow span {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 34px !important;
+    height: 26px !important;
+    border-radius: 999px !important;
+    background: #edf6ff !important;
+    color: #034ea2 !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+  }
+
+  .admin-flow strong {
+    display: block !important;
+    margin-top: 10px !important;
+    color: var(--admin-ink) !important;
+    font-size: 14px !important;
+    line-height: 1.18 !important;
+  }
+
+  .admin-flow p {
+    margin: 6px 0 0 !important;
+    color: var(--admin-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.38 !important;
+    font-weight: 720 !important;
+  }
+
+  .role-dash.is-admin .dash-section-head {
+    margin-bottom: 12px !important;
+  }
+
+  .role-dash.is-admin .dash-section-head p {
+    color: var(--admin-muted) !important;
+  }
+
+  .role-dash.is-admin .dash-grid.is-compact {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    grid-auto-rows: auto !important;
+  }
+
+  .role-dash.is-admin .dash-grid.is-compact .dash-action,
+  .role-dash.is-admin .dash-grid.is-compact .dash-action:nth-child(n) {
+    grid-column: auto !important;
+    min-height: 172px !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    transform: none !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  .role-dash.is-admin .dash-grid.is-compact .dash-action::before {
+    width: 40px !important;
+    height: 40px !important;
+    right: 14px !important;
+    top: 14px !important;
+    border-radius: 14px !important;
+  }
+
+  .role-dash.is-admin .dash-grid.is-compact .dash-action h3 {
+    margin: 38px 0 8px !important;
+    color: var(--admin-ink) !important;
+    font-size: 18px !important;
+    line-height: 1.16 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .role-dash.is-admin .dash-grid.is-compact .dash-action p {
+    color: var(--admin-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.42 !important;
+    font-weight: 700 !important;
+  }
+
+  .role-dash.is-admin .dash-grid.is-compact .dash-open {
+    position: static !important;
+    margin-top: 10px !important;
+    display: inline-flex !important;
+    color: #0575e6 !important;
+    font-size: 12px !important;
+  }
+
+  .role-dash.is-admin .admin-live-panel .dash-grid,
+  .role-dash.is-admin #recent-room-events {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .role-dash.is-admin .admin-live-panel .dash-stat,
+  .role-dash.is-admin .dash-event {
+    grid-column: auto !important;
+    min-height: 104px !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+  }
+
+  .role-dash.is-admin .dash-stat strong {
+    color: #034ea2 !important;
+    font-size: 28px !important;
+    line-height: 1 !important;
+  }
+
+  .role-dash.is-admin .dash-stat h3,
+  .role-dash.is-admin .dash-event h3 {
+    margin: 8px 0 4px !important;
+    color: var(--admin-ink) !important;
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  .role-dash.is-admin .dash-stat p,
+  .role-dash.is-admin .dash-event p {
+    color: var(--admin-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.36 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  @media (max-width: 1120px) {
+    .admin-care-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .admin-care-sidebar {
+      position: static !important;
+    }
+
+    .admin-care-nav,
+    .role-dash.is-admin .admin-watch,
+    .role-dash.is-admin .admin-control-grid,
+    .role-dash.is-admin .admin-flow,
+    .role-dash.is-admin .dash-grid.is-compact,
+    .role-dash.is-admin .admin-live-panel .dash-grid,
+    .role-dash.is-admin #recent-room-events {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .role-dash.is-admin {
+      padding: 18px 10px 42px !important;
+    }
+
+    .role-dash.is-admin .dash-shell {
+      width: 100% !important;
+    }
+
+    .admin-care-nav,
+    .role-dash.is-admin .admin-watch,
+    .role-dash.is-admin .admin-control-grid,
+    .role-dash.is-admin .admin-flow,
+    .role-dash.is-admin .dash-grid.is-compact,
+    .role-dash.is-admin .admin-live-panel .dash-grid,
+    .role-dash.is-admin #recent-room-events {
+      grid-template-columns: 1fr !important;
+    }
+
+    .role-dash.is-admin .dash-hero h1 {
+      font-size: 28px !important;
+    }
+  }
+</style>
 
 <% if (isManagerLayout) { %>
 <main class="manager-dash <%= isKetoan ? 'is-ketoan' : 'is-quanly' %>">
   <div class="manager-shell">
+    <% if (isQuanly) { %>
+    <div class="manager-care-layout">
+      <aside class="manager-care-sidebar">
+        <h2>Chức năng</h2>
+        <nav class="manager-care-nav" aria-label="Chức năng quản lý">
+          <a class="is-active" href="/dashboard/quanly">Trang chủ Quản lý</a>
+          <% primaryActions.forEach((item) => { %>
+            <a href="<%= item.href %>"><%= item.label %></a>
+          <% }) %>
+        </nav>
+        <div class="manager-care-today">
+          <strong><%= primaryActions.length %></strong>
+          <span>nghiệp vụ quản lý</span>
+        </div>
+      </aside>
+      <section class="manager-care-main">
+    <% } %>
     <section class="manager-hero" aria-label="Dashboard <%= meta.label %>">
       <div class="manager-hero-main">
-        <div class="manager-chip"><span class="manager-dot"></span> <%= meta.label %> command center</div>
-        <h1><%= isKetoan ? "Kế toán vận hành" : "Dashboard Quản lý" %><% if (isKetoan) { %> <span>đối soát.</span><% } %></h1>
+        <div class="manager-chip"><span class="manager-dot"></span> <%= isQuanly ? "Trang chủ quản lý" : `${meta.label} command center` %></div>
+        <h1><%= isKetoan ? "Kế toán vận hành" : "Trang chủ Quản lý" %><% if (isKetoan) { %> <span>đối soát.</span><% } %></h1>
         <% if (isQuanly) { %>
           <div class="manager-command-summary" aria-label="Tóm tắt vận hành quản lý">
             <div class="manager-command-copy">
-              <span>Realtime operations</span>
-              <strong>Điều phối khách, phòng và giao dịch trong một màn.</strong>
-              <p>Các chỉ số bên dưới được đồng bộ từ dữ liệu vận hành hiện tại.</p>
+              <span>Tổng quan vận hành</span>
+              <strong>Điều phối khách hàng, phòng, eKYC và hoàn tiền trong một màn.</strong>
+              <p>Các chỉ số được đồng bộ từ dữ liệu vận hành hiện tại.</p>
             </div>
             <div class="manager-command-metrics" id="manager-command-metrics">
               <article><span>Khách hàng</span><strong>...</strong></article>
@@ -4218,43 +5377,23 @@
             </div>
           </div>
         <% } %>
-        <p class="manager-lead"><%= isKetoan ? "Theo dõi thống kê, doanh thu, chi phí và hoàn tiền trong một màn điều hướng gọn." : hero.description %></p>
+        <p class="manager-lead"><%= isKetoan ? "Theo dõi thống kê, doanh thu, chi phí và hoàn tiền trong một màn điều hướng gọn." : "Theo dõi nghiệp vụ quản lý, mở nhanh chức năng và kiểm tra KPI vận hành." %></p>
         <div class="manager-actions">
           <% if (actions[0]) { %><a class="manager-button manager-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
           <% if (actions[1]) { %><a class="manager-button" href="<%= actions[1].href %>"><%= actions[1].label %></a><% } %>
           <% if (actions[2]) { %><a class="manager-button" href="<%= actions[2].href %>"><%= actions[2].label %></a><% } %>
         </div>
       </div>
-      <aside class="manager-visual-card" aria-label="Minh họa dashboard <%= meta.label %>">
+      <% if (isKetoan) { %><aside class="manager-visual-card" aria-label="Minh họa dashboard <%= meta.label %>">
         <div class="manager-visual-scene">
-          <% if (isKetoan) { %>
             <div class="manager-visual-core"></div>
             <span class="manager-visual-chip">Thống kê tài chính</span>
             <span class="manager-visual-chip">Quản lý doanh thu</span>
             <span class="manager-visual-chip">Quản lý chi phí</span>
             <span class="manager-visual-chip">Xử lý hoàn tiền</span>
             <div class="manager-visual-wave"></div>
-          <% } else { %>
-            <div class="manager-galaxy-scene" aria-hidden="true">
-              <span class="manager-galaxy-nebula"></span>
-              <span class="manager-galaxy-orbit manager-galaxy-orbit--one"></span>
-              <span class="manager-galaxy-orbit manager-galaxy-orbit--two"></span>
-              <span class="manager-galaxy-orbit manager-galaxy-orbit--three"></span>
-              <span class="manager-galaxy-comet manager-galaxy-comet--one"></span>
-              <span class="manager-galaxy-comet manager-galaxy-comet--two"></span>
-              <span class="manager-galaxy-comet manager-galaxy-comet--three"></span>
-              <span class="manager-galaxy-planet manager-galaxy-planet--mercury"></span>
-              <span class="manager-galaxy-planet manager-galaxy-planet--venus"></span>
-              <span class="manager-galaxy-planet manager-galaxy-planet--mars"></span>
-              <span class="manager-galaxy-planet manager-galaxy-planet--saturn"></span>
-              <div class="manager-earth-3d" data-earth-3d>
-                <canvas aria-label="Trái Đất 3D"></canvas>
-              </div>
-              <span class="manager-galaxy-moon"></span>
-            </div>
-          <% } %>
         </div>
-      </aside>
+      </aside><% } %>
     </section>
 
     <section class="manager-section <%= isQuanly ? 'manager-modules-section' : '' %>">
@@ -4307,6 +5446,10 @@
       </section>
     </section>
     <% } %>
+    <% if (isQuanly) { %>
+      </section>
+    </div>
+    <% } %>
   </div>
 </main>
 <% } else { %>
@@ -4331,14 +5474,54 @@
       <div class="dash-petal dash-petal--four"></div>
     </div>
     <% } %>
+    <% if (isLetan) { %>
+    <div class="letan-care-layout">
+      <aside class="letan-care-sidebar">
+        <h2>Chức năng</h2>
+        <nav class="letan-care-nav" aria-label="Chức năng lễ tân">
+          <a class="is-active" href="/dashboard/letan">Trang chủ Lễ tân</a>
+          <% primaryActions.forEach((item) => { %>
+            <a href="<%= item.href %>"><%= item.label %></a>
+          <% }) %>
+        </nav>
+      </aside>
+      <section class="letan-care-main">
+    <% } %>
+    <% if (isAdmin) { %>
+    <div class="admin-care-layout">
+      <aside class="admin-care-sidebar">
+        <h2>Chức năng</h2>
+        <nav class="admin-care-nav" aria-label="Chức năng admin">
+          <a class="is-active" href="/dashboard/admin">Trang chủ Admin</a>
+          <span class="admin-care-group">Kiểm soát truy cập</span>
+          <% if (primaryActions[0]) { %><a href="<%= primaryActions[0].href %>"><%= primaryActions[0].label %></a><% } %>
+          <span class="admin-care-group">Giám sát hệ thống</span>
+          <% if (primaryActions[1]) { %><a href="<%= primaryActions[1].href %>"><%= primaryActions[1].label %></a><% } %>
+          <a href="/admin/runtime-health">Runtime health</a>
+          <a href="/admin/system-readiness">System readiness</a>
+          <a href="/admin/mobile-readiness">Mobile readiness</a>
+          <% if (primaryActions[4]) { %><a href="<%= primaryActions[4].href %>"><%= primaryActions[4].label %></a><% } %>
+          <% if (primaryActions[5]) { %><a href="<%= primaryActions[5].href %>"><%= primaryActions[5].label %></a><% } %>
+          <span class="admin-care-group">An toàn dữ liệu</span>
+          <% if (primaryActions[2]) { %><a href="<%= primaryActions[2].href %>"><%= primaryActions[2].label %></a><% } %>
+          <% if (primaryActions[3]) { %><a href="<%= primaryActions[3].href %>"><%= primaryActions[3].label %></a><% } %>
+        </nav>
+        <div class="admin-side-note">
+          <strong><%= primaryActions.length %></strong>
+          <span>UC quản trị hệ thống</span>
+        </div>
+      </aside>
+      <section class="admin-care-main">
+    <% } %>
     <section class="dash-hero <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-hero-main <%= isCommandCenter ? 'is-compact' : '' %>">
         <div class="dash-eyebrow"><span class="dash-dot"></span> <%= meta.label %> command center</div>
         <h1>
-          <%= isLetan ? "Dashboard Lễ tân" : hero.title %>
-          <% if (!isLetan) { %><span><%= isAdmin ? "Điều phối." : (isKetoan ? "Đối soát." : "Sạch hơn.") %></span><% } %>
+          <%= isLetan ? "Trang chủ Lễ tân" : (isAdmin ? "Trang chủ Admin" : hero.title) %>
+          <% if (!isLetan && !isAdmin) { %><span><%= isKetoan ? "Đối soát." : "Sạch hơn." %></span><% } %>
         </h1>
         <% if (isLetan) { %>
+          <p class="letan-lead">Điều phối đặt phòng tại quầy, check-in, dịch vụ, check-out và xử lý phát sinh trong một màn.</p>
           <div class="dash-hero-actions letan-hero-actions">
             <% if (actions[0]) { %><a class="dash-button dash-button--primary" href="<%= actions[0].href %>"><%= actions[0].label %></a><% } %>
             <% if (actions[1]) { %><a class="dash-button" href="<%= actions[1].href %>"><%= actions[1].label %></a><% } %>
@@ -4353,7 +5536,7 @@
         <% } else { %>
           <p class="dash-lead <%= isCommandCenter ? 'is-compact' : '' %>">
             <%= isAdmin
-              ? "Quản trị tài khoản, kiểm tra hệ thống, sao lưu và phục hồi dữ liệu trong một màn gọn."
+              ? "Kiểm soát quyền truy cập, giám sát sức khỏe hệ thống, sao lưu/phục hồi dữ liệu và rà readiness trong một màn."
               : isKetoan
                 ? "Theo dõi thống kê, doanh thu, chi phí và hoàn tiền."
                 : hero.description %>
@@ -4388,10 +5571,55 @@
       </aside>
     </section>
 
-    <% if (isLetan) { %>
-    <section class="letan-kpi-section" aria-label="Tổng quan ca trực">
-      <div class="dash-grid letan-kpi-grid" id="live-overview">
-        <article class="dash-stat"><strong>...</strong><h3>Đang tải KPI</h3><p>Đang đọc dữ liệu vận hành.</p></article>
+    <% if (isAdmin) { %>
+    <section class="admin-overview-panel" aria-label="Tổng quan quản trị hệ thống">
+      <div class="admin-overview-head">
+        <div>
+          <span>Admin scope</span>
+          <h2>Phạm vi quản trị</h2>
+        </div>
+        <a href="/admin/diagnostics">Kiểm tra hệ thống</a>
+      </div>
+      <div class="admin-watch">
+        <% cards.forEach((card) => { %>
+          <article class="admin-watch-card">
+            <small><%= card.value %></small>
+            <strong><%= card.label %></strong>
+            <p><%= card.note %></p>
+          </article>
+        <% }) %>
+      </div>
+    </section>
+    <section class="admin-control-panel admin-live-panel" aria-label="Bảng trạng thái admin">
+      <div class="admin-overview-head">
+        <div>
+          <span>Control status</span>
+          <h2>Bảng trạng thái Admin</h2>
+        </div>
+        <a href="/admin/users">Quản lý truy cập</a>
+      </div>
+      <div class="admin-control-grid" id="admin-control-status">
+        <article class="admin-control-card"><strong>...</strong><h3>Đang đọc tài khoản</h3><p>Kiểm tra user, role và trạng thái khóa/mở.</p></article>
+        <article class="admin-control-card"><strong>...</strong><h3>Đang đọc runtime</h3><p>Kiểm tra database, storage và môi trường chạy.</p></article>
+        <article class="admin-control-card"><strong>...</strong><h3>Đang đọc backup</h3><p>Kiểm tra snapshot và cấu hình auto backup.</p></article>
+        <article class="admin-control-card"><strong>...</strong><h3>Đang đọc readiness</h3><p>Đối soát module nghiệp vụ đã sẵn sàng.</p></article>
+      </div>
+      <div class="admin-flow" aria-label="Luồng nghiệp vụ admin">
+        <article><span>01</span><strong>Cấp quyền đúng vai trò</strong><p>Tạo tài khoản, gán role, khóa/mở truy cập theo nhiệm vụ thật.</p></article>
+        <article><span>02</span><strong>Giám sát trước khi xử lý</strong><p>Kiểm runtime/readiness để phát hiện lỗi DB, storage, PWA hoặc AI.</p></article>
+        <article><span>03</span><strong>Sao lưu trước thay đổi lớn</strong><p>Tạo snapshot toàn hệ thống trước khi import, restore hoặc chỉnh cấu hình quan trọng.</p></article>
+        <article><span>04</span><strong>Phục hồi có kiểm soát</strong><p>Chỉ restore file hợp lệ, có xác nhận rủi ro và có pre-restore backup.</p></article>
+      </div>
+    </section>
+    <section class="admin-live-panel">
+      <div class="admin-overview-head">
+        <div>
+          <span>Operational signal</span>
+          <h2>Tín hiệu vận hành</h2>
+        </div>
+      </div>
+      <div class="dash-grid is-compact" id="live-overview">
+        <article class="dash-stat"><strong>...</strong><h3>Đang tải tín hiệu</h3><p>Đang đọc dữ liệu vận hành để Admin giám sát rủi ro.</p></article>
       </div>
     </section>
     <% } %>
@@ -4435,41 +5663,46 @@
     <section class="dash-section <%= isCommandCenter ? 'is-compact' : '' %>">
       <div class="dash-section-head">
         <div>
-          <h2><%= isLetan ? "Tác vụ lễ tân" : ((isCskh || isAdmin || isKetoan) ? "Tác vụ chính" : "Lối vào nhanh") %></h2>
-          <% if (!isLetan) { %><p><%= isCskh ? "Mở nhanh phản hồi, tư vấn và eKYC." : (isAdmin ? "Các UC Admin cần dùng, không trộn nghiệp vụ chi tiết của actor khác." : (isKetoan ? "Mở đúng UC kế toán cần xử lý; số liệu chi tiết nằm trong màn nghiệp vụ tương ứng." : "Nhấn thẳng vào tác vụ cần xử lý.")) %></p><% } %>
+          <h2><%= isLetan ? "Tổng quan lễ tân" : ((isCskh || isAdmin || isKetoan) ? "Tác vụ chính" : "Lối vào nhanh") %></h2>
+          <% if (isLetan) { %>
+            <p>Theo dõi nhanh tình hình phòng, booking và các điểm cần chú ý trong ca trực.</p>
+          <% } else { %>
+            <p><%= isCskh ? "Mở nhanh phản hồi, tư vấn và eKYC." : (isAdmin ? "Các UC Admin cần dùng, không trộn nghiệp vụ chi tiết của actor khác." : (isKetoan ? "Mở đúng UC kế toán cần xử lý; số liệu chi tiết nằm trong màn nghiệp vụ tương ứng." : "Nhấn thẳng vào tác vụ cần xử lý.")) %></p>
+          <% } %>
         </div>
       </div>
       <% if (isLetan) { %>
-        <div class="letan-task-layout">
-          <section class="letan-task-panel" aria-label="Nghiệp vụ chính trong ca">
-            <div class="letan-task-panel-head">
-              <h3>Nghiệp vụ trong ca</h3>
-              <p>Thao tác dùng nhiều nhất khi tiếp khách tại quầy.</p>
+        <div class="letan-overview-center" aria-label="Thông tin tổng quan lễ tân">
+          <section class="letan-overview-panel letan-overview-panel--wide" aria-label="Chỉ số ca trực lễ tân">
+            <div class="letan-overview-heading">
+              <span>Realtime</span>
+              <h3>Chỉ số ca trực</h3>
             </div>
-            <div class="dash-grid is-compact letan-task-grid">
-              <% [0, 1, 3, 6].forEach((actionIndex) => { const item = primaryActions[actionIndex]; if (item) { %>
-	                <a class="dash-action" href="<%= item.href %>">
-	                  <span class="dash-code"><%= String(actionIndex + 1).padStart(2, "0") %></span>
-	                  <h3><%= item.label %></h3>
-	                  <span class="dash-open">Mở</span>
-	                </a>
-              <% } }) %>
+            <div class="dash-grid letan-kpi-grid" id="live-overview">
+              <article class="dash-stat"><strong>...</strong><h3>Đang tải KPI</h3><p>Đang đọc dữ liệu vận hành.</p></article>
             </div>
           </section>
-          <section class="letan-task-panel" aria-label="Tra cứu và điều chỉnh">
-            <div class="letan-task-panel-head">
-              <h3>Tra cứu & điều chỉnh</h3>
-              <p>Dùng khi cần kiểm tra, sửa hoặc hủy giao dịch.</p>
+          <section class="letan-overview-panel" aria-label="Điểm cần theo dõi">
+            <div class="letan-overview-heading">
+              <span>Theo dõi</span>
+              <h3>Điểm cần chú ý</h3>
             </div>
-            <div class="dash-grid is-compact letan-task-grid">
-              <% [2, 4, 5].forEach((actionIndex) => { const item = primaryActions[actionIndex]; if (item) { %>
-	                <a class="dash-action" href="<%= item.href %>">
-	                  <span class="dash-code"><%= String(actionIndex + 1).padStart(2, "0") %></span>
-	                  <h3><%= item.label %></h3>
-	                  <span class="dash-open">Mở</span>
-	                </a>
-              <% } }) %>
+            <ul class="letan-overview-list">
+              <li>Booking sắp đến giờ nhận phòng, quá hạn check-in hoặc cần xác minh thông tin.</li>
+              <li>Phòng đang ở có phát sinh dịch vụ, phụ thu hoặc yêu cầu hỗ trợ tại quầy.</li>
+              <li>Phòng vừa check-out cần chuyển trạng thái dọn phòng để mở bán lại.</li>
+            </ul>
+          </section>
+          <section class="letan-overview-panel" aria-label="Nhịp xử lý lễ tân">
+            <div class="letan-overview-heading">
+              <span>Điều phối</span>
+              <h3>Nhịp xử lý trong ca</h3>
             </div>
+            <ul class="letan-overview-list">
+              <li>Đối chiếu giấy tờ, eKYC và thông tin trưởng đoàn trước khi nhận phòng.</li>
+              <li>Kiểm tra thanh toán, dịch vụ sử dụng và công nợ trước khi hoàn tất trả phòng.</li>
+              <li>Đồng bộ trạng thái booking, phòng và giao dịch sau mỗi thao tác nghiệp vụ.</li>
+            </ul>
           </section>
         </div>
       <% } else { %>
@@ -4535,6 +5768,31 @@
       </div>
     </section>
     <% } %>
+    <% if (isAdmin) { %>
+    <section class="admin-live-panel">
+      <div class="admin-overview-head">
+        <div>
+          <span>Audit</span>
+          <h2>Nhật ký gần đây</h2>
+        </div>
+      </div>
+      <div class="dash-grid" id="recent-room-events">
+        <article class="dash-event">
+          <span class="dash-badge">Loading</span>
+          <h3>Đang tải sự kiện</h3>
+          <p>Sự kiện phòng, booking và trạng thái hệ thống sẽ hiển thị tại đây.</p>
+        </article>
+      </div>
+    </section>
+    <% } %>
+    <% if (isLetan) { %>
+      </section>
+    </div>
+    <% } %>
+    <% if (isAdmin) { %>
+      </section>
+    </div>
+    <% } %>
   </div>
 </main>
 <% } %>
@@ -4549,6 +5807,7 @@
     const managerCommandMetrics = document.getElementById("manager-command-metrics");
     const roomBoard = document.getElementById("live-room-board");
     const recentEvents = document.getElementById("recent-room-events");
+    const adminControlStatus = document.getElementById("admin-control-status");
     const escapeHtml = (value) => String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
@@ -4777,12 +6036,12 @@
           ]
         : scope === "admin"
           ? [
-            { label: "Phòng trống", value: data.overview.availableRooms, note: "Sẵn sàng mở bán" },
-            { label: "Đã đặt", value: data.overview.bookedRooms, note: "Booking đang mở" },
-            { label: "Đang ở", value: data.overview.stayedRooms, note: "Khách đang lưu trú" },
-            { label: "Cần xử lý phòng", value: Number(data.overview.cleaningRooms || 0) + Number(data.overview.maintenanceRooms || 0), note: "Dọn phòng + bảo trì" },
-            { label: "Doanh thu tháng", value: money(data.overview.monthlyRevenue), note: "Giao dịch đã chốt Paid" },
-            { label: "Còn phải thu", value: money(data.overview.outstandingMonthlyRevenue), note: "Booking/lưu trú chưa chốt" }
+            { label: "Khách hàng", value: data.overview.totalCustomers, note: "Hồ sơ người dùng cần bảo vệ dữ liệu" },
+            { label: "Giao dịch", value: data.overview.totalTransactions, note: "Nguồn dữ liệu booking/thanh toán toàn hệ thống" },
+            { label: "Phản hồi", value: data.overview.totalFeedback, note: "Tín hiệu CSKH cần lưu audit" },
+            { label: "Dịch vụ", value: data.overview.totalServices, note: "Danh mục nghiệp vụ đang vận hành" },
+            { label: "Khuyến mãi", value: data.overview.totalPromotions, note: "Rule ưu đãi cần kiểm soát trạng thái" },
+            { label: "Phòng cần xử lý", value: Number(data.overview.cleaningRooms || 0) + Number(data.overview.maintenanceRooms || 0), note: "Dọn phòng + bảo trì để Admin nắm rủi ro vận hành" }
             ]
         : scope === "letan"
           ? [
@@ -4838,9 +6097,87 @@
       if (!overview) return;
       overview.innerHTML = `
         <article class="dash-empty">
-          Chưa tải được KPI realtime lúc này. Bạn vẫn có thể mở các chức năng lễ tân bình thường và tải lại trang sau.
+          Chưa tải được dữ liệu realtime lúc này. Bạn vẫn có thể mở các chức năng trong menu và tải lại trang sau.
         </article>
       `;
+    };
+
+    const fetchAdminJson = async (url) => {
+      const response = await fetch(url, { credentials: "same-origin" });
+      const payload = await response.json();
+      if (!payload.ok) throw new Error(payload.message || "Admin API error");
+      return payload.data;
+    };
+
+    const renderAdminControlStatus = (items) => {
+      if (!adminControlStatus) return;
+      adminControlStatus.innerHTML = items.map((item) => `
+        <article class="admin-control-card ${escapeHtml(item.level || "is-ok")}">
+          <strong>${escapeHtml(item.value)}</strong>
+          <h3>${escapeHtml(item.label)}</h3>
+          <p>${escapeHtml(item.note)}</p>
+        </article>
+      `).join("");
+    };
+
+    const renderAdminControlError = () => {
+      renderAdminControlStatus([
+        { label: "Chưa đọc được Admin API", value: "!", note: "Vẫn có thể mở từng UC bên trái để kiểm tra thủ công.", level: "is-warn" }
+      ]);
+    };
+
+    const loadAdminControlStatus = async () => {
+      if (scope !== "admin" || !adminControlStatus) return;
+      try {
+        const [users, runtime, system, backups] = await Promise.all([
+          fetchAdminJson("/api/admin/users"),
+          fetchAdminJson("/api/admin/diagnostics/runtime"),
+          fetchAdminJson("/api/admin/diagnostics/system"),
+          fetchAdminJson("/api/admin/backups")
+        ]);
+
+        const userSummary = users.summary || {};
+        const runtimeSummary = runtime.summary || {};
+        const systemSummary = system.summary || {};
+        const backupFiles = backups.backups || [];
+        const autoBackup = backups.autoBackupConfig || {};
+        const latestBackup = backupFiles[0];
+        const blockedChecks = Number(runtimeSummary.blocked || 0);
+        const warningChecks = Number(runtimeSummary.warning || runtimeSummary.partial || 0);
+        const orphanUsers = Number(userSummary.orphan || 0);
+        const lockedUsers = Number(userSummary.locked || 0);
+        const systemScore = Number(systemSummary.overall_score || 0);
+        const backupLevel = backupFiles.length ? (autoBackup.enabled ? "is-ok" : "is-warn") : "is-danger";
+
+        renderAdminControlStatus([
+          {
+            label: "Tài khoản & phân quyền",
+            value: userSummary.total || 0,
+            note: `${Number(userSummary.active || 0)} hoạt động · ${lockedUsers} khóa/ngưng · ${orphanUsers} chưa liên kết hồ sơ`,
+            level: orphanUsers || lockedUsers ? "is-warn" : "is-ok"
+          },
+          {
+            label: "Sức khỏe runtime",
+            value: blockedChecks ? "Lỗi" : (warningChecks ? "Cảnh báo" : "Ổn"),
+            note: `${Number(runtimeSummary.ready || 0)} check sẵn sàng · ${warningChecks} cảnh báo · ${blockedChecks} lỗi chặn`,
+            level: blockedChecks ? "is-danger" : (warningChecks ? "is-warn" : "is-ok")
+          },
+          {
+            label: "Sao lưu dữ liệu",
+            value: backupFiles.length,
+            note: `${autoBackup.enabled ? "Auto backup bật" : "Auto backup tắt, tạo thủ công"}${latestBackup ? ` · mới nhất ${latestBackup.name}` : " · chưa có file backup"}`,
+            level: backupLevel
+          },
+          {
+            label: "Readiness hệ thống",
+            value: `${systemScore}%`,
+            note: `${Number(systemSummary.ready || 0)} module sẵn sàng · ${Number(systemSummary.partial || 0)} cần hoàn thiện`,
+            level: systemScore >= 90 ? "is-ok" : (systemScore >= 70 ? "is-warn" : "is-danger")
+          }
+        ]);
+      } catch (_error) {
+        renderAdminControlError();
+      }
     };
 
     const renderRoomBoard = (data) => {
@@ -4922,6 +6259,7 @@
       loadStats();
       loadRoomBoard();
     }
+    loadAdminControlStatus();
 
     if (showLiveSections && window.EventSource) {
       const stream = new EventSource(`/api/realtime/stream?scope=${scope}`);
@@ -4936,3 +6274,421 @@
 </script>
 <script type="module" src="/js/home-galaxy-earth.js"></script>
 <%- include("../partials/footer") %>
+<style id="manager-cskh-alignment">
+  html:has(.manager-dash.is-quanly),
+  body:has(.manager-dash.is-quanly) {
+    background: #dceeff url("/images/dulich-1757292000061879518539.webp?v=5") center / cover fixed no-repeat !important;
+  }
+
+  .manager-dash.is-quanly {
+    --mgr-blue: #0575e6;
+    --mgr-blue-dark: #034ea2;
+    --mgr-ink: #102033;
+    --mgr-muted: #65758b;
+    --mgr-line: #cfe2f7;
+    min-height: calc(100vh - 84px) !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 28px 18px 56px !important;
+    color: var(--mgr-ink) !important;
+    background: transparent !important;
+    isolation: isolate !important;
+  }
+
+  .manager-dash.is-quanly::before {
+    content: "" !important;
+    position: fixed !important;
+    inset: -10px !important;
+    z-index: -2 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: url("/images/dulich-1757292000061879518539.webp?v=5") center / cover fixed no-repeat !important;
+    filter: saturate(1.18) contrast(1.1) brightness(.96) !important;
+    transform: scale(1.01) !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  .manager-dash.is-quanly::after {
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    background: rgba(238, 246, 255, .06) !important;
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  .manager-dash.is-quanly .manager-shell {
+    width: min(1360px, calc(100vw - 40px)) !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .manager-care-layout {
+    display: grid !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+    gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .manager-care-sidebar,
+  .manager-dash.is-quanly .manager-hero-main,
+  .manager-dash.is-quanly .manager-section,
+  .manager-dash.is-quanly .manager-live-panel,
+  .manager-dash.is-quanly .manager-room-panel,
+  .manager-dash.is-quanly .manager-action,
+  .manager-care-today {
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    background: rgba(255, 255, 255, .74) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .manager-care-sidebar {
+    position: sticky !important;
+    top: 104px !important;
+    border-radius: 12px !important;
+    padding: 14px !important;
+  }
+
+  .manager-care-sidebar h2 {
+    margin: 0 0 12px !important;
+    color: var(--mgr-ink) !important;
+    font-size: 22px !important;
+    line-height: 1.1 !important;
+  }
+
+  .manager-care-nav {
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .manager-care-nav a {
+    min-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    border: 1px solid var(--mgr-line) !important;
+    border-radius: 8px !important;
+    padding: 0 12px !important;
+    background: rgba(255, 255, 255, .82) !important;
+    color: #06479d !important;
+    text-decoration: none !important;
+    font-size: 14px !important;
+    font-weight: 850 !important;
+  }
+
+  .manager-care-nav a:hover {
+    background: #edf6ff !important;
+    border-color: #9ecbff !important;
+    transform: translateX(2px) !important;
+  }
+
+  .manager-care-nav a.is-active {
+    background: linear-gradient(135deg, var(--mgr-blue), var(--mgr-blue-dark)) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 12px 24px rgba(0, 108, 228, .18) !important;
+  }
+
+  .manager-care-today {
+    margin-top: 14px !important;
+    border-radius: 10px !important;
+    padding: 12px !important;
+    background: rgba(248, 251, 255, .78) !important;
+  }
+
+  .manager-care-today strong {
+    display: block !important;
+    color: #034ea2 !important;
+    font-size: 20px !important;
+  }
+
+  .manager-care-today span {
+    display: block !important;
+    margin-top: 3px !important;
+    color: var(--mgr-muted) !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+  }
+
+  .manager-care-main {
+    min-width: 0 !important;
+  }
+
+  .manager-dash.is-quanly .manager-hero {
+    display: block !important;
+    margin: 0 0 14px !important;
+  }
+
+  .manager-dash.is-quanly .manager-hero-main {
+    min-height: 0 !important;
+    border-radius: 12px !important;
+    padding: 20px 24px !important;
+    background: linear-gradient(135deg, #087cf0, #034ea2) !important;
+    color: #fff !important;
+    overflow: hidden !important;
+  }
+
+  .manager-dash.is-quanly .manager-hero-main::before,
+  .manager-dash.is-quanly .manager-hero-main::after,
+  .manager-dash.is-quanly .manager-visual-card,
+  .manager-dash.is-quanly .manager-actions {
+    display: none !important;
+  }
+
+  .manager-dash.is-quanly .manager-chip {
+    display: none !important;
+  }
+
+  .manager-dash.is-quanly .manager-hero h1 {
+    margin: 0 0 8px !important;
+    padding: 0 !important;
+    color: #fff !important;
+    font-size: 34px !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .manager-dash.is-quanly .manager-hero h1::before {
+    content: "" !important;
+    display: inline-block !important;
+    width: 6px !important;
+    height: 38px !important;
+    border-radius: 999px !important;
+    background: #fff !important;
+    margin-right: 12px !important;
+    vertical-align: -7px !important;
+  }
+
+  .manager-dash.is-quanly .manager-lead {
+    margin: 0 !important;
+    max-width: 760px !important;
+    color: rgba(255, 255, 255, .88) !important;
+    font-size: 15px !important;
+    line-height: 1.55 !important;
+    font-weight: 750 !important;
+  }
+
+  .manager-dash.is-quanly .manager-command-summary {
+    display: none !important;
+  }
+
+  .manager-dash.is-quanly .manager-section {
+    margin: 14px 0 0 !important;
+    border-radius: 12px !important;
+    padding: 18px !important;
+  }
+
+  .manager-dash.is-quanly .manager-section-head {
+    margin: 0 0 12px !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  .manager-dash.is-quanly .manager-section-head h2 {
+    margin: 0 !important;
+    color: var(--mgr-ink) !important;
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+
+  .manager-dash.is-quanly .manager-section-head p {
+    margin: 4px 0 0 !important;
+    color: var(--mgr-muted) !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+  }
+
+  .manager-dash.is-quanly .manager-action-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .manager-dash.is-quanly .manager-action,
+  .manager-dash.is-quanly .manager-action:nth-child(n) {
+    min-height: 118px !important;
+    display: block !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: rgba(255, 255, 255, .78) !important;
+    color: var(--mgr-ink) !important;
+    text-decoration: none !important;
+    transform: none !important;
+  }
+
+  .manager-dash.is-quanly .manager-action::before,
+  .manager-dash.is-quanly .manager-action::after,
+  .manager-dash.is-quanly .manager-modules-section .manager-action::after,
+  .manager-dash.is-quanly .manager-modules-section .manager-action:nth-child(n)::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  .manager-dash.is-quanly .manager-code {
+    display: inline-flex !important;
+    border-radius: 999px !important;
+    padding: 5px 9px !important;
+    background: #edf6ff !important;
+    color: #06479d !important;
+    font-size: 11px !important;
+    font-weight: 950 !important;
+  }
+
+  .manager-dash.is-quanly .manager-action h3 {
+    margin: 10px 0 6px !important;
+    color: var(--mgr-ink) !important;
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+  }
+
+  .manager-dash.is-quanly .manager-action p {
+    margin: 0 !important;
+    color: var(--mgr-muted) !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    font-weight: 750 !important;
+  }
+
+  .manager-dash.is-quanly .manager-open {
+    display: block !important;
+    margin-top: 12px !important;
+    color: #06479d !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+  }
+
+  .manager-dash.is-quanly .manager-live-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .manager-dash.is-quanly .manager-live-panel .dash-grid,
+  .manager-dash.is-quanly .manager-room-panel .dash-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .manager-dash.is-quanly .manager-live-panel,
+  .manager-dash.is-quanly .manager-room-panel {
+    border-radius: 12px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .manager-dash.is-quanly .dash-stat,
+  .manager-dash.is-quanly .dash-room {
+    min-height: 104px !important;
+    border: 1px solid rgba(207, 226, 247, .84) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    background: rgba(255, 255, 255, .78) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08) !important;
+  }
+
+  .manager-dash.is-quanly .dash-stat strong,
+  .manager-dash.is-quanly .dash-room strong {
+    color: #034ea2 !important;
+    font-size: 30px !important;
+    line-height: 1 !important;
+  }
+
+  .manager-dash.is-quanly .dash-stat h3,
+  .manager-dash.is-quanly .dash-room h3 {
+    margin: 8px 0 0 !important;
+    color: var(--mgr-muted) !important;
+    font-size: 13px !important;
+    font-weight: 850 !important;
+  }
+
+  .manager-dash.is-quanly .dash-stat p,
+  .manager-dash.is-quanly .dash-room p {
+    margin: 4px 0 0 !important;
+    color: var(--mgr-muted) !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  @media (max-width: 1120px) {
+    .manager-care-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .manager-care-sidebar {
+      position: static !important;
+    }
+
+    .manager-care-nav {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .manager-dash.is-quanly .manager-live-panel .dash-grid,
+    .manager-dash.is-quanly .manager-room-panel .dash-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .manager-dash.is-quanly {
+      padding: 18px 10px 42px !important;
+    }
+
+    .manager-dash.is-quanly .manager-shell {
+      width: 100% !important;
+    }
+
+    .manager-care-nav,
+    .manager-dash.is-quanly .manager-action-grid,
+    .manager-dash.is-quanly .manager-live-panel .dash-grid,
+    .manager-dash.is-quanly .manager-room-panel .dash-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .manager-dash.is-quanly .manager-hero h1 {
+      font-size: 28px !important;
+    }
+  }
+</style>
+<style id="admin-dashboard-final-overrides">
+  .role-dash.is-admin .dash-hero,
+  .role-dash.is-admin .dash-hero.is-compact {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .role-dash.is-admin .dash-orbit,
+  .role-dash.is-admin .dash-orbit.is-compact,
+  .role-dash.is-admin .dash-orbit-stage,
+  .role-dash.is-admin .dash-orbit-earth,
+  .role-dash.is-admin .dash-orbit-word {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .role-dash.is-admin .dash-hero-main,
+  .role-dash.is-admin .dash-hero-main.is-compact {
+    width: 100% !important;
+    max-width: none !important;
+  }
+</style>

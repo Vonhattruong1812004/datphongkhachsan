@@ -10,9 +10,20 @@
   const lockedCount = Number(summary.locked || 0);
   const staffCount = Number(summary.staff || 0);
   const customerCount = Number(summary.customer || 0);
+  const orphanCount = Number(summary.orphan || 0);
   const totalCount = Number(summary.total || users.length);
   const filteredCount = Number(payload?.filteredCount || users.length);
-  const filterQueryString = new URLSearchParams(Object.entries(filters).filter(([, value]) => value && value !== "all")).toString();
+  const pagination = payload?.pagination || { page: 1, perPage: 10, totalPages: 1, totalItems: filteredCount, from: users.length ? 1 : 0, to: users.length };
+  const page = Number(pagination.page || 1);
+  const totalPages = Number(pagination.totalPages || 1);
+  const cleanFilterEntries = Object.entries(filters).filter(([key, value]) => value && value !== "all" && key !== "page" && key !== "per_page");
+  const filterQueryString = new URLSearchParams(cleanFilterEntries).toString();
+  const pageHref = (targetPage) => {
+    const params = new URLSearchParams(cleanFilterEntries);
+    params.set("page", String(targetPage));
+    params.set("per_page", String(pagination.perPage || 10));
+    return `/admin/users?${params.toString()}`;
+  };
 %>
 <style>
   .admin-users{
@@ -768,6 +779,494 @@
   .admin-orbit{
     display:none;
   }
+
+  /* Final Admin users workflow: list-first access management UI. */
+  html:has(.admin-users),
+  body:has(.admin-users){
+    background:#dceeff url("/images/doc-mien-dat-nuoc-chiem-nguong-canh-dep-viet-nam-19122018-3.jpg?v=1") center / cover fixed no-repeat !important;
+  }
+
+  .admin-users{
+    min-height:calc(100vh - 84px) !important;
+    padding:28px 18px 56px !important;
+    color:#102033 !important;
+    background:transparent !important;
+    isolation:isolate !important;
+  }
+
+  .admin-users::before{
+    content:"" !important;
+    display:block !important;
+    position:fixed !important;
+    inset:-10px !important;
+    z-index:-2 !important;
+    background:url("/images/doc-mien-dat-nuoc-chiem-nguong-canh-dep-viet-nam-19122018-3.jpg?v=1") center / cover fixed no-repeat !important;
+    filter:saturate(1.08) contrast(1.04) brightness(1.04) !important;
+    opacity:1 !important;
+  }
+
+  .admin-users::after{
+    content:"" !important;
+    display:block !important;
+    position:fixed !important;
+    inset:0 !important;
+    z-index:-1 !important;
+    background:rgba(238,246,255,.10) !important;
+  }
+
+  .admin-users__wrap{
+    width:min(1360px,calc(100vw - 40px)) !important;
+    max-width:none !important;
+  }
+
+  .admin-hero{
+    display:block !important;
+    margin:0 0 14px !important;
+  }
+
+  .admin-hero-main{
+    min-height:0 !important;
+    border:0 !important;
+    border-radius:12px !important;
+    padding:22px 24px !important;
+    background:linear-gradient(135deg,#087cf0,#034ea2) !important;
+    color:#fff !important;
+    box-shadow:0 18px 45px rgba(15,23,42,.10) !important;
+  }
+
+  .admin-chip,
+  .admin-orbit,
+  .admin-hero-main::before{
+    display:none !important;
+  }
+
+  .admin-hero h1{
+    margin:0 0 8px !important;
+    color:#fff !important;
+    font-size:34px !important;
+    line-height:1.05 !important;
+    letter-spacing:0 !important;
+    text-shadow:none !important;
+  }
+
+  .admin-hero h1::before{
+    content:"" !important;
+    display:inline-block !important;
+    width:6px !important;
+    height:38px !important;
+    border-radius:999px !important;
+    background:#fff !important;
+    margin-right:12px !important;
+    vertical-align:-7px !important;
+  }
+
+  .admin-hero h1 span{
+    color:#fff !important;
+    background:none !important;
+    -webkit-background-clip:initial !important;
+    background-clip:initial !important;
+  }
+
+  .admin-lead{
+    max-width:920px !important;
+    color:rgba(255,255,255,.90) !important;
+    font-size:15px !important;
+    line-height:1.55 !important;
+    font-weight:760 !important;
+  }
+
+  .admin-actions{
+    margin-top:14px !important;
+  }
+
+  .admin-button{
+    min-height:40px !important;
+    border:1px solid #cfe2f7 !important;
+    border-radius:8px !important;
+    padding:0 13px !important;
+    background:rgba(255,255,255,.84) !important;
+    color:#06479d !important;
+    box-shadow:none !important;
+    font-size:13px !important;
+    font-weight:900 !important;
+  }
+
+  .admin-button:hover{
+    transform:none !important;
+    border-color:#8fc4ff !important;
+    background:#edf6ff !important;
+    box-shadow:none !important;
+  }
+
+  .admin-button--primary,
+  .admin-button.is-active{
+    border-color:transparent !important;
+    color:#fff !important;
+    background:#0575e6 !important;
+  }
+
+  .admin-button--danger{
+    color:#be123c !important;
+    border-color:#fecdd3 !important;
+    background:#fff1f2 !important;
+  }
+
+  .admin-button.is-disabled{
+    opacity:.52 !important;
+    pointer-events:none !important;
+  }
+
+  .admin-mini-stats{
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:10px !important;
+    margin-top:16px !important;
+  }
+
+  .admin-mini-stat,
+  .admin-card,
+  .admin-user-card{
+    border:1px solid rgba(207,226,247,.84) !important;
+    background:rgba(255,255,255,.78) !important;
+    color:#102033 !important;
+    box-shadow:0 18px 45px rgba(15,23,42,.08) !important;
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+  }
+
+  .admin-mini-stat{
+    min-height:92px !important;
+    border-radius:12px !important;
+    padding:14px !important;
+  }
+
+  .admin-mini-stat strong{
+    color:#034ea2 !important;
+    font-size:30px !important;
+    line-height:1 !important;
+  }
+
+  .admin-mini-stat span{
+    color:#65758b !important;
+    font-size:12px !important;
+    letter-spacing:0 !important;
+  }
+
+  .admin-section{
+    margin-top:14px !important;
+  }
+
+  .admin-section-head{
+    align-items:center !important;
+    margin-bottom:10px !important;
+    border:1px solid rgba(207,226,247,.84) !important;
+    border-radius:12px !important;
+    padding:14px 16px !important;
+    background:rgba(255,255,255,.86) !important;
+    box-shadow:0 18px 45px rgba(15,23,42,.08) !important;
+  }
+
+  .admin-section-head h2{
+    margin:0 !important;
+    color:#102033 !important;
+    font-size:24px !important;
+    line-height:1.12 !important;
+    letter-spacing:0 !important;
+    text-shadow:none !important;
+  }
+
+  .admin-section-head p{
+    margin:4px 0 0 !important;
+    max-width:920px !important;
+    color:#3f5268 !important;
+    font-size:13px !important;
+    line-height:1.45 !important;
+    font-weight:760 !important;
+  }
+
+  .admin-card{
+    border-radius:12px !important;
+    padding:16px !important;
+  }
+
+  .admin-filter-card{
+    padding-left:16px !important;
+  }
+
+  .admin-filter-card::before{
+    display:none !important;
+  }
+
+  .admin-filter-row{
+    grid-template-columns:minmax(240px,1.25fr) repeat(3,minmax(150px,.8fr)) auto !important;
+    gap:10px !important;
+  }
+
+  .admin-filter-field label,
+  .admin-field label{
+    color:#102033 !important;
+    font-size:12px !important;
+    letter-spacing:0 !important;
+  }
+
+  .admin-filter-field input,
+  .admin-filter-field select,
+  .admin-field input,
+  .admin-field select{
+    min-height:46px !important;
+    border:1px solid #cfe2f7 !important;
+    border-radius:8px !important;
+    background:#fff !important;
+    color:#102033 !important;
+    font-size:14px !important;
+    font-weight:760 !important;
+    box-shadow:none !important;
+  }
+
+  .admin-filter-field input:focus,
+  .admin-filter-field select:focus,
+  .admin-field input:focus,
+  .admin-field select:focus{
+    border-color:#0575e6 !important;
+    box-shadow:0 0 0 3px rgba(5,117,230,.12) !important;
+  }
+
+  .admin-filter-actions{
+    align-self:end !important;
+  }
+
+  .admin-filter-actions .admin-button{
+    min-height:46px !important;
+  }
+
+  .admin-quick-filters{
+    gap:8px !important;
+    margin-top:12px !important;
+  }
+
+  .admin-quick-filter{
+    min-height:34px !important;
+    border:1px solid #cfe2f7 !important;
+    border-radius:999px !important;
+    padding:0 11px !important;
+    background:rgba(255,255,255,.84) !important;
+    color:#06479d !important;
+    box-shadow:none !important;
+    letter-spacing:0 !important;
+  }
+
+  .admin-quick-filter.is-active{
+    border-color:transparent !important;
+    color:#fff !important;
+    background:#0575e6 !important;
+  }
+
+  .admin-form-section{
+    display:none !important;
+  }
+
+  .admin-form-section.is-open{
+    display:block !important;
+  }
+
+  .admin-grid{
+    gap:12px !important;
+  }
+
+  .admin-field{
+    grid-column:span 4 !important;
+  }
+
+  .admin-field.is-wide{
+    grid-column:span 6 !important;
+  }
+
+  .admin-form-note{
+    color:#65758b !important;
+    font-size:13px !important;
+  }
+
+  .admin-users-grid{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+  }
+
+  .admin-user-card,
+  .admin-user-card:nth-child(4n+2),
+  .admin-user-card:nth-child(4n+3),
+  .admin-user-card:nth-child(4n+4){
+    min-height:0 !important;
+    display:grid !important;
+    grid-template-columns:minmax(220px,1fr) minmax(170px,.7fr) minmax(280px,1.2fr) auto !important;
+    gap:12px !important;
+    align-items:center !important;
+    border-radius:12px !important;
+    padding:14px 16px !important;
+    background:rgba(255,255,255,.84) !important;
+    color:#102033 !important;
+    box-shadow:0 18px 45px rgba(15,23,42,.08) !important;
+  }
+
+  .admin-user-top{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:flex-start !important;
+    gap:6px !important;
+  }
+
+  .admin-user-id,
+  .admin-status{
+    min-height:28px !important;
+    border-radius:999px !important;
+    padding:0 9px !important;
+    border:1px solid #cfe2f7 !important;
+    background:#edf6ff !important;
+    color:#06479d !important;
+    box-shadow:none !important;
+    font-size:11px !important;
+  }
+
+  .admin-status{
+    background:#dcfce7 !important;
+    border-color:#bbf7d0 !important;
+    color:#047857 !important;
+  }
+
+  .admin-status.is-locked{
+    background:#fff1f2 !important;
+    border-color:#fecdd3 !important;
+    color:#be123c !important;
+  }
+
+  .admin-user-card h3{
+    margin:0 !important;
+    color:#102033 !important;
+    font-size:20px !important;
+    line-height:1.15 !important;
+    letter-spacing:0 !important;
+    text-shadow:none !important;
+  }
+
+  .admin-user-card p{
+    margin:4px 0 0 !important;
+    color:#65758b !important;
+    font-size:13px !important;
+    line-height:1.35 !important;
+  }
+
+  .admin-user-meta{
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:6px !important;
+    margin:0 !important;
+  }
+
+  .admin-user-meta div{
+    min-height:58px !important;
+    border:1px solid #dbe8f6 !important;
+    border-radius:8px !important;
+    padding:8px !important;
+    background:#f8fbff !important;
+    box-shadow:none !important;
+  }
+
+  .admin-user-meta small{
+    color:#65758b !important;
+    font-size:10px !important;
+    letter-spacing:0 !important;
+  }
+
+  .admin-user-meta strong{
+    color:#102033 !important;
+    font-size:12px !important;
+    overflow-wrap:anywhere !important;
+  }
+
+  .admin-user-actions{
+    justify-content:flex-end !important;
+    gap:6px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:0 !important;
+  }
+
+  .admin-user-actions .admin-button{
+    min-height:34px !important;
+    padding:0 10px !important;
+    background:#fff !important;
+  }
+
+  .admin-list-actions,
+  .admin-pagination,
+  .admin-pagination-actions{
+    display:flex !important;
+    align-items:center !important;
+    gap:8px !important;
+    flex-wrap:wrap !important;
+  }
+
+  .admin-list-actions{
+    justify-content:flex-end !important;
+  }
+
+  .admin-pagination{
+    justify-content:space-between !important;
+    margin-top:10px !important;
+    border:1px solid rgba(207,226,247,.84) !important;
+    border-radius:12px !important;
+    padding:12px !important;
+    background:rgba(255,255,255,.84) !important;
+    color:#102033 !important;
+    font-weight:850 !important;
+  }
+
+  @media(max-width:1120px){
+    .admin-filter-row,
+    .admin-user-card{
+      grid-template-columns:1fr !important;
+    }
+
+    .admin-user-actions{
+      justify-content:flex-start !important;
+    }
+
+    .admin-user-meta{
+      grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+  }
+
+  @media(max-width:760px){
+    .admin-users{
+      padding:18px 10px 42px !important;
+    }
+
+    .admin-users__wrap{
+      width:100% !important;
+    }
+
+    .admin-hero h1{
+      font-size:28px !important;
+    }
+
+    .admin-mini-stats,
+    .admin-user-meta{
+      grid-template-columns:1fr !important;
+    }
+
+    .admin-section-head{
+      display:block !important;
+    }
+
+    .admin-list-actions{
+      justify-content:flex-start !important;
+      margin-top:10px !important;
+    }
+
+    .admin-field,
+    .admin-field.is-wide{
+      grid-column:1 / -1 !important;
+    }
+  }
 </style>
 
 <main class="admin-users">
@@ -778,7 +1277,7 @@
         <h1>Người dùng <span>& phân quyền</span></h1>
         <p class="admin-lead">Tạo tài khoản, gán vai trò, khóa/mở truy cập và liên kết đúng hồ sơ nhân viên hoặc khách hàng mà không rời khỏi UC Admin.</p>
         <div class="admin-actions">
-          <a class="admin-button admin-button--primary" href="#userForm">Tạo tài khoản</a>
+          <button class="admin-button admin-button--primary" type="button" id="openCreateUser">Thêm tài khoản</button>
           <a class="admin-button" href="/admin/diagnostics">Kiểm tra sức khỏe hệ thống</a>
           <a class="admin-button" href="/dashboard/admin">Dashboard Admin</a>
         </div>
@@ -786,6 +1285,7 @@
           <div class="admin-mini-stat"><strong><%= totalCount %></strong><span>Tài khoản</span></div>
           <div class="admin-mini-stat"><strong><%= activeCount %></strong><span>Đang hoạt động</span></div>
           <div class="admin-mini-stat"><strong><%= lockedCount %></strong><span>Bị khóa/ngưng</span></div>
+          <div class="admin-mini-stat"><strong><%= orphanCount %></strong><span>Chưa liên kết</span></div>
         </div>
       </div>
     </section>
@@ -845,11 +1345,12 @@
           <a class="admin-quick-filter <%= filters.trang_thai === "Khoa" ? "is-active" : "" %>" style="--quick-color:#fb7185" href="/admin/users?trang_thai=Khoa"><span class="admin-quick-dot"></span>Đang khóa</a>
           <a class="admin-quick-filter <%= filters.lien_ket === "staff" ? "is-active" : "" %>" style="--quick-color:#8b5cf6" href="/admin/users?lien_ket=staff"><span class="admin-quick-dot"></span>Nhân viên <%= staffCount %></a>
           <a class="admin-quick-filter <%= filters.lien_ket === "customer" ? "is-active" : "" %>" style="--quick-color:#f59e0b" href="/admin/users?lien_ket=customer"><span class="admin-quick-dot"></span>Khách hàng <%= customerCount %></a>
+          <a class="admin-quick-filter <%= filters.lien_ket === "orphan" ? "is-active" : "" %>" style="--quick-color:#ef4444" href="/admin/users?lien_ket=orphan"><span class="admin-quick-dot"></span>Chưa liên kết <%= orphanCount %></a>
         </div>
       </form>
     </section>
 
-    <section class="admin-section" aria-label="Form tài khoản">
+    <section class="admin-section admin-form-section" id="userFormSection" aria-label="Form tài khoản">
       <div class="admin-section-head">
         <div>
           <h2>Tạo hoặc sửa tài khoản</h2>
@@ -920,9 +1421,12 @@
       <div class="admin-section-head">
         <div>
           <h2>Danh sách tài khoản</h2>
-          <p>Đang hiển thị <%= filteredCount %>/<%= totalCount %> tài khoản. Toàn hệ thống có <%= staffCount %> nhân viên và <%= customerCount %> khách hàng.</p>
+          <p>Hiển thị <%= pagination.from %>-<%= pagination.to %> trong <%= filteredCount %> tài khoản phù hợp. Toàn hệ thống có <%= staffCount %> nhân viên, <%= customerCount %> khách hàng và <%= orphanCount %> tài khoản chưa liên kết.</p>
         </div>
-        <a class="admin-button" href="/api/admin/users<%= filterQueryString ? `?${filterQueryString}` : "" %>">JSON</a>
+        <div class="admin-list-actions">
+          <button class="admin-button admin-button--primary" type="button" id="openCreateUserFromList">Thêm tài khoản</button>
+          <a class="admin-button" href="/api/admin/users<%= filterQueryString ? `?${filterQueryString}` : "" %>">JSON</a>
+        </div>
       </div>
       <% if (!users.length) { %>
         <div class="admin-empty">Chưa có tài khoản nào.</div>
@@ -969,6 +1473,24 @@
             </article>
           <% }) %>
         </div>
+        <div class="admin-pagination" aria-label="Phân trang tài khoản">
+          <span>Trang <%= page %>/<%= totalPages %></span>
+          <div class="admin-pagination-actions">
+            <% if (page > 1) { %>
+              <a class="admin-button" href="<%= pageHref(page - 1) %>">Trước</a>
+            <% } else { %>
+              <span class="admin-button is-disabled">Trước</span>
+            <% } %>
+            <% for (let p = Math.max(1, page - 1); p <= Math.min(totalPages, page + 1); p += 1) { %>
+              <a class="admin-button <%= p === page ? "is-active" : "" %>" href="<%= pageHref(p) %>"><%= p %></a>
+            <% } %>
+            <% if (page < totalPages) { %>
+              <a class="admin-button" href="<%= pageHref(page + 1) %>">Sau</a>
+            <% } else { %>
+              <span class="admin-button is-disabled">Sau</span>
+            <% } %>
+          </div>
+        </div>
       <% } %>
     </section>
   </div>
@@ -977,6 +1499,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("userForm");
+  const formSection = document.getElementById("userFormSection");
   const formMode = document.getElementById("formMode");
   const fields = {
     user_id: document.getElementById("user_id"),
@@ -1010,6 +1533,20 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!fields[name]) return;
     fields[name].classList.toggle("is-invalid", Boolean(message));
     if (errors[name]) errors[name].textContent = message || "";
+  }
+
+  function openForm(mode = "create") {
+    formSection?.classList.add("is-open");
+    if (mode === "create") {
+      form?.reset();
+      fields.user_id.value = "";
+      fields.password.value = "Abc@123";
+      fields.vai_tro.value = fields.vai_tro.value || "2";
+      fields.trang_thai.value = "HoatDong";
+      Object.keys(errors).forEach((name) => setError(name, ""));
+      if (formMode) formMode.textContent = "Đang ở chế độ tạo mới.";
+    }
+    formSection?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function validateField(name) {
@@ -1053,6 +1590,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function fillForm(card, nextStatus) {
+    formSection?.classList.add("is-open");
     fields.user_id.value = card.dataset.userId || "";
     fields.ho_ten.value = card.dataset.name || "";
     fields.username.value = card.dataset.username || "";
@@ -1079,6 +1617,9 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".admin-edit-user").forEach((button) => {
     button.addEventListener("click", () => fillForm(button.closest(".admin-user-card")));
   });
+
+  document.getElementById("openCreateUser")?.addEventListener("click", () => openForm("create"));
+  document.getElementById("openCreateUserFromList")?.addEventListener("click", () => openForm("create"));
 
   document.querySelectorAll(".admin-status-user").forEach((button) => {
     button.addEventListener("click", async () => {
@@ -1162,6 +1703,10 @@ document.addEventListener("DOMContentLoaded", function () {
       if (formMode) formMode.textContent = "Đang ở chế độ tạo mới.";
     }, 0);
   });
+
+  if (window.location.hash === "#userForm") {
+    openForm("create");
+  }
 });
 </script>
 <%- include("../partials/footer") %>

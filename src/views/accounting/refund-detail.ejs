@@ -1,0 +1,490 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const refund = payload.refund || {};
+  const timeline = payload.timeline || [];
+  const returnTo = `/accounting/refunds/${refund.id}`;
+%>
+
+<style>
+  .refund-detail {
+    --ink: #132033;
+    --muted: #667085;
+    --line: #c9e0fb;
+    --blue: #006ce4;
+    --blue-dark: #003b95;
+    --green: #07865f;
+    --amber: #b45309;
+    --rose: #be123c;
+    --shadow: 0 14px 34px rgba(15, 36, 66, .08);
+    min-height: calc(100vh - 84px);
+    padding: 24px 18px 54px;
+    color: var(--ink);
+  }
+
+  .refund-detail *,
+  .refund-detail *::before,
+  .refund-detail *::after { box-sizing: border-box; }
+
+  .refund-detail-wrap {
+    width: min(1240px, calc(100vw - 48px));
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+  }
+
+  .refund-detail-title {
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+    box-shadow: 0 18px 42px rgba(0, 72, 171, .20);
+  }
+
+  .refund-detail-title h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.05;
+  }
+
+  .refund-detail-title h1::before {
+    content: "";
+    width: 6px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .88);
+  }
+
+  .refund-detail-back,
+  .refund-detail-btn {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid #b9d8ff;
+    border-radius: 10px;
+    padding: 0 14px;
+    background: #fff;
+    color: var(--blue-dark);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .refund-detail-btn.is-primary {
+    border-color: transparent;
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .refund-detail-btn.is-danger {
+    border-color: transparent;
+    background: #e11d48;
+    color: #fff;
+  }
+
+  .refund-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .95fr) minmax(360px, 1.05fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .refund-detail-card,
+  .refund-detail-panel,
+  .refund-detail-alert {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px) saturate(1.08);
+  }
+
+  .refund-detail-card,
+  .refund-detail-panel {
+    padding: 18px;
+  }
+
+  .refund-detail-card {
+    display: grid;
+    gap: 16px;
+  }
+
+  .refund-detail-chip,
+  .refund-detail-status {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border-radius: 999px;
+    border: 1px solid #d5e6fa;
+    background: #f4f9ff;
+    color: var(--blue-dark);
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .refund-detail-status--sun { border-color: #fde68a; background: #fffbeb; color: var(--amber); }
+  .refund-detail-status--green { border-color: #bbf7d0; background: #ecfdf5; color: var(--green); }
+  .refund-detail-status--rose { border-color: #fecdd3; background: #fff1f2; color: var(--rose); }
+  .refund-detail-status--slate { border-color: #e2e8f0; background: #f8fafc; color: #475569; }
+
+  .refund-detail-head {
+    display: grid;
+    gap: 8px;
+  }
+
+  .refund-detail-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 28px;
+    line-height: 1.12;
+  }
+
+  .refund-detail-money {
+    color: var(--green);
+    font-size: clamp(34px, 4vw, 52px);
+    font-weight: 950;
+    line-height: 1;
+  }
+
+  .refund-detail-sub {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .refund-detail-info {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .refund-detail-info div {
+    min-height: 76px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    padding: 12px;
+    background: rgba(248, 251, 255, .78);
+  }
+
+  .refund-detail-info span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .refund-detail-info strong {
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .refund-detail-timeline {
+    display: grid;
+    gap: 10px;
+  }
+
+  .refund-detail-step {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .refund-detail-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+  }
+
+  .refund-detail-step.is-done .refund-detail-dot {
+    border-color: #bbf7d0;
+    background: #10b981;
+  }
+
+  .refund-detail-step strong {
+    display: block;
+    color: var(--ink);
+    font-size: 14px;
+  }
+
+  .refund-detail-panel h2 {
+    margin: 0 0 14px;
+    color: var(--ink);
+    font-size: 24px;
+  }
+
+  .refund-detail-qr {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 16px;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    padding: 14px;
+    background: rgba(248, 251, 255, .76);
+  }
+
+  .refund-detail-qr img {
+    width: 160px;
+    height: 160px;
+    border-radius: 12px;
+    border: 1px solid #d5e6fa;
+    background: #fff;
+    padding: 6px;
+  }
+
+  .refund-detail-copy {
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 850;
+    overflow-wrap: anywhere;
+  }
+
+  .refund-detail-form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .refund-detail-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .refund-detail-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .refund-detail-field label {
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .refund-detail-field input,
+  .refund-detail-field textarea {
+    width: 100%;
+    min-height: 44px;
+    border: 1px solid #d5e6fa;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 750;
+    outline: none;
+  }
+
+  .refund-detail-field textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+
+  .refund-detail-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 4px;
+  }
+
+  .refund-detail-alert {
+    padding: 12px 14px;
+    color: #065f46;
+    background: rgba(236, 253, 245, .90);
+    border-color: #bbf7d0;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .refund-detail-alert.is-error {
+    color: #9f1239;
+    background: rgba(255, 241, 242, .92);
+    border-color: #fecdd3;
+  }
+
+  .refund-detail-warning {
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fffbeb;
+    color: var(--amber);
+    font-size: 13px;
+    font-weight: 850;
+    line-height: 1.45;
+  }
+
+  @media (max-width: 980px) {
+    .refund-detail-wrap { width: min(100%, calc(100vw - 24px)); }
+    .refund-detail-grid,
+    .refund-detail-qr { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    .refund-detail { padding: 18px 12px 38px; }
+    .refund-detail-title,
+    .refund-detail-form-actions { align-items: stretch; flex-direction: column; }
+    .refund-detail-info,
+    .refund-detail-form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+<%- include("../partials/accounting-background") %>
+
+<main class="refund-detail">
+  <section class="accounting-uc-layout">
+    <%- include("../partials/accounting-uc-sidebar", { activeHref: "/accounting/refunds" }) %>
+    <div class="accounting-uc-main">
+  <div class="refund-detail-wrap">
+    <section class="refund-detail-title">
+      <h1>Chi tiết hoàn tiền</h1>
+      <a class="refund-detail-back" href="/accounting/refunds">Trở lại</a>
+    </section>
+
+    <% if (notice?.success) { %><div class="refund-detail-alert"><%= notice.success %></div><% } %>
+    <% if (notice?.error) { %><div class="refund-detail-alert is-error"><%= notice.error %></div><% } %>
+
+    <section class="refund-detail-grid">
+      <article class="refund-detail-card">
+        <div class="refund-detail-head">
+          <span class="refund-detail-status refund-detail-status--<%= refund.statusMeta?.tone || "slate" %>"><%= refund.statusMeta?.label || refund.status %></span>
+          <h2><%= refund.refundCode %></h2>
+          <div class="refund-detail-money"><%= refund.amountRequestedFormatted %></div>
+          <div class="refund-detail-sub"><%= refund.customerName || "Khách hàng" %> · <%= refund.bookingCode || `GD-${refund.maGiaoDich}` %> · <%= refund.hotelLabel %></div>
+        </div>
+
+        <div class="refund-detail-info">
+          <div><span>Ngân hàng nhận</span><strong><%= refund.bankName %></strong></div>
+          <div><span>Số tài khoản</span><strong><%= refund.bankAccountNo %></strong></div>
+          <div><span>Chủ tài khoản</span><strong><%= refund.bankAccountName %></strong></div>
+          <div><span>Liên hệ khách</span><strong><%= refund.customerPhone || refund.customerEmail || "Chưa có" %></strong></div>
+          <div><span>Cọc đã thu</span><strong><%= refund.depositPaidFormatted %></strong></div>
+          <div><span>Cọc xét hoàn</span><strong><%= refund.refundableBaseFormatted %></strong></div>
+          <div><span>Tỷ lệ policy</span><strong><%= refund.cancellationPolicyLabel || refund.refundRateLabel %></strong></div>
+          <div><span>Giữ lại</span><strong><%= refund.retainedDepositFormatted %></strong></div>
+        </div>
+
+        <div class="refund-detail-info">
+          <div><span>Lý do hủy</span><strong><%= refund.reason || "Không có" %></strong></div>
+          <div><span>Thời điểm tạo</span><strong><%= refund.createdAtLabel %></strong></div>
+          <div><span>Quản lý</span><strong><%= refund.managerBy || "Chưa có" %></strong></div>
+          <div><span>Phiếu chi</span><strong><%= refund.expenseId ? `CP-${refund.expenseId}` : "Chưa lập" %></strong></div>
+        </div>
+
+        <div class="refund-detail-timeline">
+          <% timeline.forEach((item) => { %>
+            <div class="refund-detail-step <%= item.done ? "is-done" : "" %>">
+              <span class="refund-detail-dot"></span>
+              <span>
+                <strong><%= item.label %> · <%= item.value %></strong>
+                <% if (item.note) { %><span class="refund-detail-sub"><%= item.note %></span><% } %>
+              </span>
+            </div>
+          <% }) %>
+        </div>
+      </article>
+
+      <section class="refund-detail-panel">
+        <% if (refund.canAccountingProcess) { %>
+          <h2>Xác nhận chuyển khoản</h2>
+          <% if (refund.paymentQrReady) { %>
+            <div class="refund-detail-qr">
+              <img src="<%= refund.paymentQrImageUrl %>" alt="QR hoàn tiền <%= refund.refundCode %>" />
+              <div style="display:grid;gap:8px">
+                <div class="refund-detail-copy">Số tiền: <%= refund.amountRequestedFormatted %></div>
+                <div class="refund-detail-copy">Nội dung: <%= refund.refundPaymentContent %></div>
+                <div class="refund-detail-copy">STK: <%= refund.bankAccountNo %> · <%= refund.bankAccountName %></div>
+              </div>
+            </div>
+          <% } else { %>
+            <div class="refund-detail-warning"><%= refund.paymentQrWarning || "Chưa thể sinh QR. Kế toán kiểm tra tài khoản nhận và chuyển khoản thủ công." %></div>
+            <div class="refund-detail-copy" style="margin:12px 0">Nội dung CK: <%= refund.refundPaymentContent %></div>
+          <% } %>
+
+          <form class="refund-detail-form" method="post" action="/accounting/refunds/process">
+            <input type="hidden" name="refund_id" value="<%= refund.id %>" />
+            <input type="hidden" name="action" value="approve" />
+            <input type="hidden" name="return_to" value="<%= returnTo %>" />
+            <div class="refund-detail-form-grid">
+              <div class="refund-detail-field">
+                <label for="payment_reference">Mã giao dịch ngân hàng</label>
+                <input id="payment_reference" name="payment_reference" placeholder="VD: FT2412345678" required minlength="4" />
+              </div>
+              <div class="refund-detail-field">
+                <label for="paid_at">Thời gian chuyển</label>
+                <input id="paid_at" name="paid_at" type="datetime-local" />
+              </div>
+            </div>
+            <div class="refund-detail-field">
+              <label for="payment_proof">Chứng từ / biên lai</label>
+              <input id="payment_proof" name="payment_proof" placeholder="Số biên lai hoặc đường dẫn chứng từ" />
+            </div>
+            <div class="refund-detail-field">
+              <label for="accounting_note">Ghi chú kế toán</label>
+              <textarea id="accounting_note" name="accounting_note" placeholder="Ghi chú khi cần đối soát..."></textarea>
+            </div>
+            <div class="refund-detail-form-actions">
+              <button class="refund-detail-btn is-primary" type="submit" onclick="return confirm('Xác nhận đã chuyển khoản đúng số tiền, STK và nội dung?');">Xác nhận đã chuyển khoản</button>
+            </div>
+          </form>
+
+          <form class="refund-detail-form" method="post" action="/accounting/refunds/process" style="margin-top:18px;padding-top:18px;border-top:1px solid #dbeafe">
+            <input type="hidden" name="refund_id" value="<%= refund.id %>" />
+            <input type="hidden" name="action" value="reject" />
+            <input type="hidden" name="return_to" value="<%= returnTo %>" />
+            <div class="refund-detail-field">
+              <label for="reject_note">Lý do từ chối</label>
+              <textarea id="reject_note" name="accounting_note" placeholder="Nhập lý do để lưu vết nghiệp vụ..."></textarea>
+            </div>
+            <div class="refund-detail-form-actions">
+              <button class="refund-detail-btn is-danger" type="submit" onclick="return confirm('Từ chối yêu cầu hoàn tiền này?');">Từ chối yêu cầu</button>
+            </div>
+          </form>
+        <% } else if (refund.status === "ChoQuanLyDuyet") { %>
+          <h2>Chờ quản lý duyệt</h2>
+          <div class="refund-detail-warning">Kế toán chỉ được chuyển khoản sau khi Quản lý duyệt yêu cầu hoàn tiền.</div>
+        <% } else { %>
+          <h2>Thông tin xử lý</h2>
+          <div style="display:grid;gap:10px">
+            <div class="refund-detail-copy">Nội dung CK: <%= refund.refundPaymentContent || "Chưa có" %></div>
+            <div class="refund-detail-copy">Mã giao dịch NH: <%= refund.refundBankTxnId || "Chưa có" %></div>
+            <div class="refund-detail-copy">Chứng từ: <%= refund.refundPaymentProof || "Chưa có" %></div>
+            <div class="refund-detail-copy">Người xác nhận: <%= refund.refundPaidBy || "Chưa có" %></div>
+            <div class="refund-detail-copy">Thời gian chuyển: <%= refund.refundPaidAtLabel || "Chưa có" %></div>
+            <% if (refund.expenseId) { %><a class="refund-detail-btn" href="/accounting/expenses/<%= refund.expenseId %>">Mở phiếu chi CP-<%= refund.expenseId %></a><% } %>
+          </div>
+        <% } %>
+      </section>
+    </section>
+  </div>
+    </div>
+  </section>
+</main>
+
+<%- include("../partials/footer") %>

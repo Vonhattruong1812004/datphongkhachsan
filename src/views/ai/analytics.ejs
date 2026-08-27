@@ -199,13 +199,13 @@
 
 <main class="ai-analytics">
   <div class="ai-wrap">
-    <section class="ai-hero" aria-label="AI Analytics">
+    <section class="ai-hero" aria-label="Theo dõi AI hỗ trợ đặt phòng">
       <div class="ai-panel">
-        <div class="ai-label">AI insights workspace</div>
-        <h1>AI Analytics <span>đọc được nghiệp vụ.</span></h1>
-        <p class="ai-lead">Theo dõi lớp AI đang hỗ trợ khách tìm phòng, gọi recommendation và tạo tín hiệu dịch vụ. Trang này không phải UC chính của Admin, nhưng là màn quan sát để biết AI có đang mang lại giá trị thật hay chỉ đang chạy cho có.</p>
+        <div class="ai-label">Booking AI workspace</div>
+        <h1>AI hỗ trợ đặt phòng <span>đọc được nhu cầu.</span></h1>
+        <p class="ai-lead">Theo dõi lớp AI đang hỗ trợ khách tìm phòng, trích nhu cầu đặt phòng, gọi recommendation và tạo tín hiệu dịch vụ đi kèm. Màn này giúp biết AI có thật sự hỗ trợ luồng đặt phòng hay chỉ đang chạy cho có.</p>
         <div class="ai-actions">
-          <a class="ai-button ai-button--primary" href="/ai/concierge">Mở AI Concierge</a>
+          <a class="ai-button ai-button--primary" href="/ai/concierge">Mở AI hỗ trợ đặt phòng</a>
           <a class="ai-button" href="/admin/ai-diagnostics">AI diagnostics</a>
           <a class="ai-button" href="/admin/diagnostics">Sức khỏe hệ thống</a>
           <a class="ai-button" href="<%= dashboardHref %>">Về dashboard</a>
@@ -224,8 +224,8 @@
     </section>
 
     <section class="ai-stats" aria-label="KPI AI">
-      <article class="ai-stat" style="--stat-color:#06b6d4"><strong><%= summary.conciergeCount || 0 %></strong><span>Concierge</span></article>
-      <article class="ai-stat" style="--stat-color:#2563eb"><strong><%= summary.recommendationCount || 0 %></strong><span>Recommendation</span></article>
+      <article class="ai-stat" style="--stat-color:#06b6d4"><strong><%= summary.conciergeCount || 0 %></strong><span>Chat đặt phòng</span></article>
+      <article class="ai-stat" style="--stat-color:#2563eb"><strong><%= summary.recommendationCount || 0 %></strong><span>Gợi ý phòng</span></article>
       <article class="ai-stat" style="--stat-color:#10b981"><strong><%= summary.topServiceConversions || 0 %></strong><span>Service orders</span></article>
       <article class="ai-stat" style="--stat-color:#f59e0b"><strong><%= formatMoney(summary.topServiceRevenue) %></strong><span>Service value</span></article>
     </section>
@@ -233,8 +233,8 @@
     <section class="ai-section" aria-label="Luồng AI">
       <div class="ai-section-head">
         <div>
-          <h2>AI đang được dùng ở đâu</h2>
-          <p>Tách rõ tư vấn hội thoại và gợi ý đặt phòng để biết nên tối ưu luồng nào.</p>
+          <h2>AI đang hỗ trợ đặt phòng ở đâu</h2>
+          <p>Tách rõ chat nhu cầu và gợi ý phòng để biết nên tối ưu luồng nào.</p>
         </div>
       </div>
       <div class="ai-grid">
@@ -255,7 +255,7 @@
       <div class="ai-section-head">
         <div>
           <h2>Tín hiệu đáng chú ý</h2>
-          <p>Những điểm Admin/Quản lý cần nhìn nhanh trước khi quyết định nâng cấp provider hoặc tối ưu gợi ý.</p>
+          <p>Những điểm Admin/Quản lý cần nhìn nhanh trước khi tối ưu gợi ý phòng hoặc nâng cấp provider AI.</p>
         </div>
       </div>
       <div class="ai-grid ai-grid--3">
@@ -285,7 +285,7 @@
         </div>
       </div>
       <% if (!dailyTrend.length) { %>
-        <div class="ai-empty"><strong>Chưa có request AI gần đây</strong><p>Hãy thử AI Concierge hoặc API recommendation để tạo dữ liệu phân tích ban đầu.</p></div>
+        <div class="ai-empty"><strong>Chưa có request AI gần đây</strong><p>Hãy thử AI hỗ trợ đặt phòng hoặc API recommendation để tạo dữ liệu phân tích ban đầu.</p></div>
       <% } else { %>
         <div class="ai-card ai-trend">
           <% dailyTrend.forEach((item) => {
@@ -356,7 +356,7 @@
       <div class="ai-section-head">
         <div>
           <h2>Khuyến nghị vận hành</h2>
-          <p>Giữ AI Analytics gắn với quyết định thật, không chỉ là số liệu kỹ thuật.</p>
+          <p>Giữ theo dõi AI gắn với hiệu quả hỗ trợ đặt phòng, không chỉ là số liệu kỹ thuật.</p>
         </div>
       </div>
       <div class="ai-grid ai-grid--3">

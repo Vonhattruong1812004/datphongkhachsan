@@ -1,4 +1,4 @@
-# Bento Resort - Hệ thống đặt phòng và vận hành resort
+# Bento Booking - Hệ thống đặt phòng lưu trú toàn quốc
 
 Đây là hệ thống đặt phòng khách sạn/resort được rebuild bằng **Node.js, TypeScript, Express, EJS, React/Vite và PostgreSQL**. Dự án kế thừa nghiệp vụ từ source PHP cũ trong `../code2`, nhưng phần chạy chính, phát triển chính và deploy chính nằm trong thư mục `abc-resort-node/`.
 
@@ -304,7 +304,7 @@ Ví dụ `.env`:
 ```env
 NODE_ENV=development
 PORT=3010
-APP_NAME=Bento Resort
+APP_NAME=Bento Booking
 SESSION_SECRET=change_me
 PGHOST=127.0.0.1
 PGPORT=5432
@@ -539,5 +539,5 @@ uploads/
 
 - Repository GitHub: `Vonhattruong1812004/datphongkhachsan`.
 - Branch chính: `main`.
-- App name hiển thị trong UI: `Bento Resort`.
+- App name hiển thị trong UI: `Bento Booking`.
 - README này mô tả hệ thống Node.js hiện tại, không mô tả source PHP cũ.

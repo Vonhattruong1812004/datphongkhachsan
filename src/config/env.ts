@@ -6,7 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(3010),
-  APP_NAME: z.string().default("Bento Resort"),
+  APP_NAME: z.string().default("Bento Booking"),
   SESSION_SECRET: z.string().min(8),
   PGHOST: z.string(),
   PGPORT: z.coerce.number().default(5432),

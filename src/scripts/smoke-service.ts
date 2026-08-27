@@ -432,7 +432,7 @@ async function main() {
     const service = await loginRole(baseUrl, ROLE.DICH_VU, accounts);
     const customer = await loginRole(baseUrl, ROLE.KHACH_HANG, accounts);
     const frontdeskCsrf = await getCsrf(baseUrl, "/frontdesk/direct-booking", frontdesk.cookieJar, "Frontdesk direct booking");
-    const serviceCsrf = await getCsrf(baseUrl, "/service", service.cookieJar, "Service workspace");
+    const serviceCsrf = await getCsrf(baseUrl, "/service/manage", service.cookieJar, "Service workspace");
     const inspectionPage = await fetch(`${baseUrl}/service/room-inspection`, {
       headers: { Cookie: service.cookieJar },
       redirect: "manual"

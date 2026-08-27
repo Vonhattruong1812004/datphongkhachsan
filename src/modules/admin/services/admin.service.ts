@@ -166,11 +166,20 @@ export class AdminService {
     const status = ["HoatDong", "Khoa", "Ngung"].includes(requestedStatus) ? requestedStatus : "all";
     const requestedLink = typeof filterSource.lien_ket === "string" ? filterSource.lien_ket : "all";
     const link = ["staff", "customer", "orphan"].includes(requestedLink) ? requestedLink : "all";
+    const requestedPage = Number(filterSource.page);
+    const requestedPerPage = Number(filterSource.per_page);
+    const perPage = Number.isInteger(requestedPerPage) && requestedPerPage > 0
+      ? Math.min(requestedPerPage, 50)
+      : 10;
+    const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+    const offset = (page - 1) * perPage;
     const filters = {
       keyword,
       vai_tro: roleId ? String(roleId) : "all",
       trang_thai: status,
-      lien_ket: link
+      lien_ket: link,
+      page: String(page),
+      per_page: String(perPage)
     };
     const where: string[] = [];
     const params: Array<number | string> = [];
@@ -209,6 +218,7 @@ export class AdminService {
 
     const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
+    const listParams = [...params, perPage, offset];
     const result = await query<{
       id: number;
       username: string;
@@ -249,11 +259,13 @@ export class AdminService {
         LEFT JOIN nhanvien nv ON nv.manhanvien = tk.manhanvien
         ${whereClause}
         ORDER BY tk.matk DESC
+        LIMIT $${params.length + 1}
+        OFFSET $${params.length + 2}
       `,
-      params
+      listParams
     );
 
-    const [roles, summary] = await Promise.all([
+    const [roles, summary, filteredSummary] = await Promise.all([
       query<{ id: number; tenVaiTro: string }>(
         "SELECT mavaitro AS id, tenvaitro AS \"tenVaiTro\" FROM vaitro ORDER BY mavaitro ASC"
       ),
@@ -275,15 +287,37 @@ export class AdminService {
             COUNT(*) FILTER (WHERE manhanvien IS NULL AND makhachhang IS NULL)::int AS orphan
           FROM taikhoan
         `
+      ),
+      query<{ total: number }>(
+        `
+          SELECT COUNT(*)::int AS total
+          FROM taikhoan tk
+          LEFT JOIN vaitro vr ON vr.mavaitro = tk.mavaitro
+          LEFT JOIN khachhang kh ON kh.makhachhang = tk.makhachhang
+          LEFT JOIN nhanvien nv ON nv.manhanvien = tk.manhanvien
+          ${whereClause}
+        `,
+        params
       )
     ]);
+
+    const filteredCount = Number(filteredSummary.rows[0]?.total ?? result.rows.length);
+    const totalPages = Math.max(1, Math.ceil(filteredCount / perPage));
 
     return {
       users: result.rows,
       roles: roles.rows,
       filters,
       summary: summary.rows[0],
-      filteredCount: result.rows.length
+      filteredCount,
+      pagination: {
+        page,
+        perPage,
+        totalPages,
+        totalItems: filteredCount,
+        from: filteredCount ? offset + 1 : 0,
+        to: Math.min(offset + result.rows.length, filteredCount)
+      }
     };
   }
 
@@ -634,7 +668,7 @@ export class AdminService {
       { key: "admin", name: "Admin", ready: true, detail: "Người dùng, phân quyền, trạng thái, chẩn đoán, backup và restore đã có." },
       { key: "ekyc", name: "eKYC", ready: true, detail: "Khách gửi hồ sơ và nhân viên duyệt queue đã có." },
       { key: "feedback", name: "Phản hồi", ready: true, detail: "Tạo, lọc, trả lời và cập nhật trạng thái phản hồi đã có." },
-      { key: "ai", name: "Lớp AI", ready: true, detail: "Concierge, gợi ý, analytics và local provider diagnostics đã có." },
+      { key: "ai", name: "Lớp AI", ready: true, detail: "AI hỗ trợ đặt phòng, gợi ý phòng, analytics và local provider diagnostics đã có." },
       { key: "pwa_mobile", name: "PWA / Mobile", ready: true, detail: "Mobile hub, manifest, service worker và offline snapshot đã có." }
     ];
 
@@ -711,7 +745,7 @@ export class AdminService {
         mode: "local",
         provider: "local-heuristic",
         adapter_ready: true,
-        summary: "He thong dang chay local heuristic, san sang noi them provider ngoai sau nay."
+        summary: "Hệ thống đang chạy local heuristic để hỗ trợ đặt phòng, sẵn sàng nối thêm provider ngoài sau này."
       },
       summary: {
         ready: providerReady && analyticsReady,
@@ -721,9 +755,9 @@ export class AdminService {
         overall_score: providerReady && analyticsReady ? 100 : 82
       },
       signals: [
-        { label: "AI concierge", value: conciergeCount, detail: "So lan goi tro ly tieng Viet." },
-        { label: "Recommendations", value: recommendationCount, detail: "So lan goi recommendation booking." },
-        { label: "Top service conversions", value: topServices.rows.reduce((sum, item) => sum + Number(item.total || 0), 0), detail: "Tong luot dich vu tu booking/stay." }
+        { label: "AI hỗ trợ đặt phòng", value: conciergeCount, detail: "Số lần gọi AI tư vấn nhu cầu đặt phòng bằng tiếng Việt." },
+        { label: "Gợi ý phòng", value: recommendationCount, detail: "Số lần gọi recommendation booking." },
+        { label: "Dịch vụ đi kèm", value: topServices.rows.reduce((sum, item) => sum + Number(item.total || 0), 0), detail: "Tổng lượt dịch vụ từ booking/stay." }
       ],
       dailyTrend: dailyTrend.rows,
       topServices: topServices.rows.map((item) => ({
@@ -731,8 +765,8 @@ export class AdminService {
         revenue: Number(item.revenue || 0)
       })),
       next_actions: providerReady && analyticsReady
-        ? ["AI local stack da san sang. Neu can, co the noi them provider ngoai va policy guardrails nang cao."]
-        : ["Hoan thien them provider adapter va analytics view de bo AI diagnostics tron ven hon."]
+        ? ["AI hỗ trợ đặt phòng đã sẵn sàng. Nếu cần, có thể nối thêm provider ngoài và policy guardrails nâng cao."]
+        : ["Hoàn thiện thêm provider adapter và analytics view để bộ AI diagnostics trọn vẹn hơn."]
     };
   }
 
@@ -863,8 +897,8 @@ export class AdminService {
         status: tech.ai_concierge_view ? "ready" : "partial",
         score: tech.ai_concierge_view ? 92 : 65,
         detail: tech.ai_concierge_view
-          ? "AI concierge da san sang de khach tim phong bang tieng Viet tren mobile."
-          : "Can noi AI concierge vao hanh trinh mobile ro hon."
+          ? "AI ho tro dat phong da san sang de khach tim phong bang tieng Viet tren mobile."
+          : "Can noi AI ho tro dat phong vao hanh trinh mobile ro hon."
       }
     ];
 

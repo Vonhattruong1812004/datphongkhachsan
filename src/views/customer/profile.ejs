@@ -18,6 +18,7 @@
     ? verification.result
     : (statusTone === "DaXacThuc" ? "ThanhCong" : statusTone === "ThatBai" ? "ThatBai" : statusTone === "DangXuLy" ? "DangXuLy" : "ChuaXacThuc");
   const effectiveEkycLabel = verificationMatchesProfile && verification?.result_label ? verification.result_label : statusLabel;
+  const isEkycVerified = effectiveEkycResult === "ThanhCong";
   const ekycLockedReason = effectiveEkycResult === "ThanhCong"
     ? "Hồ sơ eKYC đã được xác thực. Bạn không cần gửi lại; nếu cần đổi giấy tờ định danh, vui lòng liên hệ CSKH hoặc lễ tân để được hỗ trợ."
     : effectiveEkycResult === "DangXuLy"
@@ -902,6 +903,183 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Customer profile polish: clearer hierarchy, fewer repeated summary blocks. */
+  .profile-shell {
+    width: min(1360px, calc(100vw - 32px));
+    max-width: 1360px;
+    padding: 14px 16px 36px !important;
+  }
+  .profile-hero {
+    min-height: 66px !important;
+    border-radius: 8px !important;
+    padding: 13px 18px 13px 30px !important;
+  }
+  .profile-hero h1,
+  .profile-hero h1 span {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+    font-size: 28px !important;
+    font-weight: 1000 !important;
+  }
+  .profile-shell .profile-hero h1,
+  .profile-shell .profile-hero h1 span {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  .profile-hero .profile-actions {
+    gap: 8px !important;
+  }
+  .profile-hero .profile-button {
+    width: auto !important;
+    min-height: 34px !important;
+    border-radius: 8px !important;
+    padding: 7px 12px !important;
+    border-color: rgba(255,255,255,.62) !important;
+    background: #ffffff !important;
+    color: #003b95 !important;
+    font-size: 12px !important;
+    box-shadow: 0 10px 22px rgba(0,59,149,.16) !important;
+  }
+  .profile-stats {
+    display: none !important;
+  }
+  .profile-layout,
+  .profile-ekyc {
+    grid-template-columns: minmax(0, 1fr) 320px !important;
+    gap: 12px !important;
+  }
+  .profile-panel,
+  .profile-card,
+  .profile-ekyc-card {
+    border-radius: 8px !important;
+    padding: 16px !important;
+  }
+  .profile-panel h2,
+  .profile-card h3,
+  .profile-ekyc-head h2,
+  .profile-ekyc-card h3 {
+    font-size: 22px !important;
+    font-weight: 1000 !important;
+  }
+  .profile-visual-strip,
+  .profile-ekyc-steps {
+    gap: 8px !important;
+    margin-top: 12px !important;
+  }
+  .profile-visual-item,
+  .profile-step {
+    min-height: 58px !important;
+    padding: 10px !important;
+    border-radius: 8px !important;
+    background: #f8fbff !important;
+  }
+  .profile-form {
+    gap: 10px !important;
+    margin-top: 12px !important;
+  }
+  .profile-field {
+    gap: 5px !important;
+  }
+  .profile-field input,
+  .profile-ekyc-field input,
+  .profile-ekyc-field select {
+    min-height: 42px !important;
+    border-radius: 8px !important;
+    font-weight: 850 !important;
+  }
+  .profile-actions {
+    margin-top: 12px !important;
+  }
+  .profile-button {
+    min-height: 36px !important;
+    border-radius: 8px !important;
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+  }
+  .profile-side {
+    gap: 10px !important;
+  }
+  .profile-card .profile-muted {
+    font-size: 13px !important;
+    line-height: 1.48 !important;
+  }
+  .profile-progress {
+    height: 8px !important;
+  }
+  .profile-checklist {
+    gap: 7px !important;
+  }
+  .profile-check {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+  .profile-ekyc-grid {
+    grid-template-columns: 170px minmax(0,1fr) !important;
+    gap: 10px !important;
+    margin: 10px 0 !important;
+  }
+  .profile-upload-grid {
+    gap: 8px !important;
+  }
+  .profile-upload {
+    padding: 9px !important;
+  }
+  .profile-preview {
+    height: 120px !important;
+  }
+  .profile-lock {
+    margin-bottom: 10px !important;
+    font-size: 12px !important;
+  }
+  .profile-ekyc-images {
+    gap: 7px !important;
+  }
+  .profile-ekyc--verified {
+    grid-template-columns: 1fr !important;
+  }
+  .profile-ekyc--verified .profile-ekyc-card {
+    min-height: 0 !important;
+  }
+  .profile-ekyc--verified .profile-ekyc-head {
+    margin-bottom: 0 !important;
+  }
+  .profile-ekyc--verified .profile-ekyc-head .profile-muted {
+    display: block !important;
+    margin-top: 6px !important;
+  }
+  .profile-ekyc--verified .profile-visual-strip {
+    margin-top: 14px !important;
+  }
+  @media (max-width: 1080px) {
+    .profile-layout,
+    .profile-ekyc {
+      grid-template-columns: 1fr !important;
+    }
+  }
+  @media (max-width: 760px) {
+    .profile-shell {
+      width: min(100%, calc(100vw - 20px));
+      padding: 10px !important;
+    }
+    .profile-hero {
+      grid-template-columns: 1fr !important;
+    }
+    .profile-hero h1 {
+      font-size: 24px !important;
+    }
+    .profile-hero .profile-actions,
+    .profile-actions {
+      justify-content: flex-start !important;
+    }
+    .profile-hero .profile-button,
+    .profile-button {
+      width: 100% !important;
+    }
+  }
 </style>
 
 <main class="profile-shell">
@@ -911,9 +1089,10 @@
       <h1>Quản lý hồ sơ cá nhân</h1>
       <p class="profile-muted">Quản lý thông tin liên hệ và xác minh định danh.</p>
       <div class="profile-actions">
-        <a class="profile-button profile-button--anchor" href="#ekyc-section">Xác thực eKYC</a>
-        <a class="profile-button" href="/customer/dashboard">Tổng quan</a>
-        <a class="profile-button" href="/customer/bookings">Quản lý đặt phòng</a>
+        <% if (!isEkycVerified) { %>
+          <a class="profile-button profile-button--anchor" href="#ekyc-section">Xác thực eKYC</a>
+        <% } %>
+        <a class="profile-button" href="/customer/dashboard">Quay về dashboard</a>
       </div>
     </div>
     <aside class="profile-identity">
@@ -1002,6 +1181,33 @@
     </aside>
   </section>
 
+  <% if (isEkycVerified) { %>
+    <section class="profile-ekyc profile-ekyc--verified" id="ekyc-section">
+      <article class="profile-ekyc-card">
+        <div class="profile-ekyc-head">
+          <div>
+            <h2>eKYC đã xác thực</h2>
+            <p class="profile-muted">Hồ sơ định danh đã được duyệt. Bạn không cần gửi lại ảnh hoặc tạo hồ sơ xác minh mới.</p>
+          </div>
+          <span class="profile-pill <%= ekycToneClass %>"><%= effectiveEkycLabel %></span>
+        </div>
+        <div class="profile-visual-strip" aria-label="Tóm tắt eKYC đã xác thực">
+          <div class="profile-visual-item">
+            <div class="profile-visual-icon">ID</div>
+            <div><span>Giấy tờ</span><strong><%= verification?.document_type || "CCCD/CMND" %> · <%= verification?.document_number || profile.cccd || "-" %></strong></div>
+          </div>
+          <div class="profile-visual-item">
+            <div class="profile-visual-icon">OK</div>
+            <div><span>Trạng thái</span><strong><%= effectiveEkycLabel %></strong></div>
+          </div>
+          <div class="profile-visual-item">
+            <div class="profile-visual-icon">IN</div>
+            <div><span>Check-in</span><strong>Sẵn sàng nhận phòng</strong></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  <% } else { %>
   <section class="profile-ekyc" id="ekyc-section">
     <form class="profile-ekyc-card" method="post" action="/ekyc" enctype="multipart/form-data" id="ekycForm" novalidate>
       <div class="profile-ekyc-head">
@@ -1125,6 +1331,7 @@
       </article>
     </aside>
   </section>
+  <% } %>
 </main>
 
 <script>
@@ -1241,4 +1448,5 @@
     });
   })();
 </script>
+<%- include("../partials/customer-background") %>
 <%- include("../partials/footer") %>

@@ -21,7 +21,7 @@ function bindScope(scope: string) {
 
 dashboardRouter.get("/admin", requireRole([ROLE.ADMIN]), bindScope("admin"), asyncHandler(renderDashboard));
 dashboardRouter.get("/letan", requireRole([ROLE.LE_TAN]), bindScope("letan"), asyncHandler(renderDashboard));
-dashboardRouter.get("/ketoan", requireRole([ROLE.KE_TOAN]), bindScope("ketoan"), asyncHandler(renderDashboard));
+dashboardRouter.get("/ketoan", requireRole([ROLE.KE_TOAN]), (_req, res) => res.redirect("/accounting"));
 dashboardRouter.get("/dichvu", requireRole([ROLE.DICH_VU]), bindScope("dichvu"), asyncHandler(renderDashboard));
 dashboardRouter.get("/quanly", requireRole([ROLE.QUAN_LY]), bindScope("quanly"), asyncHandler(renderDashboard));
 dashboardRouter.get("/cskh", requireRole([ROLE.CSKH]), bindScope("cskh"), asyncHandler(renderDashboard));

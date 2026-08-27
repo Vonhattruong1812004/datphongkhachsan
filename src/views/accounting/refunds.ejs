@@ -8,6 +8,10 @@
   const statusBreakdown = payload.statusBreakdown || [];
   const page = Number(payload.currentPage || 1);
   const totalPages = Number(payload.totalPages || 1);
+  const totalRecords = Number(payload.totalRecords || 0);
+  const currentLimit = Number(filters.limit || payload.limit || 10);
+  const displayFrom = totalRecords > 0 ? ((page - 1) * currentLimit) + 1 : 0;
+  const displayTo = totalRecords > 0 ? Math.min(displayFrom + rows.length - 1, totalRecords) : 0;
   const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
   const csvQuery = makeQuery({ format: "csv" });
   const pages = [];
@@ -17,275 +21,575 @@
 %>
 
 <style>
-  .refund-home{
-    --refund-ink:#102033;
-    --refund-muted:#5c7084;
-    --refund-line:#dbe7f1;
-    --refund-card:#ffffff;
-    --refund-soft:#f7fafc;
-    --refund-blue:#0ea5e9;
-    --refund-green:#10b981;
-    --refund-amber:#f59e0b;
-    --refund-rose:#e11d48;
-    min-height:calc(100vh - 84px);
-    padding:30px 18px 54px;
-    color:var(--refund-ink);
-    background:
-      radial-gradient(circle at 10% 0%,rgba(14,165,233,.12),transparent 28%),
-      radial-gradient(circle at 96% 8%,rgba(16,185,129,.10),transparent 28%),
-      linear-gradient(180deg,#f7fbff 0%,#eef6fb 100%);
+  .refund-home {
+    --ink: #132033;
+    --muted: #667085;
+    --line: #c9e0fb;
+    --blue: #006ce4;
+    --blue-dark: #003b95;
+    --green: #07865f;
+    --amber: #b45309;
+    --rose: #be123c;
+    --shadow: 0 14px 34px rgba(15, 36, 66, .08);
+    min-height: calc(100vh - 84px);
+    padding: 24px 18px 54px;
+    color: var(--ink);
   }
-  .refund-wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
-  .refund-hero,.refund-panel,.refund-table-panel,.refund-alert{border:1px solid var(--refund-line);background:var(--refund-card);box-shadow:0 14px 40px rgba(15,35,55,.09)}
-  .refund-hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:22px;border-radius:28px;padding:28px;background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(239,248,255,.94))}
-  .refund-chip,.refund-tag,.refund-status{display:inline-flex;align-items:center;gap:8px;border-radius:999px;white-space:nowrap}
-  .refund-chip{padding:7px 12px;border:1px solid #b7eef8;background:#e8fbff;color:#036672;font-size:12px;font-weight:1000;text-transform:uppercase}
-  .refund-hero h1{margin:18px 0 10px;font-size:52px;line-height:.98;letter-spacing:-.04em;color:var(--refund-ink)}
-  .refund-hero h1 span{color:transparent;background:linear-gradient(90deg,#0284c7,#10b981,#f59e0b);-webkit-background-clip:text;background-clip:text}
-  .refund-lead{max-width:760px;margin:0;color:var(--refund-muted);font-size:15px;line-height:1.72}
-  .refund-actions,.refund-tags,.refund-card-actions{display:flex;flex-wrap:wrap;gap:10px}.refund-tags{margin-top:18px}.refund-actions{margin-top:18px}
-  .refund-tag{padding:8px 11px;background:#fff;border:1px solid var(--refund-line);color:#123047;font-size:12px;font-weight:950}
-  .refund-button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;border-radius:14px;padding:10px 14px;border:1px solid #cfe0ed;background:#fff;color:#123047;text-decoration:none;font:inherit;font-size:13px;font-weight:950;cursor:pointer;box-shadow:0 8px 20px rgba(15,35,55,.08);transition:transform .16s ease,box-shadow .16s ease}
-  .refund-button:hover{transform:translateY(-1px);box-shadow:0 12px 24px rgba(15,35,55,.12)}
-  .refund-button--primary{border-color:transparent;background:linear-gradient(135deg,#0284c7,#10b981);color:#fff}.refund-button--danger{border-color:transparent;background:linear-gradient(135deg,#fb7185,#e11d48);color:#fff}.refund-button--muted{background:#fff}
-  .refund-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.refund-kpi{min-height:104px;border-radius:20px;padding:16px;background:#fff;border:1px solid var(--refund-line);box-shadow:0 10px 28px rgba(15,35,55,.08)}
-  .refund-kpi strong{display:block;font-size:22px;line-height:1.12;color:#0f2d42;overflow-wrap:anywhere}.refund-kpi span{display:block;margin-top:6px;color:#64748b;font-size:12px;font-weight:900;text-transform:uppercase}
-  .refund-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.refund-flow__step{border:1px solid var(--refund-line);border-radius:18px;padding:12px;background:#fff;min-height:0}.refund-flow__step b{display:block;color:#102033;font-size:14px}.refund-flow__step span{display:block;margin-top:6px;color:#5f7183;font-size:12px;line-height:1.45;font-weight:750}
-  .refund-layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}.refund-panel,.refund-table-panel,.refund-card,.refund-alert{border-radius:24px;padding:18px}.refund-panel h2,.refund-table-panel h2{margin:0 0 12px;font-size:22px;color:#102033}
-  .refund-field{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}.refund-field label{font-size:12px;font-weight:950;color:#34495d}.refund-field input,.refund-field select,.refund-field textarea{width:100%;min-height:44px;border:1px solid #cfe0ed;border-radius:14px;padding:10px 12px;background:#fff;color:#102033;font:inherit;font-size:14px;font-weight:700;outline:none;box-sizing:border-box}.refund-field textarea{min-height:78px;resize:vertical}
-  .refund-breakdown{display:grid;gap:10px;margin-top:12px}.refund-break,.refund-empty{border:1px solid var(--refund-line);border-radius:16px;padding:12px;background:#f8fbfd;color:#102033}.refund-break strong{display:block;font-size:19px;color:#102033}.refund-break span,.refund-sub{color:#607487}.refund-break span{font-size:12px;font-weight:900}
-  .refund-alert{margin:0}.refund-alert--ok{background:#ecfdf5;color:#065f46;border-color:#b7efd6}.refund-alert--err{background:#fff1f2;color:#9f1239;border-color:#fecdd3}
-  .refund-table-wrap{overflow:visible;border:0;background:transparent}.refund-table{display:block;width:100%;min-width:0;border-collapse:separate;border-spacing:0;font-size:14px}.refund-table thead{display:none}.refund-table tbody{display:grid;gap:16px}.refund-table tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px;border:1px solid var(--refund-line);border-radius:22px;background:#fff;box-shadow:0 12px 34px rgba(15,35,55,.08)}.refund-table td{display:block;min-width:0;padding:14px;border:1px solid #e1ebf3;border-radius:16px;background:#f8fbfd;color:#102033;overflow-wrap:anywhere;vertical-align:top}.refund-table td:nth-child(6),.refund-table td:nth-child(7){grid-column:1/-1}.refund-table td:nth-child(7){background:#f0f7ff}.refund-table td::before{content:attr(data-label);display:block;margin-bottom:8px;color:#0f8ab8;font-size:11px;font-weight:1000;letter-spacing:.08em;text-transform:uppercase}
-  .refund-main{font-weight:1000;color:#102033}.refund-sub{margin-top:4px;font-size:12px;line-height:1.45}.refund-status{padding:5px 9px;font-size:11px;font-weight:1000;border:1px solid #d7e2eb;background:#eef2f7;color:#334155}.refund-status--sun{background:#fff7df;color:#92400e;border-color:#f8df93}.refund-status--green{background:#e9fbf3;color:#047857;border-color:#b7efd6}.refund-status--rose{background:#fff1f2;color:#be123c;border-color:#fecdd3}
-  .refund-paybox{display:grid;gap:12px;min-width:0;max-width:none;width:100%}.refund-qr{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;align-items:center;border:1px solid #cfe0ed;border-radius:18px;padding:10px;background:#fff}.refund-qr img{width:104px;height:104px;border-radius:14px;border:1px solid #d7e2eb;background:#fff;padding:4px}.refund-qr__meta{display:grid;gap:6px;min-width:0}.refund-copy{border-radius:12px;padding:7px 9px;background:#fff;border:1px solid #d7e2eb;color:#102033;font-size:12px;font-weight:950;word-break:break-word}.refund-warning{border-radius:14px;padding:9px 10px;background:#fff7df;border:1px solid #f8df93;color:#92400e;font-size:12px;font-weight:850;line-height:1.45}.refund-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .refund-pages{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px}.refund-page{min-width:38px;min-height:38px;border-radius:14px;border:1px solid #cfe0ed;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#102033;background:#fff;font-size:13px;font-weight:950}.refund-page.is-active{background:linear-gradient(135deg,#0284c7,#10b981);color:#fff;border-color:transparent}
-  @media(max-width:1100px){.refund-hero,.refund-layout{grid-template-columns:1fr}.refund-table tr{grid-template-columns:repeat(2,minmax(0,1fr))}.refund-table td:nth-child(6),.refund-table td:nth-child(7){grid-column:1/-1}}
-  @media(max-width:720px){.refund-home{padding:18px 10px 36px}.refund-hero,.refund-panel,.refund-table-panel{padding:16px;border-radius:20px}.refund-hero h1{font-size:36px}.refund-kpis,.refund-flow,.refund-table tr,.refund-mini-grid,.refund-qr{grid-template-columns:1fr}.refund-table td,.refund-table td:nth-child(6),.refund-table td:nth-child(7){grid-column:auto}.refund-table tr{padding:10px}.refund-table td{padding:12px}}
+
+  .refund-home *,
+  .refund-home *::before,
+  .refund-home *::after { box-sizing: border-box; }
+
+  .refund-wrap {
+    width: min(1240px, calc(100vw - 48px));
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+  }
+
+  .refund-title {
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+    box-shadow: 0 18px 42px rgba(0, 72, 171, .20);
+  }
+
+  .refund-title h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.05;
+    letter-spacing: 0;
+  }
+
+  .refund-title h1::before {
+    content: "";
+    width: 6px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .88);
+  }
+
+  .refund-title small {
+    font-size: 13px;
+    font-weight: 850;
+    color: rgba(255, 255, 255, .82);
+  }
+
+  .refund-toolbar,
+  .refund-board,
+  .refund-stat {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px) saturate(1.08);
+  }
+
+  .refund-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .refund-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .refund-filter {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .refund-filter summary,
+  .refund-icon-btn,
+  .refund-btn,
+  .refund-page {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid #b9d8ff;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--blue-dark);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 900;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .refund-filter summary {
+    padding: 0 14px;
+    list-style: none;
+  }
+
+  .refund-filter summary::-webkit-details-marker { display: none; }
+
+  .refund-filter[open] summary {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, .10);
+  }
+
+  .refund-filter-panel {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(720px, calc(100vw - 56px));
+    padding: 16px;
+    border: 1px solid #b9d8ff;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 28px 76px rgba(15, 23, 42, .18);
+  }
+
+  .refund-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .refund-field {
+    display: grid;
+    gap: 6px;
+  }
+
+  .refund-field label {
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .refund-field input,
+  .refund-field select,
+  .refund-search input {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid #d5e6fa;
+    border-radius: 10px;
+    padding: 0 12px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 750;
+    outline: none;
+  }
+
+  .refund-field input:focus,
+  .refund-field select:focus,
+  .refund-search input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, .10);
+  }
+
+  .refund-filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(19, 32, 51, .08);
+  }
+
+  .refund-btn {
+    padding: 0 14px;
+  }
+
+  .refund-btn.is-primary,
+  .refund-icon-btn.is-primary,
+  .refund-page.is-active {
+    border-color: transparent;
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .refund-icon-btn {
+    width: 44px;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+
+  .refund-icon-btn svg,
+  .refund-filter svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+  }
+
+  .refund-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  .refund-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .refund-stat {
+    min-height: 92px;
+    padding: 14px 16px;
+    border-left: 5px solid var(--blue);
+  }
+
+  .refund-stat:nth-child(2) { border-left-color: #f59e0b; }
+  .refund-stat:nth-child(3) { border-left-color: #10b981; }
+  .refund-stat:nth-child(4) { border-left-color: #ef4444; }
+
+  .refund-stat strong {
+    display: block;
+    color: var(--blue-dark);
+    font-size: 26px;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
+  .refund-stat span {
+    display: block;
+    margin-top: 7px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .refund-board {
+    overflow: hidden;
+  }
+
+  .refund-alert {
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: rgba(236, 253, 245, .90);
+    color: #065f46;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .refund-alert.is-error {
+    border-color: #fecdd3;
+    background: rgba(255, 241, 242, .92);
+    color: #9f1239;
+  }
+
+  .refund-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: rgba(255, 255, 255, .72);
+  }
+
+  .refund-table th,
+  .refund-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #dbeafe;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .refund-table th {
+    background: rgba(239, 246, 255, .92);
+    color: #344054;
+    font-size: 12px;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .refund-table tbody tr {
+    cursor: pointer;
+    transition: background .16s ease, transform .16s ease;
+  }
+
+  .refund-table tbody tr:hover {
+    background: rgba(239, 246, 255, .72);
+  }
+
+  .refund-main {
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 950;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .refund-sub {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .refund-money {
+    color: var(--green);
+    font-size: 15px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .refund-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    border-radius: 999px;
+    padding: 5px 10px;
+    border: 1px solid #d5e6fa;
+    background: #f4f9ff;
+    color: var(--blue-dark);
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
+  .refund-status--sun { border-color: #fde68a; background: #fffbeb; color: var(--amber); }
+  .refund-status--green { border-color: #bbf7d0; background: #ecfdf5; color: var(--green); }
+  .refund-status--rose { border-color: #fecdd3; background: #fff1f2; color: var(--rose); }
+  .refund-status--slate { border-color: #e2e8f0; background: #f8fafc; color: #475569; }
+
+  .refund-empty {
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-weight: 850;
+  }
+
+  .refund-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .refund-pagination,
+  .refund-limit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .refund-page {
+    min-width: 38px;
+    padding: 0 12px;
+  }
+
+  .refund-limit select {
+    min-height: 38px;
+    border: 1px solid #d5e6fa;
+    border-radius: 9px;
+    padding: 0 10px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  @media (max-width: 980px) {
+    .refund-wrap { width: min(100%, calc(100vw - 24px)); }
+    .refund-toolbar,
+    .refund-footer { align-items: stretch; flex-direction: column; }
+    .refund-toolbar-actions,
+    .refund-search { width: 100%; }
+    .refund-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .refund-table { min-width: 920px; }
+    .refund-board { overflow-x: auto; }
+  }
+
+  @media (max-width: 640px) {
+    .refund-home { padding: 18px 12px 38px; }
+    .refund-title { align-items: flex-start; flex-direction: column; }
+    .refund-filter-panel,
+    .refund-filter-grid,
+    .refund-stats { grid-template-columns: 1fr; }
+  }
 </style>
+<%- include("../partials/accounting-background") %>
 
 <main class="refund-home">
+  <section class="accounting-uc-layout">
+    <%- include("../partials/accounting-uc-sidebar", { activeHref: "/accounting/refunds" }) %>
+    <div class="accounting-uc-main">
   <div class="refund-wrap">
-    <section class="refund-hero">
-      <div>
-        <div class="refund-chip">Refund control</div>
-        <h1>Xử lý <span>hoàn tiền</span></h1>
-        <p class="refund-lead">Quản lý hoàn tiền của Kế toán nằm ở bước cuối workflow: Lễ tân tạo yêu cầu sau khi hủy đặt phòng, Quản lý duyệt thông tin, hệ thống sinh QR hoàn tiền và Kế toán xác nhận mã giao dịch ngân hàng trước khi đóng phiếu chi.</p>
-        <div class="refund-tags">
-          <span class="refund-tag">Chờ quản lý: <%= summary.managerPendingCount || 0 %></span>
-          <span class="refund-tag">Chờ kế toán: <%= summary.pendingCount || 0 %></span>
-          <span class="refund-tag">Đã hoàn: <%= summary.paidCount || 0 %></span>
-          <span class="refund-tag">Kỳ lọc: <%= payload.rangeLabel %></span>
-        </div>
-        <div class="refund-actions">
-          <a class="refund-button refund-button--primary" href="/accounting/expenses?search=Hoan%20coc">Đối chiếu phiếu chi hoàn</a>
-          <a class="refund-button" href="/accounting/reports?loai_baocao=chiphi">Xem báo cáo chi phí</a>
-          <a class="refund-button" href="/dashboard/ketoan">Dashboard</a>
-        </div>
-        <div class="refund-flow">
-          <div class="refund-flow__step"><b>01 · Lễ tân</b><span>Hủy đặt phòng, tính policy và tạo yêu cầu hoàn cọc.</span></div>
-          <div class="refund-flow__step"><b>02 · Quản lý</b><span>Duyệt thông tin khách, tài khoản nhận và tỷ lệ hoàn.</span></div>
-          <div class="refund-flow__step"><b>03 · Kế toán</b><span>Quét QR, chuyển đúng nội dung, nhập mã giao dịch/chứng từ rồi hệ thống mới ghi nhận đã hoàn.</span></div>
-        </div>
-      </div>
-      <div class="refund-kpis">
-        <div class="refund-kpi"><strong><%= summary.managerPendingAmountFormatted || "0 đ" %></strong><span>Chờ quản lý duyệt</span></div>
-        <div class="refund-kpi"><strong><%= summary.pendingAmountFormatted || "0 đ" %></strong><span>Đang chờ chi</span></div>
-        <div class="refund-kpi"><strong><%= summary.paidAmountFormatted || "0 đ" %></strong><span>Đã hoàn</span></div>
-        <div class="refund-kpi"><strong><%= summary.rejectedAmountFormatted || "0 đ" %></strong><span>Từ chối</span></div>
-        <div class="refund-kpi"><strong><%= payload.totalRecords || 0 %></strong><span>Yêu cầu</span></div>
-      </div>
+    <section class="refund-title">
+      <h1>Xử lý hoàn tiền</h1>
+      <small><%= payload.rangeLabel %> · <%= totalRecords %> yêu cầu</small>
     </section>
 
-    <% if (notice?.success) { %><div class="refund-alert refund-alert--ok"><%= notice.success %></div><% } %>
-    <% if (notice?.error) { %><div class="refund-alert refund-alert--err"><%= notice.error %></div><% } %>
+    <% if (notice?.success) { %><div class="refund-alert"><%= notice.success %></div><% } %>
+    <% if (notice?.error) { %><div class="refund-alert is-error"><%= notice.error %></div><% } %>
     <% if (payload.warnings && payload.warnings.length) { %>
-      <div class="refund-alert refund-alert--err"><%= payload.warnings.join(" ") %></div>
+      <div class="refund-alert is-error"><%= payload.warnings.join(" ") %></div>
     <% } %>
 
-    <section class="refund-layout">
-      <aside>
-        <section class="refund-panel">
-          <h2>Bộ lọc</h2>
-          <form method="get" action="/accounting/refunds">
-            <div class="refund-field">
-              <label for="tu_ngay">Từ ngày</label>
-              <input id="tu_ngay" name="tu_ngay" type="date" value="<%= filters.tu_ngay %>" />
-            </div>
-            <div class="refund-field">
-              <label for="den_ngay">Đến ngày</label>
-              <input id="den_ngay" name="den_ngay" type="date" value="<%= filters.den_ngay %>" />
-            </div>
-            <div class="refund-field">
-              <label for="trang_thai">Trạng thái</label>
-              <select id="trang_thai" name="trang_thai">
-                <% statusOptions.forEach((item) => { %>
-                  <option value="<%= item.value %>" <%= item.value === filters.trang_thai ? "selected" : "" %>><%= item.label %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="refund-field">
-              <label for="search">Tìm kiếm</label>
-              <input id="search" name="search" value="<%= filters.search || "" %>" placeholder="Mã refund, GD, khách, STK..." />
-            </div>
-            <div class="refund-actions">
-              <button class="refund-button refund-button--primary" type="submit">Lọc</button>
-              <a class="refund-button" href="/accounting/refunds">Đặt lại</a>
-              <a class="refund-button" href="/api/accounting/refunds?<%= csvQuery %>">CSV</a>
-            </div>
-          </form>
-        </section>
-
-        <section class="refund-panel" style="margin-top:16px">
-          <h2>Theo trạng thái</h2>
-          <div class="refund-breakdown">
-            <% if (!statusBreakdown.length) { %>
-              <div class="refund-empty">Chưa có dữ liệu.</div>
-            <% } %>
-            <% statusBreakdown.forEach((item) => { %>
-              <div class="refund-break">
-                <strong><%= item.totalFormatted %></strong>
-                <span><%= item.meta?.label || item.status %> · <%= item.count %> yêu cầu</span>
+    <form class="refund-toolbar" method="get" action="/accounting/refunds">
+      <div class="refund-search">
+        <details class="refund-filter">
+          <summary>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 5h16l-6 7v5l-4 2v-7L4 5Z" stroke-width="2" stroke-linejoin="round"/></svg>
+            Bộ lọc
+          </summary>
+          <div class="refund-filter-panel">
+            <div class="refund-filter-grid">
+              <div class="refund-field">
+                <label for="tu_ngay">Từ ngày</label>
+                <input id="tu_ngay" name="tu_ngay" type="date" value="<%= filters.tu_ngay %>" />
               </div>
-            <% }) %>
+              <div class="refund-field">
+                <label for="den_ngay">Đến ngày</label>
+                <input id="den_ngay" name="den_ngay" type="date" value="<%= filters.den_ngay %>" />
+              </div>
+              <div class="refund-field">
+                <label for="trang_thai">Trạng thái</label>
+                <select id="trang_thai" name="trang_thai">
+                  <% statusOptions.forEach((item) => { %>
+                    <option value="<%= item.value %>" <%= item.value === filters.trang_thai ? "selected" : "" %>><%= item.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="refund-field">
+                <label for="limit">Hiển thị</label>
+                <select id="limit" name="limit">
+                  <% [10, 15, 25, 50].forEach((item) => { %>
+                    <option value="<%= item %>" <%= Number(filters.limit || 10) === item ? "selected" : "" %>><%= item %> dòng</option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            <div class="refund-filter-actions">
+              <a class="refund-btn" href="/accounting/refunds">Đặt lại</a>
+              <button class="refund-btn is-primary" type="submit">Áp dụng</button>
+            </div>
           </div>
-        </section>
-      </aside>
+        </details>
 
-      <section class="refund-table-panel">
-        <h2>Yêu cầu hoàn tiền</h2>
-        <% if (!rows.length) { %>
-          <div class="refund-empty">Chưa có yêu cầu hoàn tiền phù hợp bộ lọc.</div>
-        <% } else { %>
-          <div class="refund-table-wrap">
-            <table class="refund-table">
-              <thead>
-                <tr>
-                  <th>Yêu cầu</th>
-                  <th>Khách / giao dịch</th>
-                  <th>Tài khoản nhận</th>
-                  <th>Số tiền</th>
-                  <th>Trạng thái</th>
-                  <th>Ghi chú</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% rows.forEach((row) => { %>
-                  <tr>
-                    <td data-label="Yêu cầu">
-                      <div class="refund-main"><%= row.refundCode %></div>
-                      <div class="refund-sub">Tạo lúc <%= row.createdAtLabel %></div>
-                      <div class="refund-sub"><%= row.roomCount %> phòng · <%= row.scope === "partial" ? "Hủy một phần" : "Hủy toàn bộ" %></div>
-                    </td>
-                    <td data-label="Khách / giao dịch">
-                      <div class="refund-main">GD-<%= row.maGiaoDich %></div>
-                      <div class="refund-sub"><%= row.bookingCode || "Không có mã đặt chỗ" %> · <%= row.transactionStatus || "" %></div>
-                      <div class="refund-sub"><%= row.customerName || "Khách" %> · <%= row.customerPhone || row.customerEmail || "Chưa có liên hệ" %></div>
-                      <div class="refund-sub"><%= row.hotelLabel %></div>
-                    </td>
-                    <td data-label="Tài khoản nhận">
-                      <div class="refund-main"><%= row.bankName %></div>
-                      <div class="refund-sub"><%= row.bankAccountNo %></div>
-                      <div class="refund-sub"><%= row.bankAccountName %></div>
-                      <% if (row.paymentQrBankCode) { %><div class="refund-sub">Mã VietQR: <%= row.paymentQrBankCode %></div><% } %>
-                    </td>
-                    <td data-label="Số tiền">
-                      <div class="refund-main"><%= row.amountRequestedFormatted %></div>
-                      <div class="refund-sub">Policy: <%= row.cancellationPolicyLabel || row.refundRateLabel %> · <%= row.hoursBeforeCheckinLabel %></div>
-                      <div class="refund-sub">Cọc xét hoàn: <%= row.refundableBaseFormatted %></div>
-                      <div class="refund-sub">Cọc đã thu: <%= row.depositPaidFormatted %></div>
-                      <div class="refund-sub">Giữ lại: <%= row.retainedDepositFormatted %></div>
-                      <% if (row.amountPaid > 0) { %><div class="refund-sub">Đã chi: <%= row.amountPaidFormatted %></div><% } %>
-                    </td>
-                    <td data-label="Trạng thái">
-                      <span class="refund-status refund-status--<%= row.statusMeta?.tone || "slate" %>"><%= row.statusMeta?.label || row.status %></span>
-                      <% if (row.managerReviewedAtLabel) { %><div class="refund-sub">QL duyệt: <%= row.managerReviewedAtLabel %></div><% } %>
-                      <% if (row.expenseId) { %><div class="refund-sub">Phiếu chi CP-<%= row.expenseId %></div><% } %>
-                      <% if (row.refundBankTxnId) { %><div class="refund-sub">Mã GD NH: <%= row.refundBankTxnId %></div><% } %>
-                      <% if (row.refundPaidAtLabel) { %><div class="refund-sub">Đã chuyển: <%= row.refundPaidAtLabel %></div><% } %>
-                      <% if (row.processedAtLabel) { %><div class="refund-sub"><%= row.processedAtLabel %></div><% } %>
-                    </td>
-                    <td data-label="Ghi chú">
-                      <div class="refund-sub"><strong>Lý do:</strong> <%= row.reason || "Không có" %></div>
-                      <% if (row.cancellationPolicyNote) { %><div class="refund-sub"><strong>Policy:</strong> <%= row.cancellationPolicyNote %></div><% } %>
-                      <% if (row.note) { %><div class="refund-sub"><strong>Lễ tân:</strong> <%= row.note %></div><% } %>
-                      <% if (row.managerNote) { %><div class="refund-sub"><strong>Quản lý:</strong> <%= row.managerNote %><%= row.managerBy ? ` · ${row.managerBy}` : "" %></div><% } %>
-                      <% if (row.accountingNote) { %><div class="refund-sub"><strong>Kế toán:</strong> <%= row.accountingNote %></div><% } %>
-                    </td>
-                    <td data-label="Thao tác">
-                      <% if (row.canAccountingProcess) { %>
-                        <div class="refund-paybox">
-                          <% if (row.paymentQrReady) { %>
-                            <div class="refund-qr">
-                              <img src="<%= row.paymentQrImageUrl %>" alt="QR hoàn tiền <%= row.refundCode %>" />
-                              <div class="refund-qr__meta">
-                                <div class="refund-copy">Số tiền: <%= row.amountRequestedFormatted %></div>
-                                <div class="refund-copy">Nội dung: <%= row.refundPaymentContent %></div>
-                                <div class="refund-sub">QR chỉ hỗ trợ chuyển khoản, hệ thống chỉ đóng yêu cầu sau khi nhập mã giao dịch ngân hàng.</div>
-                              </div>
-                            </div>
-                          <% } else { %>
-                            <div class="refund-warning"><%= row.paymentQrWarning || "Chưa thể sinh QR, kế toán kiểm tra thông tin và chuyển thủ công." %></div>
-                            <div class="refund-copy">Nội dung CK: <%= row.refundPaymentContent %></div>
-                          <% } %>
-                          <form method="post" action="/accounting/refunds/process" style="display:grid;gap:8px">
-                            <input type="hidden" name="refund_id" value="<%= row.id %>" />
-                            <input type="hidden" name="action" value="approve" />
-                            <div class="refund-mini-grid">
-                              <div class="refund-field" style="margin:0">
-                                <label>Mã giao dịch NH</label>
-                                <input name="payment_reference" placeholder="VD: FT2412345678" required minlength="4" />
-                              </div>
-                              <div class="refund-field" style="margin:0">
-                                <label>Thời gian chuyển</label>
-                                <input name="paid_at" type="datetime-local" />
-                              </div>
-                            </div>
-                            <div class="refund-field" style="margin:0">
-                              <label>Chứng từ / biên lai</label>
-                              <input name="payment_proof" placeholder="Số biên lai hoặc đường dẫn ảnh chứng từ..." />
-                            </div>
-                            <div class="refund-field" style="margin:0">
-                              <textarea name="accounting_note" placeholder="Ghi chú kế toán..."></textarea>
-                            </div>
-                            <button class="refund-button refund-button--primary" type="submit" onclick="return confirm('Xác nhận đã chuyển khoản đúng STK, số tiền và nội dung hoàn tiền?');">Xác nhận đã chuyển khoản</button>
-                          </form>
-                          <form method="post" action="/accounting/refunds/process" style="display:grid;gap:8px">
-                            <input type="hidden" name="refund_id" value="<%= row.id %>" />
-                            <input type="hidden" name="action" value="reject" />
-                            <div class="refund-field" style="margin:0">
-                              <textarea name="accounting_note" placeholder="Lý do từ chối chi hoàn..."></textarea>
-                            </div>
-                            <button class="refund-button refund-button--danger" type="submit" onclick="return confirm('Từ chối yêu cầu hoàn tiền này?');">Từ chối</button>
-                          </form>
-                        </div>
-                      <% } else { %>
-                        <% if (row.status === "ChoQuanLyDuyet") { %>
-                          <span class="refund-sub">Đang chờ Quản lý duyệt, Kế toán chưa được chi.</span>
-                        <% } else { %>
-                          <% if (row.refundPaymentContent) { %><div class="refund-copy" style="margin-bottom:8px">Nội dung CK: <%= row.refundPaymentContent %></div><% } %>
-                          <% if (row.refundPaymentProof) { %><div class="refund-sub" style="margin-bottom:8px"><strong>Chứng từ:</strong> <%= row.refundPaymentProof %></div><% } %>
-                          <a class="refund-button refund-button--muted" href="/accounting/cashflow?search=<%= encodeURIComponent(row.expenseId ? `CP-${row.expenseId}` : row.refundCode) %>">Đối chiếu</a>
-                        <% } %>
-                      <% } %>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
+        <input type="search" name="search" value="<%= filters.search || "" %>" placeholder="Tìm mã hoàn tiền, giao dịch, khách, STK..." />
+        <button class="refund-icon-btn is-primary" type="submit" aria-label="Tìm kiếm">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke-width="2"/><path d="M16.5 16.5 21 21" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
 
-          <div class="refund-pages">
-            <% if (page > 1) { %><a class="refund-page" href="/accounting/refunds?<%= makeQuery({ page: page - 1 }) %>">Trước</a><% } %>
-            <% pages.forEach((item) => { %>
-              <a class="refund-page <%= item === page ? "is-active" : "" %>" href="/accounting/refunds?<%= makeQuery({ page: item }) %>"><%= item %></a>
+      <div class="refund-toolbar-actions">
+        <a class="refund-icon-btn" href="/api/accounting/refunds?<%= csvQuery %>" aria-label="Xuất CSV" title="Xuất CSV">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </form>
+
+    <section class="refund-stats" aria-label="Tổng hợp hoàn tiền">
+      <article class="refund-stat"><strong><%= summary.pendingAmountFormatted || "0 đ" %></strong><span>Chờ kế toán chuyển khoản · <%= summary.pendingCount || 0 %></span></article>
+      <article class="refund-stat"><strong><%= summary.managerPendingAmountFormatted || "0 đ" %></strong><span>Chờ quản lý duyệt · <%= summary.managerPendingCount || 0 %></span></article>
+      <article class="refund-stat"><strong><%= summary.paidAmountFormatted || "0 đ" %></strong><span>Đã hoàn · <%= summary.paidCount || 0 %></span></article>
+      <article class="refund-stat"><strong><%= summary.rejectedAmountFormatted || "0 đ" %></strong><span>Từ chối · <%= summary.rejectedCount || 0 %></span></article>
+    </section>
+
+    <section class="refund-board">
+      <% if (!rows.length) { %>
+        <div class="refund-empty">Không có yêu cầu hoàn tiền phù hợp bộ lọc.</div>
+      <% } else { %>
+        <table class="refund-table">
+          <thead>
+            <tr>
+              <th style="width:18%">Yêu cầu</th>
+              <th style="width:22%">Khách / đặt phòng</th>
+              <th style="width:20%">Tài khoản nhận</th>
+              <th style="width:14%">Số tiền</th>
+              <th style="width:16%">Trạng thái</th>
+              <th style="width:10%">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach((row) => { %>
+              <tr data-href="<%= row.detailHref %>" tabindex="0" aria-label="Mở <%= row.refundCode %>">
+                <td>
+                  <div class="refund-main"><%= row.refundCode %></div>
+                  <div class="refund-sub"><%= row.createdAtLabel %> · <%= row.scope === "partial" ? "Một phần" : "Toàn bộ" %></div>
+                </td>
+                <td>
+                  <div class="refund-main"><%= row.customerName || "Khách hàng" %></div>
+                  <div class="refund-sub"><%= row.bookingCode || `GD-${row.maGiaoDich}` %> · <%= row.customerPhone || row.customerEmail || "Chưa có liên hệ" %></div>
+                  <div class="refund-sub"><%= row.hotelLabel %></div>
+                </td>
+                <td>
+                  <div class="refund-main"><%= row.bankName %></div>
+                  <div class="refund-sub"><%= row.bankAccountNo %> · <%= row.bankAccountName %></div>
+                </td>
+                <td>
+                  <div class="refund-money"><%= row.amountRequestedFormatted %></div>
+                  <div class="refund-sub">Giữ lại <%= row.retainedDepositFormatted %></div>
+                </td>
+                <td>
+                  <span class="refund-status refund-status--<%= row.statusMeta?.tone || "slate" %>"><%= row.statusMeta?.label || row.status %></span>
+                  <% if (row.refundBankTxnId) { %><div class="refund-sub">NH: <%= row.refundBankTxnId %></div><% } %>
+                  <% if (row.expenseId) { %><div class="refund-sub">CP-<%= row.expenseId %></div><% } %>
+                </td>
+                <td>
+                  <a class="refund-btn" href="<%= row.detailHref %>" onclick="event.stopPropagation()"><%= row.accountingActionLabel %></a>
+                </td>
+              </tr>
             <% }) %>
-            <% if (page < totalPages) { %><a class="refund-page" href="/accounting/refunds?<%= makeQuery({ page: page + 1 }) %>">Tiếp</a><% } %>
-          </div>
-        <% } %>
-      </section>
+          </tbody>
+        </table>
+      <% } %>
+
+      <div class="refund-footer">
+        <span>Hiển thị <strong><%= displayFrom %>-<%= displayTo %></strong> trong tổng số <strong><%= totalRecords %></strong> bản ghi</span>
+        <div class="refund-pagination">
+          <a class="refund-page" href="/accounting/refunds?<%= makeQuery({ page: Math.max(1, page - 1) }) %>">Trước</a>
+          <% if (firstPage > 1) { %><a class="refund-page" href="/accounting/refunds?<%= makeQuery({ page: 1 }) %>">1</a><% } %>
+          <% pages.forEach((item) => { %>
+            <a class="refund-page <%= item === page ? "is-active" : "" %>" href="/accounting/refunds?<%= makeQuery({ page: item }) %>"><%= item %></a>
+          <% }) %>
+          <% if (lastPage < totalPages) { %><a class="refund-page" href="/accounting/refunds?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a><% } %>
+          <a class="refund-page" href="/accounting/refunds?<%= makeQuery({ page: Math.min(totalPages, page + 1) }) %>">Sau</a>
+        </div>
+      </div>
     </section>
   </div>
+    </div>
+  </section>
 </main>
+
+<script>
+  (() => {
+    document.querySelectorAll("[data-href]").forEach((row) => {
+      row.addEventListener("click", () => {
+        window.location.href = row.getAttribute("data-href");
+      });
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          window.location.href = row.getAttribute("data-href");
+        }
+      });
+    });
+  })();
+</script>
 
 <%- include("../partials/footer") %>

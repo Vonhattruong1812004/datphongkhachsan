@@ -15,10 +15,32 @@ export async function renderLogin(req: Request, res: Response) {
 export async function submitLogin(req: Request, res: Response) {
   const payload = loginSchema.parse(req.body);
   const user = await authService.login(payload.username, payload.password);
-
-  req.session.user = user;
   const requestedNext = sanitizeLoginNext(req.body.next || req.query.next);
-  return res.redirect(requestedNext || ROLE_REDIRECTS[user.maVaiTro] || "/");
+  const redirectTo = requestedNext || ROLE_REDIRECTS[user.maVaiTro] || "/";
+
+  await regenerateSession(req);
+  req.session.user = user;
+  await saveSession(req);
+
+  return res.redirect(redirectTo);
+}
+
+function regenerateSession(req: Request) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.regenerate((error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+}
+
+function saveSession(req: Request) {
+  return new Promise<void>((resolve, reject) => {
+    req.session.save((error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
 }
 
 function sanitizeLoginNext(value: unknown) {

@@ -4145,16 +4145,84 @@
   }
 
   body.travel-night .nav-links .chip,
-  body.travel-night .nav-links .button {
-    background: #ffffff !important;
-    border-color: var(--booking-line) !important;
+  body.travel-night .nav-links .button,
+  .nav-links .chip,
+  .nav-links .button {
+    color: #003b95 !important;
+    background: #f8fbff !important;
+    border-color: #c9e0fb !important;
+    box-shadow: 0 8px 20px rgba(0, 59, 149, 0.06) !important;
+  }
+
+  body.travel-night .nav-links .chip:hover,
+  body.travel-night .nav-links .button:hover,
+  .nav-links .chip:hover,
+  .nav-links .button:hover {
+    color: #0057c2 !important;
+    background: #eff6ff !important;
+    border-color: #9ec5fe !important;
   }
 
   body.travel-night .nav-links .button--primary,
-  body.travel-night .nav-links .chip--dashboard {
+  body.travel-night .nav-links .chip--dashboard,
+  .nav-links .button--primary,
+  .nav-links .chip--dashboard {
     color: #ffffff !important;
-    background: var(--booking-blue) !important;
+    background: #006ce4 !important;
     border-color: transparent !important;
+    box-shadow: 0 10px 24px rgba(0, 108, 228, 0.18) !important;
+  }
+
+  body.travel-night .nav-links .button--primary:hover,
+  body.travel-night .nav-links .chip--dashboard:hover,
+  .nav-links .button--primary:hover,
+  .nav-links .chip--dashboard:hover {
+    color: #ffffff !important;
+    background: #005fc7 !important;
+  }
+
+  body.travel-night .header-search__shell,
+  .header-search__shell {
+    min-height: 50px !important;
+    padding: 5px 6px 5px 15px !important;
+    border-color: #c9e0fb !important;
+    background: rgba(248, 251, 255, .94) !important;
+    box-shadow: 0 12px 28px rgba(0, 59, 149, .08) !important;
+  }
+
+  body.travel-night .header-search__shell:focus-within,
+  body.travel-night .header-search__shell.is-open,
+  .header-search__shell:focus-within,
+  .header-search__shell.is-open {
+    border-color: #9ec5fe !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 4px rgba(0, 108, 228, .10), 0 18px 42px rgba(0, 59, 149, .12) !important;
+  }
+
+  body.travel-night .header-search__input,
+  .header-search__input {
+    border: 0 !important;
+    background: transparent !important;
+    color: #172033 !important;
+    box-shadow: none !important;
+  }
+
+  body.travel-night .header-search__input::placeholder,
+  .header-search__input::placeholder {
+    color: #7b8da3 !important;
+  }
+
+  body.travel-night .header-search__submit,
+  .header-search__submit {
+    border: 0 !important;
+    background: #006ce4 !important;
+    color: #ffffff !important;
+    box-shadow: 0 8px 20px rgba(0, 108, 228, .18) !important;
+  }
+
+  body.travel-night .header-search__submit:hover,
+  .header-search__submit:hover {
+    background: #005fc7 !important;
   }
 
   .travel-home,
@@ -4972,6 +5040,136 @@
   .travel-geo-status.is-error::before {
     background: #f43f5e;
   }
+
+  /* Travel image backgrounds: keep each homepage block visual, not boxed white. */
+  .travel-section {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-color: rgba(191, 219, 254, .72) !important;
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .24), rgba(240, 249, 255, .08)),
+      url("/uploads/destinations/ha-long.jpg") center / cover no-repeat !important;
+    box-shadow: 0 22px 62px rgba(15, 36, 66, .13) !important;
+  }
+
+  .travel-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 16% 14%, rgba(255, 255, 255, .20), transparent 24%),
+      linear-gradient(90deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .04));
+    pointer-events: none;
+  }
+
+  .travel-section > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .travel-section--destinations {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .24), rgba(236, 253, 245, .08)),
+      url("/uploads/destinations/hoi-an.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--news {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .22), rgba(236, 254, 255, .07)),
+      url("/uploads/destinations/can-tho-cai-rang.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--tours {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .20), rgba(239, 246, 255, .06)),
+      url("/uploads/destinations/sa-pa.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--rooms {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .22), rgba(240, 253, 250, .06)),
+      url("/uploads/destinations/phu-quoc.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--info {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .24), rgba(239, 246, 255, .07)),
+      url("/uploads/destinations/nha-trang.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--partner {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .22), rgba(236, 254, 255, .06)),
+      url("/uploads/destinations/da-nang-ba-na.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--promo {
+    background:
+      linear-gradient(115deg, rgba(3, 59, 149, .70), rgba(0, 108, 228, .48)),
+      url("/uploads/destinations/ha-long.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-section--contact {
+    background:
+      linear-gradient(115deg, rgba(255, 255, 255, .24), rgba(240, 249, 255, .07)),
+      url("/uploads/destinations/hoi-an.jpg") center / cover no-repeat !important;
+  }
+
+  .travel-news-card,
+  .travel-tour-card,
+  .travel-room-card,
+  .travel-city-card,
+  .travel-trust-card,
+  .travel-info-card,
+  .travel-contact-card {
+    background: rgba(255, 255, 255, .68) !important;
+    border-color: rgba(201, 224, 251, .82) !important;
+    box-shadow: 0 14px 34px rgba(0, 59, 149, .10) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .travel-news-body,
+  .travel-tour-body,
+  .travel-room-body,
+  .travel-info-card,
+  .travel-contact-card {
+    background: rgba(255, 255, 255, .68) !important;
+  }
+
+  .travel-section-head h2,
+  .travel-section-head p {
+    text-shadow: 0 2px 14px rgba(255, 255, 255, .76);
+  }
+
+  .travel-section--promo .travel-section-head h2,
+  .travel-section--promo .travel-section-head p {
+    text-shadow: 0 3px 18px rgba(0, 20, 60, .28);
+  }
+
+  .travel-section--promo .travel-promo-card {
+    background:
+      linear-gradient(135deg, rgba(0, 59, 149, .86), rgba(0, 108, 228, .70) 54%, rgba(6, 182, 212, .64)) !important;
+    border: 1px solid rgba(255, 255, 255, .22);
+    backdrop-filter: blur(8px);
+  }
+
+  @media (max-width: 700px) {
+    .travel-section {
+      background-position: center top !important;
+    }
+
+    .travel-news-card,
+    .travel-tour-card,
+    .travel-room-card,
+    .travel-city-card,
+    .travel-trust-card,
+    .travel-info-card,
+    .travel-contact-card {
+      background: rgba(255, 255, 255, .90) !important;
+    }
+  }
 </style>
 
 <main class="travel-home" id="travel-home" data-theme="day">
@@ -5095,7 +5293,7 @@
             <div class="travel-search-actions">
               <button class="travel-button travel-button--primary" type="submit">Tìm phòng</button>
               <button class="travel-button travel-button--secondary" type="button" id="homeUseCurrentLocation">Dùng vị trí của tôi</button>
-              <a class="travel-button travel-button--secondary" href="/ai/concierge">Nhờ AI gợi ý chuyến đi</a>
+              <a class="travel-button travel-button--secondary" href="/ai/concierge">Nhờ trợ lý tư vấn đặt phòng</a>
             </div>
           </form>
           <p class="travel-search-note">

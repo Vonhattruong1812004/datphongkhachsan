@@ -3,42 +3,16 @@
 <%
   const filters = payload.filters || {};
   const rows = payload.rows || [];
-  const summary = payload.summary || {};
   const statusOptions = payload.statusOptions || [];
-  const statusBreakdown = payload.statusBreakdown || [];
-  const dailyTrend = payload.dailyTrend || [];
-  const topHotels = payload.topHotels || [];
-  const topRooms = payload.topRooms || [];
-  const paymentBreakdown = payload.paymentBreakdown || [];
-  const sourceBreakdown = payload.sourceBreakdown || [];
-  const weekdayPerformance = payload.weekdayPerformance || [];
-  const actionItems = payload.actionItems || [];
-  const comparisons = payload.comparisons || {};
-  const previousPeriod = payload.previousPeriod || {};
   const hotelOptions = payload.hotelOptions || [];
   const page = Number(payload.currentPage || 1);
   const totalPages = Number(payload.totalPages || 1);
   const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
   const csvQuery = makeQuery({ format: "csv" });
-  const jsonQuery = makeQuery({ format: "json" });
   const pages = [];
   const firstPage = Math.max(1, page - 2);
   const lastPage = Math.min(totalPages, page + 2);
   for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
-  const maxTrend = Math.max(...dailyTrend.map((item) => Number(item.total || 0)), 1);
-  const revenueMix = [
-    { label: "Tiền phòng", value: Number(summary.roomRevenue || 0), formatted: summary.roomRevenueFormatted || "0 đ" },
-    { label: "Dịch vụ", value: Number(summary.serviceRevenue || 0), formatted: summary.serviceRevenueFormatted || "0 đ" },
-    { label: "Phụ thu", value: Number(summary.surchargeRevenue || 0), formatted: summary.surchargeRevenueFormatted || "0 đ" },
-    { label: "Bồi thường", value: Number(summary.damageRevenue || 0), formatted: summary.damageRevenueFormatted || "0 đ" }
-  ];
-  const maxMix = Math.max(...revenueMix.map((item) => Math.abs(item.value || 0)), 1);
-  const compareCards = [
-    { label: "Doanh thu", value: summary.totalRevenueFormatted, compare: comparisons.totalRevenue },
-    { label: "Đã thu", value: summary.paidRevenueFormatted, compare: comparisons.paidRevenue },
-    { label: "ADR", value: summary.adrFormatted, compare: comparisons.adr },
-    { label: "RevPAR", value: summary.revparFormatted, compare: comparisons.revpar }
-  ];
 %>
 
 <style>
@@ -212,13 +186,6 @@
     border-color: transparent;
     background: linear-gradient(135deg, #08a5c8, #20d6a3);
     box-shadow: 0 16px 36px rgba(32, 214, 163, .26);
-  }
-
-  .rev-button--pink {
-    color: #fff;
-    border-color: transparent;
-    background: linear-gradient(135deg, #ff6aa2, #8068ff);
-    box-shadow: 0 16px 36px rgba(128, 104, 255, .22);
   }
 
   .rev-button:hover {
@@ -882,12 +849,6 @@
     box-shadow: 0 18px 38px rgba(251, 113, 133, .24);
   }
 
-  .rev-button--pink {
-    color: #061826;
-    background: linear-gradient(135deg, #67e8f9 0%, #86efac 52%, #fde68a 100%);
-    box-shadow: 0 18px 38px rgba(45, 212, 191, .22);
-  }
-
   .rev-kpi-grid {
     gap: 18px;
   }
@@ -1389,16 +1350,393 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Accounting revenue final UI: white-blue, compact, consistent with accounting home. */
+  body {
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 48%, #f8fbff 100%) !important;
+  }
+
+  .rev-home {
+    min-height: calc(100vh - 96px);
+    padding: 24px 18px 54px;
+    color: #0f2442;
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 52%, #f8fbff 100%) !important;
+  }
+
+  .rev-wrap {
+    max-width: 1320px;
+    margin: 0 auto;
+    width: 100%;
+    display: grid;
+    gap: 14px;
+  }
+
+  .rev-home .rev-hero,
+  .rev-home .rev-score-strip,
+  .rev-home .rev-command,
+  .rev-home .rev-layout {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    max-width: 100%;
+  }
+
+  .rev-home .rev-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .rev-home .rev-layout {
+    grid-template-columns: 320px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .rev-home .rev-command {
+    grid-template-columns: 1fr;
+  }
+
+  .rev-home .rev-score-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .rev-hero-main,
+  .rev-kpi,
+  .rev-score,
+  .rev-command-panel,
+  .rev-filter,
+  .rev-panel,
+  .rev-table-panel,
+  .rev-alert {
+    border: 1px solid #c9e0fb !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #0f2442 !important;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07) !important;
+    backdrop-filter: none !important;
+  }
+
+  .rev-hero-main {
+    padding: 22px 24px !important;
+    overflow: hidden;
+  }
+
+  .rev-hero-main::before {
+    display: none !important;
+  }
+
+  .rev-chip {
+    border-radius: 999px;
+    border-color: #bae6fd;
+    background: #eff6ff;
+    color: #0057b8;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .rev-spark {
+    background: #10b981;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, .14);
+  }
+
+  .rev-hero h1 {
+    margin: 12px 0 8px;
+    color: #0f2442;
+    font-size: clamp(32px, 3vw, 46px);
+    line-height: 1.08;
+    text-shadow: none !important;
+  }
+
+  .rev-hero h1 span {
+    color: #006ce4;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+
+  .rev-lead,
+  .rev-command-panel > p,
+  .rev-table-head p,
+  .rev-muted {
+    color: #64748b !important;
+    text-shadow: none !important;
+  }
+
+  .rev-tags,
+  .rev-actions,
+  .rev-form-actions,
+  .rev-pagination {
+    gap: 8px;
+  }
+
+  .rev-tag,
+  .rev-pill,
+  .rev-status {
+    border: 1px solid #c9e0fb !important;
+    background: #f4f9ff !important;
+    color: #003b95 !important;
+    box-shadow: none !important;
+  }
+
+  .rev-button,
+  .rev-page,
+  .rev-action-link {
+    min-height: 40px;
+    border-radius: 8px !important;
+    border: 1px solid #b9d8ff !important;
+    background: #ffffff !important;
+    color: #003b95 !important;
+    box-shadow: none !important;
+    text-decoration: none;
+  }
+
+  .rev-button--primary,
+  .rev-page.is-active,
+  .rev-action-link {
+    border-color: transparent !important;
+    background: #006ce4 !important;
+    color: #ffffff !important;
+  }
+
+  .rev-button:hover,
+  .rev-page:hover,
+  .rev-action-link:hover {
+    transform: translateY(-1px);
+    border-color: #006ce4 !important;
+  }
+
+  .rev-kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .rev-kpi {
+    min-height: 92px;
+    padding: 15px 16px !important;
+    border-left-width: 5px !important;
+  }
+
+  .rev-kpi.is-cyan { border-left-color: #006ce4 !important; }
+  .rev-kpi.is-green { border-left-color: #10b981 !important; }
+  .rev-kpi.is-sun { border-left-color: #f59e0b !important; }
+  .rev-kpi.is-pink { border-left-color: #7c3aed !important; }
+
+  .rev-kpi span,
+  .rev-kpi strong,
+  .rev-score span,
+  .rev-score strong,
+  .rev-score .rev-muted {
+    color: #0f2442 !important;
+    text-shadow: none !important;
+  }
+
+  .rev-kpi span,
+  .rev-score span {
+    color: #64748b !important;
+    font-size: 12px;
+  }
+
+  .rev-kpi strong {
+    font-size: 24px;
+    overflow-wrap: anywhere;
+  }
+
+  .rev-score {
+    min-height: 104px;
+    padding: 15px 16px !important;
+  }
+
+  .rev-score strong {
+    font-size: 22px;
+  }
+
+  .rev-command-panel,
+  .rev-filter,
+  .rev-panel {
+    padding: 18px !important;
+  }
+
+  .rev-table-panel {
+    padding: 18px !important;
+  }
+
+  .rev-command-panel h2,
+  .rev-filter h2,
+  .rev-panel h2,
+  .rev-table-panel h2 {
+    margin: 0 0 10px;
+    color: #0f2442 !important;
+    font-size: 22px;
+    text-shadow: none !important;
+  }
+
+  .rev-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .rev-field {
+    gap: 6px;
+  }
+
+  .rev-field label {
+    color: #0f2442 !important;
+    font-size: 12px;
+    text-shadow: none;
+  }
+
+  .rev-field input,
+  .rev-field select {
+    min-height: 46px;
+    border: 1px solid #c9e0fb !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    color: #0f2442 !important;
+    box-shadow: none !important;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .rev-field input:focus,
+  .rev-field select:focus {
+    border-color: #006ce4 !important;
+    outline: 3px solid rgba(0, 108, 228, .12);
+  }
+
+  .rev-action-item,
+  .rev-compare-card,
+  .rev-hotel,
+  .rev-payment,
+  .rev-source,
+  .rev-weekday,
+  .rev-mix-row,
+  .rev-break-row,
+  .rev-empty {
+    border: 1px solid #d7e8fb !important;
+    border-radius: 8px !important;
+    background: #f8fbff !important;
+    box-shadow: none !important;
+    color: #0f2442 !important;
+  }
+
+  .rev-action-item {
+    border-left: 5px solid var(--action, #006ce4) !important;
+  }
+
+  .rev-action-item strong,
+  .rev-compare-card strong,
+  .rev-hotel strong,
+  .rev-payment strong,
+  .rev-source strong,
+  .rev-weekday strong,
+  .rev-mix-row strong,
+  .rev-money {
+    color: #0f2442 !important;
+  }
+
+  .rev-meter {
+    height: 9px;
+    border: 0;
+    border-radius: 999px;
+    background: #e6f1ff;
+  }
+
+  .rev-meter span {
+    background: linear-gradient(90deg, #006ce4, #10b981);
+    box-shadow: none;
+  }
+
+  .rev-table-wrap {
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  .rev-table {
+    min-width: 920px;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+  .rev-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 13px 14px;
+    background: #f1f7ff;
+    color: #0f2442 !important;
+    border-bottom: 1px solid #c9e0fb;
+    font-size: 12px;
+    letter-spacing: 0;
+  }
+
+  .rev-table td {
+    padding: 14px !important;
+    border: 0 !important;
+    border-bottom: 1px solid #e0edfb !important;
+    background: #ffffff !important;
+    color: #0f2442 !important;
+    box-shadow: none !important;
+    font-size: 14px;
+  }
+
+  .rev-table tbody tr:hover td {
+    background: #f4f9ff !important;
+  }
+
+  .rev-table .rev-button,
+  .rev-table .rev-action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .rev-code {
+    color: #003b95;
+  }
+
+  @media (max-width: 1180px) {
+    .rev-home .rev-hero,
+    .rev-home .rev-command,
+    .rev-home .rev-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .rev-kpi-grid,
+    .rev-home .rev-score-strip {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .rev-home {
+      padding: 18px 12px 42px;
+    }
+
+    .rev-kpi-grid,
+    .rev-home .rev-score-strip,
+    .rev-filter-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>
+<%- include("../partials/accounting-background") %>
 
 <main class="rev-home">
+  <section class="accounting-uc-layout">
+    <%- include("../partials/accounting-uc-sidebar", { activeHref: "/accounting/revenue" }) %>
+    <div class="accounting-uc-main">
   <div class="rev-wrap">
     <section class="rev-hero" aria-label="Quản lý doanh thu">
       <div class="rev-hero-main">
         <div class="rev-hero-content">
-          <div class="rev-chip"><span class="rev-spark"></span> Revenue control</div>
+          <div class="rev-chip"><span class="rev-spark"></span> Sổ doanh thu</div>
           <h1>Quản lý <span>doanh thu</span></h1>
-          <p class="rev-lead">Theo dõi giao dịch phát sinh từ đặt phòng, lưu trú và dịch vụ; đối chiếu nhanh theo trạng thái, khách hàng, cơ sở và kỳ ngày.</p>
+          <p class="rev-lead">Tra cứu sổ doanh thu chi tiết phát sinh từ đặt phòng, dịch vụ và thanh toán. Màn này chỉ dùng để xem nguồn phát sinh, lọc giao dịch và xuất dữ liệu.</p>
           <div class="rev-tags">
             <span class="rev-tag"><%= payload.rangeLabel %></span>
             <span class="rev-tag"><%= payload.hotelContext.label %></span>
@@ -1407,56 +1745,7 @@
           </div>
           <div class="rev-actions">
             <a class="rev-button rev-button--primary" href="/api/accounting/revenue?<%= csvQuery %>">Xuất CSV</a>
-            <a class="rev-button" href="/api/accounting/revenue?<%= jsonQuery %>">JSON</a>
-            <a class="rev-button rev-button--pink" href="/accounting/reports?loai_baocao=doanhthu&tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Xem báo cáo doanh thu</a>
           </div>
-        </div>
-      </div>
-
-      <aside class="rev-kpi-grid" aria-label="KPI doanh thu">
-        <article class="rev-kpi is-cyan"><span>Doanh thu ghi nhận</span><strong><%= summary.totalRevenueFormatted %></strong></article>
-        <article class="rev-kpi is-green"><span>Còn phải thu</span><strong><%= summary.outstandingRevenueFormatted %></strong></article>
-        <article class="rev-kpi is-sun"><span>Đã thanh toán</span><strong><%= summary.paidRevenueFormatted %></strong></article>
-        <article class="rev-kpi is-pink"><span>Tỷ lệ đã thu</span><strong><%= summary.paidCoverageFormatted %></strong></article>
-      </aside>
-    </section>
-
-    <section class="rev-score-strip" aria-label="Chỉ số hiệu quả doanh thu phòng">
-      <article class="rev-score"><span>ADR</span><strong><%= summary.adrFormatted || "0 đ" %></strong><div class="rev-muted">TB doanh thu phòng / room-night bán được</div></article>
-      <article class="rev-score"><span>RevPAR</span><strong><%= summary.revparFormatted || "0 đ" %></strong><div class="rev-muted">Doanh thu phòng / room-night khả dụng</div></article>
-      <article class="rev-score"><span>Occupancy proxy</span><strong><%= summary.occupancyRateFormatted || "0%" %></strong><div class="rev-muted"><%= summary.roomNights || 0 %>/<%= summary.availableRoomNights || 0 %> room-night</div></article>
-      <article class="rev-score"><span>Khách tạo doanh thu</span><strong><%= summary.uniqueCustomers || 0 %></strong><div class="rev-muted"><%= summary.totalRecords || 0 %> giao dịch trong kỳ</div></article>
-    </section>
-
-    <section class="rev-command" aria-label="Điều hành doanh thu">
-      <div class="rev-command-panel">
-        <h2>Việc cần xử lý</h2>
-        <p>Các cảnh báo được rút từ doanh thu chưa thu, booking hủy, công nợ và cơ cấu phòng-dịch vụ trong kỳ lọc.</p>
-        <div class="rev-action-list">
-          <% actionItems.forEach((item) => { %>
-            <article class="rev-action-item" data-tone="<%= item.tone %>">
-              <div>
-                <strong><%= item.title %></strong>
-                <p><%= item.detail %></p>
-              </div>
-              <a class="rev-action-link" href="<%= item.href %>"><%= item.cta %></a>
-            </article>
-          <% }) %>
-        </div>
-      </div>
-      <div class="rev-command-panel">
-        <h2>So với kỳ trước</h2>
-        <p>Kỳ trước: <%= previousPeriod.rangeLabel || "Chưa có" %>. Dùng để thấy doanh thu tăng do giá, công suất hay thu tiền tốt hơn.</p>
-        <div class="rev-compare-grid">
-          <% compareCards.forEach((card) => { %>
-            <article class="rev-compare-card">
-              <span><%= card.label %></span>
-              <strong><%= card.value || "0 đ" %></strong>
-              <% if (card.compare) { %>
-                <div class="rev-delta" data-direction="<%= card.compare.direction %>"><%= card.compare.percentFormatted %> · <%= card.compare.deltaFormatted %></div>
-              <% } %>
-            </article>
-          <% }) %>
         </div>
       </div>
     </section>
@@ -1522,170 +1811,16 @@
             </div>
           </form>
         </section>
-
-        <section class="rev-panel">
-          <h2>Cơ cấu doanh thu</h2>
-          <div class="rev-mix">
-            <% revenueMix.forEach((item) => { %>
-              <div class="rev-mix-row">
-                <div>
-                  <strong><%= item.label %></strong>
-                  <span><%= item.formatted %></span>
-                </div>
-                <div class="rev-meter rev-mix-meter"><span style="width:<%= Math.max(5, Math.round((Math.abs(item.value || 0) / maxMix) * 100)) %>%"></span></div>
-              </div>
-            <% }) %>
-            <% if (Number(summary.adjustmentRevenue || 0) !== 0) { %>
-              <div class="rev-mix-row">
-                <div>
-                  <strong>Điều chỉnh/khuyến mãi</strong>
-                  <span><%= summary.adjustmentRevenueFormatted %></span>
-                </div>
-                <div class="rev-meter rev-mix-meter"><span style="width:<%= Math.max(5, Math.round((Math.abs(Number(summary.adjustmentRevenue || 0)) / Math.max(maxMix, Math.abs(Number(summary.adjustmentRevenue || 0)))) * 100)) %>%"></span></div>
-              </div>
-            <% } %>
-          </div>
-        </section>
-
-        <section class="rev-panel">
-          <h2>Trạng thái giao dịch</h2>
-          <div class="rev-breakdown">
-            <% if (!statusBreakdown.length) { %>
-              <div class="rev-empty">Chưa có dữ liệu trạng thái trong kỳ này.</div>
-            <% } %>
-            <% statusBreakdown.forEach((item) => {
-              const pct = summary.totalRevenue > 0 ? Math.round((Number(item.total || 0) / Number(summary.totalRevenue || 1)) * 100) : 0;
-            %>
-              <div class="rev-break-row">
-                <span class="rev-status rev-status--<%= item.meta.tone %>"><%= item.meta.label %></span>
-                <div class="rev-meter"><span style="width:<%= Math.max(5, pct) %>%"></span></div>
-                <span class="rev-pill"><%= item.count %> · <%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="rev-panel">
-          <h2>Top cơ sở</h2>
-          <div class="rev-hotels">
-            <% if (!topHotels.length) { %>
-              <div class="rev-empty">Chưa có dữ liệu theo cơ sở.</div>
-            <% } %>
-            <% topHotels.forEach((hotel) => { %>
-              <article class="rev-hotel">
-                <div>
-                  <strong><%= hotel.hotelName %></strong>
-                  <span><%= hotel.province || "Chưa có tỉnh thành" %> · <%= hotel.transactionCount %> giao dịch</span>
-                </div>
-                <strong class="rev-money"><%= hotel.revenueFormatted %></strong>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="rev-panel">
-          <h2>Nguồn đặt</h2>
-          <div class="rev-sources">
-            <% if (!sourceBreakdown.length) { %>
-              <div class="rev-empty">Chưa có dữ liệu nguồn đặt.</div>
-            <% } %>
-            <% sourceBreakdown.forEach((item) => { %>
-              <article class="rev-source">
-                <div>
-                  <strong><%= item.meta.label %></strong>
-                  <span><%= item.count %> giao dịch · đã thu <%= item.paidTotalFormatted %></span>
-                </div>
-                <strong class="rev-money"><%= item.totalFormatted %></strong>
-              </article>
-            <% }) %>
-          </div>
-        </section>
       </aside>
 
       <section class="rev-side-stack">
-        <section class="rev-panel">
-          <h2>Xu hướng theo ngày</h2>
-          <div class="rev-trend">
-            <% if (!dailyTrend.length) { %>
-              <div class="rev-empty">Không có xu hướng để hiển thị.</div>
-            <% } %>
-            <% dailyTrend.slice(-10).forEach((item) => { %>
-              <div class="rev-trend-row">
-                <strong><%= item.dateLabel %></strong>
-                <div class="rev-meter"><span style="width:<%= Math.max(5, Math.round((Number(item.total || 0) / maxTrend) * 100)) %>%"></span></div>
-                <span class="rev-money"><%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-          <% if (payload.bestDay) { %>
-            <p class="rev-muted" style="margin:14px 0 0">Ngày nổi bật: <strong><%= payload.bestDay.dateLabel %></strong> với <strong><%= payload.bestDay.totalFormatted %></strong>.</p>
-          <% } %>
-        </section>
-
-        <section class="rev-panel">
-          <h2>Hiệu suất theo thứ</h2>
-          <div class="rev-weekdays">
-            <% if (!weekdayPerformance.length) { %>
-              <div class="rev-empty">Chưa đủ dữ liệu để so sánh theo thứ.</div>
-            <% } %>
-            <% weekdayPerformance.forEach((item) => { %>
-              <article class="rev-weekday">
-                <div>
-                  <strong><%= item.label %></strong>
-                  <span><%= item.count %> giao dịch · <%= item.roomNights %> room-night · ADR <%= item.adrFormatted %></span>
-                </div>
-                <strong class="rev-money"><%= item.totalFormatted %></strong>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="rev-panel">
-          <h2>Top phòng tạo doanh thu</h2>
-          <div class="rev-hotels">
-            <% if (!topRooms.length) { %>
-              <div class="rev-empty">Chưa có dữ liệu theo phòng.</div>
-            <% } %>
-            <% topRooms.forEach((room) => { %>
-              <article class="rev-hotel">
-                <div>
-                  <strong>Phòng <%= room.roomNumber %></strong>
-                  <span><%= room.hotelName || "Chưa gắn cơ sở" %><%= room.province ? ` · ${room.province}` : "" %> · <%= room.roomNights %> room-night</span>
-                </div>
-                <div>
-                  <strong class="rev-money"><%= room.revenueFormatted %></strong>
-                  <span>ADR <%= room.adrFormatted %></span>
-                </div>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="rev-panel">
-          <h2>Phương thức thanh toán</h2>
-          <div class="rev-payments">
-            <% if (!paymentBreakdown.length) { %>
-              <div class="rev-empty">Chưa có dữ liệu thanh toán.</div>
-            <% } %>
-            <% paymentBreakdown.forEach((item) => { %>
-              <article class="rev-payment">
-                <div>
-                  <strong><%= item.meta.label %></strong>
-                  <span><%= item.count %> giao dịch · ghi nhận <%= item.recognizedTotalFormatted %></span>
-                </div>
-                <strong class="rev-money"><%= item.paidTotalFormatted %></strong>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
         <section class="rev-table-panel">
           <div class="rev-table-head">
             <div>
-              <h2>Danh sách giao dịch</h2>
-              <p>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRecords %> bản ghi.</p>
+              <h2>Chi tiết doanh thu</h2>
+              <p>Dữ liệu chỉ đọc, không thêm sửa xóa hoặc điều chỉnh trực tiếp tại màn này.</p>
             </div>
-            <span class="rev-pill">Đã hủy: <%= summary.cancelledRevenueFormatted %></span>
+            <span class="rev-pill">Trang <%= page %>/<%= totalPages %> · <%= rows.length %>/<%= payload.totalRecords %> bản ghi</span>
           </div>
 
           <% if (!payload.hasData) { %>
@@ -1698,11 +1833,9 @@
                     <th>Mã giao dịch</th>
                     <th>Ngày</th>
                     <th>Khách hàng</th>
-                    <th>Phòng / Cơ sở</th>
-                    <th>Thanh toán</th>
-                    <th>Tổng tiền</th>
-                    <th>Cơ cấu</th>
-                    <th>Đã thu / còn thu</th>
+                    <th>Nguồn phát sinh</th>
+                    <th>Phương thức</th>
+                    <th>Giá trị ghi nhận</th>
                     <th>Trạng thái</th>
                   </tr>
                 </thead>
@@ -1726,14 +1859,6 @@
                       </td>
                       <td><%= row.phuongThucThanhToanLabel %></td>
                       <td class="rev-money"><%= row.tongTienFormatted %></td>
-                      <td>
-                        <strong>Phòng: <%= row.roomRevenueFormatted %></strong>
-                        <div class="rev-muted">DV: <%= row.serviceRevenueFormatted %> · Phụ thu/BT: <%= row.surchargeRevenueFormatted %> / <%= row.damageRevenueFormatted %></div>
-                      </td>
-                      <td>
-                        <strong class="rev-money"><%= row.paidAmountFormatted %></strong>
-                        <div class="rev-muted">Còn thu: <%= row.outstandingAmountFormatted %></div>
-                      </td>
                       <td>
                         <span class="rev-status rev-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
                         <div class="rev-muted" style="margin-top:5px"><%= row.statusMeta.hint %></div>
@@ -1768,6 +1893,8 @@
       </section>
     </section>
   </div>
+    </div>
+  </section>
 </main>
 
 <%- include("../partials/footer") %>

@@ -10,10 +10,12 @@ import {
   createBroadcastCampaignAction,
   createFeedbackAction,
   createFeedbackApi,
+  exportFeedbackReportCsv,
   feedbackDetailApi,
   feedbackListApi,
   renderBroadcastCenter,
   renderCreateFeedback,
+  renderFeedbackManageDetail,
   renderManageFeedback,
   replyFeedbackAction,
   replyFeedbackApi,
@@ -59,7 +61,11 @@ feedbackRouter.get("/new", requireRole([ROLE.KHACH_HANG]), asyncHandler(renderCr
 feedbackRouter.get("/advisory/new", requireRole([ROLE.KHACH_HANG]), asyncHandler(renderCreateFeedback));
 feedbackRouter.post("/", requireRole([ROLE.KHACH_HANG]), feedbackUpload.single("file"), validateCsrfToken, asyncHandler(createFeedbackAction));
 feedbackRouter.get("/manage", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(renderManageFeedback));
+feedbackRouter.get("/manage/export.csv", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(exportFeedbackReportCsv));
+feedbackRouter.get("/manage/:id", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(renderFeedbackManageDetail));
 feedbackRouter.get("/advisory/manage", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(renderManageFeedback));
+feedbackRouter.get("/advisory/manage/export.csv", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(exportFeedbackReportCsv));
+feedbackRouter.get("/advisory/manage/:id", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(renderFeedbackManageDetail));
 feedbackRouter.get("/broadcast/manage", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(renderBroadcastCenter));
 feedbackRouter.post("/broadcast/send", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(createBroadcastCampaignAction));
 feedbackRouter.post("/:id/reply", requireRole([ROLE.ADMIN, ROLE.QUAN_LY, ROLE.CSKH]), asyncHandler(replyFeedbackAction));

@@ -3,6 +3,14 @@ import { AccountingService } from "../services/accounting.service";
 
 const accountingService = new AccountingService();
 
+function appendNoticeToRefundReturn(returnTo: unknown, key: "success" | "error", message: string) {
+  const raw = String(returnTo || "");
+  const fallback = "/accounting/refunds";
+  const safePath = raw.startsWith("/accounting/refunds") ? raw : fallback;
+  const separator = safePath.includes("?") ? "&" : "?";
+  return `${safePath}${separator}${key}=${encodeURIComponent(message)}`;
+}
+
 function toCsv(rows: Array<Record<string, unknown>>) {
   if (!rows.length) return "";
   const headers = Object.keys(rows[0]);
@@ -308,11 +316,41 @@ function accountingReportToCsv(payload: any) {
   return `\uFEFF${lines.join("\n")}`;
 }
 
-export async function renderAccountingDashboard(_req: Request, res: Response) {
-  const payload = await accountingService.buildDashboard();
-  return res.render("accounting/dashboard", {
-    title: "Dashboard ke toan",
-    payload
+function financialStatementToCsv(payload: any) {
+  const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
+  const line = (values: unknown[]) => values.map(escape).join(",");
+  const lines: string[] = [
+    line(["LAP BAO CAO TAI CHINH"]),
+    line(["Ma bao cao", payload.reportCode, "Trang thai", payload.statusLabel]),
+    line(["Mau bao cao", payload.reportTypeMeta?.label, "Pham vi", payload.hotelContext?.label || "Toan bo co so"]),
+    line(["Tu ngay", payload.filters?.tu_ngay, "Den ngay", payload.filters?.den_ngay, "Lap luc", payload.generatedAtLabel]),
+    ""
+  ];
+
+  for (const section of payload.sections || []) {
+    lines.push(line([section.title]));
+    lines.push(line(["Ma chi tieu", "Chi tieu", "Gia tri", "Ghi chu"]));
+    for (const row of section.rows || []) {
+      lines.push(line([row.code, row.label, row.value, row.note]));
+    }
+    lines.push("");
+  }
+
+  lines.push(line(["DOI SOAT DU LIEU"]));
+  lines.push(line(["Hang muc", "So luong", "Trang thai"]));
+  for (const check of payload.checks || []) {
+    lines.push(line([check.label, check.value, check.status]));
+  }
+
+  return `\uFEFF${lines.join("\n")}`;
+}
+
+export async function renderAccountingDashboard(req: Request, res: Response) {
+  const payload = await accountingService.buildReport(req.query);
+  return res.render("accounting/reports", {
+    title: "Thong ke tai chinh",
+    payload,
+    accountingShell: true
   });
 }
 
@@ -320,6 +358,14 @@ export async function renderAccountingReports(req: Request, res: Response) {
   const payload = await accountingService.buildReport(req.query);
   return res.render("accounting/reports", {
     title: "Thong ke tai chinh",
+    payload
+  });
+}
+
+export async function renderFinancialReportsPage(req: Request, res: Response) {
+  const payload = await accountingService.buildFinancialStatement(req.query);
+  return res.render("accounting/financial-reports", {
+    title: "Lap bao cao tai chinh",
     payload
   });
 }
@@ -337,6 +383,18 @@ export async function renderExpensePage(req: Request, res: Response) {
   return res.render("accounting/expenses", {
     title: "Quan ly chi phi",
     payload
+  });
+}
+
+export async function renderExpenseDetailPage(req: Request, res: Response) {
+  const payload = await accountingService.getExpenseDetail(req.params.id);
+  return res.render("accounting/expense-detail", {
+    title: "Chi tiet phieu chi",
+    payload,
+    notice: {
+      success: req.query.success ? String(req.query.success) : "",
+      error: req.query.error ? String(req.query.error) : ""
+    }
   });
 }
 
@@ -368,21 +426,51 @@ export async function renderRefundPage(req: Request, res: Response) {
   });
 }
 
+export async function renderRefundDetailPage(req: Request, res: Response) {
+  const payload = await accountingService.getRefundDetail(req.params.id);
+  return res.render("accounting/refund-detail", {
+    title: "Chi tiet hoan tien",
+    payload,
+    notice: {
+      success: req.query.success ? String(req.query.success) : "",
+      error: req.query.error ? String(req.query.error) : ""
+    }
+  });
+}
+
 export async function createExpenseAction(req: Request, res: Response) {
   await accountingService.createExpense(req.body);
   return res.redirect("/accounting/expenses");
 }
 
+export async function updateExpenseAction(req: Request, res: Response) {
+  const result = await accountingService.updateExpense({
+    ...req.body,
+    id: req.params.id
+  });
+  return res.redirect(`/accounting/expenses/${result.id}?success=${encodeURIComponent("Đã cập nhật phiếu chi")}`);
+}
+
+export async function updateExpenseStatusAction(req: Request, res: Response) {
+  await accountingService.updateExpenseStatus({
+    id: req.params.id,
+    trang_thai: req.body.trang_thai
+  });
+  const query = req.body.return_to ? String(req.body.return_to) : "";
+  return res.redirect(query.startsWith("/accounting/expenses") ? query : "/accounting/expenses");
+}
+
 export async function processRefundAction(req: Request, res: Response) {
+  const returnTo = req.body.return_to || (req.body.refund_id ? `/accounting/refunds/${req.body.refund_id}` : "/accounting/refunds");
   try {
     const payload = await accountingService.processRefund({
       ...req.body,
       actor_username: req.session.user?.username || "ketoan"
     });
     const actionLabel = payload.action === "approve" ? "Đã xác nhận hoàn tiền" : "Đã từ chối hoàn tiền";
-    return res.redirect(`/accounting/refunds?success=${encodeURIComponent(`${actionLabel} ${payload.refundCode}.`)}`);
+    return res.redirect(appendNoticeToRefundReturn(returnTo, "success", `${actionLabel} ${payload.refundCode}.`));
   } catch (error: any) {
-    return res.redirect(`/accounting/refunds?error=${encodeURIComponent(String(error?.message || "Không thể xử lý hoàn tiền."))}`);
+    return res.redirect(appendNoticeToRefundReturn(returnTo, "error", String(error?.message || "Không thể xử lý hoàn tiền.")));
   }
 }
 
@@ -458,6 +546,17 @@ export async function reportApi(req: Request, res: Response) {
   return res.json({ ok: true, message: "Tai thong ke tai chinh thanh cong.", data: payload });
 }
 
+export async function financialStatementApi(req: Request, res: Response) {
+  const payload = await accountingService.buildFinancialStatement(req.query);
+  if (String(req.query.format || req.query.dinh_dang || "") === "csv") {
+    const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 14);
+    res.setHeader("Content-Disposition", `attachment; filename="baocao_taichinh_${timestamp}.csv"`);
+    res.type("text/csv").send(financialStatementToCsv(payload));
+    return;
+  }
+  return res.json({ ok: true, message: "Lap bao cao tai chinh thanh cong.", data: payload });
+}
+
 export async function reportAiInsightsApi(req: Request, res: Response) {
   const payload = await accountingService.buildReportChartInsights(req.query);
   return res.json({ ok: true, message: "AI da phan tich bieu do tai chinh.", data: payload });
@@ -466,6 +565,14 @@ export async function reportAiInsightsApi(req: Request, res: Response) {
 export async function createExpenseApi(req: Request, res: Response) {
   const payload = await accountingService.createExpense(req.body);
   return res.json({ ok: true, message: "Them chi phi thanh cong.", data: payload });
+}
+
+export async function updateExpenseStatusApi(req: Request, res: Response) {
+  const payload = await accountingService.updateExpenseStatus({
+    id: req.params.id || req.body.id,
+    trang_thai: req.body.trang_thai
+  });
+  return res.json({ ok: true, message: "Cap nhat trang thai chi phi thanh cong.", data: payload });
 }
 
 export async function processRefundApi(req: Request, res: Response) {

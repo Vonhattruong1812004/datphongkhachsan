@@ -359,17 +359,34 @@ export class FeedbackService {
     const filters = this.parseFilters(rawFilters);
     const params: unknown[] = [];
     const where: string[] = [];
+    const statuslessParams: unknown[] = [];
+    const statuslessWhere: string[] = [];
+    const addParamCondition = (value: unknown, factory: (idx: number) => string) => {
+      params.push(value);
+      where.push(factory(params.length));
+      statuslessParams.push(value);
+      statuslessWhere.push(factory(statuslessParams.length));
+    };
+    const addRawCondition = (condition: string) => {
+      where.push(condition);
+      statuslessWhere.push(condition);
+    };
 
     if (filters.keyword) {
-      params.push(`%${filters.keyword}%`);
-      const idx = params.length;
-      where.push(`
+      addParamCondition(`%${filters.keyword}%`, (idx) => `
+        (
+          ph.noidung ILIKE $${idx}
+          OR COALESCE(ph.loaidichvu, '') ILIKE $${idx}
+        )
+      `);
+    }
+
+    if (filters.khach_hang) {
+      addParamCondition(`%${filters.khach_hang}%`, (idx) => `
         (
           COALESCE(ph.hotenkh, kh.tenkh, '') ILIKE $${idx}
           OR COALESCE(ph.email, kh.email, '') ILIKE $${idx}
           OR COALESCE(ph.sdt, kh.sdt, '') ILIKE $${idx}
-          OR ph.noidung ILIKE $${idx}
-          OR COALESCE(ph.loaidichvu, '') ILIKE $${idx}
         )
       `);
     }
@@ -381,51 +398,51 @@ export class FeedbackService {
 
     if (filters.danh_gia !== "all") {
       if (filters.danh_gia === "4plus") {
-        where.push("ph.mucdohailong >= 4");
+        addRawCondition("ph.mucdohailong >= 4");
       } else if (filters.danh_gia === "3minus") {
-        where.push("ph.mucdohailong <= 3");
+        addRawCondition("ph.mucdohailong <= 3");
       } else {
-        params.push(Number(filters.danh_gia));
-        where.push(`ph.mucdohailong = $${params.length}`);
+        addParamCondition(Number(filters.danh_gia), (idx) => `ph.mucdohailong = $${idx}`);
       }
     }
 
     if (filters.loai_dich_vu !== "all") {
-      params.push(filters.loai_dich_vu);
-      where.push(`ph.loaidichvu = $${params.length}`);
+      addParamCondition(filters.loai_dich_vu, (idx) => `ph.loaidichvu = $${idx}`);
+    }
+
+    if (filters.exclude_advisory === "1") {
+      addRawCondition(`COALESCE(ph.loaidichvu, '') <> 'Tư vấn'`);
     }
 
     if (filters.loai_dich_vu === "Tư vấn" && filters.tu_van_nhom !== "all") {
       const topicSql = this.advisoryTopicWhere(filters.tu_van_nhom);
-      if (topicSql) where.push(topicSql);
+      if (topicSql) addRawCondition(topicSql);
     }
 
     if (filters.sentiment !== "all") {
-      params.push(filters.sentiment);
-      where.push(`COALESCE(ph.sentiment, 'Neutral') = $${params.length}`);
+      addParamCondition(filters.sentiment, (idx) => `COALESCE(ph.sentiment, 'Neutral') = $${idx}`);
     }
 
     if (filters.uu_tien !== "all") {
       const prioritySql = this.feedbackPriorityWhere(filters.uu_tien);
-      if (prioritySql) where.push(prioritySql);
+      if (prioritySql) addRawCondition(prioritySql);
     }
 
     if (filters.tu_ngay) {
-      params.push(filters.tu_ngay);
-      where.push(`DATE(ph.ngayphanhoi) >= $${params.length}`);
+      addParamCondition(filters.tu_ngay, (idx) => `DATE(ph.ngayphanhoi) >= $${idx}`);
     }
 
     if (filters.den_ngay) {
-      params.push(filters.den_ngay);
-      where.push(`DATE(ph.ngayphanhoi) <= $${params.length}`);
+      addParamCondition(filters.den_ngay, (idx) => `DATE(ph.ngayphanhoi) <= $${idx}`);
     }
 
     const page = Math.max(1, Number(filters.page || 1));
-    const limit = 10;
+    const limit = Math.max(1, Math.min(5000, Number(filters.limit || 10)));
     const offset = (page - 1) * limit;
     const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+    const statuslessWhereSql = statuslessWhere.length ? `WHERE ${statuslessWhere.join(" AND ")}` : "";
 
-    const [list, count, summary] = await Promise.all([
+    const [list, count, summary, statusSummary] = await Promise.all([
       query<FeedbackListRow>(
         `
           SELECT
@@ -466,8 +483,6 @@ export class FeedbackService {
           ${whereSql}
           ORDER BY
             CASE WHEN ph.tinhtrang = 'DaXuLy' THEN 1 ELSE 0 END ASC,
-            ph.ngayphanhoi DESC,
-            ph.maph DESC,
             CASE
               WHEN ph.tinhtrang <> 'DaXuLy'
                 AND (
@@ -477,7 +492,9 @@ export class FeedbackService {
               WHEN ph.tinhtrang <> 'DaXuLy'
                 AND (COALESCE(ph.mucdohailong, 0) <= 3 OR ph.loaidichvu = 'Tư vấn') THEN 2
               ELSE 3
-            END ASC
+            END ASC,
+            ph.ngayphanhoi DESC,
+            ph.maph DESC
           LIMIT ${limit} OFFSET ${offset}
         `,
         params
@@ -540,6 +557,24 @@ export class FeedbackService {
           ${whereSql}
         `,
         params
+      ),
+      query<{
+        tong: number;
+        chua_xu_ly: number;
+        dang_xu_ly: number;
+        da_xu_ly: number;
+      }>(
+        `
+          SELECT
+            COUNT(*)::int AS tong,
+            COUNT(*) FILTER (WHERE ph.tinhtrang = 'ChuaXuLy')::int AS chua_xu_ly,
+            COUNT(*) FILTER (WHERE ph.tinhtrang = 'DangXuLy')::int AS dang_xu_ly,
+            COUNT(*) FILTER (WHERE ph.tinhtrang = 'DaXuLy')::int AS da_xu_ly
+          FROM phanhoi ph
+          LEFT JOIN khachhang kh ON kh.makhachhang = ph.makhachhang
+          ${statuslessWhereSql}
+        `,
+        statuslessParams
       )
     ]);
 
@@ -560,6 +595,12 @@ export class FeedbackService {
         khan_cap: 0,
         qua_sla: 0,
         danh_gia_tb: 0
+      },
+      statusSummary: statusSummary.rows[0] ?? {
+        tong: 0,
+        chua_xu_ly: 0,
+        dang_xu_ly: 0,
+        da_xu_ly: 0
       },
       serviceTypes: this.serviceTypes,
       advisoryTopics: this.getAdvisoryTopics(),
@@ -2258,6 +2299,7 @@ export class FeedbackService {
   private parseFilters(rawFilters: unknown) {
     return z.object({
       keyword: z.string().optional().default(""),
+      khach_hang: z.string().optional().default(""),
       trang_thai: z.string().optional().default("all"),
       danh_gia: z.string().optional().default("all"),
       loai_dich_vu: z.string().optional().default("all"),
@@ -2266,7 +2308,10 @@ export class FeedbackService {
       uu_tien: z.string().optional().default("all"),
       tu_ngay: z.string().optional().default(""),
       den_ngay: z.string().optional().default(""),
-      page: z.coerce.number().optional().default(1)
+      thang: z.string().optional().default(""),
+      page: z.coerce.number().optional().default(1),
+      limit: z.coerce.number().optional().default(10),
+      exclude_advisory: z.string().optional().default("")
     }).parse(rawFilters ?? {});
   }
 

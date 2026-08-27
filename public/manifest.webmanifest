@@ -24,6 +24,12 @@
       "purpose": "any maskable"
     },
     {
+      "src": "/icons/app-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/icons/app-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",

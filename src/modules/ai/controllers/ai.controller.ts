@@ -6,7 +6,7 @@ const aiService = new AIService();
 
 export async function renderConciergePage(_req: Request, res: Response) {
   return res.render("ai/concierge", {
-    title: "AI Concierge"
+    title: "AI hỗ trợ đặt phòng"
   });
 }
 
@@ -14,7 +14,7 @@ export async function renderAnalyticsPage(req: Request, res: Response) {
   const payload = await aiService.analytics();
   const backHref = ROLE_REDIRECTS[req.session.user?.maVaiTro ?? 0] ?? "/dashboard/admin";
   return res.render("ai/analytics", {
-    title: "AI Analytics",
+    title: "Theo dõi AI hỗ trợ đặt phòng",
     payload,
     backHref
   });
@@ -24,7 +24,7 @@ export async function conciergeApi(req: Request, res: Response) {
   const payload = await aiService.buildConciergeResponse(req.body, req.session.user ?? null);
   return res.json({
     ok: true,
-    message: "AI concierge da phan tich xong.",
+    message: "AI ho tro dat phong da phan tich xong.",
     data: payload
   });
 }

@@ -1,0 +1,155 @@
+<%- include("../partials/head") %>
+<%- include("../partials/header") %>
+<%
+  const pageNotice = (typeof notice !== "undefined" && notice) ? notice : {};
+  const serviceHotelScopeSupported = Boolean(payload.serviceHotelScopeSupported);
+  const hotelOptions = payload.hotelOptions || [];
+  const form = catalogForm || {};
+  const isEdit = Boolean(form.service_id);
+  const activeHotelId = Number(payload.activeHotelId || form.hotel_id || 0);
+  const backUrl = activeHotelId ? `/service/manage?hotel_id=${activeHotelId}` : "/service/manage";
+%>
+
+<style>
+  .catalog-form-page{
+    --blue:#0575e6;
+    --blue-dark:#034ea2;
+    --ink:#102033;
+    --muted:#65758b;
+    --line:#cfe2f7;
+    min-height:calc(100vh - 84px);
+    padding:28px 18px 56px;
+    color:var(--ink);
+    background:
+      linear-gradient(180deg,rgba(235,246,255,.88),rgba(247,251,255,.96)),
+      url("/images/san-pham-du-lich.webp") center/cover fixed;
+  }
+  .catalog-form-shell{width:min(1180px,calc(100vw - 40px));margin:0 auto;display:grid;grid-template-columns:1fr;gap:18px}
+  .side-card,.title-band,.form-panel,.preview-card{border:1px solid var(--line);background:rgba(255,255,255,.94);box-shadow:0 18px 45px rgba(15,23,42,.08)}
+  .side-card{border-radius:14px;padding:16px;position:sticky;top:104px}
+  .side-card h2{margin:0 0 12px;font-size:22px}
+  .side-nav{display:grid;gap:10px}
+  .side-nav a{display:block;border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:#06479d;text-decoration:none;font-weight:850;background:#fff}
+  .side-nav a:hover{background:#edf6ff;transform:translateX(2px)}
+  .side-nav a.is-active{background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border-color:transparent}
+  .title-band{border-radius:12px;padding:20px 24px;background:linear-gradient(135deg,#087cf0,#034ea2);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .title-band h1{margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em}
+  .title-band h1::before{content:"";display:inline-block;width:6px;height:38px;border-radius:999px;background:#fff;margin-right:12px;vertical-align:-7px}
+  .alert{margin-top:12px;border-radius:10px;padding:12px 14px;font-weight:850}
+  .alert.error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+  .alert.success{background:#ecfdf5;color:#047857;border:1px solid #bbf7d0}
+  .content-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start;margin-top:14px}
+  .form-panel,.preview-card{border-radius:12px;padding:18px}
+  .form-panel h2,.preview-card h2{margin:0 0 14px;font-size:24px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field{display:grid;gap:6px}
+  .field.full{grid-column:1/-1}
+  .field label{font-size:12px;color:#334155;font-weight:900}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:11px 12px;color:var(--ink);font:inherit}
+  .field textarea{min-height:126px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#0b83ef;box-shadow:0 0 0 3px rgba(11,131,239,.12)}
+  .preview-img,.preview-fallback{width:100%;height:190px;border-radius:12px;border:1px solid var(--line);object-fit:cover;background:#edf6ff}
+  .preview-fallback{display:grid;place-items:center;color:#06479d;font-size:30px;font-weight:950}
+  .sub{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 16px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;text-decoration:none;cursor:pointer}
+  .btn.primary{background:var(--blue);border-color:transparent;color:#fff}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap}
+  @media(max-width:1050px){
+    .catalog-form-shell,.content-grid{grid-template-columns:1fr}
+    .side-card{position:static}
+    .side-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+  @media(max-width:720px){
+    .catalog-form-page{padding:18px 10px 42px}
+    .catalog-form-shell{width:100%}
+    .title-band{align-items:stretch;flex-direction:column}
+    .title-band h1{font-size:28px}
+    .form-grid,.side-nav{grid-template-columns:1fr}
+  }
+</style>
+
+<main class="catalog-form-page">
+  <div class="catalog-form-shell">
+    <section>
+      <section class="title-band">
+        <h1><%= isEdit ? "Chỉnh sửa dịch vụ" : "Thêm dịch vụ" %></h1>
+        <a class="btn" href="<%= backUrl %>">Quay lại danh sách</a>
+      </section>
+
+      <% if (pageNotice.error) { %><div class="alert error"><%= pageNotice.error %></div><% } %>
+      <% if (pageNotice.success) { %><div class="alert success"><%= pageNotice.success %></div><% } %>
+
+      <section class="content-grid">
+        <section class="form-panel">
+          <h2>Thông tin dịch vụ</h2>
+          <form method="post" action="/service/manage" enctype="multipart/form-data">
+            <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <% } %>
+            <input type="hidden" name="service_id" value="<%= form.service_id || "" %>" />
+            <input type="hidden" name="hinh_anh" value="<%= form.hinh_anh || "" %>" />
+
+            <div class="form-grid">
+              <% if (serviceHotelScopeSupported) { %>
+                <div class="field full">
+                  <label for="catalog_hotel">Cơ sở</label>
+                  <select id="catalog_hotel" name="hotel_id" required>
+                    <option value="">Chọn cơ sở</option>
+                    <% hotelOptions.forEach((hotel) => { %>
+                      <option value="<%= hotel.id %>" <%= Number(form.hotel_id) === Number(hotel.id) ? "selected" : "" %>>
+                        <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                      </option>
+                    <% }) %>
+                  </select>
+                </div>
+              <% } else { %>
+                <input type="hidden" name="hotel_id" value="0" />
+              <% } %>
+              <div class="field full">
+                <label for="catalog_name">Tên dịch vụ</label>
+                <input id="catalog_name" name="ten_dich_vu" value="<%= form.ten_dich_vu || "" %>" required maxlength="160" placeholder="VD: Đưa đón sân bay" />
+              </div>
+              <div class="field">
+                <label for="catalog_price">Giá</label>
+                <input id="catalog_price" name="gia_dich_vu" type="number" min="0" step="1000" value="<%= form.gia_dich_vu || "" %>" required />
+              </div>
+              <div class="field">
+                <label for="catalog_status">Trạng thái</label>
+                <select id="catalog_status" name="trang_thai" required>
+                  <option value="HoatDong" <%= form.trang_thai === "HoatDong" ? "selected" : "" %>>Đang phục vụ</option>
+                  <option value="NgungBan" <%= form.trang_thai === "NgungBan" ? "selected" : "" %>>Ngưng bán</option>
+                </select>
+              </div>
+              <div class="field full">
+                <label for="catalog_desc">Mô tả</label>
+                <textarea id="catalog_desc" name="mo_ta" placeholder="Mô tả ngắn, điều kiện phục vụ, thời gian chuẩn bị..."><%= form.mo_ta || "" %></textarea>
+              </div>
+              <div class="field full">
+                <label for="catalog_image">Ảnh dịch vụ</label>
+                <input id="catalog_image" name="hinh_anh_file" type="file" accept="image/jpeg,image/png,image/webp" />
+                <span class="sub">Khi chỉnh sửa mà không chọn ảnh mới, hệ thống giữ ảnh hiện tại.</span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <a class="btn" href="<%= backUrl %>">Hủy</a>
+              <button class="btn primary" type="submit"><%= isEdit ? "Lưu thay đổi" : "Tạo dịch vụ" %></button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="preview-card">
+          <h2>Xem nhanh</h2>
+          <% if (editingService?.imageUrl) { %>
+            <img class="preview-img" src="<%= editingService.imageUrl %>" alt="Ảnh dịch vụ đang chỉnh sửa" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'preview-fallback', textContent: 'DV' }))" />
+          <% } else { %>
+            <div class="preview-fallback" aria-hidden="true">DV</div>
+          <% } %>
+          <p class="sub" style="margin-top:12px"><%= isEdit ? "Đang chỉnh sửa dịch vụ đã có trong danh mục." : "Tạo dịch vụ mới cho danh mục bán thêm." %></p>
+        </aside>
+      </section>
+    </section>
+  </div>
+</main>
+
+<%- include("../partials/footer") %>

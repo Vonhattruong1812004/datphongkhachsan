@@ -1216,13 +1216,13 @@
   }
   .guest-side-tabs .guest-uc-card:first-child,
   .guest-side-tabs .guest-uc-card:first-child:nth-child(n) {
-    border-color: #006ce4;
+    border-color: #b7d7ff;
     border-left-color: #003b95;
-    background: #006ce4 !important;
-    box-shadow: 0 12px 26px rgba(0, 108, 228, .18);
+    background: #f8fbff !important;
+    box-shadow: none;
   }
   .guest-side-tabs .guest-uc-card:first-child h3 {
-    color: #ffffff !important;
+    color: #003b95 !important;
   }
   .guest-side-tabs .guest-uc-card h3 {
     font-size: 14px;
@@ -1237,7 +1237,7 @@
     box-shadow: 0 12px 28px rgba(0, 108, 228, .14);
   }
   .guest-side-tabs .guest-uc-card:first-child:hover {
-    background: #005fc7 !important;
+    background: #eff6ff !important;
   }
   .guest-overview {
     gap: 12px;
@@ -1318,7 +1318,7 @@
     color: #ffffff !important;
   }
   body .guest-home .guest-side-tabs .guest-uc-card:first-child h3 {
-    color: #ffffff !important;
+    color: #003b95 !important;
   }
 </style>
 
@@ -1342,7 +1342,7 @@
         <div class="guest-hero-actions">
           <a class="guest-button guest-button--primary" href="/booking/multi">Đặt phòng trực tuyến</a>
           <a class="guest-button" href="/customer/bookings">Quản lý đặt phòng</a>
-          <a class="guest-button" href="/customer/advisory">Tư vấn</a>
+          <a class="guest-button" href="/customer/advisory">Nhận tư vấn</a>
           <a class="guest-button" href="/customer/profile#ekyc-section">Quản lý hồ sơ cá nhân</a>
         </div>
 
@@ -1407,8 +1407,8 @@
             </a>
             <a class="guest-uc-card guest-advice" href="/customer/advisory">
               <div class="guest-uc-top"><span class="guest-uc-code">06</span><span class="guest-uc-orb"></span></div>
-              <h3>Tư vấn và hỗ trợ</h3>
-              <p>Chat hỏi nhanh với trợ lý AI, bám theo đặt phòng hiện có và chuyển sang CSKH khi cần người thật hỗ trợ.</p>
+              <h3>Nhận tư vấn và hỗ trợ</h3>
+              <p>Chat hỏi nhanh với trợ lý đặt phòng, bám theo đặt phòng hiện có và chuyển sang CSKH khi cần người thật hỗ trợ.</p>
               <span class="guest-open">Mở</span>
             </a>
           </div>
@@ -1507,4 +1507,5 @@
   </div>
 </main>
 
+<%- include("../partials/customer-background") %>
 <%- include("../partials/footer") %>

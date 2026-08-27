@@ -5,6 +5,22 @@
   const reportType = filters.loai_baocao || "tonghop";
   const hotelOptions = payload.hotelOptions || [];
   const statusOptions = payload.statusOptions || [{ value: "all", label: "Tất cả" }];
+  const useAccountingShell = Boolean(typeof accountingShell !== "undefined" && accountingShell);
+  const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
+  const csvQuery = makeQuery({ format: "csv" });
+  const activePath = typeof currentPath === "string" ? currentPath : "";
+  const accountingNavItems = [
+    { href: "/accounting", label: "Thống kê tài chính" },
+    { href: "/accounting/financial-reports", label: "Lập báo cáo tài chính" },
+    { href: "/accounting/revenue", label: "Quản lý doanh thu" },
+    { href: "/accounting/expenses", label: "Quản lý chi phí" },
+    { href: "/accounting/debts", label: "Quản lý công nợ" },
+    { href: "/accounting/refunds", label: "Xử lý hoàn tiền" }
+  ];
+  const isAccountingNavActive = (href) => {
+    if (href === "/accounting") return activePath === "/accounting" || activePath === "/accounting/reports";
+    return activePath === href || activePath.startsWith(`${href}/`);
+  };
 %>
 
 <style>
@@ -1094,10 +1110,754 @@
   .report-table tbody tr:nth-child(even) td {
     background: #f8fffb !important;
   }
-</style>
 
-<main class="report-home">
-  <div class="report-wrap">
+  /* Accounting reports final UI: white-blue PowerBI-like dashboard. */
+  body {
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 46%, #ffffff 100%) !important;
+  }
+
+  .report-home {
+    --report-ink: #102033;
+    --report-muted: #64748b;
+    --report-line: #c9e0fb;
+    --report-shadow: 0 12px 28px rgba(0, 59, 149, .07);
+    max-width: none;
+    min-height: calc(100vh - 96px);
+    padding: 14px 20px 34px;
+    background: linear-gradient(180deg, #eaf4ff 0, #f7fbff 148px, #ffffff 100%) !important;
+    color: var(--report-ink);
+  }
+
+  .report-wrap {
+    max-width: 1480px;
+    gap: 12px;
+  }
+
+  .report-hero {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #b8d7fb;
+    border-left: 0;
+    border-radius: 8px;
+    padding: 13px 18px;
+    background: linear-gradient(135deg, #0071e8 0%, #006ce4 52%, #003b95 100%) !important;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+
+  .report-hero::before {
+    display: none;
+  }
+
+  .report-chip,
+  .report-lead,
+  .report-actions {
+    display: none !important;
+  }
+
+  .report-hero h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    color: #ffffff !important;
+    font-size: 25px;
+    font-weight: 950;
+    line-height: 1.15;
+    text-shadow: none;
+  }
+
+  body .report-home .report-hero h1,
+  body .report-home .report-hero h1 span {
+    color: #ffffff !important;
+  }
+
+  .report-hero h1::before {
+    content: "";
+    width: 5px;
+    height: 34px;
+    border-radius: 999px;
+    background: #ffffff;
+  }
+
+  .report-hero h1 span {
+    color: #ffffff !important;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+
+  .report-form-card,
+  .report-warning,
+  .report-card,
+  .report-insight,
+  .report-chart-card,
+  .report-table-card {
+    border: 1px solid #c9e0fb;
+    border-radius: 8px;
+    background: #ffffff !important;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+
+  .report-form-card {
+    padding: 12px;
+  }
+
+  .report-filter-bar {
+    gap: 10px;
+  }
+
+  .report-filter-title,
+  .report-filter-control,
+  .report-button {
+    min-height: 44px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .report-filter-title {
+    color: #003b95;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+
+  .report-filter-control {
+    border: 1px solid #c9e0fb;
+    background: #ffffff;
+  }
+
+  .report-filter-control label {
+    min-width: 64px;
+    color: #64748b;
+    background: #f7fbff;
+  }
+
+  .report-filter-control select,
+  .report-filter-control input {
+    height: 42px;
+    color: #102033;
+    font-size: 13px;
+  }
+
+  .report-button {
+    color: #003b95;
+    background: #ffffff;
+    border: 1px solid #c9e0fb;
+  }
+
+  .report-button--primary {
+    color: #ffffff;
+    background: #006ce4;
+    border-color: #006ce4;
+  }
+
+  .report-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .report-card {
+    min-height: 78px;
+    padding: 14px 16px;
+  }
+
+  .report-card::before {
+    background: #006ce4;
+  }
+
+  .report-card strong {
+    color: #003b95;
+    font-size: 26px;
+  }
+
+  .report-card span {
+    color: #526985;
+    font-size: 12px;
+  }
+
+  .report-insights {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .report-insight {
+    padding: 14px;
+  }
+
+  .report-chart-grid,
+  .report-chart-grid.is-even {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .report-chart-grid.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .report-chart-stack {
+    gap: 12px;
+  }
+
+  .report-chart-card {
+    min-width: 0;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .report-chart-card h2,
+  .report-chart-card h3 {
+    color: #102033;
+    font-size: 19px;
+    font-weight: 950;
+    text-shadow: none;
+  }
+
+  .report-chart-card p {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .report-chart-box {
+    min-height: 300px;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    background:
+      linear-gradient(rgba(15, 36, 66, .045) 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, rgba(15, 36, 66, .035) 1px, transparent 1px) 0 0 / 12.5% 100%,
+      #ffffff !important;
+    box-shadow: none;
+  }
+
+  .report-chart-box.is-compact {
+    min-height: 220px;
+  }
+
+  .report-chart-box.is-mini {
+    min-height: 210px;
+  }
+
+  .report-chart-box canvas {
+    cursor: crosshair;
+  }
+
+  .report-legend-item,
+  .report-chart-note span,
+  .report-ai-insight {
+    border-color: #dbeafe;
+    background: #f8fbff !important;
+    box-shadow: none;
+    color: #42526b;
+  }
+
+  .report-ai-insight {
+    border-radius: 8px;
+  }
+
+  .report-chart-tooltip {
+    position: fixed;
+    z-index: 9999;
+    min-width: 190px;
+    max-width: 260px;
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .94);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, .24);
+    color: #ffffff;
+    padding: 8px 10px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(12px, 12px);
+    transition: opacity .12s ease, transform .12s ease;
+  }
+
+  .report-chart-tooltip.is-visible {
+    opacity: 1;
+    transform: translate(12px, 12px);
+  }
+
+  .report-chart-tooltip strong {
+    display: block;
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .report-chart-tooltip span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 4px;
+    color: #dbeafe;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .report-chart-tooltip em {
+    color: #ffffff;
+    font-style: normal;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .report-home.is-accounting-shell {
+    min-height: calc(100vh - 96px);
+    padding: 24px 18px 54px;
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 48%, #f8fbff 100%);
+  }
+
+  .report-shell-layout {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 292px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .report-shell-main {
+    min-width: 0;
+  }
+
+  .accounting-side-tabs {
+    position: sticky;
+    top: 116px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .accounting-side-section,
+  .accounting-side-summary {
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .accounting-side-section {
+    padding: 14px;
+  }
+
+  .accounting-side-heading {
+    margin: 0 0 12px;
+    color: #0f2442;
+    font-size: 18px;
+    letter-spacing: 0;
+  }
+
+  .accounting-side-nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  .accounting-side-link {
+    display: flex;
+    align-items: center;
+    min-height: 58px;
+    border: 1px solid #cfe3fb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #ffffff;
+    color: #003b95;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 1000;
+    transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .accounting-side-link:hover,
+  .accounting-side-link.is-active {
+    transform: translateX(3px);
+    border-color: #80bfff;
+    background: #eff6ff;
+    box-shadow: inset 5px 0 0 #006ce4;
+  }
+
+  .accounting-side-summary {
+    padding: 16px;
+  }
+
+  .accounting-side-summary h3 {
+    margin: 0 0 12px;
+    color: #0f2442;
+    font-size: 18px;
+  }
+
+  .accounting-side-summary__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #f4f9ff;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 900;
+  }
+
+  .accounting-side-summary__row + .accounting-side-summary__row {
+    margin-top: 8px;
+  }
+
+  .accounting-side-summary__row strong {
+    color: #003b95;
+    font-size: 17px;
+  }
+
+  .report-home.is-accounting-shell .report-wrap {
+    max-width: none;
+  }
+
+  .report-home.is-accounting-shell .report-hero {
+    margin-bottom: 12px;
+    padding: 20px 22px;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .report-home.is-accounting-shell .report-hero h1 {
+    margin: 12px 0 8px;
+    font-size: clamp(34px, 3.6vw, 50px);
+  }
+
+  .report-home.is-accounting-shell .report-lead {
+    font-size: 14px;
+  }
+
+  .report-home.is-accounting-shell .report-actions {
+    margin-top: 14px;
+  }
+
+  .report-home.is-accounting-shell .report-form-card,
+  .report-home.is-accounting-shell .report-chart-card,
+  .report-home.is-accounting-shell .report-warning,
+  .report-home.is-accounting-shell .report-table-card {
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  @media (max-width: 1080px) {
+    .report-shell-layout {
+      grid-template-columns: 230px minmax(0, 1fr);
+    }
+
+    .report-chart-grid,
+    .report-chart-grid.is-even,
+    .report-chart-grid.is-three,
+    .report-insights,
+    .report-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .report-home {
+      padding: 12px;
+    }
+
+    .report-shell-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .accounting-side-tabs {
+      position: static;
+    }
+
+    .report-chart-grid,
+    .report-chart-grid.is-even,
+    .report-chart-grid.is-three,
+    .report-insights,
+    .report-kpis {
+      grid-template-columns: 1fr;
+    }
+
+    .report-hero h1 {
+      font-size: 22px;
+    }
+  }
+
+  /* Accounting dashboard filter: compact operational toolbar */
+  .report-form-card {
+    overflow: visible;
+    border-radius: 12px !important;
+    padding: 12px 14px !important;
+    border: 1px solid rgba(0, 108, 228, .18) !important;
+    background: rgba(255, 255, 255, .94) !important;
+    box-shadow: 0 14px 38px rgba(15, 23, 42, .08) !important;
+    backdrop-filter: none !important;
+  }
+
+  .report-filter-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .report-filter-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .report-filter-menu {
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  .report-filter-title {
+    min-height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    border-radius: 10px !important;
+    padding: 0 14px !important;
+    border: 1px solid rgba(0, 108, 228, .22) !important;
+    color: #003b95 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    font-size: 14px !important;
+    font-weight: 850 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .report-filter-title::-webkit-details-marker {
+    display: none;
+  }
+
+  .report-filter-title svg,
+  .report-icon-button svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+  }
+
+  .report-filter-menu[open] .report-filter-title {
+    border-color: #006ce4 !important;
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, .10) !important;
+  }
+
+  .report-filter-drawer {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(760px, calc(100vw - 56px));
+    padding: 18px;
+    border: 1px solid rgba(0, 108, 228, .18);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 28px 76px rgba(15, 23, 42, .18);
+  }
+
+  .report-filter-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(15, 23, 42, .08);
+  }
+
+  .report-filter-drawer__head strong {
+    color: #003b95;
+    font-size: 18px;
+  }
+
+  .report-filter-drawer__head span {
+    color: #667085;
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .report-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .report-field-control {
+    display: grid;
+    gap: 7px;
+  }
+
+  .report-field-control.is-wide {
+    grid-column: span 2;
+  }
+
+  .report-field-control span {
+    color: #667085;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .report-field-control input,
+  .report-field-control select,
+  .report-search-control input {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 42px !important;
+    border: 1px solid rgba(15, 23, 42, .14) !important;
+    border-radius: 10px !important;
+    padding: 0 12px !important;
+    color: #102033 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    font: inherit !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    outline: none;
+  }
+
+  .report-field-control input:focus,
+  .report-field-control select:focus,
+  .report-search-control input:focus {
+    border-color: #006ce4 !important;
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, .10) !important;
+  }
+
+  .report-filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(15, 23, 42, .08);
+  }
+
+  .report-search-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 520px;
+    max-width: 640px;
+    min-width: 260px;
+  }
+
+  .report-search-control input {
+    flex: 1 1 auto;
+  }
+
+  .report-form-actions {
+    margin-left: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .report-form-card .report-button,
+  .report-icon-button {
+    min-height: 42px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(0, 108, 228, .22) !important;
+    color: #003b95 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    font-size: 14px !important;
+    font-weight: 850 !important;
+    text-decoration: none !important;
+    cursor: pointer;
+  }
+
+  .report-form-card .report-button {
+    padding: 0 16px !important;
+  }
+
+  .report-form-card .report-button.is-ghost {
+    color: #475569 !important;
+    border-color: rgba(15, 23, 42, .12) !important;
+  }
+
+  .report-form-card .report-button--primary,
+  .report-icon-button--primary {
+    color: #fff !important;
+    border-color: transparent !important;
+    background: #006ce4 !important;
+    box-shadow: 0 10px 24px rgba(0, 108, 228, .22) !important;
+  }
+
+  .report-icon-button {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  @media (max-width: 980px) {
+    .report-filter-bar,
+    .report-filter-left {
+      align-items: stretch !important;
+      flex-direction: column;
+    }
+
+    .report-search-control,
+    .report-form-actions {
+      width: 100%;
+      max-width: none;
+    }
+
+    .report-form-actions {
+      justify-content: flex-end;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .report-filter-drawer {
+      width: calc(100vw - 48px);
+      max-height: min(72vh, 620px);
+      overflow: auto;
+    }
+
+    .report-filter-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .report-field-control.is-wide {
+      grid-column: auto;
+    }
+
+    .report-filter-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>
+<%- include("../partials/accounting-background") %>
+
+<main class="report-home <%= useAccountingShell ? "is-accounting-shell" : "" %>">
+  <div class="<%= useAccountingShell ? "report-shell-layout" : "report-wrap" %>">
+    <% if (useAccountingShell) { %>
+      <aside class="accounting-side-tabs" aria-label="Chức năng kế toán">
+        <section class="accounting-side-section">
+          <h2 class="accounting-side-heading">Chức năng</h2>
+          <nav class="accounting-side-nav" aria-label="UC kế toán">
+            <% accountingNavItems.forEach((item) => { %>
+              <a class="accounting-side-link <%= isAccountingNavActive(item.href) ? "is-active" : "" %>" href="<%= item.href %>"><%= item.label %></a>
+            <% }) %>
+          </nav>
+        </section>
+        <section class="accounting-side-summary" aria-label="Trạng thái hôm nay">
+          <h3>Trạng thái hôm nay</h3>
+          <div class="accounting-side-summary__row"><span>Đã thu</span><strong><%= payload.summary?.paidRevenueFormatted || "0 đ" %></strong></div>
+          <div class="accounting-side-summary__row"><span>Còn phải thu</span><strong><%= payload.summary?.outstandingRevenueFormatted || "0 đ" %></strong></div>
+          <div class="accounting-side-summary__row"><span>Lợi nhuận</span><strong><%= payload.summary?.profitFormatted || "0 đ" %></strong></div>
+        </section>
+      </aside>
+      <section class="report-shell-main" aria-label="UC thống kê tài chính">
+    <% } %>
     <section class="report-hero" aria-label="Thống kê tài chính">
       <div class="report-hero-main">
         <div class="report-chip"><span class="report-pulse"></span> Financial statistics</div>
@@ -1111,67 +1871,101 @@
     </section>
 
     <section class="report-form-card">
-      <form method="get" action="/accounting/reports">
-        <div class="report-filter-bar" aria-label="Thanh lọc dữ liệu biểu đồ">
-          <span class="report-filter-title">Lọc biểu đồ</span>
+      <form method="get" action="<%= useAccountingShell ? "/accounting" : "/accounting/reports" %>">
+        <div class="report-filter-bar" aria-label="Bộ lọc thống kê tài chính">
+          <div class="report-filter-left">
+            <details class="report-filter-menu">
+              <summary class="report-filter-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+                  <path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"></path>
+                </svg>
+                Bộ lọc
+              </summary>
 
-          <div class="report-filter-control">
-            <label for="loai_baocao">Nhóm</label>
-            <select id="loai_baocao" name="loai_baocao">
-              <option value="doanhthu" <%= reportType === "doanhthu" ? "selected" : "" %>>Doanh thu</option>
-              <option value="chiphi" <%= reportType === "chiphi" ? "selected" : "" %>>Chi phí</option>
-              <option value="tonghop" <%= reportType === "tonghop" ? "selected" : "" %>>Tổng hợp</option>
-            </select>
-          </div>
+              <div class="report-filter-drawer">
+                <div class="report-filter-drawer__head">
+                  <strong>Bộ lọc thống kê</strong>
+                  <span><%= payload.rangeLabel || "" %></span>
+                </div>
 
-          <div class="report-filter-control">
-            <label for="ky_han">Kỳ</label>
-            <select id="ky_han" name="ky_han">
-              <option value="ngay" <%= filters.ky_han === "ngay" ? "selected" : "" %>>Ngày</option>
-              <option value="thang" <%= filters.ky_han === "thang" ? "selected" : "" %>>Tháng</option>
-              <option value="khoang" <%= filters.ky_han === "khoang" ? "selected" : "" %>>Khoảng</option>
-            </select>
-          </div>
+                <div class="report-filter-grid">
+                  <label class="report-field-control">
+                    <span>Loại báo cáo</span>
+                    <select id="loai_baocao" name="loai_baocao">
+                      <option value="tonghop" <%= reportType === "tonghop" ? "selected" : "" %>>Tổng hợp</option>
+                      <option value="doanhthu" <%= reportType === "doanhthu" ? "selected" : "" %>>Doanh thu</option>
+                      <option value="chiphi" <%= reportType === "chiphi" ? "selected" : "" %>>Chi phí</option>
+                    </select>
+                  </label>
 
-          <div class="report-filter-control">
-            <label for="tu_ngay">Từ</label>
-            <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
-          </div>
+                  <label class="report-field-control">
+                    <span>Kỳ thống kê</span>
+                    <select id="ky_han" name="ky_han">
+                      <option value="ngay" <%= filters.ky_han === "ngay" ? "selected" : "" %>>Ngày</option>
+                      <option value="thang" <%= filters.ky_han === "thang" ? "selected" : "" %>>Tháng</option>
+                      <option value="khoang" <%= filters.ky_han === "khoang" ? "selected" : "" %>>Khoảng</option>
+                    </select>
+                  </label>
 
-          <div class="report-filter-control">
-            <label for="den_ngay">Đến</label>
-            <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
-          </div>
+                  <label class="report-field-control">
+                    <span>Từ ngày</span>
+                    <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
+                  </label>
 
-          <div class="report-filter-control">
-            <label for="hotel_id">Cơ sở</label>
-            <select id="hotel_id" name="hotel_id">
-              <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
-              <% hotelOptions.forEach((hotel) => { %>
-                <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>>
-                  <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
-                </option>
-              <% }) %>
-            </select>
-          </div>
+                  <label class="report-field-control">
+                    <span>Đến ngày</span>
+                    <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
+                  </label>
 
-          <div class="report-filter-control">
-            <label for="trang_thai">Trạng thái</label>
-            <select id="trang_thai" name="trang_thai">
-              <% statusOptions.forEach((option) => { %>
-                <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
-              <% }) %>
-            </select>
-          </div>
+                  <label class="report-field-control is-wide">
+                    <span>Cơ sở lưu trú</span>
+                    <select id="hotel_id" name="hotel_id">
+                      <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
+                      <% hotelOptions.forEach((hotel) => { %>
+                        <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>>
+                          <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </label>
 
-          <div class="report-filter-control is-search">
-            <label for="search">Tìm</label>
-            <input id="search" name="search" value="<%= filters.search || "" %>" placeholder="Mã giao dịch, khách hàng, phiếu chi..." />
+                  <label class="report-field-control">
+                    <span>Trạng thái</span>
+                    <select id="trang_thai" name="trang_thai">
+                      <% statusOptions.forEach((option) => { %>
+                        <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
+                      <% }) %>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="report-filter-actions">
+                  <a class="report-button is-ghost" href="<%= useAccountingShell ? "/accounting" : "/accounting/reports" %>">Đặt lại</a>
+                  <button class="report-button is-ghost" type="button" data-close-report-filter>Hủy</button>
+                  <button class="report-button report-button--primary" type="submit">Áp dụng lọc</button>
+                </div>
+              </div>
+            </details>
+
+            <div class="report-search-control">
+              <input id="search" name="search" value="<%= filters.search || "" %>" placeholder="Tìm mã giao dịch, khách hàng, phiếu chi..." />
+              <button class="report-icon-button report-icon-button--primary" type="submit" aria-label="Tìm kiếm">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <path d="m16.5 16.5 4 4"></path>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div class="report-form-actions">
-          <button class="report-button report-button--primary" type="submit">Cập nhật</button>
-          <a class="report-button" href="/accounting/reports">Đặt lại</a>
+            <a class="report-icon-button" href="/api/accounting/reports?<%= csvQuery %>" aria-label="Xuất CSV">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <path d="M7 10l5 5 5-5"></path>
+                <path d="M12 15V3"></path>
+              </svg>
+            </a>
           </div>
         </div>
       </form>
@@ -1329,6 +2123,9 @@
         </div>
       </article>
     </section>
+    <% if (useAccountingShell) { %>
+      </section>
+    <% } %>
   </div>
 </main>
 
@@ -1362,12 +2159,169 @@
       reportLollipopChart: "Lollipop ngày nổi bật",
       reportPolarChart: "Polar rose"
     };
+    const metricLabels = {
+      revenue: "Doanh thu",
+      paidRevenue: "Đã thu",
+      outstandingRevenue: "Còn phải thu",
+      expense: "Chi phí",
+      profit: "Lợi nhuận",
+      realizedProfit: "LN đã thu",
+      value: "Giá trị",
+      score: "Điểm",
+      intensity: "Cường độ"
+    };
     const escapeHtml = (value) => String(value ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+    const tooltip = (() => {
+      const node = document.createElement("div");
+      node.className = "report-chart-tooltip";
+      node.setAttribute("role", "tooltip");
+      document.body.appendChild(node);
+      return node;
+    })();
+    const tooltipRows = (rows) => rows
+      .filter((item) => item && item.label)
+      .map((item) => `<span>${escapeHtml(item.label)}<em>${escapeHtml(item.value)}</em></span>`)
+      .join("");
+    const showTooltip = (event, title, rows) => {
+      tooltip.innerHTML = `<strong>${escapeHtml(title)}</strong>${tooltipRows(rows)}`;
+      const width = 260;
+      const height = Math.min(220, 34 + rows.length * 24);
+      const left = Math.min(window.innerWidth - width - 16, Math.max(12, event.clientX + 14));
+      const top = Math.min(window.innerHeight - height - 16, Math.max(12, event.clientY + 14));
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+      tooltip.classList.add("is-visible");
+    };
+    const hideTooltip = () => tooltip.classList.remove("is-visible");
+    const pickByRatio = (rows, ratio) => {
+      if (!Array.isArray(rows) || !rows.length) return null;
+      const index = Math.max(0, Math.min(rows.length - 1, Math.round(ratio * (rows.length - 1))));
+      return rows[index];
+    };
+    const numericRows = (row, keys) => keys
+      .filter((key) => row && row[key] !== undefined)
+      .map((key) => ({
+        label: metricLabels[key] || key,
+        value: key === "score" || key === "intensity" ? `${Math.round(Number(row[key] || 0))}` : money(row[key])
+      }));
+    const tooltipPayload = (canvas, event) => {
+      const id = canvas.id;
+      const rect = canvas.getBoundingClientRect();
+      const ratioX = rect.width ? (event.clientX - rect.left) / rect.width : 0;
+      const ratioY = rect.height ? (event.clientY - rect.top) / rect.height : 0;
+      const title = aiChartTitles[id] || "Biểu đồ tài chính";
+      const trend = Array.isArray(data.trend) ? data.trend : [];
+      const dailyBars = Array.isArray(data.dailyBars) ? data.dailyBars : [];
+      const structure = Array.isArray(data.structure) ? data.structure : [];
+      const waterfall = Array.isArray(data.waterfall) ? data.waterfall : [];
+      const heatmap = Array.isArray(data.heatmap) ? data.heatmap : [];
+      const scatter = Array.isArray(data.scatter) ? data.scatter : [];
+      const radar = Array.isArray(data.radar) ? data.radar : [];
+
+      if (["reportTrendChart", "reportStackedChart", "reportAreaChart", "reportColumnChart", "reportDotLineChart", "reportPolarChart"].includes(id)) {
+        const row = pickByRatio(trend, ratioX);
+        if (!row) return null;
+        const trendKeys = chartMode === "doanhthu"
+          ? ["revenue", "paidRevenue", "outstandingRevenue"]
+          : chartMode === "chiphi"
+            ? ["expense"]
+            : ["revenue", "paidRevenue", "expense", "profit", "realizedProfit"];
+        return {
+          title: `${title} · ${row.label || ""}`,
+          rows: numericRows(row, trendKeys)
+        };
+      }
+
+      if (["reportStructureChart", "reportPieChart"].includes(id)) {
+        const total = structure.reduce((sum, row) => sum + Number(row.value || 0), 0);
+        return {
+          title,
+          rows: structure.slice(0, 6).map((row) => ({
+            label: row.label,
+            value: `${money(row.value)} · ${total ? Math.round(Number(row.value || 0) / total * 100) : 0}%`
+          }))
+        };
+      }
+
+      if (["reportDailyBarChart", "reportLollipopChart"].includes(id)) {
+        const row = pickByRatio(dailyBars, ratioY);
+        if (!row) return null;
+        return {
+          title: `${title} · ${row.label || ""}`,
+          rows: numericRows(row, ["revenue", "expense", "profit"])
+        };
+      }
+
+      if (id === "reportWaterfallChart") {
+        const row = pickByRatio(waterfall, ratioX);
+        if (!row) return null;
+        return {
+          title: `${title} · ${row.label || ""}`,
+          rows: [{ label: "Giá trị", value: money(row.value) }]
+        };
+      }
+
+      if (id === "reportGaugeChart") {
+        const gauges = data.gauges || {};
+        return {
+          title,
+          rows: [
+            { label: "Tỷ lệ đã thu", value: `${Math.round(Number(gauges.paidCoverage || 0))}%` },
+            { label: "Biên lợi nhuận", value: `${Math.round(Number(gauges.profitMargin || 0))}%` },
+            { label: "Tỷ lệ chi phí", value: `${Math.round(Number(gauges.expenseRatio || 0))}%` },
+            { label: "LN thực thu", value: `${Math.round(Number(gauges.realizedMargin || 0))}%` }
+          ]
+        };
+      }
+
+      if (id === "reportRadarChart") {
+        return {
+          title,
+          rows: radar.slice(0, 6).map((row) => ({ label: row.label, value: `${Math.round(Number(row.score ?? row.value ?? 0))}/100` }))
+        };
+      }
+
+      if (id === "reportHeatmapChart") {
+        const row = pickByRatio(heatmap, ratioX);
+        if (!row) return null;
+        return {
+          title: `${title} · ${row.label || ""}`,
+          rows: numericRows(row, ["revenue", "expense", "profit", "intensity"])
+        };
+      }
+
+      if (id === "reportScatterChart") {
+        const row = pickByRatio(scatter, ratioX);
+        if (!row) return null;
+        return {
+          title: `${title} · ${row.label || ""}`,
+          rows: numericRows(row, ["revenue", "expense", "profit"])
+        };
+      }
+
+      return null;
+    };
+    const wireChartTooltips = () => {
+      document.querySelectorAll(".report-chart-box canvas").forEach((canvas) => {
+        if (canvas.dataset.tooltipReady === "1") return;
+        canvas.dataset.tooltipReady = "1";
+        canvas.addEventListener("mousemove", (event) => {
+          const payload = tooltipPayload(canvas, event);
+          if (!payload || !payload.rows.length) {
+            hideTooltip();
+            return;
+          }
+          showTooltip(event, payload.title, payload.rows);
+        });
+        canvas.addEventListener("mouseleave", hideTooltip);
+        canvas.addEventListener("blur", hideTooltip);
+      });
+    };
     const setup = (id) => {
       const canvas = document.getElementById(id);
       if (!canvas) return null;
@@ -1396,10 +2350,6 @@
         form.requestSubmit();
       };
 
-      form.querySelectorAll("select, input[type='date']").forEach((control) => {
-        control.addEventListener("change", submit);
-      });
-
       const search = form.querySelector("input[name='search']");
       if (search) {
         search.addEventListener("keydown", (event) => {
@@ -1407,6 +2357,14 @@
             event.preventDefault();
             submit();
           }
+        });
+      }
+
+      const closeButton = form.querySelector("[data-close-report-filter]");
+      const filterMenu = form.querySelector(".report-filter-menu");
+      if (closeButton && filterMenu) {
+        closeButton.addEventListener("click", () => {
+          filterMenu.removeAttribute("open");
         });
       }
     };
@@ -1514,8 +2472,6 @@
         smoothLine(ctx, points);
         ctx.stroke();
         ctx.shadowBlur = 0;
-        const last = points[points.length - 1];
-        if (last) text(ctx, label, Math.min(width - 72, last.x + 8), last.y, 11, color, 950);
       });
     };
     const drawDonut = () => {
@@ -2153,6 +3109,7 @@
     };
     wireChartFilters();
     render();
+    wireChartTooltips();
     loadAiInsights();
     window.addEventListener("resize", () => window.requestAnimationFrame(render), { passive: true });
   })();

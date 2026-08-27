@@ -17,6 +17,8 @@ import { frontdeskApiRouter, frontdeskRouter } from "./modules/frontdesk/routes/
 import { homeRouter } from "./modules/home/routes/home.routes";
 import { managerApiRouter, managerRouter } from "./modules/manager/routes/manager.routes";
 import { newsRouter } from "./modules/news/routes/news.routes";
+import { notificationApiRouter, notificationRouter } from "./modules/notifications/routes/notification.routes";
+import { notificationService } from "./modules/notifications/services/notification.service";
 import { realtimeRouter } from "./modules/realtime/routes/realtime.routes";
 import { serviceApiRouter, serviceRouter } from "./modules/service/routes/service.routes";
 import { systemApiRouter } from "./modules/system/routes/system.routes";
@@ -86,10 +88,18 @@ export function createApp() {
   app.use("/uploads", express.static(path.resolve(appRoot, "uploads")));
   app.use(csrfProtection);
 
-  app.use((req, res, next) => {
+  app.use(async (req, res, next) => {
     res.locals.currentUser = req.session.user ?? null;
     res.locals.currentPath = req.path;
     res.locals.query = req.query;
+    res.locals.headerNotifications = [];
+
+    try {
+      res.locals.headerNotifications = await notificationService.listForHeader(req.session.user, 8);
+    } catch (error) {
+      req.log?.warn({ err: error }, "Khong the tai thong bao header");
+    }
+
     next();
   });
 
@@ -105,6 +115,7 @@ export function createApp() {
   app.use("/frontdesk", frontdeskRouter);
   app.use("/manager", managerRouter);
   app.use("/news", newsRouter);
+  app.use("/notifications", notificationRouter);
   app.use("/tours", tourRouter);
   app.use("/service", serviceRouter);
   app.use("/booking", bookingRouter);
@@ -118,6 +129,7 @@ export function createApp() {
   app.use("/api/feedback", feedbackApiRouter);
   app.use("/api/frontdesk", frontdeskApiRouter);
   app.use("/api/manager", managerApiRouter);
+  app.use("/api/notifications", notificationApiRouter);
   app.use("/api/realtime", realtimeRouter);
   app.use("/api/service", serviceApiRouter);
   app.use("/api/system", systemApiRouter);

@@ -1,0 +1,141 @@
+<style>
+  :is(
+    .manager-dash.is-ketoan,
+    .report-home,
+    .rev-home,
+    .exp-home,
+    .expense-detail-page,
+    .debt-home,
+    .refund-home,
+    .refund-detail,
+    .flow-home,
+    .fin-home
+  ) {
+    position: relative !important;
+    isolation: isolate !important;
+    overflow-x: hidden;
+    color: var(--ink, #132033);
+    background:
+      linear-gradient(180deg, rgba(235, 246, 255, .02), rgba(235, 246, 255, .18)),
+      linear-gradient(90deg, rgba(235, 246, 255, .16), rgba(235, 246, 255, .03) 46%, rgba(235, 246, 255, .18)),
+      radial-gradient(circle at 18% 8%, rgba(0, 108, 228, .16), transparent 30%),
+      radial-gradient(circle at 86% 12%, rgba(18, 191, 243, .12), transparent 28%),
+      url("/images/san-pham-du-lich.webp") center center / cover no-repeat fixed !important;
+  }
+
+  :is(
+    .manager-dash.is-ketoan,
+    .report-home,
+    .rev-home,
+    .exp-home,
+    .expense-detail-page,
+    .debt-home,
+    .refund-home,
+    .refund-detail,
+    .flow-home,
+    .fin-home
+  )::before,
+  :is(
+    .manager-dash.is-ketoan,
+    .report-home,
+    .rev-home,
+    .exp-home,
+    .expense-detail-page,
+    .debt-home,
+    .refund-home,
+    .refund-detail,
+    .flow-home,
+    .fin-home
+  )::after {
+    display: none !important;
+  }
+
+  :is(
+    .manager-dash.is-ketoan,
+    .report-home,
+    .rev-home,
+    .exp-home,
+    .expense-detail-page,
+    .debt-home,
+    .refund-home,
+    .refund-detail,
+    .flow-home,
+    .fin-home
+  )::before {
+    display: none !important;
+  }
+
+  :is(
+    .manager-dash.is-ketoan,
+    .report-home,
+    .rev-home,
+    .exp-home,
+    .expense-detail-page,
+    .debt-home,
+    .refund-home,
+    .flow-home,
+    .fin-home
+  )::after {
+    display: none !important;
+  }
+
+  :is(
+    .manager-dash.is-ketoan,
+    .report-home,
+    .rev-home,
+    .exp-home,
+    .expense-detail-page,
+    .debt-home,
+    .refund-home,
+    .flow-home,
+    .fin-home
+  ) > * {
+    position: relative;
+    z-index: 1 !important;
+  }
+
+  :is(
+    .manager-dash.is-ketoan .accounting-side-home-label,
+    .manager-dash.is-ketoan .accounting-side-section,
+    .manager-dash.is-ketoan .accounting-side-summary,
+    .manager-dash.is-ketoan .accounting-main-panel,
+    .manager-dash.is-ketoan .accounting-chart-card,
+    .manager-dash.is-ketoan .accounting-model-card,
+    .manager-dash.is-ketoan .dash-stat,
+    .report-form-card,
+    .report-card,
+    .report-chart-card,
+    .rev-hero-main,
+    .rev-kpi,
+    .rev-score,
+    .rev-command-panel,
+    .rev-filter,
+    .rev-panel,
+    .rev-table-panel,
+    .exp-hero-main,
+    .exp-kpi,
+    .exp-form,
+    .exp-panel,
+    .exp-table-panel,
+    .debt-toolbar,
+    .debt-table-card,
+    .refund-hero,
+    .refund-panel,
+    .refund-table-panel,
+    .refund-board,
+    .refund-stat,
+    .refund-detail-card,
+    .refund-detail-panel,
+    .flow-hero,
+    .flow-panel,
+    .flow-table-panel,
+    .fin-toolbar,
+    .fin-card,
+    .fin-report,
+    .fin-table-card
+  ) {
+    background: rgba(255, 255, 255, .78) !important;
+    backdrop-filter: blur(14px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(1.1) !important;
+  }
+</style>

@@ -8,17 +8,49 @@ export async function renderManageFeedback(req: Request, res: Response) {
   const mode = resolveFeedbackMode(req.query.mode ?? req.path);
   const filters = buildModeFilters(req.query, mode);
   const payload = await feedbackService.listFeedback(filters);
-  const selectedId = Number(req.query.id || payload.items[0]?.id || 0);
-  const detail = selectedId ? await feedbackService.getFeedbackDetail(selectedId) : null;
 
   return res.render("feedback/manage", {
     title: mode === "advisory" ? "Trả lời tư vấn khách hàng" : "Quản lý phản hồi",
     payload,
-    detail,
     mode,
     successMessage: req.query.success ? successText(req.query.success) : "",
     errorMessage: req.query.error ? errorText(req.query.error) : ""
   });
+}
+
+export async function renderFeedbackManageDetail(req: Request, res: Response) {
+  const mode = resolveFeedbackMode(req.query.mode ?? req.path);
+  const detail = await feedbackService.getFeedbackDetail(Number(req.params.id));
+  const listQuery = buildListQuery(req.query);
+  const baseListPath = mode === "advisory" ? "/feedback/advisory/manage" : "/feedback/manage";
+  const baseDetailPath = `${baseListPath}/${req.params.id}`;
+
+  return res.render("feedback/detail", {
+    title: mode === "advisory" ? "Chi tiết tư vấn" : "Chi tiết phản hồi",
+    detail,
+    mode,
+    returnListUrl: `${baseListPath}${listQuery}`,
+    returnDetailUrl: `${baseDetailPath}${listQuery}`,
+    successMessage: req.query.success ? successText(req.query.success) : "",
+    errorMessage: req.query.error ? errorText(req.query.error) : ""
+  });
+}
+
+export async function exportFeedbackReportCsv(req: Request, res: Response) {
+  const mode = resolveFeedbackMode(req.query.mode ?? req.path);
+  const filters = buildModeFilters({
+    ...req.query,
+    page: "1",
+    limit: "5000",
+    id: ""
+  }, mode);
+  const payload = await feedbackService.listFeedback(filters);
+  const type = mode === "advisory" ? "tu-van" : "phan-hoi";
+  const timestamp = new Date().toISOString().slice(0, 10);
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="cskh-${type}-${timestamp}.csv"`);
+  return res.send(feedbackReportToCsv(payload, mode));
 }
 
 export async function renderCreateFeedback(req: Request, res: Response) {
@@ -206,6 +238,19 @@ function withFlash(path: string, key: "success" | "error", value: string) {
   return `${path}${separator}${key}=${encodeURIComponent(value)}`;
 }
 
+function buildListQuery(rawQuery: Request["query"]) {
+  const params = new URLSearchParams();
+  const allowedKeys = ["keyword", "khach_hang", "trang_thai", "danh_gia", "loai_dich_vu", "tu_van_nhom", "sentiment", "uu_tien", "thang", "tu_ngay", "den_ngay", "page"];
+  for (const key of allowedKeys) {
+    const value = rawQuery[key];
+    if (typeof value !== "string" || !value || value === "all") continue;
+    if (key === "page" && Number(value) <= 1) continue;
+    params.set(key, value);
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
 function successText(value: unknown) {
   const text = String(value || "");
   if (text === "reply") {
@@ -220,6 +265,46 @@ function successText(value: unknown) {
 function errorText(value: unknown) {
   const text = String(value || "").trim();
   return text || "Không thể xử lý phản hồi lúc này. Vui lòng thử lại.";
+}
+
+function feedbackReportToCsv(payload: any, mode: "feedback" | "advisory") {
+  const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
+  const line = (values: unknown[]) => values.map(escape).join(",");
+  const summary = payload.summary || {};
+  const filters = payload.filters || {};
+  const title = mode === "advisory" ? "BAO CAO TU VAN KHACH HANG" : "BAO CAO PHAN HOI KHACH HANG";
+  const lines: string[] = [
+    line([title]),
+    line(["Tu khoa", filters.keyword || "Tat ca", "Khach hang", filters.khach_hang || "Tat ca", "Thang", filters.thang || "", "Tu ngay", filters.tu_ngay || "", "Den ngay", filters.den_ngay || ""]),
+    line(["Trang thai", filters.trang_thai || "all", "Loai dich vu", filters.loai_dich_vu || "all", "Danh gia", filters.danh_gia || "all", "Cam xuc", filters.sentiment || "all", "Uu tien", filters.uu_tien || "all"]),
+    line(["Tong", summary.tong || 0, "Chua xu ly", summary.chua_xu_ly || 0, "Dang xu ly", summary.dang_xu_ly || 0, "Da xu ly", summary.da_xu_ly || 0, "Qua SLA", summary.qua_sla || 0]),
+    line(["Tich cuc", summary.tich_cuc || 0, "Trung lap", summary.trung_lap || 0, "Tieu cuc", summary.tieu_cuc || 0, "Danh gia TB", summary.danh_gia_tb || 0]),
+    "",
+    line(["Ma", "Ngay gui", "Khach hang", "Email", "So dien thoai", "Loai dich vu", "Danh gia", "Cam xuc", "Uu tien", "SLA", "Trang thai", "So tra loi", "Noi dung", "Tra loi gan nhat", "Nguoi tra loi gan nhat", "Ngay tra loi gan nhat"])
+  ];
+
+  for (const item of payload.items || []) {
+    lines.push(line([
+      item.id,
+      item.ngayTaoLabel,
+      item.tenKh,
+      item.email,
+      item.sdt,
+      mode === "advisory" ? (item.advisoryIntentLabel || item.loaiDichVu) : item.loaiDichVu,
+      item.danhGia,
+      item.sentimentLabel || item.sentiment,
+      item.priorityLabel,
+      item.slaLabel,
+      item.statusLabel || item.trangThai,
+      item.replyCount,
+      item.noiDung,
+      item.noiDungTraLoiMoiNhat,
+      item.nguoiTraLoiMoiNhat,
+      item.ngayTraLoiMoiNhatLabel
+    ]));
+  }
+
+  return `\uFEFF${lines.join("\n")}`;
 }
 
 function resolveFeedbackMode(rawValue: unknown) {
@@ -252,12 +337,28 @@ function withModePayload(rawInput: Record<string, unknown>, mode: "feedback" | "
 }
 
 function buildModeFilters(rawQuery: Request["query"], mode: "feedback" | "advisory") {
+  const query = {
+    ...rawQuery
+  };
+  const month = typeof query.thang === "string" ? query.thang.trim() : "";
+  if (/^\d{4}-\d{2}$/.test(month)) {
+    const [yearText, monthText] = month.split("-");
+    const year = Number(yearText);
+    const monthIndex = Number(monthText);
+    const lastDay = new Date(year, monthIndex, 0).getDate();
+    query.tu_ngay = query.tu_ngay || `${month}-01`;
+    query.den_ngay = query.den_ngay || `${month}-${String(lastDay).padStart(2, "0")}`;
+  }
+
   if (mode !== "advisory") {
-    return rawQuery;
+    return {
+      ...query,
+      exclude_advisory: "1"
+    };
   }
 
   return {
-    ...rawQuery,
+    ...query,
     loai_dich_vu: "Tư vấn",
     mode: "advisory"
   };

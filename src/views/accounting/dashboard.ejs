@@ -6,33 +6,80 @@
   const overdueDebtCount = Number(data.overdueDebtCount || 0);
   const pendingRefundCount = Number(data.pendingRefundCount || 0);
   const urgentCount = overdueDebtCount + pendingRefundCount;
+  const financeCharts = data.financeCharts || {};
+  const recentCashflow = (data.recentCashflow || []).slice(0, 5);
+  const topRooms = (data.topRooms || []).slice(0, 5);
+  const debtFocus = (data.debtFocus || []).slice(0, 5);
+  const dashboardCharts = {
+    trend: financeCharts.trend || [],
+    revenueMix: financeCharts.revenueMix || [],
+    payments: financeCharts.payments || [],
+    sources: financeCharts.sources || [],
+    weekdays: financeCharts.weekdays || [],
+    overview: [
+      { label: "Doanh thu", value: Number(data.monthlyRevenue || 0), color: "#006ce4" },
+      { label: "Chi phí", value: Number(data.monthlyExpense || 0), color: "#f59e0b" },
+      { label: "Công nợ", value: Number(data.outstandingDebt || 0), color: "#7c3aed" },
+      { label: "Hoàn tiền", value: Number(data.pendingRefundAmount || 0), color: "#ef4444" }
+    ],
+    workflow: [
+      { label: "Giao dịch thu", value: Number(data.revenueTransactionCount || 0), color: "#006ce4" },
+      { label: "Phiếu chi", value: Number(data.expenseVoucherCount || 0), color: "#f59e0b" },
+      { label: "Hóa đơn", value: Number(data.totalInvoices || 0), color: "#10b981" },
+      { label: "Hoàn tiền", value: pendingRefundCount, color: "#ef4444" }
+    ]
+  };
+  const dashboardChartsJson = JSON.stringify(dashboardCharts).replace(/</g, "\\u003c");
+  const workflowTotal = dashboardCharts.workflow.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  const collectedRate = Number(data.monthlyRevenue || 0) + Number(data.outstandingDebt || 0) > 0
+    ? Math.round((Number(data.monthlyRevenue || 0) / (Number(data.monthlyRevenue || 0) + Number(data.outstandingDebt || 0))) * 100)
+    : 0;
+  const refundRate = Number(data.pendingRefundAmount || 0) + Number(data.paidRefundAmount || 0) > 0
+    ? Math.round((Number(data.paidRefundAmount || 0) / (Number(data.pendingRefundAmount || 0) + Number(data.paidRefundAmount || 0))) * 100)
+    : 0;
+  const expenseRate = Number(data.monthlyRevenue || 0) > 0
+    ? Math.min(100, Math.round((Number(data.monthlyExpense || 0) / Number(data.monthlyRevenue || 0)) * 100))
+    : 0;
+  const modelCards = [
+    { label: "Thu tiền", value: `${collectedRate}%`, note: "Tỷ lệ đã thu trên tổng phải thu", percent: collectedRate, tone: "blue" },
+    { label: "Chi phí", value: `${expenseRate}%`, note: "Tỷ lệ chi phí so với doanh thu", percent: expenseRate, tone: "amber" },
+    { label: "Hoàn tiền", value: `${refundRate}%`, note: "Tỷ lệ yêu cầu đã hoàn tất", percent: refundRate, tone: "green" },
+    { label: "Việc chờ xử lý", value: urgentCount, note: "Công nợ quá hạn và hoàn tiền chờ chi", percent: Math.min(100, urgentCount * 20), tone: "red" }
+  ];
   const navItems = [
     {
-      href: "/accounting/reports",
+      href: "/accounting/financial-reports",
       code: "01",
-      title: "Thống kê tài chính",
-      note: "Trực quan hóa doanh thu, chi phí, lợi nhuận và dòng tiền theo kỳ.",
-      tone: "cyan"
+      title: "Lập báo cáo tài chính",
+      note: "Tạo báo cáo theo kỳ từ doanh thu, chi phí, công nợ và hoàn tiền.",
+      tone: "blue"
     },
     {
       href: "/accounting/revenue",
       code: "02",
       title: "Quản lý doanh thu",
-      note: "Theo dõi giao dịch thu, khoản đã thu, còn phải thu và công nợ khách hàng.",
+      note: "Tra cứu sổ doanh thu chi tiết, trạng thái ghi nhận và xuất báo cáo.",
       tone: "mint"
     },
     {
       href: "/accounting/expenses",
       code: "03",
       title: "Quản lý chi phí",
-      note: "Quản lý phiếu chi, nhóm chi phí, trạng thái duyệt và chứng từ.",
+      note: "Phiếu chi, nhóm chi phí, trạng thái duyệt và chứng từ.",
       tone: "sun"
     },
     {
-      href: "/accounting/refunds",
+      href: "/accounting/debts",
       code: "04",
+      title: "Quản lý công nợ",
+      note: "Theo dõi khoản còn phải thu, quá hạn, sắp đến hạn và đối soát.",
+      tone: "blue"
+    },
+    {
+      href: "/accounting/refunds",
+      code: "05",
       title: "Xử lý hoàn tiền",
-      note: "Nhận yêu cầu đã được quản lý duyệt, hiện QR hoàn tiền, xác nhận chứng từ và ghi phiếu chi.",
+      note: "Yêu cầu đã duyệt, QR hoàn tiền, chứng từ và phiếu chi.",
       tone: "pink"
     }
   ];
@@ -538,69 +585,1481 @@
     .manager-dash.is-ketoan .manager-action,
     .manager-dash.is-ketoan .dash-stat{grid-column:1/-1}
   }
+
+  /* Accounting dashboard: clean white-blue UI aligned with current system style. */
+  body {
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 46%, #f8fbff 100%) !important;
+  }
+
+  .manager-dash.is-ketoan {
+    --mgr-ink: #0f2442;
+    --mgr-muted: #64748b;
+    --mgr-line: #c9e0fb;
+    min-height: calc(100vh - 96px);
+    padding: 24px 18px 54px;
+    background: linear-gradient(180deg, #f6fbff 0%, #eef6ff 100%) !important;
+    color: var(--mgr-ink);
+  }
+
+  .manager-dash.is-ketoan::before,
+  .manager-dash.is-ketoan::after,
+  .manager-dash.is-ketoan .manager-visual-card {
+    display: none !important;
+  }
+
+  .manager-dash.is-ketoan .manager-shell {
+    max-width: 1280px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .manager-dash.is-ketoan .manager-hero {
+    display: block;
+    margin: 0;
+  }
+
+  .manager-dash.is-ketoan .manager-hero-main {
+    min-height: 0;
+    border-radius: 10px;
+    border: 1px solid #bfdbfe;
+    padding: 24px 26px;
+    background: linear-gradient(135deg, #0071e8, #0047a8) !important;
+    box-shadow: 0 18px 42px rgba(0, 59, 149, .16);
+  }
+
+  .manager-dash.is-ketoan .manager-hero-main::before {
+    display: none;
+  }
+
+  .manager-dash.is-ketoan .manager-chip {
+    color: #dff5ff;
+    background: rgba(255, 255, 255, .12);
+    border-color: rgba(255, 255, 255, .22);
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .manager-dash.is-ketoan .manager-dot {
+    background: #22d3ee;
+    box-shadow: 0 0 0 6px rgba(34, 211, 238, .18);
+  }
+
+  .manager-dash.is-ketoan .manager-hero h1 {
+    max-width: none;
+    margin: 10px 0 0;
+    color: #ffffff !important;
+    font-size: clamp(34px, 3.6vw, 52px);
+    line-height: 1.05;
+    letter-spacing: 0;
+    text-shadow: 0 3px 18px rgba(0, 32, 92, .28) !important;
+  }
+
+  .manager-dash.is-ketoan .manager-hero h1 span {
+    color: #dff5ff !important;
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+  }
+
+  .manager-dash.is-ketoan .manager-lead {
+    max-width: 760px;
+    margin-top: 10px;
+    color: rgba(255, 255, 255, .86) !important;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .manager-dash.is-ketoan .manager-actions {
+    margin-top: 18px;
+  }
+
+  .manager-dash.is-ketoan .manager-button {
+    min-height: 40px !important;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #003b95;
+    border-color: #c9e0fb;
+    box-shadow: none;
+    white-space: nowrap !important;
+  }
+
+  .manager-dash.is-ketoan .manager-button--primary {
+    color: #ffffff;
+    background: #006ce4;
+    border-color: transparent;
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .18);
+  }
+
+  .manager-dash.is-ketoan .manager-section {
+    margin-top: 0;
+  }
+
+  .manager-dash.is-ketoan .manager-section-head {
+    margin-bottom: 10px;
+  }
+
+  .manager-dash.is-ketoan .manager-section-head h2 {
+    color: #0f2442 !important;
+    font-size: 24px;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .accounting-dashboard-layout {
+    display: grid;
+    grid-template-columns: 292px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .accounting-side-tabs {
+    position: sticky;
+    top: 116px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .accounting-side-card,
+  .accounting-side-nav,
+  .accounting-main-panel {
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .accounting-side-card {
+    padding: 16px;
+  }
+
+  .accounting-side-card__label {
+    margin: 0;
+    color: #64748b !important;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .accounting-side-card__name {
+    margin: 6px 0 0;
+    color: #0f2442 !important;
+    font-size: 24px;
+    font-weight: 1000;
+    line-height: 1.1;
+  }
+
+  .accounting-side-card__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    border-radius: 999px;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #047857;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 950;
+  }
+
+  .accounting-side-card__status::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #22c55e;
+  }
+
+  .accounting-side-nav {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .accounting-side-link {
+    position: relative;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    min-height: 58px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 10px;
+    color: #003b95;
+    text-decoration: none;
+    font-weight: 950;
+    transition: transform .16s ease, background .16s ease, border-color .16s ease;
+  }
+
+  .accounting-side-link:hover,
+  .accounting-side-link.is-active {
+    transform: translateX(3px);
+    border-color: #9ec5fe;
+    background: #eff6ff;
+  }
+
+  .accounting-side-link__icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #e0f2fe;
+    color: #006ce4;
+    font-size: 19px;
+  }
+
+  .accounting-side-link span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .accounting-main-stack {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .accounting-main-panel {
+    padding: 18px;
+  }
+
+  .manager-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .manager-dash.is-ketoan .dash-stat {
+    grid-column: auto;
+    min-height: 126px;
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    padding: 16px;
+    background: #ffffff !important;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .manager-dash.is-ketoan .dash-stat strong {
+    color: #003b95;
+    font-size: 25px;
+    line-height: 1.12;
+    letter-spacing: 0;
+  }
+
+  .manager-dash.is-ketoan .dash-stat h3 {
+    margin: 10px 0 5px;
+    color: #0f2442;
+    font-size: 14px;
+  }
+
+  .manager-dash.is-ketoan .dash-stat p {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .accounting-analytics {
+    display: grid;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .accounting-chart-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .accounting-chart-stack {
+    display: grid;
+    gap: 14px;
+  }
+
+  .accounting-chart-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(246, 251, 255, .92)),
+      radial-gradient(circle at 100% 0%, rgba(0, 108, 228, .12), transparent 34%);
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .accounting-chart-card--wide {
+    min-height: 0;
+  }
+
+  .accounting-chart-card--wide .accounting-chart-canvas {
+    height: 490px;
+  }
+
+  .accounting-chart-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .accounting-chart-title {
+    margin: 0;
+    color: #0f2442;
+    font-size: 19px;
+    font-weight: 1000;
+    letter-spacing: 0;
+  }
+
+  .accounting-chart-subtitle {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.45;
+  }
+
+  .accounting-chart-pill {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    border: 1px solid #bbf7d0;
+    background: #f0fdf4;
+    color: #047857;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .accounting-chart-canvas {
+    position: relative;
+    height: 300px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    background:
+      linear-gradient(rgba(15, 36, 66, .045) 1px, transparent 1px) 0 0 / 100% 25%,
+      linear-gradient(90deg, rgba(15, 36, 66, .035) 1px, transparent 1px) 0 0 / 12.5% 100%,
+      #ffffff;
+  }
+
+  .accounting-chart-canvas.is-small {
+    height: 206px;
+  }
+
+  .accounting-chart-canvas canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .accounting-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .accounting-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    background: #f8fbff;
+    color: #42526b;
+    padding: 7px 9px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .accounting-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--legend-color, #006ce4);
+  }
+
+  .accounting-model-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .accounting-model-card {
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+    padding: 14px;
+  }
+
+  .accounting-model-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .accounting-model-card h3 {
+    margin: 0;
+    color: #0f2442;
+    font-size: 14px;
+    font-weight: 1000;
+  }
+
+  .accounting-model-card strong {
+    color: #003b95;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .accounting-model-card p {
+    margin: 8px 0 12px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 780;
+    line-height: 1.45;
+  }
+
+  .accounting-model-bar {
+    overflow: hidden;
+    height: 10px;
+    border-radius: 999px;
+    background: #eaf3ff;
+  }
+
+  .accounting-model-fill {
+    display: block;
+    height: 100%;
+    width: var(--model-percent, 0%);
+    border-radius: inherit;
+    background: #006ce4;
+  }
+
+  .accounting-model-card[data-tone="amber"] .accounting-model-fill {
+    background: #f59e0b;
+  }
+
+  .accounting-model-card[data-tone="green"] .accounting-model-fill {
+    background: #10b981;
+  }
+
+  .accounting-model-card[data-tone="red"] .accounting-model-fill {
+    background: #ef4444;
+  }
+
+  .accounting-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .accounting-insight-card {
+    min-width: 0;
+    border: 1px solid #c9e0fb;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+    padding: 14px;
+  }
+
+  .accounting-insight-card h3 {
+    margin: 0 0 10px;
+    color: #102033;
+    font-size: 18px;
+    font-weight: 950;
+  }
+
+  .accounting-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .accounting-list-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    min-height: 58px;
+    border: 1px solid #e0efff;
+    border-radius: 8px;
+    background: #f7fbff;
+    padding: 9px 10px;
+  }
+
+  .accounting-list-item h4 {
+    margin: 0 0 3px;
+    color: #003b95;
+    font-size: 13px;
+    font-weight: 950;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .accounting-list-item p {
+    margin: 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 760;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .accounting-list-value {
+    color: #047857;
+    font-size: 13px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .accounting-list-value.is-out {
+    color: #dc2626;
+  }
+
+  .accounting-list-empty {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    border: 1px dashed #c9e0fb;
+    border-radius: 8px;
+    background: #f7fbff;
+    color: #64748b;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  /* Accounting dashboard final: follow customer dashboard layout, only overview content differs. */
+  .manager-dash.is-ketoan {
+    max-width: none;
+    padding: 14px 20px 34px;
+    background:
+      linear-gradient(180deg, #eaf4ff 0, #f7fbff 148px, #ffffff 100%) !important;
+  }
+
+  .manager-dash.is-ketoan .manager-shell {
+    max-width: 1480px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .manager-dash.is-ketoan .manager-hero {
+    display: none !important;
+  }
+
+  .accounting-dashboard-layout {
+    grid-template-columns: 236px minmax(0, 1fr);
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .accounting-side-tabs {
+    top: 92px;
+    gap: 10px;
+  }
+
+  .accounting-side-card,
+  .accounting-side-nav,
+  .accounting-main-panel,
+  .accounting-chart-card,
+  .accounting-model-card {
+    border-color: #c9e0fb;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+
+  .accounting-side-card {
+    padding: 14px;
+  }
+
+  .accounting-side-card__label {
+    margin: 0 0 5px;
+    color: #64748b !important;
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .accounting-side-card__name {
+    margin: 0;
+    color: #102033 !important;
+    background: transparent !important;
+    font-size: 18px;
+    font-weight: 950;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .accounting-side-card__status {
+    min-height: 28px;
+    margin-top: 12px;
+    padding: 5px 9px;
+    border-color: #bfdbfe;
+    color: #075eb8;
+    background: #eff6ff;
+  }
+
+  .accounting-side-card__status::before {
+    display: none;
+  }
+
+  .accounting-side-nav {
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .accounting-side-home-label {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    border: 1px solid #c9e0fb;
+    border-left: 4px solid #006ce4;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #102033;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .accounting-side-section {
+    border: 1px solid #c9e0fb;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+    padding: 14px 10px 10px;
+  }
+
+  .accounting-side-heading {
+    margin: 0 4px 10px;
+    color: #102033;
+    font-size: 19px;
+    font-weight: 950;
+  }
+
+  .accounting-side-summary {
+    display: grid;
+    gap: 9px;
+    border: 1px solid #c9e0fb;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+    padding: 12px;
+  }
+
+  .accounting-side-summary h3 {
+    margin: 0;
+    color: #102033;
+    font-size: 15px;
+    font-weight: 950;
+  }
+
+  .accounting-side-summary__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px solid #e0efff;
+    border-radius: 8px;
+    background: #f7fbff;
+    padding: 8px 9px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 850;
+  }
+
+  .accounting-side-summary__row strong {
+    color: #003b95;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .accounting-side-link {
+    display: flex;
+    min-height: 46px;
+    border: 1px solid #d5e6fa;
+    border-left: 4px solid transparent;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #003b95;
+    padding: 0 13px;
+    font-size: 14px;
+    font-weight: 950;
+    box-shadow: none;
+  }
+
+  .accounting-side-link:hover,
+  .accounting-side-link.is-active {
+    transform: translateX(6px) scale(1.025);
+    border-color: #006ce4;
+    border-left-color: #006ce4;
+    background: #eff6ff;
+    box-shadow: 0 12px 28px rgba(0, 108, 228, .14);
+  }
+
+  .accounting-side-link.is-active {
+    border-color: #b7d7ff;
+    border-left-color: #003b95;
+    background: #f8fbff;
+  }
+
+  .accounting-side-link__icon {
+    display: none;
+  }
+
+  .accounting-main-stack {
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .accounting-main-panel {
+    padding: 16px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .accounting-title-bar {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 13px 18px;
+    border: 1px solid #b8d7fb;
+    border-left: 0;
+    border-radius: 8px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #0071e8 0%, #006ce4 52%, #003b95 100%);
+  }
+
+  .accounting-title-bar::before {
+    content: "";
+    width: 5px;
+    height: 34px;
+    border-radius: 999px;
+    background: #ffffff;
+    flex: 0 0 auto;
+  }
+
+  .accounting-title-bar h1 {
+    margin: 0;
+    color: #ffffff !important;
+    font-size: 25px;
+    font-weight: 950;
+    line-height: 1.15;
+  }
+
+  body .manager-dash.is-ketoan .accounting-title-bar h1 {
+    color: #ffffff !important;
+  }
+
+  .manager-dash.is-ketoan .manager-section-head {
+    display: none;
+  }
+
+  .manager-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .manager-dash.is-ketoan .dash-stat {
+    min-height: 76px;
+    padding: 13px 15px;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+
+  .manager-dash.is-ketoan .dash-stat strong {
+    font-size: 28px;
+  }
+
+  .manager-dash.is-ketoan .dash-stat h3 {
+    margin: 8px 0 3px;
+    color: #102033;
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .manager-dash.is-ketoan .dash-stat p {
+    color: #64748b;
+    font-size: 12px;
+  }
+
+  .accounting-analytics {
+    margin-top: 12px;
+    gap: 12px;
+  }
+
+  .accounting-chart-grid {
+    grid-template-columns: minmax(0, 1.12fr) minmax(280px, .88fr);
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .accounting-chart-stack {
+    gap: 12px;
+  }
+
+  .accounting-chart-card {
+    padding: 16px;
+    background: #ffffff;
+    min-width: 0;
+  }
+
+  .accounting-chart-title {
+    color: #102033;
+    font-size: 19px;
+    font-weight: 950;
+  }
+
+  .accounting-chart-canvas {
+    border-color: #dbeafe;
+    border-radius: 8px;
+    height: 300px;
+  }
+
+  .accounting-chart-card--wide .accounting-chart-canvas {
+    height: 360px;
+  }
+
+  .accounting-model-grid {
+    gap: 10px;
+  }
+
+  .accounting-model-card {
+    padding: 13px;
+  }
+
+  .manager-dash.is-ketoan .manager-alert {
+    margin-top: 0;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(0, 59, 149, .07);
+  }
+
+  .manager-dash.is-ketoan .manager-action-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .manager-dash.is-ketoan .manager-action {
+    grid-column: auto;
+    min-height: 150px;
+    border: 1px solid #c9e0fb;
+    border-radius: 10px;
+    padding: 18px;
+    background: #ffffff !important;
+    color: #0f2442;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .manager-dash.is-ketoan .manager-action:hover {
+    transform: translateY(-2px);
+    border-color: #006ce4;
+    box-shadow: 0 18px 42px rgba(0, 108, 228, .12);
+  }
+
+  .manager-dash.is-ketoan .manager-action::before {
+    width: 42px;
+    height: 42px;
+    top: 16px;
+    right: 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+    box-shadow: none;
+  }
+
+  .manager-dash.is-ketoan .manager-action::after {
+    display: none;
+  }
+
+  .manager-dash.is-ketoan .manager-code {
+    display: none;
+  }
+
+  .manager-dash.is-ketoan .manager-action h3 {
+    margin: 52px 0 8px;
+    color: #003b95 !important;
+    font-size: 22px;
+    line-height: 1.1;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+
+  .manager-dash.is-ketoan .manager-action p {
+    color: #64748b !important;
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 700;
+    text-shadow: none;
+  }
+
+  .manager-dash.is-ketoan .manager-open {
+    right: 18px;
+    bottom: 16px;
+    color: #006ce4 !important;
+    text-shadow: none;
+  }
+
+  .manager-dash.is-ketoan .manager-alert {
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    background: #fff7ed !important;
+    color: #7c2d12;
+    box-shadow: 0 12px 28px rgba(15, 36, 66, .07);
+  }
+
+  .manager-dash.is-ketoan .manager-alert strong,
+  .manager-dash.is-ketoan .manager-alert p {
+    color: #7c2d12 !important;
+  }
+
+  @media(max-width:1100px) {
+    .accounting-dashboard-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .accounting-side-tabs {
+      position: static;
+    }
+
+    .accounting-side-nav {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .manager-kpi-grid,
+    .manager-dash.is-ketoan .manager-action-grid,
+    .accounting-chart-grid,
+    .accounting-model-grid,
+    .accounting-insight-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media(max-width:1180px) {
+    .accounting-dashboard-layout {
+      grid-template-columns: 220px minmax(0, 1fr);
+    }
+
+    .manager-kpi-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media(max-width:900px) {
+    .accounting-dashboard-layout,
+    .accounting-chart-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .accounting-side-tabs {
+      position: static;
+    }
+  }
+
+  @media(max-width:720px) {
+    .manager-dash.is-ketoan {
+      padding: 18px 12px 42px;
+    }
+
+    .manager-kpi-grid,
+    .manager-dash.is-ketoan .manager-action-grid,
+    .accounting-chart-grid,
+    .accounting-model-grid,
+    .accounting-pulse-grid,
+    .accounting-insight-grid,
+    .accounting-side-nav {
+      grid-template-columns: 1fr;
+    }
+
+    .manager-dash.is-ketoan .manager-hero-main {
+      padding: 20px;
+    }
+
+    .accounting-chart-card--wide .accounting-chart-canvas {
+      height: 300px;
+    }
+
+    .accounting-title-bar h1 {
+      font-size: 22px;
+    }
+  }
 </style>
+<%- include("../partials/accounting-background") %>
 
 <main class="manager-dash is-ketoan">
   <div class="manager-shell">
-    <section class="manager-hero" aria-label="Dashboard kế toán">
-      <div class="manager-hero-main">
-        <div class="manager-chip"><span class="manager-dot"></span> Kế toán command center</div>
-        <h1>Kế toán vận hành <span>tài chính.</span></h1>
-        <p class="manager-lead">Theo dõi thống kê, doanh thu, chi phí và hoàn tiền trong một màn điều hướng gọn.</p>
-        <div class="manager-actions">
-          <a class="manager-button manager-button--primary" href="/accounting/reports">Thống kê tài chính</a>
-          <a class="manager-button" href="/accounting/revenue">Quản lý doanh thu</a>
-          <a class="manager-button" href="/accounting/expenses">Quản lý chi phí</a>
-        </div>
-      </div>
-      <aside class="manager-visual-card" aria-label="Minh họa vũ trụ kế toán">
-        <div class="manager-visual-scene accounting-galaxy-visual">
-          <span class="accounting-nebula"></span>
-          <span class="accounting-comet accounting-comet--one"></span>
-          <span class="accounting-comet accounting-comet--two"></span>
-          <span class="accounting-comet accounting-comet--three"></span>
-          <div class="manager-earth-3d" data-earth-3d>
-            <canvas aria-label="Trái Đất 3D xoay"></canvas>
-          </div>
-          <span class="accounting-moon"></span>
-        </div>
+    <section class="accounting-dashboard-layout" aria-label="Trang kế toán">
+      <aside class="accounting-side-tabs" aria-label="Chức năng kế toán">
+        <div class="accounting-side-home-label">Thống kê tài chính</div>
+        <section class="accounting-side-section">
+          <h2 class="accounting-side-heading">Chức năng</h2>
+          <nav class="accounting-side-nav" aria-label="UC kế toán">
+            <% navItems.forEach((item) => { %>
+              <a class="accounting-side-link" href="<%= item.href %>">
+                <span><%= item.title %></span>
+              </a>
+            <% }) %>
+          </nav>
+        </section>
+        <section class="accounting-side-summary" aria-label="Trạng thái kế toán">
+          <h3>Trạng thái hôm nay</h3>
+          <div class="accounting-side-summary__row"><span>Hoàn tiền</span><strong><%= pendingRefundCount %></strong></div>
+          <div class="accounting-side-summary__row"><span>Công nợ quá hạn</span><strong><%= overdueDebtCount %></strong></div>
+          <div class="accounting-side-summary__row"><span>Dòng tiền</span><strong><%= netPositive ? "Dương" : "Âm" %></strong></div>
+        </section>
       </aside>
-    </section>
 
-    <section class="manager-section">
-      <div class="manager-section-head">
-        <div>
-          <h2>UC chính của Kế toán</h2>
-        </div>
-      </div>
-      <div class="manager-action-grid">
-        <% navItems.forEach((item) => { %>
-          <a class="manager-action" data-tone="<%= item.tone %>" href="<%= item.href %>">
-            <span class="manager-code"><%= item.code %></span>
-            <h3><%= item.title %></h3>
-            <p><%= item.note %></p>
-            <span class="manager-open">Mở chức năng</span>
-          </a>
-        <% }) %>
-      </div>
-    </section>
+      <section class="accounting-main-stack">
+        <section class="manager-section accounting-main-panel">
+          <div class="accounting-title-bar">
+            <h1>Thống kê tài chính</h1>
+          </div>
+          <div class="manager-section-head">
+            <div>
+              <h2>Thống kê tài chính</h2>
+            </div>
+          </div>
+          <div class="manager-kpi-grid">
+            <% kpis.forEach((item) => { %>
+              <article class="dash-stat">
+                <strong><%= item.value %></strong>
+                <h3><%= item.label %></h3>
+                <p><%= item.note %></p>
+              </article>
+            <% }) %>
+          </div>
+          <div class="accounting-analytics">
+            <div class="accounting-chart-grid">
+              <article class="accounting-chart-card accounting-chart-card--wide">
+                <div class="accounting-chart-head">
+                  <div>
+                    <h3 class="accounting-chart-title">Xu hướng dòng tiền</h3>
+                    <p class="accounting-chart-subtitle">Theo dõi doanh thu, đã thu, còn phải thu và chi phí trong tháng.</p>
+                  </div>
+                  <span class="accounting-chart-pill"><%= data.periodLabel || "Tháng hiện tại" %></span>
+                </div>
+                <div class="accounting-chart-canvas">
+                  <canvas id="accountingTrendChart" aria-label="Biểu đồ xu hướng dòng tiền"></canvas>
+                </div>
+                <div class="accounting-chart-legend">
+                  <span class="accounting-legend-item"><span class="accounting-legend-dot" style="--legend-color:#006ce4"></span>Doanh thu</span>
+                  <span class="accounting-legend-item"><span class="accounting-legend-dot" style="--legend-color:#10b981"></span>Đã thu</span>
+                  <span class="accounting-legend-item"><span class="accounting-legend-dot" style="--legend-color:#f59e0b"></span>Chi phí</span>
+                  <span class="accounting-legend-item"><span class="accounting-legend-dot" style="--legend-color:#ef4444"></span>Còn phải thu</span>
+                </div>
+              </article>
 
-    <% if (urgentCount > 0) { %>
-      <section class="manager-section">
-        <div class="manager-alert" aria-label="Việc cần xử lý">
-          <div>
-            <strong>Cần xử lý: <%= urgentCount %> mục</strong>
-            <p><%= overdueDebtCount %> công nợ quá hạn và <%= pendingRefundCount %> yêu cầu hoàn tiền đang chờ xử lý.</p>
+              <div class="accounting-chart-stack">
+                <article class="accounting-chart-card">
+                  <div class="accounting-chart-head">
+                    <div>
+                      <h3 class="accounting-chart-title">Cơ cấu dòng tiền</h3>
+                      <p class="accounting-chart-subtitle">Tỷ trọng doanh thu, chi phí, công nợ và hoàn tiền.</p>
+                    </div>
+                  </div>
+                  <div class="accounting-chart-canvas is-small">
+                    <canvas id="accountingOverviewChart" aria-label="Biểu đồ cơ cấu dòng tiền"></canvas>
+                  </div>
+                </article>
+
+                <article class="accounting-chart-card">
+                  <div class="accounting-chart-head">
+                    <div>
+                      <h3 class="accounting-chart-title">Khối lượng xử lý</h3>
+                      <p class="accounting-chart-subtitle"><%= workflowTotal %> nghiệp vụ tài chính đang được ghi nhận.</p>
+                    </div>
+                  </div>
+                  <div class="accounting-chart-canvas is-small">
+                    <canvas id="accountingWorkflowChart" aria-label="Biểu đồ khối lượng nghiệp vụ kế toán"></canvas>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <div class="accounting-insight-grid">
+              <article class="accounting-insight-card">
+                <h3>Dòng tiền gần nhất</h3>
+                <% if (!recentCashflow.length) { %>
+                  <div class="accounting-list-empty">Chưa có dòng tiền phát sinh trong kỳ.</div>
+                <% } else { %>
+                  <div class="accounting-list">
+                    <% recentCashflow.forEach((item) => { %>
+                      <div class="accounting-list-item">
+                        <div>
+                          <h4><%= item.maThamChieu || "Dòng tiền" %></h4>
+                          <p><%= item.ngayFormatted || "-" %> · <%= item.doiTuong || item.noiDung || "Nghiệp vụ tài chính" %></p>
+                        </div>
+                        <strong class="accounting-list-value <%= item.loaiDongTien === "chi" ? "is-out" : "" %>"><%= item.loaiDongTien === "chi" ? "-" : "+" %><%= item.soTienFormatted || "0 đ" %></strong>
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </article>
+
+              <article class="accounting-insight-card">
+                <h3>Top phòng doanh thu</h3>
+                <% if (!topRooms.length) { %>
+                  <div class="accounting-list-empty">Chưa có phòng tạo doanh thu trong tháng.</div>
+                <% } else { %>
+                  <div class="accounting-list">
+                    <% topRooms.forEach((room) => { %>
+                      <div class="accounting-list-item">
+                        <div>
+                          <h4>Phòng <%= room.roomNumber || room.roomId %></h4>
+                          <p><%= room.hotelName || "Cơ sở lưu trú" %> · <%= room.bookingCount || 0 %> booking</p>
+                        </div>
+                        <strong class="accounting-list-value"><%= room.revenueFormatted || "0 đ" %></strong>
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </article>
+
+              <article class="accounting-insight-card">
+                <h3>Công nợ cần chú ý</h3>
+                <% if (!debtFocus.length) { %>
+                  <div class="accounting-list-empty">Không có công nợ cần chú ý.</div>
+                <% } else { %>
+                  <div class="accounting-list">
+                    <% debtFocus.forEach((debt) => { %>
+                      <div class="accounting-list-item">
+                        <div>
+                          <h4><%= debt.customerName || "Khách hàng" %></h4>
+                          <p><%= debt.bookingCode || `CN-${debt.id}` %> · hạn <%= debt.dueDateFormatted || "-" %></p>
+                        </div>
+                        <strong class="accounting-list-value is-out"><%= debt.remainingFormatted || "0 đ" %></strong>
+                      </div>
+                    <% }) %>
+                  </div>
+                <% } %>
+              </article>
+            </div>
+
+            <div class="accounting-chart-grid">
+              <article class="accounting-chart-card">
+                <div class="accounting-chart-head">
+                  <div>
+                    <h3 class="accounting-chart-title">Cơ cấu doanh thu</h3>
+                    <p class="accounting-chart-subtitle">Tiền phòng, dịch vụ, phụ thu và bồi thường.</p>
+                  </div>
+                </div>
+                <div class="accounting-chart-canvas is-small">
+                  <canvas id="accountingRevenueMixChart" aria-label="Biểu đồ cơ cấu doanh thu"></canvas>
+                </div>
+              </article>
+
+              <article class="accounting-chart-card">
+                <div class="accounting-chart-head">
+                  <div>
+                    <h3 class="accounting-chart-title">Doanh thu theo thứ</h3>
+                    <p class="accounting-chart-subtitle">Nhìn nhanh ngày nào có dòng tiền tốt hơn.</p>
+                  </div>
+                </div>
+                <div class="accounting-chart-canvas is-small">
+                  <canvas id="accountingWeekdayChart" aria-label="Biểu đồ doanh thu theo thứ"></canvas>
+                </div>
+              </article>
+            </div>
+
+            <div class="accounting-model-grid">
+              <% modelCards.forEach((item) => { %>
+                <article class="accounting-model-card" data-tone="<%= item.tone %>">
+                  <div class="accounting-model-card__top">
+                    <h3><%= item.label %></h3>
+                    <strong><%= item.value %></strong>
+                  </div>
+                  <p><%= item.note %></p>
+                  <div class="accounting-model-bar" aria-hidden="true">
+                    <span class="accounting-model-fill" style="--model-percent:<%= Math.max(4, Math.min(100, Number(item.percent || 0))) %>%"></span>
+                  </div>
+                </article>
+              <% }) %>
+            </div>
           </div>
-          <div class="manager-alert-actions">
-            <% if (overdueDebtCount > 0) { %><a class="manager-button" href="/accounting/revenue?trang_thai=Stayed">Mở doanh thu còn thu</a><% } %>
-            <% if (pendingRefundCount > 0) { %><a class="manager-button" href="/accounting/refunds?trang_thai=ChoXuLy">Mở hoàn tiền</a><% } %>
-          </div>
-        </div>
+        </section>
+
+        <% if (urgentCount > 0) { %>
+          <section class="manager-section">
+            <div class="manager-alert" aria-label="Việc cần xử lý">
+              <div>
+                <strong>Cần xử lý: <%= urgentCount %> mục</strong>
+                <p><%= overdueDebtCount %> công nợ quá hạn và <%= pendingRefundCount %> yêu cầu hoàn tiền đang chờ xử lý.</p>
+              </div>
+              <div class="manager-alert-actions">
+                <% if (overdueDebtCount > 0) { %><a class="manager-button" href="/accounting/revenue?trang_thai=Stayed">Mở doanh thu còn thu</a><% } %>
+                <% if (pendingRefundCount > 0) { %><a class="manager-button" href="/accounting/refunds?trang_thai=ChoXuLy">Mở hoàn tiền</a><% } %>
+              </div>
+            </div>
+          </section>
+        <% } %>
       </section>
-    <% } %>
+    </section>
   </div>
 </main>
 
-<script type="module" src="/js/home-galaxy-earth.js"></script>
+<script type="application/json" id="accountingDashboardData"><%- dashboardChartsJson %></script>
+<script>
+  (() => {
+    const source = document.getElementById("accountingDashboardData");
+    if (!source) return;
+
+    const charts = JSON.parse(source.textContent || "{}");
+    const money = (value) => `${new Intl.NumberFormat("vi-VN").format(Math.round(Number(value || 0)))} đ`;
+    const number = (value) => new Intl.NumberFormat("vi-VN").format(Math.round(Number(value || 0)));
+    const colors = {
+      revenue: "#006ce4",
+      paid: "#10b981",
+      expense: "#f59e0b",
+      outstanding: "#ef4444",
+      muted: "#94a3b8",
+      grid: "#dbeafe",
+      ink: "#0f2442"
+    };
+
+    function prepareCanvas(id) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      const parent = canvas.parentElement;
+      const rect = parent.getBoundingClientRect();
+      const ratio = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const width = Math.max(280, Math.floor(rect.width));
+      const height = Math.max(180, Math.floor(rect.height));
+      canvas.width = Math.floor(width * ratio);
+      canvas.height = Math.floor(height * ratio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { canvas, ctx, width, height };
+    }
+
+    function roundedRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function emptyState(ctx, width, height, label = "Chưa có dữ liệu phát sinh") {
+      ctx.fillStyle = "#e0f2fe";
+      ctx.strokeStyle = "#bfdbfe";
+      roundedRect(ctx, width / 2 - 88, height / 2 - 34, 176, 68, 18);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors.ink;
+      ctx.font = "800 13px system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(label, width / 2, height / 2 + 5);
+    }
+
+    function drawTrend() {
+      const chart = prepareCanvas("accountingTrendChart");
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const rows = Array.isArray(charts.trend) ? charts.trend : [];
+      const pad = { top: 20, right: 24, bottom: 42, left: 62 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const maxValue = Math.max(
+        1,
+        ...rows.flatMap((row) => [
+          Number(row.total || 0),
+          Number(row.paid || 0),
+          Number(row.outstanding || 0),
+          Number(row.expense || 0)
+        ])
+      );
+
+      ctx.strokeStyle = colors.grid;
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#64748b";
+      ctx.font = "700 11px system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.textAlign = "right";
+      for (let i = 0; i <= 4; i += 1) {
+        const y = pad.top + (plotH / 4) * i;
+        const value = maxValue - (maxValue / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(value >= 1000000 ? `${Math.round(value / 1000000)}tr` : `${Math.round(value / 1000)}k`, pad.left - 10, y + 4);
+      }
+
+      if (!rows.length || maxValue <= 1) {
+        emptyState(ctx, width, height);
+        return;
+      }
+
+      const xFor = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (plotW / (rows.length - 1)) * index);
+      const yFor = (value) => pad.top + plotH - (Number(value || 0) / maxValue) * plotH;
+      const series = [
+        ["total", colors.revenue],
+        ["paid", colors.paid],
+        ["expense", colors.expense],
+        ["outstanding", colors.outstanding]
+      ];
+
+      series.forEach(([key, color]) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        rows.forEach((row, index) => {
+          const x = xFor(index);
+          const y = yFor(row[key]);
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        rows.forEach((row, index) => {
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(xFor(index), yFor(row[key]), 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      ctx.fillStyle = "#64748b";
+      ctx.font = "800 11px system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.textAlign = "center";
+      rows.forEach((row, index) => {
+        if (index % Math.ceil(rows.length / 6) === 0 || index === rows.length - 1) {
+          ctx.fillText(row.label || "", xFor(index), height - 16);
+        }
+      });
+    }
+
+    function drawDonut(id, rows, centerLabel) {
+      const chart = prepareCanvas(id);
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const total = rows.reduce((sum, item) => sum + Math.max(0, Number(item.value || 0)), 0);
+      const cx = width * .42;
+      const cy = height / 2;
+      const radius = Math.min(width, height) * .32;
+      const colorsList = ["#006ce4", "#10b981", "#f59e0b", "#ef4444", "#7c3aed", "#06b6d4"];
+
+      if (!total) {
+        ctx.strokeStyle = "#dbeafe";
+        ctx.lineWidth = 24;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        emptyState(ctx, width, height, "Chưa có dòng tiền");
+        return;
+      }
+
+      let start = -Math.PI / 2;
+      rows.forEach((item, index) => {
+        const value = Math.max(0, Number(item.value || 0));
+        const angle = (value / total) * Math.PI * 2;
+        ctx.strokeStyle = item.color || colorsList[index % colorsList.length];
+        ctx.lineWidth = 26;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, start, start + angle);
+        ctx.stroke();
+        start += angle;
+      });
+
+      ctx.fillStyle = colors.ink;
+      ctx.font = "1000 18px system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(centerLabel, cx, cy - 4);
+      ctx.fillStyle = "#64748b";
+      ctx.font = "800 12px system-ui, -apple-system, Segoe UI, sans-serif";
+      ctx.fillText(money(total), cx, cy + 18);
+
+      const legendX = width * .66;
+      let legendY = Math.max(28, cy - rows.length * 13);
+      ctx.textAlign = "left";
+      rows.slice(0, 5).forEach((item, index) => {
+        const color = item.color || colorsList[index % colorsList.length];
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(legendX, legendY + 6, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colors.ink;
+        ctx.font = "850 12px system-ui, -apple-system, Segoe UI, sans-serif";
+        ctx.fillText(item.label || "Khác", legendX + 12, legendY + 9);
+        ctx.fillStyle = "#64748b";
+        ctx.font = "750 11px system-ui, -apple-system, Segoe UI, sans-serif";
+        ctx.fillText(money(item.value), legendX + 12, legendY + 25);
+        legendY += 40;
+      });
+    }
+
+    function drawHorizontalBars(id, rows, valueFormatter = number) {
+      const chart = prepareCanvas(id);
+      if (!chart) return;
+      const { ctx, width, height } = chart;
+      const data = (Array.isArray(rows) ? rows : []).filter((item) => Number(item.value || 0) > 0 || Number(item.count || 0) > 0);
+      const maxValue = Math.max(1, ...data.map((item) => Number(item.value || item.count || 0)));
+      const top = 24;
+      const left = 120;
+      const right = 22;
+      const rowGap = 12;
+      const barH = Math.max(18, Math.min(26, (height - top * 2 - rowGap * Math.max(0, data.length - 1)) / Math.max(1, data.length)));
+      const colorsList = ["#006ce4", "#10b981", "#f59e0b", "#ef4444", "#7c3aed", "#06b6d4"];
+
+      if (!data.length) {
+        emptyState(ctx, width, height);
+        return;
+      }
+
+      data.slice(0, 6).forEach((item, index) => {
+        const y = top + index * (barH + rowGap);
+        const value = Number(item.value || item.count || 0);
+        const barW = Math.max(8, ((width - left - right) * value) / maxValue);
+        ctx.fillStyle = colors.ink;
+        ctx.font = "850 12px system-ui, -apple-system, Segoe UI, sans-serif";
+        ctx.textAlign = "right";
+        ctx.fillText(item.label || "Khác", left - 12, y + barH * .68);
+        ctx.fillStyle = "#eaf3ff";
+        roundedRect(ctx, left, y, width - left - right, barH, 9);
+        ctx.fill();
+        ctx.fillStyle = item.color || colorsList[index % colorsList.length];
+        roundedRect(ctx, left, y, barW, barH, 9);
+        ctx.fill();
+        const label = valueFormatter(value);
+        const labelWidth = ctx.measureText(label).width;
+        const drawInside = barW > 96 && left + barW + labelWidth + 14 > width - right;
+        ctx.fillStyle = drawInside ? "#ffffff" : "#64748b";
+        ctx.font = "800 11px system-ui, -apple-system, Segoe UI, sans-serif";
+        ctx.textAlign = drawInside ? "right" : "left";
+        ctx.fillText(label, drawInside ? left + barW - 9 : left + barW + 8, y + barH * .68);
+      });
+    }
+
+    function renderCharts() {
+      drawTrend();
+      drawDonut("accountingOverviewChart", charts.overview || [], "Tổng");
+      drawHorizontalBars("accountingWorkflowChart", charts.workflow || [], number);
+      drawHorizontalBars("accountingRevenueMixChart", charts.revenueMix || [], money);
+      drawHorizontalBars("accountingWeekdayChart", charts.weekdays || [], money);
+    }
+
+    renderCharts();
+    let resizeTimer;
+    window.addEventListener("resize", () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(renderCharts, 140);
+    });
+  })();
+</script>
 <%- include("../partials/footer") %>

@@ -1,34 +1,123 @@
 <%- include("../partials/head") %>
 <%- include("../partials/header") %>
 <%
+  const safeQuery = (typeof query !== "undefined" && query) ? query : {};
+  const pageNotice = (typeof notice !== "undefined" && notice) ? notice : {};
   const roomFeed = payload.roomFeed || { summary: {}, items: [], byHotel: [], priorityQueue: [] };
   const rooms = roomFeed.items || [];
   const inspectionHistory = payload.inspectionHistory || [];
   const draft = (typeof inspectionDraft !== "undefined" && inspectionDraft) ? inspectionDraft : {};
-  const selectedRoomId = Number(draft.room_id || query?.room_id || 0);
+
+  const searchValue = String(safeQuery.search || "").trim();
+  const statusFilter = String(safeQuery.status || "all");
+  const hotelFilter = String(safeQuery.hotel_id || "all");
+  const priorityFilter = String(safeQuery.priority || "all");
+  const conditionFilter = String(safeQuery.condition || "all");
+  const selectedRoomId = Number(draft.room_id || safeQuery.room_id || 0);
+  const pageSize = 10;
+  const requestedPage = Math.max(Number(safeQuery.page || 1) || 1, 1);
+
+  const conditionOptions = [
+    { value: "Tot", label: "Tốt", target: "Sẵn sàng", hint: "Đạt chuẩn mở bán." },
+    { value: "CanVeSinh", label: "Cần vệ sinh", target: "Cần vệ sinh", hint: "Giữ phòng để xử lý vệ sinh." },
+    { value: "HuHaiNhe", label: "Hư hại nhẹ", target: "Bảo trì", hint: "Ghi rõ lỗi cần kiểm tra." },
+    { value: "HuHaiNang", label: "Hư hại nặng", target: "Bảo trì", hint: "Khóa bán đến khi xử lý xong." },
+    { value: "DangBaoTri", label: "Đang bảo trì", target: "Bảo trì", hint: "Cập nhật tiến độ bảo trì." }
+  ];
+  const conditionValue = draft.room_condition || safeQuery.room_condition || "Tot";
+  const noteValue = draft.note || "";
+  const conditionLabel = (value) => (conditionOptions.find((item) => item.value === value)?.label || value || "Không rõ");
   const selectedRoom = selectedRoomId ? rooms.find((item) => Number(item.id) === selectedRoomId) : null;
+
+  const statusText = (value) => ({
+    Available: "Sẵn sàng",
+    Cleaning: "Cần vệ sinh",
+    Maintenance: "Bảo trì",
+    Booked: "Đã đặt",
+    Stayed: "Đang ở",
+    Trong: "Trống",
+    BaoTri: "Bảo trì"
+  }[value] || value || "Chưa rõ");
+  const statusClass = (value) => {
+    if (value === "Available" || value === "Trong") return "pill ok";
+    if (value === "Cleaning") return "pill info";
+    if (value === "Maintenance" || value === "BaoTri") return "pill warn";
+    if (value === "Booked") return "pill purple";
+    if (value === "Stayed") return "pill teal";
+    return "pill";
+  };
+  const priorityText = (value) => ({
+    maintenance: "Ưu tiên bảo trì",
+    cleaning: "Cần vệ sinh",
+    booked: "Sắp nhận khách",
+    stayed: "Đang có khách",
+    available: "Sẵn sàng"
+  }[value] || value || "Theo dõi");
   const isRoomLocked = (room) => Boolean(room?.isLocked) || Boolean(room?.transactionId) || ["Booked", "Stayed"].includes(room?.trangThaiRealtime || room?.trangThai || "");
   const isRoomActionable = (room) => room?.canInspect !== false && !isRoomLocked(room);
-  const actionableRooms = rooms.filter(isRoomActionable);
-  const lockedRooms = rooms.filter((room) => !isRoomActionable(room));
-  const conditionValue = draft.room_condition || query?.room_condition || "Tot";
-  const noteValue = draft.note || "";
-  const conditionOptions = [
-    { value: "Tot", label: "Tốt", target: "Available", tone: "ok", summary: "Sạch, đủ tiêu chuẩn, mở bán được.", note: "Đưa phòng về Available và sẵn sàng nhận khách." },
-    { value: "CanVeSinh", label: "Cần vệ sinh", target: "Cleaning", tone: "cleaning", summary: "Cần housekeeping xử lý trước lượt khách mới.", note: "Giữ phòng trong luồng Cleaning, chưa nên nhận khách." },
-    { value: "HuHaiNhe", label: "Hư hại nhẹ", target: "Maintenance", tone: "warning", summary: "Có lỗi nhỏ cần bảo trì kiểm tra.", note: "Khóa bán tạm thời, ghi rõ hạng mục cần sửa." },
-    { value: "HuHaiNang", label: "Hư hại nặng", target: "Maintenance", tone: "danger", summary: "Không đạt tiêu chuẩn vận hành.", note: "Khóa khỏi inventory đến khi bảo trì xác nhận xong." },
-    { value: "DangBaoTri", label: "Đang bảo trì", target: "Maintenance", tone: "danger", summary: "Phòng đang được xử lý kỹ thuật.", note: "Tiếp tục giữ trạng thái bảo trì và ghi tiến độ." }
-  ];
-  const conditionLabel = (value) => (conditionOptions.find((item) => item.value === value)?.label || value || "Không rõ");
-  const realtimeClass = (value) => {
-    if (value === "Available") return "inspect-pill--ok";
-    if (value === "Cleaning") return "inspect-pill--cleaning";
-    if (value === "Maintenance") return "inspect-pill--danger";
-    if (value === "Booked") return "inspect-pill--booked";
-    if (value === "Stayed") return "inspect-pill--stayed";
-    return "inspect-pill--muted";
+  const hotelMap = new Map();
+  rooms.forEach((room) => {
+    const key = String(room.hotelId || `${room.hotelName || ""}-${room.hotelCity || ""}`);
+    if (!hotelMap.has(key)) {
+      hotelMap.set(key, {
+        value: key,
+        label: [room.hotelName, room.hotelCity].filter(Boolean).join(" · ") || "Không rõ cơ sở"
+      });
+    }
+  });
+  const hotelChoices = Array.from(hotelMap.values());
+  const matchesRoom = (room) => {
+    const state = room.trangThaiRealtime || room.trangThai || "";
+    const hotelKey = String(room.hotelId || `${room.hotelName || ""}-${room.hotelCity || ""}`);
+    const haystack = [
+      room.soPhong,
+      room.loaiPhong,
+      room.hotelName,
+      room.hotelCity,
+      room.bookingCode,
+      room.guestName,
+      room.tinhTrangPhong,
+      room.priorityLabel
+    ].filter(Boolean).join(" ").toLowerCase();
+    const bySearch = !searchValue || haystack.includes(searchValue.toLowerCase());
+    const byHotel = hotelFilter === "all" || hotelKey === hotelFilter;
+    const byStatus = statusFilter === "all"
+      || (statusFilter === "actionable" && isRoomActionable(room))
+      || (statusFilter === "locked" && !isRoomActionable(room))
+      || state === statusFilter;
+    const byPriority = priorityFilter === "all" || String(room.priorityKey || "") === priorityFilter;
+    const byCondition = conditionFilter === "all" || String(room.tinhTrangPhong || "Tot") === conditionFilter;
+    return bySearch && byHotel && byStatus && byPriority && byCondition;
   };
+  const filteredRooms = rooms.filter(matchesRoom);
+  const pageCount = Math.max(Math.ceil(filteredRooms.length / pageSize), 1);
+  const currentPage = Math.min(requestedPage, pageCount);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageRooms = filteredRooms.slice(pageStart, pageStart + pageSize);
+  const rangeStart = filteredRooms.length ? pageStart + 1 : 0;
+  const rangeEnd = Math.min(pageStart + pageSize, filteredRooms.length);
+  const actionableCount = rooms.filter(isRoomActionable).length;
+  const lockedCount = rooms.length - actionableCount;
+  const countState = (state) => rooms.filter((room) => (room.trangThaiRealtime || room.trangThai) === state).length;
+  const buildQuery = (changes = {}) => {
+    const params = new URLSearchParams();
+    if (searchValue) params.set("search", searchValue);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (hotelFilter !== "all") params.set("hotel_id", hotelFilter);
+    if (priorityFilter !== "all") params.set("priority", priorityFilter);
+    if (conditionFilter !== "all") params.set("condition", conditionFilter);
+    if (selectedRoomId) params.set("room_id", String(selectedRoomId));
+    Object.entries(changes).forEach(([key, value]) => {
+      if (value === null || value === undefined || value === "" || value === "all") {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    });
+    return params.toString();
+  };
+  const pageUrl = (page) => `/service/room-inspection?${buildQuery({ page })}`;
+  const buildRoomUrl = (roomId) => `/service/room-inspection?${buildQuery({ room_id: roomId, page: currentPage })}`;
   const formatDateTime = (value) => {
     if (!value) return "Chưa rõ";
     try {
@@ -46,923 +135,383 @@
 %>
 
 <style>
-  .inspect-shell{
+  .inspection-page{
+    --blue:#0575e6;
+    --blue-dark:#034ea2;
     --ink:#102033;
-    --muted:#64748b;
-    --line:rgba(15,23,42,.10);
-    --soft:rgba(255,255,255,.74);
-    --panel:rgba(255,255,255,.88);
-    --cyan:#0ea5e9;
-    --teal:#14b8a6;
-    --green:#22c55e;
-    --amber:#f59e0b;
-    --rose:#f43f5e;
-    --violet:#7c3aed;
-    --shadow:0 24px 64px rgba(15,23,42,.12);
+    --muted:#65758b;
+    --line:#cfe2f7;
+    --soft:#f3f8ff;
+    --green:#07875f;
     min-height:calc(100vh - 84px);
-    padding:30px 18px 58px;
+    padding:28px 18px 56px;
     color:var(--ink);
     background:
-      radial-gradient(circle at 12% 8%,rgba(14,165,233,.18),transparent 28%),
-      radial-gradient(circle at 88% 6%,rgba(34,197,94,.16),transparent 28%),
-      linear-gradient(135deg,#f8fdff 0%,#effaf7 45%,#fff8fb 100%);
+      linear-gradient(180deg,rgba(235,246,255,.82),rgba(247,251,255,.92)),
+      url("/images/san-pham-du-lich.webp") center/cover fixed;
   }
-  .inspect-wrap{max-width:1240px;margin:0 auto}
-  .inspect-hero,.inspect-panel,.inspect-room,.inspect-log,.inspect-stat,.inspect-filter{
-    border:1px solid var(--line);
-    background:var(--panel);
-    box-shadow:var(--shadow);
-    backdrop-filter:blur(18px);
-  }
-  .inspect-hero{
-    position:relative;
-    overflow:hidden;
-    border-radius:28px;
-    padding:30px;
-    margin-bottom:16px;
-    display:grid;
-    grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr);
-    gap:20px;
-    align-items:end;
-  }
-  .inspect-hero::after{
-    content:"";
-    position:absolute;
-    inset:auto -40px -80px auto;
-    width:360px;
-    height:220px;
-    background:linear-gradient(135deg,rgba(20,184,166,.26),rgba(124,58,237,.16));
-    transform:rotate(-8deg);
-    border-radius:34px;
-  }
-  .inspect-hero > *{position:relative;z-index:1}
-  .inspect-chip{
-    display:inline-flex;
-    align-items:center;
-    width:max-content;
-    border-radius:999px;
-    padding:7px 12px;
-    background:rgba(14,165,233,.12);
-    border:1px solid rgba(14,165,233,.22);
-    color:#0369a1;
-    font-size:12px;
-    font-weight:1000;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-  }
-  .inspect-hero h1{
-    margin:18px 0 10px;
-    max-width:760px;
-    font-size:clamp(36px,5vw,62px);
-    line-height:.95;
-    letter-spacing:-.06em;
-  }
-  .inspect-hero h1 span{
-    color:transparent;
-    background:linear-gradient(95deg,#0284c7,#0f766e 54%,#7c3aed);
-    -webkit-background-clip:text;
-    background-clip:text;
-  }
-  .inspect-lead{max-width:760px;margin:0;color:var(--muted);font-size:15px;line-height:1.7}
-  .inspect-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-  .inspect-button,.inspect-mini{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:999px;
-    border:1px solid rgba(15,23,42,.12);
-    background:rgba(255,255,255,.78);
-    color:var(--ink);
-    font-weight:950;
-    text-decoration:none;
-    cursor:pointer;
-  }
-  .inspect-button{min-height:42px;padding:10px 16px}
-  .inspect-button--primary{border-color:transparent;color:#fff;background:linear-gradient(135deg,#0284c7,#14b8a6);box-shadow:0 16px 34px rgba(14,165,233,.20)}
-  .inspect-mini{min-height:32px;padding:7px 11px;font-size:12px}
-  .inspect-mini[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
-  .inspect-hero-board{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:10px;
-  }
-  .inspect-hero-metric{
-    border:1px solid rgba(255,255,255,.62);
-    border-radius:18px;
-    padding:14px;
-    background:rgba(255,255,255,.58);
-  }
-  .inspect-hero-metric strong{display:block;font-size:28px;line-height:1;letter-spacing:-.04em}
-  .inspect-hero-metric span{display:block;margin-top:7px;color:var(--muted);font-size:12px;font-weight:900}
-  .inspect-alert{border-radius:18px;padding:12px 14px;margin-bottom:14px;border:1px solid transparent;font-weight:850}
-  .inspect-alert--error{background:rgba(244,63,94,.12);color:#be123c;border-color:rgba(244,63,94,.26)}
-  .inspect-alert--success{background:rgba(20,184,166,.13);color:#0f766e;border-color:rgba(20,184,166,.26)}
-  .inspect-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
-  .inspect-stat{border-radius:20px;padding:16px;background:var(--soft)}
-  .inspect-stat strong{display:block;font-size:28px;letter-spacing:-.05em;line-height:1}
-  .inspect-stat span{display:block;margin-top:8px;color:var(--muted);font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.05em}
-  .inspect-filter{
-    border-radius:24px;
-    padding:18px;
-    margin-bottom:16px;
-    display:grid;
-    grid-template-columns:1.2fr repeat(3,minmax(150px,.7fr)) auto;
-    gap:12px;
-    align-items:end;
-  }
-  .inspect-field{display:flex;flex-direction:column;gap:7px}
-  .inspect-field label{font-size:12px;font-weight:950;color:#334155;text-transform:uppercase;letter-spacing:.05em}
-  .inspect-field input,.inspect-field select,.inspect-field textarea{
-    width:100%;
-    border:1px solid rgba(15,23,42,.13);
-    border-radius:14px;
-    padding:11px 12px;
-    background:rgba(255,255,255,.82);
-    color:var(--ink);
-    font:inherit;
-    outline:none;
-  }
-  .inspect-field textarea{min-height:108px;resize:vertical}
-  .inspect-field input:focus,.inspect-field select:focus,.inspect-field textarea:focus{border-color:rgba(14,165,233,.54);box-shadow:0 0 0 3px rgba(14,165,233,.10)}
-  .inspect-toggle{display:flex;align-items:center;gap:9px;min-height:42px;font-weight:900;color:#334155}
-  .inspect-toggle input{width:18px;height:18px}
-  .inspect-layout{display:grid;grid-template-columns:minmax(0,1.03fr) minmax(320px,.62fr);gap:16px;align-items:start}
-  .inspect-panel{border-radius:26px;padding:22px}
-  .inspect-panel h2{margin:0 0 8px;font-size:24px;letter-spacing:-.04em}
-  .inspect-muted{color:var(--muted);font-size:13px;line-height:1.55}
-  .inspect-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .inspect-form-grid .inspect-field--wide{grid-column:1/-1}
-  .inspect-condition-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
-  .inspect-condition{
-    border:1px solid rgba(15,23,42,.10);
-    border-radius:16px;
-    padding:12px;
-    background:rgba(255,255,255,.64);
-    min-height:108px;
-  }
-  .inspect-condition strong{display:block;font-size:14px}
-  .inspect-condition span{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.4}
-  .inspect-condition[data-active="true"]{border-color:rgba(14,165,233,.38);box-shadow:0 14px 30px rgba(14,165,233,.12)}
-  .inspect-pill{
-    display:inline-flex;
-    align-items:center;
-    width:max-content;
-    border-radius:999px;
-    padding:5px 9px;
-    background:rgba(100,116,139,.12);
-    color:#475569;
-    font-size:11px;
-    font-weight:1000;
-    letter-spacing:.04em;
-  }
-  .inspect-pill--ok{background:rgba(34,197,94,.14);color:#15803d}
-  .inspect-pill--cleaning{background:rgba(14,165,233,.14);color:#0369a1}
-  .inspect-pill--warning{background:rgba(245,158,11,.16);color:#b45309}
-  .inspect-pill--danger{background:rgba(244,63,94,.14);color:#be123c}
-  .inspect-pill--booked{background:rgba(124,58,237,.12);color:#6d28d9}
-  .inspect-pill--stayed{background:rgba(20,184,166,.14);color:#0f766e}
-  .inspect-pill--muted{background:rgba(100,116,139,.12);color:#475569}
-  .inspect-snapshot{
-    border-radius:24px;
-    padding:20px;
-    color:#f8fbff;
-    background:
-      linear-gradient(140deg,rgba(15,23,42,.92),rgba(12,74,110,.76)),
-      radial-gradient(circle at 100% 0%,rgba(20,184,166,.35),transparent 38%);
-    min-height:360px;
-  }
-  .inspect-snapshot h3{margin:18px 0 10px;font-size:32px;line-height:1;letter-spacing:-.05em}
-  .inspect-snapshot p{margin:0 0 8px;color:rgba(248,251,255,.76);line-height:1.5}
-  .inspect-snapshot dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 0}
-  .inspect-snapshot dt{font-size:11px;font-weight:950;color:rgba(248,251,255,.58);text-transform:uppercase;letter-spacing:.05em}
-  .inspect-snapshot dd{margin:4px 0 0;font-weight:950}
-  .inspect-queue{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
-  .inspect-queue-item{
-    border:1px solid rgba(255,255,255,.56);
-    border-radius:18px;
-    padding:13px;
-    background:rgba(255,255,255,.58);
-  }
-  .inspect-queue-item strong{display:block;margin:8px 0 4px}
-  .inspect-board-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:20px 0 12px}
-  .inspect-board-head h2{margin:0;font-size:24px;letter-spacing:-.04em}
-  .inspect-room-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-  .inspect-room{border-radius:22px;padding:16px;background:var(--soft)}
-  .inspect-room h3{margin:12px 0 6px;font-size:21px;letter-spacing:-.04em}
-  .inspect-room p{margin:0 0 6px;color:var(--muted);font-size:13px;line-height:1.45}
-  .inspect-room[data-hidden="true"]{display:none}
-  .inspect-room-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .inspect-empty{border:1px dashed rgba(15,23,42,.18);border-radius:20px;padding:22px;background:rgba(255,255,255,.62);color:var(--muted)}
-  .inspect-history{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
-  .inspect-log{border-radius:20px;padding:15px;background:rgba(255,255,255,.70)}
-  .inspect-log strong{display:block;margin:8px 0 5px}
-  .inspect-log p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
-  .inspect-source{font-size:12px;color:var(--muted);font-weight:900}
-  @media(max-width:1080px){
-    .inspect-hero,.inspect-layout{grid-template-columns:1fr}
-    .inspect-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .inspect-filter{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .inspect-condition-grid,.inspect-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .inspect-queue{grid-template-columns:1fr}
+  .inspection-shell{width:min(1360px,calc(100vw - 40px));margin:0 auto}
+  .title-band,.toolbar,.panel,.status-card,.history-card{border:1px solid var(--line);background:rgba(255,255,255,.9);box-shadow:0 18px 45px rgba(15,23,42,.08);backdrop-filter:blur(12px) saturate(1.08)}
+  .title-band{border-radius:12px;padding:20px 24px;background:linear-gradient(135deg,#087cf0,#034ea2);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .title-band h1{margin:0;font-size:34px;line-height:1.05;letter-spacing:-.03em;color:#fff}
+  .title-band h1::before{content:"";display:inline-block;width:6px;height:38px;border-radius:999px;background:#fff;margin-right:12px;vertical-align:-7px}
+  .title-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+  .alert{margin-top:12px;border-radius:10px;padding:12px 14px;font-weight:850}
+  .alert.error{background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
+  .alert.success{background:#ecfdf5;color:#047857;border:1px solid #bbf7d0}
+  .status-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+  .status-card{border-radius:12px;padding:14px 16px;text-decoration:none;color:var(--ink);transition:transform .15s ease,border-color .15s ease,background .15s ease}
+  .status-card:hover{transform:translateY(-1px);border-color:#9ecbff;background:rgba(255,255,255,.96)}
+  .status-card.is-active{border-color:#0b83ef;box-shadow:inset 4px 0 0 #0b83ef,0 18px 45px rgba(15,23,42,.08)}
+  .status-card strong{display:block;color:#034ea2;font-size:30px;line-height:1}
+  .status-card span{display:block;margin-top:7px;color:var(--muted);font-size:13px;font-weight:850}
+  .toolbar{border-radius:12px;padding:14px;margin:14px 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .searchbar{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+  details.filter{position:relative}
+  details.filter summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;padding:12px 16px;min-width:112px}
+  details.filter summary::-webkit-details-marker{display:none}
+  .filter-pop{position:absolute;z-index:20;top:54px;left:0;width:680px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 22px 50px rgba(15,23,42,.18);padding:16px}
+  .filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .field{display:grid;gap:6px}
+  .field label{font-size:12px;color:#334155;font-weight:900}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:11px 12px;color:var(--ink);font:inherit}
+  .field textarea{min-height:112px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#0b83ef;box-shadow:0 0 0 3px rgba(11,131,239,.12)}
+  .field.search-input{max-width:620px;flex:1}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .btn,.icon-btn{border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;text-decoration:none;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 16px}
+  .icon-btn{width:48px;height:48px;display:inline-grid;place-items:center}
+  .btn.primary,.icon-btn.primary{background:var(--blue);border-color:transparent;color:#fff}
+  .btn:disabled{opacity:.55;cursor:not-allowed}
+  .content-grid{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:14px;align-items:start}
+  .panel{border-radius:12px;overflow:hidden}
+  .table-wrap{overflow:auto}
+  .room-table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;min-width:900px}
+  .room-table thead th{background:#edf3f9;color:#334155;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:14px;border-bottom:1px solid var(--line)}
+  .room-table tbody td{padding:14px;border-bottom:1px solid #e4eef8;vertical-align:middle}
+  .room-table tbody tr{background:rgba(255,255,255,.92);cursor:pointer}
+  .room-table tbody tr:hover{background:#f4f9ff}
+  .room-table tbody tr.is-selected{box-shadow:inset 4px 0 0 var(--blue);background:#edf6ff}
+  .room-code{display:block;color:#06479d;font-weight:950;font-size:18px;line-height:1.1}
+  .sub{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+  .muted{color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;width:max-content;border-radius:999px;padding:6px 10px;background:#eef2f7;color:#475569;font-size:12px;font-weight:900}
+  .pill.ok{background:#e9fbf1;color:#07875f}
+  .pill.info{background:#eaf6ff;color:#0369a1}
+  .pill.warn{background:#fff7ed;color:#c2410c}
+  .pill.purple{background:#f3e8ff;color:#6d28d9}
+  .pill.teal{background:#e6fffb;color:#0f766e}
+  .pill.danger{background:#fff1f2;color:#be123c}
+  .inspection-panel{padding:18px}
+  .inspection-panel h2,.history-card h2{margin:0 0 12px;font-size:24px}
+  .room-summary{border:1px solid var(--line);border-radius:12px;background:var(--soft);padding:14px;margin-bottom:14px}
+  .room-summary h3{margin:10px 0 4px;font-size:26px;line-height:1.1}
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .summary-grid div{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px}
+  .summary-grid span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:900}
+  .summary-grid strong{display:block;margin-top:4px;font-size:15px}
+  .condition-list{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0}
+  .condition-item{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px}
+  .condition-item strong{display:block;color:var(--ink)}
+  .condition-item span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+  .condition-item.is-active{border-color:#0b83ef;background:#f0f7ff;box-shadow:inset 4px 0 0 #0b83ef}
+  .form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .empty{padding:24px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);background:#f8fbff}
+  .history-card{border-radius:12px;margin-top:14px;padding:18px}
+  .history-list{display:grid;gap:10px}
+  .history-item{border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px}
+  .history-item strong{display:block;margin:6px 0 4px;font-size:15px}
+  .history-item p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+  .list-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap}
+  .list-footer-info{color:#334155;font-weight:700;font-size:14px}
+  .list-footer-info strong{color:var(--ink)}
+  .page-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .page-btn{min-width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#06479d;font-weight:900;text-decoration:none;display:inline-grid;place-items:center;padding:0 10px}
+  .page-btn.is-active{background:var(--blue);border-color:var(--blue);color:#fff}
+  .page-btn.is-disabled{opacity:.45;pointer-events:none;background:#f8fafc;color:#94a3b8}
+  @media(max-width:1120px){
+    .status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .content-grid{grid-template-columns:1fr}
   }
   @media(max-width:720px){
-    .inspect-shell{padding:20px 12px 44px}
-    .inspect-hero,.inspect-panel{padding:20px;border-radius:22px}
-    .inspect-hero-board,.inspect-stats,.inspect-filter,.inspect-form-grid,.inspect-condition-grid,.inspect-room-grid,.inspect-history{grid-template-columns:1fr}
-    .inspect-snapshot dl{grid-template-columns:1fr}
-  }
-
-  /* Service UC2 visual pass only: galaxy theme and stronger separation for inspection workflow. */
-  .inspect-shell{
-    --ink:#f8fbff;
-    --ink-dark:#102033;
-    --muted:#b8cbe1;
-    --muted-dark:#607487;
-    --line:rgba(148,210,255,.24);
-    --soft:rgba(9,22,49,.78);
-    --panel:rgba(9,22,49,.82);
-    --cyan:#22d3ee;
-    --teal:#34d399;
-    --green:#22c55e;
-    --amber:#facc15;
-    --rose:#fb7185;
-    --violet:#a78bfa;
-    --field:#ffffff;
-    --field-line:#b7cfe1;
-    --shadow:0 30px 90px rgba(0,0,0,.38);
-    position:relative;
-    isolation:isolate;
-    overflow:hidden;
-    color:var(--ink);
-    background:
-      radial-gradient(circle at 10% 8%,rgba(34,211,238,.22),transparent 27%),
-      radial-gradient(circle at 84% 12%,rgba(167,139,250,.18),transparent 30%),
-      radial-gradient(circle at 72% 92%,rgba(251,113,133,.14),transparent 30%),
-      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
-  }
-  .inspect-shell::before,
-  .inspect-shell::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:-1;
-  }
-  .inspect-shell::before{
-    opacity:.84;
-    background-image:
-      radial-gradient(circle,#f8fbff 0 1.1px,transparent 1.7px),
-      radial-gradient(circle,#93e8ff 0 1px,transparent 1.5px),
-      radial-gradient(circle,rgba(255,255,255,.86) 0 1px,transparent 1.5px);
-    background-size:120px 120px,180px 180px,260px 260px;
-    background-position:12px 24px,70px 42px,28px 96px;
-    animation:inspect-star-drift 46s linear infinite;
-  }
-  .inspect-shell::after{
-    opacity:.55;
-    background:
-      linear-gradient(112deg,transparent 0 38%,rgba(34,211,238,.16) 39%,transparent 40% 100%),
-      linear-gradient(26deg,transparent 0 63%,rgba(250,204,21,.11) 64%,transparent 65% 100%),
-      radial-gradient(circle at 18% 90%,rgba(52,211,153,.12),transparent 28%);
-  }
-  .inspect-wrap{position:relative;z-index:1;max-width:1320px}
-  .inspect-hero,
-  .inspect-panel,
-  .inspect-room,
-  .inspect-log,
-  .inspect-stat,
-  .inspect-filter{
-    border-color:var(--line);
-    background:linear-gradient(180deg,rgba(12,28,61,.88),rgba(6,16,36,.78));
-    box-shadow:var(--shadow);
-    backdrop-filter:blur(18px);
-  }
-  .inspect-hero{
-    border-radius:34px;
-    padding:34px;
-    margin-bottom:20px;
-    min-height:300px;
-    grid-template-columns:minmax(0,1.28fr) minmax(360px,.86fr);
-  }
-  .inspect-hero::after{
-    width:360px;
-    height:230px;
-    right:-70px;
-    bottom:-98px;
-    border-radius:999px;
-    background:
-      radial-gradient(circle at 34% 28%,rgba(255,255,255,.30) 0 6%,transparent 12%),
-      radial-gradient(circle at 66% 70%,rgba(52,211,153,.44) 0 14%,transparent 25%),
-      radial-gradient(circle at 38% 62%,rgba(34,211,238,.36) 0 18%,transparent 34%),
-      linear-gradient(135deg,#2563eb 0%,#0891b2 42%,#05235f 100%);
-    box-shadow:inset -28px -22px 42px rgba(0,0,0,.34),0 0 60px rgba(34,211,238,.24);
-    transform:rotate(-14deg);
-  }
-  .inspect-chip{
-    border-color:rgba(34,211,238,.36);
-    background:rgba(34,211,238,.14);
-    color:#cffafe;
-    box-shadow:0 0 0 7px rgba(34,211,238,.07);
-  }
-  .inspect-hero h1{
-    color:#f8fbff;
-    font-size:clamp(42px,5.5vw,72px);
-    letter-spacing:-.045em;
-  }
-  .inspect-hero h1 span{
-    background:linear-gradient(96deg,#22d3ee 0%,#34d399 40%,#facc15 70%,#fb7185 100%);
-    -webkit-background-clip:text;
-    background-clip:text;
-  }
-  .inspect-lead,
-  .inspect-muted{
-    color:#c4d7ea;
-  }
-  .inspect-button,
-  .inspect-mini{
-    color:#f8fbff;
-    border-color:rgba(148,210,255,.24);
-    background:rgba(255,255,255,.08);
-    box-shadow:0 14px 34px rgba(0,0,0,.16);
-  }
-  .inspect-button--primary{
-    color:#04111f;
-    background:linear-gradient(135deg,#22d3ee,#34d399);
-    box-shadow:0 20px 48px rgba(52,211,153,.24);
-  }
-  .inspect-alert--error{
-    color:#ffe4e6;
-    background:linear-gradient(135deg,rgba(225,29,72,.22),rgba(251,113,133,.16));
-    border-color:rgba(251,113,133,.36);
-  }
-  .inspect-alert--success{
-    color:#d1fae5;
-    background:linear-gradient(135deg,rgba(16,185,129,.24),rgba(6,182,212,.18));
-    border-color:rgba(52,211,153,.35);
-  }
-  .inspect-hero-board{gap:14px}
-  .inspect-hero-metric,
-  .inspect-stat{
-    position:relative;
-    overflow:hidden;
-    min-height:112px;
-    border:1px solid rgba(255,255,255,.18);
-    background:linear-gradient(135deg,#22d3ee,#2563eb);
-  }
-  .inspect-hero-metric:nth-child(2),
-  .inspect-stat:nth-child(2){background:linear-gradient(135deg,#34d399,#14b8a6)}
-  .inspect-hero-metric:nth-child(3),
-  .inspect-stat:nth-child(3){background:linear-gradient(135deg,#facc15,#fb923c)}
-  .inspect-hero-metric:nth-child(4),
-  .inspect-stat:nth-child(4){background:linear-gradient(135deg,#fb7185,#a78bfa)}
-  .inspect-stat:nth-child(5){background:linear-gradient(135deg,#60a5fa,#8b5cf6)}
-  .inspect-hero-metric::before,
-  .inspect-stat::before{
-    content:"";
-    position:absolute;
-    right:14px;
-    top:13px;
-    width:48px;
-    height:48px;
-    border-radius:18px;
-    background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.24);
-    transform:rotate(10deg);
-  }
-  .inspect-hero-metric strong,
-  .inspect-hero-metric span,
-  .inspect-stat strong,
-  .inspect-stat span{
-    position:relative;
-    z-index:1;
-    color:#fff;
-    text-shadow:0 1px 12px rgba(0,0,0,.18);
-  }
-  .inspect-hero-metric span,
-  .inspect-stat span{color:rgba(255,255,255,.86)}
-  .inspect-filter{
-    border-radius:28px;
-    padding:20px;
-    gap:14px;
-  }
-  .inspect-panel{
-    border-radius:28px;
-    padding:24px;
-  }
-  .inspect-panel h2,
-  .inspect-board-head h2{
-    color:#f8fbff;
-    font-size:26px;
-    letter-spacing:-.025em;
-  }
-  .inspect-field label{
-    color:#d8e7f7;
-    font-size:13px;
-  }
-  .inspect-field input,
-  .inspect-field select,
-  .inspect-field textarea{
-    min-height:48px;
-    border:2px solid var(--field-line);
-    border-radius:16px;
-    background:var(--field);
-    color:var(--ink-dark);
-    box-shadow:0 9px 0 rgba(148,210,255,.10),0 16px 34px rgba(0,0,0,.10);
-  }
-  .inspect-field input:focus,
-  .inspect-field select:focus,
-  .inspect-field textarea:focus{
-    border-color:#22d3ee;
-    box-shadow:0 0 0 5px rgba(34,211,238,.18),0 16px 34px rgba(0,0,0,.12);
-  }
-  .inspect-toggle{
-    color:#eaf8ff;
-    padding:0 12px;
-    border-radius:16px;
-    border:1px solid rgba(148,210,255,.22);
-    background:rgba(255,255,255,.08);
-  }
-  .inspect-condition{
-    border-color:rgba(183,207,225,.78);
-    background:linear-gradient(180deg,#ffffff,#f4fbff);
-    color:var(--ink-dark);
-    box-shadow:0 12px 28px rgba(0,0,0,.10);
-  }
-  .inspect-condition strong{color:#0b253f}
-  .inspect-condition span{color:var(--muted-dark)}
-  .inspect-condition[data-active="true"]{
-    border-color:#22d3ee;
-    box-shadow:0 0 0 5px rgba(34,211,238,.16),0 16px 36px rgba(0,0,0,.14);
-  }
-  .inspect-pill{
-    border:1px solid rgba(100,116,139,.18);
-    background:#eef6ff;
-    color:#334155;
-  }
-  .inspect-pill--ok{background:#d1fae5;color:#047857;border-color:#86efac}
-  .inspect-pill--cleaning{background:#cffafe;color:#0e7490;border-color:#67e8f9}
-  .inspect-pill--warning{background:#fff7d6;color:#854d0e;border-color:#fde68a}
-  .inspect-pill--danger{background:#ffe4e6;color:#be123c;border-color:#fda4af}
-  .inspect-pill--booked{background:#ede9fe;color:#6d28d9;border-color:#c4b5fd}
-  .inspect-pill--stayed{background:#ccfbf1;color:#0f766e;border-color:#5eead4}
-  .inspect-pill--muted{background:#f1f5f9;color:#475569;border-color:#cbd5e1}
-  .inspect-snapshot{
-    border:1px solid rgba(148,210,255,.24);
-    background:
-      radial-gradient(circle at 74% 28%,rgba(34,211,238,.18),transparent 28%),
-      linear-gradient(145deg,rgba(5,12,31,.96),rgba(16,28,69,.88));
-    box-shadow:var(--shadow),inset 0 0 90px rgba(34,211,238,.10);
-  }
-  .inspect-snapshot h3{color:#fff}
-  .inspect-queue-item,
-  .inspect-room,
-  .inspect-log,
-  .inspect-empty{
-    border:1px solid rgba(183,207,225,.78);
-    background:linear-gradient(180deg,#ffffff,#eef8ff);
-    color:var(--ink-dark);
-    box-shadow:0 20px 48px rgba(0,0,0,.18);
-  }
-  .inspect-queue-item strong,
-  .inspect-room h3,
-  .inspect-log strong{
-    color:#0b253f;
-  }
-  .inspect-queue-item .inspect-muted,
-  .inspect-room p,
-  .inspect-log p,
-  .inspect-source,
-  .inspect-empty{
-    color:var(--muted-dark);
-  }
-  .inspect-room-top{
-    align-items:flex-start;
-    flex-wrap:wrap;
-  }
-  .inspect-room .inspect-mini,
-  .inspect-queue-item .inspect-mini{
-    color:#0b253f;
-    border-color:rgba(183,207,225,.85);
-    background:#ffffff;
-    box-shadow:0 10px 22px rgba(0,0,0,.08);
-  }
-  .inspect-room .inspect-actions{
-    gap:8px;
-  }
-  @keyframes inspect-star-drift{
-    from{background-position:12px 24px,70px 42px,28px 96px}
-    to{background-position:132px 144px,250px 222px,288px 356px}
-  }
-  @media(max-width:1080px){
-    .inspect-hero,
-    .inspect-layout{grid-template-columns:1fr}
-    .inspect-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-    .inspect-filter{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .inspect-condition-grid,
-    .inspect-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .inspect-queue{grid-template-columns:1fr}
-  }
-  @media(max-width:720px){
-    .inspect-shell{padding:22px 12px 44px}
-    .inspect-hero,
-    .inspect-panel{padding:22px;border-radius:26px}
-    .inspect-hero{min-height:auto}
-    .inspect-hero::after{width:230px;height:150px;right:-90px;bottom:-64px}
-    .inspect-hero h1{font-size:42px}
-    .inspect-hero-board,
-    .inspect-stats,
-    .inspect-filter,
-    .inspect-form-grid,
-    .inspect-condition-grid,
-    .inspect-room-grid,
-    .inspect-history{grid-template-columns:1fr}
-    .inspect-snapshot dl{grid-template-columns:1fr}
-    .inspect-button{width:100%}
-  }
-
-  /* Keep the galaxy background continuous while scrolling or entering the page. */
-  html,
-  body{
-    min-height:100%;
-    background:#061321;
-    overscroll-behavior-y:none;
-  }
-  body{
-    background:
-      radial-gradient(circle at 10% 8%,rgba(34,211,238,.18),transparent 27%),
-      radial-gradient(circle at 84% 12%,rgba(167,139,250,.15),transparent 30%),
-      radial-gradient(circle at 72% 92%,rgba(251,113,133,.12),transparent 30%),
-      linear-gradient(145deg,#061321 0%,#0a1731 48%,#190e37 100%);
-  }
-  .inspect-shell{
-    min-height:100vh;
-    min-height:100dvh;
-    overflow-x:hidden;
-    overflow-y:visible;
-    background-color:#061321;
-    background-attachment:fixed;
+    .inspection-page{padding:18px 10px 42px}
+    .inspection-shell{width:100%}
+    .title-band,.toolbar{align-items:stretch;flex-direction:column}
+    .title-band h1{font-size:28px}
+    .title-actions,.searchbar{width:100%;flex-wrap:wrap}
+    .title-actions .btn{flex:1}
+    .filter-pop{width:calc(100vw - 36px)}
+    .filter-grid,.status-strip,.summary-grid{grid-template-columns:1fr}
   }
 </style>
 
-<main class="inspect-shell">
-  <div class="inspect-wrap">
-    <% if (notice?.error) { %><div class="inspect-alert inspect-alert--error"><%= notice.error %></div><% } %>
-    <% if (notice?.success) { %><div class="inspect-alert inspect-alert--success"><%= notice.success %></div><% } %>
-
-    <section class="inspect-hero" aria-label="Kiểm tra tình trạng phòng">
-      <div>
-        <span class="inspect-chip">Room inspection</span>
-        <h1>Kiểm tra <span>tình trạng phòng</span></h1>
-        <p class="inspect-lead">Cập nhật Available, Cleaning hoặc Maintenance sau khi kiểm tra thực tế.</p>
-        <div class="inspect-actions">
-          <a class="inspect-button inspect-button--primary" href="/service/room-board-live">Mở Room board live</a>
-          <a class="inspect-button" href="/dashboard/dichvu">Dashboard dịch vụ</a>
-        </div>
-      </div>
-      <div class="inspect-hero-board" aria-label="Tóm tắt vận hành">
-        <div class="inspect-hero-metric"><strong><%= roomFeed.summary?.needsAttention || 0 %></strong><span>Phòng cần xử lý</span></div>
-        <div class="inspect-hero-metric"><strong><%= actionableRooms.length %></strong><span>Có thể kiểm tra ngay</span></div>
-        <div class="inspect-hero-metric"><strong><%= roomFeed.summary?.available || 0 %></strong><span>Available</span></div>
-        <div class="inspect-hero-metric"><strong><%= lockedRooms.length %></strong><span>Đang khóa thao tác</span></div>
+<main class="inspection-page">
+  <div class="inspection-shell">
+    <section class="title-band">
+      <h1>Kiểm tra tình trạng phòng</h1>
+      <div class="title-actions">
+        <a class="btn" href="/dashboard/dichvu">Quay về</a>
+        <a class="btn" href="/service/room-board-live">Room board</a>
       </div>
     </section>
 
-    <section class="inspect-stats" aria-label="KPI tình trạng phòng">
-      <div class="inspect-stat"><strong><%= rooms.length %></strong><span>Tổng phòng</span></div>
-      <div class="inspect-stat"><strong><%= roomFeed.summary?.cleaning || 0 %></strong><span>Cleaning</span></div>
-      <div class="inspect-stat"><strong><%= roomFeed.summary?.maintenance || 0 %></strong><span>Maintenance</span></div>
-      <div class="inspect-stat"><strong><%= roomFeed.summary?.booked || 0 %></strong><span>Booked</span></div>
-      <div class="inspect-stat"><strong><%= roomFeed.summary?.stayed || 0 %></strong><span>Đang ở</span></div>
+    <% if (pageNotice.error) { %><div class="alert error"><%= pageNotice.error %></div><% } %>
+    <% if (pageNotice.success) { %><div class="alert success"><%= pageNotice.success %></div><% } %>
+
+    <section class="status-strip" aria-label="Tổng quan tình trạng phòng">
+      <a class="status-card <%= statusFilter === "all" ? "is-active" : "" %>" href="/service/room-inspection">
+        <strong><%= rooms.length %></strong>
+        <span>Tất cả phòng</span>
+      </a>
+      <a class="status-card <%= statusFilter === "actionable" ? "is-active" : "" %>" href="/service/room-inspection?status=actionable">
+        <strong><%= actionableCount %></strong>
+        <span>Có thể cập nhật</span>
+      </a>
+      <a class="status-card <%= statusFilter === "Cleaning" ? "is-active" : "" %>" href="/service/room-inspection?status=Cleaning">
+        <strong><%= roomFeed.summary?.cleaning ?? countState("Cleaning") %></strong>
+        <span>Cần vệ sinh</span>
+      </a>
+      <a class="status-card <%= statusFilter === "locked" ? "is-active" : "" %>" href="/service/room-inspection?status=locked">
+        <strong><%= lockedCount %></strong>
+        <span>Đang khóa thao tác</span>
+      </a>
     </section>
 
-    <section class="inspect-filter" aria-label="Lọc phòng kiểm tra">
-      <div class="inspect-field">
-        <label for="roomSearch">Tìm phòng</label>
-        <input id="roomSearch" type="search" placeholder="Số phòng, khách sạn, khách, mã booking...">
-      </div>
-      <div class="inspect-field">
-        <label for="statusFilter">Trạng thái</label>
-        <select id="statusFilter">
-          <option value="all">Tất cả</option>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Cleaning">Cleaning</option>
-          <option value="Available">Available</option>
-          <option value="Booked">Booked</option>
-          <option value="Stayed">Đang ở</option>
-        </select>
-      </div>
-      <div class="inspect-field">
-        <label for="hotelFilter">Cơ sở</label>
-        <select id="hotelFilter">
-          <option value="all">Toàn bộ cơ sở</option>
-          <% (roomFeed.byHotel || []).forEach((hotel) => { %>
-            <option value="<%= hotel.hotelId %>"><%= hotel.hotelName %></option>
-          <% }) %>
-        </select>
-      </div>
-      <label class="inspect-toggle" for="actionableOnly">
-        <input id="actionableOnly" type="checkbox">
-        Phòng cập nhật được
-      </label>
-      <button class="inspect-button" type="button" id="resetFilters">Đặt lại</button>
-    </section>
-
-    <section class="inspect-layout" aria-label="Cập nhật inspection">
-      <div class="inspect-panel">
-        <h2>Cập nhật tình trạng sau kiểm tra</h2>
-        <p class="inspect-muted">Phòng có booking mở hoặc khách đang ở sẽ bị khóa cập nhật.</p>
-
-        <form method="post" action="/service/inspection" id="inspectionForm">
-          <div class="inspect-form-grid">
-            <div class="inspect-field">
-              <label for="room_id">Phòng</label>
-              <select id="room_id" name="room_id" required>
-                <option value="">Chọn phòng cần kiểm tra</option>
-                <% actionableRooms.forEach((room) => { %>
-                  <option value="<%= room.id %>" <%= Number(selectedRoomId) === Number(room.id) ? "selected" : "" %>>
-                    P<%= room.soPhong %> · <%= room.hotelName %> · <%= room.statusLabel || room.trangThaiRealtime %>
-                  </option>
-                <% }) %>
-                <% if (lockedRooms.length) { %>
-                  <optgroup label="Đang có booking/khách ở, chỉ xem">
-                    <% lockedRooms.forEach((room) => { %>
-                      <option value="<%= room.id %>" disabled>P<%= room.soPhong %> · <%= room.hotelName %> · <%= room.statusLabel || room.trangThaiRealtime %></option>
-                    <% }) %>
-                  </optgroup>
-                <% } %>
-              </select>
-            </div>
-            <div class="inspect-field">
-              <label for="room_condition">Kết quả kiểm tra</label>
-              <select id="room_condition" name="room_condition" required>
-                <% conditionOptions.forEach((option) => { %>
-                  <option value="<%= option.value %>" <%= conditionValue === option.value ? "selected" : "" %> data-target="<%= option.target %>"><%= option.label %> · <%= option.target %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="inspect-field inspect-field--wide">
-              <label for="note">Ghi chú</label>
-              <textarea id="note" name="note" placeholder="VD: minibar đủ, toilet sạch, điều hòa lỗi E4, thảm ướt cần xử lý..."><%= noteValue %></textarea>
-              <span class="inspect-muted" id="noteHint">Bắt buộc khi chọn hư hại hoặc bảo trì.</span>
-            </div>
-          </div>
-
-          <div class="inspect-condition-grid" aria-label="Rule chuyển trạng thái">
-            <% conditionOptions.forEach((option) => { %>
-              <div class="inspect-condition" data-condition="<%= option.value %>" data-active="<%= conditionValue === option.value ? "true" : "false" %>">
-                <span class="inspect-pill <%= option.tone === "ok" ? "inspect-pill--ok" : option.tone === "cleaning" ? "inspect-pill--cleaning" : option.tone === "warning" ? "inspect-pill--warning" : "inspect-pill--danger" %>"><%= option.target %></span>
-                <strong><%= option.label %></strong>
-                <span><%= option.summary %></span>
+    <form class="toolbar" method="get" action="/service/room-inspection">
+      <div class="searchbar">
+        <details class="filter">
+          <summary>Bộ lọc</summary>
+          <div class="filter-pop">
+            <div class="filter-grid">
+              <div class="field">
+                <label for="hotelFilter">Cơ sở</label>
+                <select id="hotelFilter" name="hotel_id">
+                  <option value="all" <%= hotelFilter === "all" ? "selected" : "" %>>Tất cả cơ sở</option>
+                  <% hotelChoices.forEach((hotel) => { %>
+                    <option value="<%= hotel.value %>" <%= hotelFilter === hotel.value ? "selected" : "" %>><%= hotel.label %></option>
+                  <% }) %>
+                </select>
               </div>
-            <% }) %>
+              <div class="field">
+                <label for="statusFilter">Trạng thái phòng</label>
+                <select id="statusFilter" name="status">
+                  <option value="all" <%= statusFilter === "all" ? "selected" : "" %>>Tất cả trạng thái</option>
+                  <option value="actionable" <%= statusFilter === "actionable" ? "selected" : "" %>>Có thể cập nhật</option>
+                  <option value="locked" <%= statusFilter === "locked" ? "selected" : "" %>>Đang khóa thao tác</option>
+                  <option value="Available" <%= statusFilter === "Available" ? "selected" : "" %>>Sẵn sàng</option>
+                  <option value="Cleaning" <%= statusFilter === "Cleaning" ? "selected" : "" %>>Cần vệ sinh</option>
+                  <option value="Maintenance" <%= statusFilter === "Maintenance" ? "selected" : "" %>>Bảo trì</option>
+                  <option value="Booked" <%= statusFilter === "Booked" ? "selected" : "" %>>Đã đặt</option>
+                  <option value="Stayed" <%= statusFilter === "Stayed" ? "selected" : "" %>>Đang ở</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="priorityFilter">Mức xử lý</label>
+                <select id="priorityFilter" name="priority">
+                  <option value="all" <%= priorityFilter === "all" ? "selected" : "" %>>Tất cả mức xử lý</option>
+                  <option value="maintenance" <%= priorityFilter === "maintenance" ? "selected" : "" %>>Ưu tiên bảo trì</option>
+                  <option value="cleaning" <%= priorityFilter === "cleaning" ? "selected" : "" %>>Cần vệ sinh</option>
+                  <option value="booked" <%= priorityFilter === "booked" ? "selected" : "" %>>Sắp nhận khách</option>
+                  <option value="stayed" <%= priorityFilter === "stayed" ? "selected" : "" %>>Đang có khách</option>
+                  <option value="available" <%= priorityFilter === "available" ? "selected" : "" %>>Sẵn sàng</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="conditionFilter">Kết quả kiểm tra</label>
+                <select id="conditionFilter" name="condition">
+                  <option value="all" <%= conditionFilter === "all" ? "selected" : "" %>>Tất cả kết quả</option>
+                  <% conditionOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= conditionFilter === option.value ? "selected" : "" %>><%= option.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <a class="btn" href="/service/room-inspection">Đặt lại</a>
+              <button class="btn primary" type="submit">Áp dụng</button>
+            </div>
           </div>
-
-          <div class="inspect-actions">
-            <button class="inspect-button inspect-button--primary" type="submit">Lưu inspection</button>
-            <a class="inspect-button" href="/service/room-inspection">Làm mới</a>
-          </div>
-        </form>
+        </details>
+        <div class="field search-input">
+          <label class="sr-only" for="roomSearch">Tìm phòng</label>
+          <input id="roomSearch" name="search" value="<%= searchValue %>" placeholder="Tìm số phòng, cơ sở, khách, mã đặt chỗ..." />
+        </div>
+        <button class="icon-btn primary" type="submit" aria-label="Tìm kiếm">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m21 21-4.35-4.35m2.35-5.15a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
       </div>
+      <a class="btn" href="/service/room-inspection">Làm mới</a>
+    </form>
 
-      <aside class="inspect-snapshot" aria-label="Snapshot phòng đang chọn">
-        <span id="snapshotStatus" class="inspect-pill <%= selectedRoom ? realtimeClass(selectedRoom.trangThaiRealtime || selectedRoom.trangThai) : "inspect-pill--muted" %>">
-          <%= selectedRoom ? (selectedRoom.statusLabel || selectedRoom.trangThaiRealtime || selectedRoom.trangThai) : "Chưa chọn phòng" %>
-        </span>
-        <h3 id="snapshotTitle"><%= selectedRoom ? `Phòng ${selectedRoom.soPhong}` : "Chọn phòng" %></h3>
-        <p id="snapshotHotel"><%= selectedRoom ? `${selectedRoom.hotelName}${selectedRoom.hotelCity ? ` · ${selectedRoom.hotelCity}` : ""}` : "Xem nhanh trước khi cập nhật." %></p>
-        <p id="snapshotGuest"><%= selectedRoom ? (selectedRoom.occupancyLabel || selectedRoom.bookingCode || "Không có giao dịch mở") : "Phòng có khách/booking sẽ bị khóa." %></p>
-        <dl>
-          <div>
-            <dt>Loại phòng</dt>
-            <dd id="snapshotType"><%= selectedRoom?.loaiPhong || "Chưa chọn" %></dd>
+    <section class="content-grid">
+      <section class="panel">
+        <div class="table-wrap">
+          <% if (!pageRooms.length) { %>
+            <div class="empty">Không có phòng phù hợp với bộ lọc hiện tại.</div>
+          <% } else { %>
+            <table class="room-table">
+              <thead>
+                <tr>
+                  <th>Phòng</th>
+                  <th>Cơ sở</th>
+                  <th>Trạng thái</th>
+                  <th>Kết quả kiểm tra</th>
+                  <th>Giao dịch</th>
+                  <th>Gợi ý xử lý</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% pageRooms.forEach((room) => {
+                  const state = room.trangThaiRealtime || room.trangThai || "";
+                  const locked = !isRoomActionable(room);
+                %>
+                  <tr class="<%= Number(room.id) === selectedRoomId ? "is-selected" : "" %>" data-href="<%= buildRoomUrl(room.id) %>">
+                    <td>
+                      <span class="room-code"><%= room.soPhong %></span>
+                      <span class="sub"><%= room.loaiPhong || "Chưa rõ loại" %></span>
+                    </td>
+                    <td>
+                      <strong><%= room.hotelName || "Không rõ cơ sở" %></strong>
+                      <span class="sub"><%= room.hotelCity || "Chưa rõ tỉnh/thành" %></span>
+                    </td>
+                    <td><span class="<%= statusClass(state) %>"><%= statusText(state) %></span></td>
+                    <td>
+                      <strong><%= conditionLabel(room.tinhTrangPhong || "Tot") %></strong>
+                      <span class="sub"><%= priorityText(room.priorityKey) %></span>
+                    </td>
+                    <td>
+                      <strong><%= room.bookingCode || (room.transactionId ? `GD #${room.transactionId}` : "Không có") %></strong>
+                      <span class="sub"><%= room.guestName || (locked ? statusText(room.stayStatus || state) : "Có thể cập nhật") %></span>
+                    </td>
+                    <td>
+                      <span class="<%= locked ? "pill" : "pill ok" %>"><%= locked ? "Chỉ theo dõi" : "Chọn kiểm tra" %></span>
+                      <span class="sub"><%= room.suggestedAction || "Theo dõi định kỳ" %></span>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } %>
+        </div>
+        <div class="list-footer">
+          <div class="list-footer-info">
+            Hiển thị <strong><%= rangeStart %>-<%= rangeEnd %></strong> trong tổng số <strong><%= filteredRooms.length %></strong> phòng
           </div>
-          <div>
-            <dt>Tình trạng</dt>
-            <dd id="snapshotCondition"><%= selectedRoom?.conditionLabel || "Chưa chọn" %></dd>
+          <div class="page-buttons">
+            <a class="page-btn <%= currentPage <= 1 ? "is-disabled" : "" %>" href="<%= pageUrl(currentPage - 1) %>">Trước</a>
+            <% for (let page = 1; page <= pageCount; page += 1) { %>
+              <% if (page === 1 || page === pageCount || Math.abs(page - currentPage) <= 1) { %>
+                <a class="page-btn <%= page === currentPage ? "is-active" : "" %>" href="<%= pageUrl(page) %>"><%= page %></a>
+              <% } else if (Math.abs(page - currentPage) === 2) { %>
+                <span class="muted">...</span>
+              <% } %>
+            <% } %>
+            <a class="page-btn <%= currentPage >= pageCount ? "is-disabled" : "" %>" href="<%= pageUrl(currentPage + 1) %>">Sau</a>
           </div>
-          <div>
-            <dt>Ưu tiên</dt>
-            <dd id="snapshotPriority"><%= selectedRoom?.priorityLabel || "Chưa chọn" %></dd>
-          </div>
-          <div>
-            <dt>Khả dụng</dt>
-            <dd id="snapshotAccess"><%= selectedRoom ? (isRoomActionable(selectedRoom) ? "Có thể cập nhật" : "Đang khóa") : "Chưa chọn" %></dd>
-          </div>
-        </dl>
-        <p style="margin-top:18px" id="snapshotAction"><%= selectedRoom?.suggestedAction || "Chọn phòng để bắt đầu." %></p>
-        <p>Kết quả sẽ ghi nhận: <strong id="snapshotConditionTarget"><%= conditionLabel(conditionValue) %></strong></p>
+        </div>
+      </section>
+
+      <aside>
+        <section class="panel inspection-panel" id="inspectionForm">
+          <h2>Cập nhật tình trạng</h2>
+          <% if (!selectedRoom) { %>
+            <div class="empty">Chọn một phòng trong danh sách để cập nhật.</div>
+          <% } else {
+            const selectedState = selectedRoom.trangThaiRealtime || selectedRoom.trangThai || "";
+            const selectedLocked = !isRoomActionable(selectedRoom);
+          %>
+            <div class="room-summary">
+              <span class="<%= statusClass(selectedState) %>"><%= statusText(selectedState) %></span>
+              <h3><%= selectedRoom.soPhong %></h3>
+              <span class="sub"><%= [selectedRoom.loaiPhong, selectedRoom.hotelName, selectedRoom.hotelCity].filter(Boolean).join(" · ") %></span>
+              <div class="summary-grid">
+                <div><span>Giao dịch</span><strong><%= selectedRoom.bookingCode || "Không có" %></strong></div>
+                <div><span>Khách</span><strong><%= selectedRoom.guestName || "Không có" %></strong></div>
+              </div>
+              <% if (selectedLocked) { %>
+                <p class="sub" style="margin:12px 0 0">Phòng đang có booking/khách ở nên chỉ theo dõi, chưa cho cập nhật trạng thái mở bán.</p>
+              <% } %>
+            </div>
+            <form method="post" action="/service/inspection">
+              <% if (typeof csrfToken !== "undefined" && csrfToken) { %>
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <% } %>
+              <input type="hidden" name="room_id" value="<%= selectedRoom.id %>" />
+              <div class="field">
+                <label for="roomCondition">Kết quả kiểm tra</label>
+                <select id="roomCondition" name="room_condition" <%= selectedLocked ? "disabled" : "" %>>
+                  <% conditionOptions.forEach((option) => { %>
+                    <option value="<%= option.value %>" <%= conditionValue === option.value ? "selected" : "" %>><%= option.label %> → <%= option.target %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="condition-list" aria-label="Quy tắc cập nhật">
+                <% conditionOptions.forEach((option) => { %>
+                  <div class="condition-item <%= conditionValue === option.value ? "is-active" : "" %>" data-condition-card="<%= option.value %>">
+                    <strong><%= option.label %></strong>
+                    <span><%= option.hint %></span>
+                  </div>
+                <% }) %>
+              </div>
+              <div class="field">
+                <label for="inspectionNote">Ghi chú</label>
+                <textarea id="inspectionNote" name="note" placeholder="VD: khóa cửa kẹt, thiếu khăn, cần vệ sinh lại ban công..." <%= selectedLocked ? "disabled" : "" %>><%= noteValue %></textarea>
+              </div>
+              <div class="form-actions">
+                <a class="btn" href="/service/room-inspection">Bỏ chọn</a>
+                <button class="btn primary" type="submit" <%= selectedLocked ? "disabled" : "" %>>Lưu cập nhật</button>
+              </div>
+            </form>
+          <% } %>
+        </section>
+
+        <section class="history-card">
+          <h2>Lịch sử gần đây</h2>
+          <% if (!inspectionHistory.length) { %>
+            <div class="empty">Chưa có lịch sử kiểm tra phòng.</div>
+          <% } else { %>
+            <div class="history-list">
+              <% inspectionHistory.slice(0, 5).forEach((item) => { %>
+                <article class="history-item">
+                  <span class="<%= statusClass(item.toStatus) %>"><%= statusText(item.toStatus) %></span>
+                  <strong><%= item.roomNumber %> · <%= item.hotelName %></strong>
+                  <p><%= formatDateTime(item.happenedAt) %></p>
+                  <% if (item.note) { %><p><%= item.note %></p><% } %>
+                </article>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
       </aside>
-    </section>
-
-    <% if ((roomFeed.priorityQueue || []).length) { %>
-      <section class="inspect-panel" style="margin-top:16px" aria-label="Hàng ưu tiên kiểm tra">
-        <h2>Hàng ưu tiên</h2>
-        <p class="inspect-muted">Phòng cần xử lý trước.</p>
-        <div class="inspect-queue">
-          <% roomFeed.priorityQueue.slice(0, 6).forEach((room) => { %>
-            <div class="inspect-queue-item">
-              <span class="inspect-pill <%= realtimeClass(room.trangThaiRealtime) %>"><%= room.statusLabel || room.trangThaiRealtime %></span>
-              <strong><%= room.hotelName %> · P<%= room.soPhong %></strong>
-              <p class="inspect-muted"><%= room.priorityLabel %> · <%= room.conditionLabel %></p>
-              <% if (isRoomActionable(room)) { %>
-                <button class="inspect-mini" type="button" data-room-select="<%= room.id %>">Chọn kiểm tra</button>
-              <% } else { %>
-                <span class="inspect-mini" aria-disabled="true">Chỉ theo dõi</span>
-              <% } %>
-            </div>
-          <% }) %>
-        </div>
-      </section>
-    <% } %>
-
-    <div class="inspect-board-head">
-      <div>
-        <h2>Danh sách phòng</h2>
-        <p class="inspect-muted"><span id="visibleCount"><%= rooms.length %></span>/<%= rooms.length %> phòng phù hợp bộ lọc.</p>
-      </div>
-    </div>
-
-    <% if (!rooms.length) { %>
-      <div class="inspect-empty">Chưa có dữ liệu phòng trong room feed.</div>
-    <% } else { %>
-      <section class="inspect-room-grid" id="roomGrid" aria-label="Danh sách phòng kiểm tra">
-        <% rooms.forEach((room) => { %>
-          <article
-            class="inspect-room"
-            data-room-card
-            data-room-id="<%= room.id %>"
-            data-status="<%= room.trangThaiRealtime || room.trangThai %>"
-            data-hotel="<%= room.hotelId || 0 %>"
-            data-actionable="<%= isRoomActionable(room) ? "1" : "0" %>"
-            data-search="<%= room.searchText || [room.soPhong, room.hotelName, room.hotelCity, room.bookingCode, room.guestName, room.loaiPhong].filter(Boolean).join(" ").toLowerCase() %>"
-          >
-            <div class="inspect-room-top">
-              <span class="inspect-pill <%= realtimeClass(room.trangThaiRealtime || room.trangThai) %>"><%= room.statusLabel || room.trangThaiRealtime || room.trangThai %></span>
-              <span class="inspect-pill <%= isRoomActionable(room) ? "inspect-pill--ok" : "inspect-pill--muted" %>"><%= isRoomActionable(room) ? "Có thể kiểm tra" : "Đang khóa" %></span>
-            </div>
-            <h3><%= room.hotelName %> · P<%= room.soPhong %></h3>
-            <p><%= room.loaiPhong %> · <%= room.hotelCity || "Chưa rõ cơ sở" %></p>
-            <p><%= room.occupancyLabel || room.bookingCode || "Không có giao dịch mở" %></p>
-            <p><strong><%= room.priorityLabel || "Theo dõi" %></strong> · <%= room.conditionLabel || room.tinhTrangPhong || "Không rõ" %></p>
-            <div class="inspect-actions">
-              <% if (isRoomActionable(room)) { %>
-                <button class="inspect-mini" type="button" data-room-select="<%= room.id %>">Chọn kiểm tra</button>
-              <% } else { %>
-                <span class="inspect-mini" aria-disabled="true">Chỉ xem</span>
-              <% } %>
-              <a class="inspect-mini" href="/service/room-board-live">Room board</a>
-            </div>
-          </article>
-        <% }) %>
-      </section>
-    <% } %>
-
-    <section class="inspect-panel" style="margin-top:16px" aria-label="Lịch sử kiểm tra gần đây">
-      <h2>Lịch sử inspection gần đây</h2>
-      <p class="inspect-muted">Các lần cập nhật phòng gần nhất.</p>
-      <% if (!inspectionHistory.length) { %>
-        <div class="inspect-empty">Chưa có log inspection gần đây.</div>
-      <% } else { %>
-        <div class="inspect-history">
-          <% inspectionHistory.forEach((item) => { %>
-            <article class="inspect-log">
-              <span class="inspect-source"><%= formatDateTime(item.happenedAt) %> · <%= item.source || "HeThong" %></span>
-              <strong><%= item.hotelName %> · P<%= item.roomNumber %></strong>
-              <p><%= item.fromStatus || "?" %> → <%= item.toStatus || "?" %></p>
-              <p><%= item.note || "Không có ghi chú." %></p>
-            </article>
-          <% }) %>
-        </div>
-      <% } %>
     </section>
   </div>
 </main>
 
 <script>
   (() => {
-    const rooms = <%- JSON.stringify(rooms).replace(/</g, "\\u003c") %>;
-    const conditions = <%- JSON.stringify(conditionOptions).replace(/</g, "\\u003c") %>;
-    const byId = new Map(rooms.map((room) => [String(room.id), room]));
-    const cards = Array.from(document.querySelectorAll("[data-room-card]"));
-    const search = document.getElementById("roomSearch");
-    const statusFilter = document.getElementById("statusFilter");
-    const hotelFilter = document.getElementById("hotelFilter");
-    const actionableOnly = document.getElementById("actionableOnly");
-    const resetFilters = document.getElementById("resetFilters");
-    const visibleCount = document.getElementById("visibleCount");
-    const roomSelect = document.getElementById("room_id");
-    const conditionSelect = document.getElementById("room_condition");
-    const note = document.getElementById("note");
-    const noteHint = document.getElementById("noteHint");
-
-    const statusClass = (value) => {
-      if (value === "Available") return "inspect-pill inspect-pill--ok";
-      if (value === "Cleaning") return "inspect-pill inspect-pill--cleaning";
-      if (value === "Maintenance") return "inspect-pill inspect-pill--danger";
-      if (value === "Booked") return "inspect-pill inspect-pill--booked";
-      if (value === "Stayed") return "inspect-pill inspect-pill--stayed";
-      return "inspect-pill inspect-pill--muted";
-    };
-
-    const applyFilters = () => {
-      const keyword = (search?.value || "").trim().toLowerCase();
-      const status = statusFilter?.value || "all";
-      const hotel = hotelFilter?.value || "all";
-      const actionable = Boolean(actionableOnly?.checked);
-      let count = 0;
-
-      cards.forEach((card) => {
-        const matchesKeyword = !keyword || (card.dataset.search || "").includes(keyword);
-        const matchesStatus = status === "all" || card.dataset.status === status;
-        const matchesHotel = hotel === "all" || card.dataset.hotel === hotel;
-        const matchesActionable = !actionable || card.dataset.actionable === "1";
-        const visible = matchesKeyword && matchesStatus && matchesHotel && matchesActionable;
-        card.dataset.hidden = visible ? "false" : "true";
-        if (visible) count += 1;
+    document.querySelectorAll("[data-href]").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("a,button,input,select,textarea")) return;
+        window.location.href = row.getAttribute("data-href");
       });
+    });
 
-      if (visibleCount) visibleCount.textContent = String(count);
-    };
-
-    const updateCondition = () => {
-      const selected = conditions.find((item) => item.value === conditionSelect?.value) || conditions[0];
-      document.querySelectorAll("[data-condition]").forEach((node) => {
-        node.dataset.active = node.dataset.condition === selected.value ? "true" : "false";
+    const select = document.getElementById("roomCondition");
+    const note = document.getElementById("inspectionNote");
+    const syncCondition = () => {
+      if (!select) return;
+      document.querySelectorAll("[data-condition-card]").forEach((card) => {
+        card.classList.toggle("is-active", card.getAttribute("data-condition-card") === select.value);
       });
-      const target = document.getElementById("snapshotConditionTarget");
-      if (target) target.textContent = selected.label;
-      if (note && noteHint) {
-        const needsNote = ["HuHaiNhe", "HuHaiNang", "DangBaoTri"].includes(selected.value);
+      if (note) {
+        const needsNote = ["HuHaiNhe", "HuHaiNang", "DangBaoTri"].includes(select.value);
         note.required = needsNote;
         note.minLength = needsNote ? 8 : 0;
-        noteHint.textContent = needsNote ? "Bắt buộc ghi rõ lỗi, vị trí và mức độ để bảo trì xử lý." : selected.note;
       }
     };
-
-    const updateSnapshot = () => {
-      const room = byId.get(String(roomSelect?.value || ""));
-      const status = document.getElementById("snapshotStatus");
-      const title = document.getElementById("snapshotTitle");
-      const hotel = document.getElementById("snapshotHotel");
-      const guest = document.getElementById("snapshotGuest");
-      const type = document.getElementById("snapshotType");
-      const condition = document.getElementById("snapshotCondition");
-      const priority = document.getElementById("snapshotPriority");
-      const access = document.getElementById("snapshotAccess");
-      const action = document.getElementById("snapshotAction");
-
-      if (!room) {
-        if (status) {
-          status.className = "inspect-pill inspect-pill--muted";
-          status.textContent = "Chưa chọn phòng";
-        }
-        if (title) title.textContent = "Chọn phòng để xem nhanh";
-        if (hotel) hotel.textContent = "Xem nhanh trước khi cập nhật.";
-        if (guest) guest.textContent = "Phòng có khách/booking sẽ bị khóa.";
-        if (type) type.textContent = "Chưa chọn";
-        if (condition) condition.textContent = "Chưa chọn";
-        if (priority) priority.textContent = "Chưa chọn";
-        if (access) access.textContent = "Chưa chọn";
-        if (action) action.textContent = "Chọn phòng để bắt đầu.";
-        return;
-      }
-
-      const realtime = room.trangThaiRealtime || room.trangThai || "Unknown";
-      if (status) {
-        status.className = statusClass(realtime);
-        status.textContent = room.statusLabel || realtime;
-      }
-      if (title) title.textContent = `Phòng ${room.soPhong}`;
-      if (hotel) hotel.textContent = [room.hotelName, room.hotelCity].filter(Boolean).join(" · ");
-      if (guest) guest.textContent = room.occupancyLabel || room.bookingCode || "Không có giao dịch mở";
-      if (type) type.textContent = room.loaiPhong || "Chưa rõ";
-      if (condition) condition.textContent = room.conditionLabel || room.tinhTrangPhong || "Không rõ";
-      if (priority) priority.textContent = room.priorityLabel || "Theo dõi";
-      if (access) access.textContent = room.canInspect === false || room.isLocked ? "Đang khóa" : "Có thể cập nhật";
-      if (action) action.textContent = room.suggestedAction || "Kiểm tra thực tế rồi cập nhật kết quả.";
-    };
-
-    [search, statusFilter, hotelFilter, actionableOnly].forEach((node) => node?.addEventListener("input", applyFilters));
-    resetFilters?.addEventListener("click", () => {
-      if (search) search.value = "";
-      if (statusFilter) statusFilter.value = "all";
-      if (hotelFilter) hotelFilter.value = "all";
-      if (actionableOnly) actionableOnly.checked = false;
-      applyFilters();
-    });
-    document.querySelectorAll("[data-room-select]").forEach((button) => {
-      button.addEventListener("click", () => {
-        if (!roomSelect) return;
-        roomSelect.value = button.getAttribute("data-room-select") || "";
-        roomSelect.dispatchEvent(new Event("change", { bubbles: true }));
-        document.getElementById("inspectionForm")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    });
-    roomSelect?.addEventListener("change", updateSnapshot);
-    conditionSelect?.addEventListener("change", updateCondition);
-    applyFilters();
-    updateCondition();
-    updateSnapshot();
+    select?.addEventListener("change", syncCondition);
+    syncCondition();
   })();
 </script>
 

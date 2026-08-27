@@ -11,22 +11,26 @@ export async function renderDashboard(req: Request, res: Response) {
   const hero = dashboardService.getHero(scope);
   const actions = dashboardService.getActions(scope);
   if (scope === "cskh") {
+    const stats = await dashboardService.getStatsSnapshot(scope);
     return res.render("dashboard/cskh", {
       title: "Dashboard CSKH",
       scope,
       hero,
       cards,
-      actions
+      actions,
+      stats
     });
   }
 
   if (scope === "dichvu") {
+    const stats = await dashboardService.getStatsSnapshot(scope);
     return res.render("dashboard/dichvu", {
       title: "Dashboard Dịch vụ",
       scope,
       hero,
       cards,
-      actions
+      actions,
+      stats
     });
   }
 

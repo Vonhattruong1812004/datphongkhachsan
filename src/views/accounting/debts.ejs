@@ -5,298 +5,167 @@
   const rows = payload.rows || [];
   const summary = payload.summary || {};
   const statusOptions = payload.statusOptions || [];
-  const statusBreakdown = payload.statusBreakdown || [];
-  const hotelBreakdown = payload.hotelBreakdown || [];
-  const dailyTrend = payload.dailyTrend || [];
-  const agingBreakdown = payload.agingBreakdown || [];
-  const riskBreakdown = payload.riskBreakdown || [];
-  const customerBreakdown = payload.customerBreakdown || [];
-  const priorityRows = payload.priorityRows || [];
-  const actionItems = payload.actionItems || [];
-  const chartPayload = payload.chartPayload || { trend: [], aging: [], risks: [], customers: [], hotels: [] };
   const hotelOptions = payload.hotelOptions || [];
   const page = Number(payload.currentPage || 1);
   const totalPages = Number(payload.totalPages || 1);
+  const totalRecords = Number(payload.totalRecords || 0);
+  const currentLimit = Number(filters.limit || payload.limit || 10);
+  const displayFrom = totalRecords > 0 ? ((page - 1) * currentLimit) + 1 : 0;
+  const displayTo = totalRecords > 0 ? Math.min(displayFrom + rows.length - 1, totalRecords) : 0;
   const makeQuery = (overrides = {}) => new URLSearchParams({ ...filters, ...overrides }).toString();
   const csvQuery = makeQuery({ format: "csv" });
-  const jsonQuery = makeQuery({ format: "json" });
   const pages = [];
   const firstPage = Math.max(1, page - 2);
   const lastPage = Math.min(totalPages, page + 2);
   for (let i = firstPage; i <= lastPage; i += 1) pages.push(i);
-  const maxTrend = Math.max(...dailyTrend.map((item) => Number(item.total || 0)), 1);
-  const maxCustomerDebt = Math.max(...customerBreakdown.map((item) => Number(item.total || 0)), 1);
 %>
 
 <style>
   .debt-home {
-    --ink: #102033;
+    --ink: #142033;
     --muted: #667085;
-    --line: rgba(16, 32, 51, .10);
-    --glass: rgba(255, 255, 255, .80);
-    --strong: rgba(255, 255, 255, .94);
-    --cyan: #12bff3;
-    --mint: #20d6a3;
-    --lime: #b7ef4a;
-    --sun: #ffd166;
-    --orange: #ff9f7a;
-    --pink: #ff6aa2;
-    --violet: #8068ff;
-    --shadow: 0 18px 48px rgba(16, 32, 51, .11);
+    --line: #c9e0fb;
+    --blue: #006ce4;
+    --blue-dark: #003b95;
+    --green: #07865f;
+    --amber: #b45309;
+    --rose: #be123c;
+    --violet: #6d28d9;
+    --shadow: 0 14px 34px rgba(15, 36, 66, .08);
     min-height: calc(100vh - 84px);
-    padding: 30px 18px 58px;
+    padding: 24px 18px 54px;
     color: var(--ink);
-    background:
-      linear-gradient(116deg, rgba(128, 104, 255, .17), transparent 31%),
-      linear-gradient(250deg, rgba(255, 106, 162, .16), transparent 35%),
-      repeating-linear-gradient(135deg, rgba(255,255,255,.72) 0 12px, rgba(242,248,255,.72) 12px 24px),
-      linear-gradient(135deg, #fbfcff 0%, #eefcff 45%, #fff7ed 100%);
   }
 
   .debt-home *,
   .debt-home *::before,
-  .debt-home *::after {
-    box-sizing: border-box;
-  }
+  .debt-home *::after { box-sizing: border-box; }
 
   .debt-wrap {
-    max-width: 1200px;
+    width: min(1280px, calc(100vw - 48px));
     margin: 0 auto;
-  }
-
-  .debt-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
-    gap: 18px;
-    align-items: stretch;
-    margin-bottom: 18px;
+    gap: 14px;
   }
 
-  .debt-hero-main,
-  .debt-kpi,
-  .debt-filter,
-  .debt-panel,
-  .debt-table-panel,
-  .debt-alert {
-    border: 1px solid var(--line);
-    background: var(--glass);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(24px);
-  }
-
-  .debt-hero-main {
-    position: relative;
-    overflow: hidden;
-    min-height: 318px;
-    border-radius: 24px;
-    padding: 28px;
-  }
-
-  .debt-hero-main::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(96deg, rgba(128, 104, 255, .19), transparent 34%),
-      linear-gradient(164deg, transparent 0 53%, rgba(18, 191, 243, .22) 53% 68%, transparent 68%),
-      linear-gradient(28deg, transparent 0 72%, rgba(255, 209, 102, .20) 72% 86%, transparent 86%);
-  }
-
-  .debt-hero-content {
-    position: relative;
-    z-index: 1;
-  }
-
-  .debt-chip,
-  .debt-tag,
-  .debt-pill,
-  .debt-status {
-    display: inline-flex;
+  .debt-title {
+    min-height: 72px;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    border-radius: 999px;
-    max-width: 100%;
-    white-space: nowrap;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+    box-shadow: 0 18px 42px rgba(0, 72, 171, .20);
   }
 
-  .debt-chip {
-    padding: 7px 12px;
-    border: 1px solid rgba(128, 104, 255, .30);
-    background: rgba(128, 104, 255, .13);
-    color: #5b21b6;
-    font-size: 12px;
-    font-weight: 1000;
-    text-transform: uppercase;
-  }
-
-  .debt-spark {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--violet);
-    box-shadow: 0 0 0 7px rgba(128, 104, 255, .13);
-  }
-
-  .debt-hero h1 {
-    max-width: 790px;
-    margin: 24px 0 12px;
-    font-size: clamp(38px, 5vw, 54px);
-    line-height: 1;
+  .debt-title h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.05;
     letter-spacing: 0;
   }
 
-  .debt-hero h1 span {
-    color: transparent;
-    background: linear-gradient(96deg, #8068ff 0%, #0891b2 34%, #10b981 62%, #f59e0b 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+  .debt-title h1::before {
+    content: "";
+    width: 6px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .88);
   }
 
-  .debt-lead {
-    max-width: 760px;
-    margin: 0;
-    color: var(--muted);
-    font-size: 16px;
-    line-height: 1.7;
+  .debt-title small {
+    font-size: 13px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, .82);
+    white-space: nowrap;
   }
 
-  .debt-tags,
-  .debt-actions,
-  .debt-form-actions,
-  .debt-pagination {
+  .debt-toolbar,
+  .debt-stat,
+  .debt-board {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px) saturate(1.08);
+  }
+
+  .debt-toolbar {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
   }
 
-  .debt-tags {
-    margin-top: 20px;
+  .debt-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .debt-tag {
-    padding: 8px 11px;
-    border: 1px solid rgba(16, 32, 51, .08);
-    background: rgba(255, 255, 255, .70);
-    color: var(--ink);
-    font-size: 12px;
-    font-weight: 950;
+  .debt-filter {
+    position: relative;
+    flex: 0 0 auto;
   }
 
-  .debt-actions {
-    margin-top: 22px;
-  }
-
-  .debt-button {
-    min-height: 43px;
-    max-width: 100%;
+  .debt-filter summary,
+  .debt-icon-btn,
+  .debt-btn,
+  .debt-page {
+    min-height: 42px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(16, 32, 51, .12);
-    border-radius: 999px;
-    padding: 10px 17px;
-    color: var(--ink);
-    background: rgba(255, 255, 255, .78);
-    font-size: 14px;
-    font-weight: 950;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: #064a9f;
+    background: #fff;
     text-decoration: none;
-    text-align: center;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
     cursor: pointer;
   }
 
-  .debt-button--primary {
-    color: #fff;
-    border-color: transparent;
-    background: linear-gradient(135deg, #8068ff, #12bff3);
-    box-shadow: 0 16px 36px rgba(128, 104, 255, .24);
+  .debt-filter summary {
+    gap: 8px;
+    padding: 0 14px;
+    list-style: none;
   }
 
-  .debt-button--hot {
-    color: #fff;
-    border-color: transparent;
-    background: linear-gradient(135deg, #ff6aa2, #ff9f7a);
-    box-shadow: 0 16px 36px rgba(255, 106, 162, .22);
+  .debt-filter summary::-webkit-details-marker { display: none; }
+
+  .debt-filter[open] summary {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(0, 108, 228, .10);
   }
 
-  .debt-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 18px 42px rgba(128, 104, 255, .16);
-  }
-
-  .debt-kpi-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: 1fr;
-    gap: 12px;
-    height: 100%;
-  }
-
-  .debt-kpi {
-    min-height: 153px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
-    border-radius: 22px;
+  .debt-filter-menu {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 10px);
+    left: 0;
+    width: min(720px, calc(100vw - 56px));
     padding: 18px;
-    background: var(--strong);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 28px 70px rgba(19, 32, 51, .18);
   }
 
-  .debt-kpi strong {
-    display: block;
-    margin-top: 12px;
-    font-size: clamp(20px, 2vw, 23px);
-    line-height: 1.1;
-    overflow-wrap: anywhere;
-  }
-
-  .debt-kpi span {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 900;
-    text-transform: uppercase;
-  }
-
-  .debt-kpi.is-rose { border-color: rgba(255, 106, 162, .32); }
-  .debt-kpi.is-sun { border-color: rgba(255, 209, 102, .42); }
-  .debt-kpi.is-green { border-color: rgba(32, 214, 163, .30); }
-  .debt-kpi.is-violet { border-color: rgba(128, 104, 255, .30); }
-
-  .debt-layout {
+  .debt-filter-grid {
     display: grid;
-    grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-  }
-
-  .debt-side-stack {
-    display: grid;
-    min-width: 0;
-    gap: 18px;
-  }
-
-  .debt-filter,
-  .debt-panel,
-  .debt-table-panel,
-  .debt-alert {
-    min-width: 0;
-    border-radius: 22px;
-    padding: 18px;
-  }
-
-  .debt-filter h2,
-  .debt-panel h2,
-  .debt-table-panel h2 {
-    margin: 0;
-    font-size: 20px;
-  }
-
-  .debt-field-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
-    margin-top: 16px;
   }
 
   .debt-field {
@@ -304,928 +173,495 @@
     gap: 7px;
   }
 
-  .debt-field.is-wide {
-    grid-column: 1 / -1;
-  }
+  .debt-field.is-wide { grid-column: span 2; }
 
-  .debt-field label {
+  .debt-field span {
     color: var(--muted);
     font-size: 12px;
-    font-weight: 950;
-    text-transform: uppercase;
-  }
-
-  .debt-field input,
-  .debt-field select {
-    width: 100%;
-    min-height: 43px;
-    border: 1px solid rgba(16, 32, 51, .12);
-    border-radius: 14px;
-    padding: 10px 12px;
-    color: var(--ink);
-    background: rgba(255, 255, 255, .88);
-    font: inherit;
-    font-size: 14px;
-  }
-
-  .debt-form-actions {
-    margin-top: 16px;
-  }
-
-  .debt-alert {
-    margin-bottom: 16px;
-    background: rgba(255, 246, 214, .88);
-    border-color: rgba(245, 158, 11, .25);
-    color: #8a4b00;
     font-weight: 800;
   }
 
-  .debt-alert p {
-    margin: 0;
-  }
-
-  .debt-breakdown,
-  .debt-hotels,
-  .debt-trend,
-  .debt-insights,
-  .debt-review-list,
-  .debt-customers {
-    display: grid;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .debt-insight-grid,
-  .debt-chart-grid {
-    display: grid;
-    gap: 12px;
-    margin-top: 16px;
-  }
-
-  .debt-insight-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: 18px 0;
-  }
-
-  .debt-chart-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .debt-insight,
-  .debt-chart,
-  .debt-review,
-  .debt-customer {
-    border: 1px solid rgba(16, 32, 51, .08);
-    background: rgba(255, 255, 255, .68);
-  }
-
-  .debt-insight {
-    min-height: 126px;
-    border-radius: 18px;
-    padding: 14px;
-  }
-
-  .debt-insight span,
-  .debt-chart span {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 950;
-    text-transform: uppercase;
-  }
-
-  .debt-insight strong {
-    display: block;
-    margin-top: 10px;
-    font-size: clamp(18px, 1.8vw, 21px);
-    line-height: 1.15;
-    overflow-wrap: anywhere;
-  }
-
-  .debt-insight p,
-  .debt-review p {
-    margin: 7px 0 0;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .debt-insight.is-rose { border-color: rgba(255, 106, 162, .28); }
-  .debt-insight.is-sun { border-color: rgba(255, 209, 102, .36); }
-  .debt-insight.is-green { border-color: rgba(32, 214, 163, .24); }
-  .debt-insight.is-cyan { border-color: rgba(18, 191, 243, .25); }
-
-  .debt-chart {
-    min-height: 248px;
-    border-radius: 18px;
-    padding: 14px;
-  }
-
-  .debt-chart.is-wide {
-    grid-column: 1 / -1;
-  }
-
-  .debt-chart-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-
-  .debt-chart-head > div {
-    min-width: 0;
-  }
-
-  .debt-chart-head h3 {
-    margin: 4px 0 0;
-    font-size: 16px;
-  }
-
-  .debt-chart canvas {
+  .debt-input,
+  .debt-field input,
+  .debt-field select {
     width: 100%;
-    height: 210px;
-    display: block;
+    min-height: 42px;
+    border: 1px solid rgba(20, 32, 51, .14);
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: var(--ink);
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 650;
+    outline: none;
   }
 
-  .debt-break-row,
-  .debt-trend-row {
-    display: grid;
-    grid-template-columns: minmax(86px, 118px) minmax(0, 1fr) minmax(116px, max-content);
+  .debt-search .debt-input {
+    flex: 1 1 520px;
+    max-width: 620px;
+  }
+
+  .debt-icon-btn {
+    width: 42px;
+    flex: 0 0 42px;
+    padding: 0;
+  }
+
+  .debt-btn {
+    padding: 0 16px;
+  }
+
+  .debt-btn.is-primary,
+  .debt-icon-btn.is-primary,
+  .debt-page.is-active {
+    color: #fff;
+    border-color: transparent;
+    background: var(--blue);
+    box-shadow: 0 10px 22px rgba(0, 108, 228, .22);
+  }
+
+  .debt-btn.is-ghost {
+    color: var(--muted);
+    border-color: rgba(20, 32, 51, .12);
+  }
+
+  .debt-icon-btn svg,
+  .debt-filter svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .debt-filter-actions {
+    display: flex;
+    justify-content: flex-end;
     gap: 10px;
-    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(20, 32, 51, .08);
   }
 
-  .debt-meter {
-    height: 9px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(16, 32, 51, .08);
-  }
-
-  .debt-meter span {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--violet), var(--cyan), var(--mint));
-  }
-
-  .debt-pill {
-    padding: 7px 10px;
-    background: rgba(255, 255, 255, .72);
-    border: 1px solid rgba(16, 32, 51, .08);
-    font-size: 12px;
-    font-weight: 950;
-    justify-content: center;
-  }
-
-  .debt-hotel,
-  .debt-review,
-  .debt-customer {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+  .debt-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
-    padding: 12px;
-    border-radius: 16px;
-    border: 1px solid rgba(16, 32, 51, .08);
-    background: rgba(255, 255, 255, .64);
   }
 
-  .debt-hotel > *,
-  .debt-review > *,
-  .debt-customer > * {
-    min-width: 0;
+  .debt-stat {
+    min-height: 96px;
+    padding: 16px;
   }
 
-  .debt-customer-meter {
-    width: 120px;
-    height: 8px;
-    margin-top: 8px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: rgba(16, 32, 51, .08);
-  }
-
-  .debt-customer-meter span {
+  .debt-stat strong {
     display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--violet), var(--cyan));
+    color: #064a9f;
+    font-size: 26px;
+    line-height: 1.1;
+    font-weight: 900;
   }
 
-  .debt-hotel span,
-  .debt-muted {
+  .debt-stat span {
+    display: block;
+    margin-top: 8px;
     color: var(--muted);
     font-size: 13px;
+    line-height: 1.35;
+    font-weight: 700;
   }
 
-  .debt-status {
-    padding: 7px 10px;
-    border: 1px solid rgba(16, 32, 51, .08);
-    font-size: 12px;
-    font-weight: 950;
+  .debt-stat.is-risk strong { color: var(--rose); }
+  .debt-stat.is-soon strong { color: var(--amber); }
+  .debt-stat.is-ok strong { color: var(--green); }
+
+  .debt-warning {
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(245, 158, 11, .30);
+    border-radius: 12px;
+    color: #8a4b00;
+    background: rgba(255, 247, 223, .92);
+    font-weight: 750;
   }
 
-  .debt-status--rose { color: #be123c; background: rgba(255, 106, 162, .14); }
-  .debt-status--orange { color: #9a3412; background: rgba(255, 159, 122, .18); }
-  .debt-status--sun { color: #92400e; background: rgba(255, 209, 102, .22); }
-  .debt-status--green { color: #047857; background: rgba(32, 214, 163, .16); }
-  .debt-status--cyan { color: #0369a1; background: rgba(18, 191, 243, .14); }
-  .debt-status--violet { color: #6d28d9; background: rgba(128, 104, 255, .14); }
-  .debt-status--slate { color: #475569; background: rgba(100, 116, 139, .14); }
-
-  .debt-table-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-
-  .debt-table-head p {
-    margin: 6px 0 0;
-    color: var(--muted);
-    font-size: 13px;
-  }
-
-  .debt-table-wrap {
-    overflow-x: auto;
-    max-width: 100%;
-    padding-bottom: 4px;
+  .debt-board {
+    overflow: hidden;
   }
 
   .debt-table {
     width: 100%;
-    min-width: 1220px;
-    border-collapse: separate;
-    border-spacing: 0 9px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: rgba(255, 255, 255, .76);
   }
 
   .debt-table th {
-    padding: 0 12px 6px;
-    color: var(--muted);
+    height: 48px;
+    padding: 0 14px;
+    color: #475569;
+    background: rgba(237, 243, 249, .94);
     font-size: 12px;
+    line-height: 1.2;
+    font-weight: 850;
     text-align: left;
     text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
   }
 
   .debt-table td {
-    padding: 13px 12px;
-    border-top: 1px solid rgba(16, 32, 51, .08);
-    border-bottom: 1px solid rgba(16, 32, 51, .08);
-    background: rgba(255, 255, 255, .75);
+    padding: 13px 14px;
+    color: var(--ink);
     font-size: 14px;
+    line-height: 1.35;
+    font-weight: 600;
     vertical-align: middle;
+    border-bottom: 1px solid rgba(20, 32, 51, .08);
   }
 
-  .debt-table td:first-child {
-    border-left: 1px solid rgba(16, 32, 51, .08);
-    border-radius: 18px 0 0 18px;
+  .debt-table tr[data-href] {
+    cursor: pointer;
+    transition: background .15s ease, box-shadow .15s ease;
   }
 
-  .debt-table td:last-child {
-    border-right: 1px solid rgba(16, 32, 51, .08);
-    border-radius: 0 18px 18px 0;
+  .debt-table tr[data-href]:hover {
+    background: rgba(248, 251, 255, .96);
+    box-shadow: inset 4px 0 0 var(--blue);
   }
 
-  .debt-code {
-    display: grid;
-    gap: 3px;
-    font-weight: 950;
+  .debt-main {
+    display: block;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.25;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .debt-code { color: #064a9f; }
+
+  .debt-sub {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.35;
+    font-weight: 600;
     overflow-wrap: anywhere;
   }
 
   .debt-money {
-    font-weight: 1000;
+    color: #064a9f;
+    font-size: 15px;
+    font-weight: 850;
+    white-space: nowrap;
   }
 
-  .debt-money.is-debt { color: #be123c; }
-  .debt-money.is-paid { color: #047857; }
-  .debt-money.is-total { color: #1d4ed8; }
+  .debt-money.is-paid { color: var(--green); }
+  .debt-money.is-debt { color: var(--rose); }
 
-  .debt-empty {
-    border: 1px dashed rgba(16, 32, 51, .18);
-    border-radius: 22px;
-    padding: 22px;
-    color: var(--muted);
-    background: rgba(255, 255, 255, .62);
-  }
-
-  .debt-pagination {
-    justify-content: center;
-    margin-top: 18px;
-  }
-
-  .debt-page {
-    min-width: 40px;
-    min-height: 40px;
+  .debt-status {
+    max-width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid rgba(20, 32, 51, .08);
     border-radius: 999px;
-    border: 1px solid rgba(16, 32, 51, .10);
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.1;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .debt-status--rose { color: var(--rose); background: rgba(244, 63, 94, .10); }
+  .debt-status--orange { color: #b45309; background: rgba(245, 158, 11, .13); }
+  .debt-status--sun { color: #92400e; background: rgba(255, 209, 102, .22); }
+  .debt-status--green { color: var(--green); background: rgba(16, 185, 129, .12); }
+  .debt-status--cyan { color: #0369a1; background: rgba(18, 191, 243, .13); }
+  .debt-status--violet { color: var(--violet); background: rgba(128, 104, 255, .13); }
+  .debt-status--slate { color: #475569; background: rgba(100, 116, 139, .12); }
+
+  .debt-empty {
+    margin: 18px;
+    padding: 22px;
+    border: 1px dashed rgba(20, 32, 51, .20);
+    border-radius: 12px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, .76);
+    font-weight: 750;
+  }
+
+  .debt-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, .86);
+  }
+
+  .debt-footer span {
     color: var(--ink);
-    background: rgba(255,255,255,.78);
-    text-decoration: none;
-    font-weight: 950;
+    font-size: 13px;
+    font-weight: 650;
   }
 
-  .debt-page.is-active {
-    color: #fff;
-    border-color: transparent;
-    background: linear-gradient(135deg, #8068ff, #12bff3);
+  .debt-footer strong { font-weight: 900; }
+
+  .debt-pagination,
+  .debt-limit-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  @media (max-width: 1080px) {
-    .debt-hero,
-    .debt-layout {
-      grid-template-columns: 1fr;
-    }
-
-    .debt-insight-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .debt-limit-form {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 750;
   }
 
-  @media (max-width: 720px) {
-    .debt-home {
-      padding: 20px 12px 42px;
-    }
-    .debt-hero-main,
-    .debt-filter,
-    .debt-panel,
-    .debt-table-panel {
-      border-radius: 18px;
-      padding: 16px;
-    }
-    .debt-hero-main {
-      min-height: auto;
-    }
-    .debt-hero h1 {
-      font-size: 38px;
-    }
-    .debt-actions,
-    .debt-form-actions {
-      display: grid;
-      grid-template-columns: 1fr;
-    }
-    .debt-button {
-      width: 100%;
-    }
-    .debt-chip,
-    .debt-tag,
-    .debt-pill,
-    .debt-status {
-      white-space: normal;
-    }
-    .debt-kpi-grid,
-    .debt-field-grid {
-      grid-template-columns: 1fr;
-    }
-    .debt-kpi,
-    .debt-insight {
-      min-height: auto;
-    }
-    .debt-table-head,
-    .debt-hotel,
-    .debt-review,
-    .debt-customer {
-      display: block;
-    }
-    .debt-hotel > strong,
-    .debt-customer > strong,
-    .debt-review > strong {
-      display: block;
-      margin-top: 10px;
-    }
-    .debt-break-row,
-    .debt-trend-row {
-      grid-template-columns: 1fr;
-    }
-    .debt-insight-grid,
-    .debt-chart-grid {
-      grid-template-columns: 1fr;
-      margin-top: 12px;
-    }
-    .debt-chart.is-wide {
-      grid-column: auto;
-    }
-    .debt-chart canvas {
-      height: 190px;
-    }
+  .debt-limit-form select {
+    min-height: 36px;
+    border: 1px solid rgba(20, 32, 51, .12);
+    border-radius: 10px;
+    padding: 0 10px;
+    color: var(--ink);
+    background: #fff;
+    font: inherit;
+  }
+
+  .debt-page {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .debt-page.is-disabled {
+    pointer-events: none;
+    color: #98a2b3;
+    border-color: rgba(20, 32, 51, .08);
+    background: #f8fafc;
+  }
+
+  @media (max-width: 1040px) {
+    .debt-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .debt-toolbar { align-items: stretch; flex-direction: column; }
+    .debt-search { width: 100%; }
+    .debt-search .debt-input { max-width: none; }
+    .debt-table { min-width: 980px; }
+    .debt-board { overflow-x: auto; }
+  }
+
+  @media (max-width: 680px) {
+    .debt-home { padding: 18px 12px 42px; }
+    .debt-wrap { width: 100%; }
+    .debt-title { align-items: flex-start; flex-direction: column; }
+    .debt-title small { white-space: normal; }
+    .debt-filter-grid,
+    .debt-stats { grid-template-columns: 1fr; }
+    .debt-field.is-wide { grid-column: auto; }
+    .debt-footer { align-items: flex-start; flex-direction: column; }
   }
 </style>
+<%- include("../partials/accounting-background") %>
 
 <main class="debt-home">
+  <section class="accounting-uc-layout">
+    <%- include("../partials/accounting-uc-sidebar", { activeHref: "/accounting/debts" }) %>
+    <div class="accounting-uc-main">
   <div class="debt-wrap">
-    <section class="debt-hero" aria-label="Đối soát công nợ phải thu">
-      <div class="debt-hero-main">
-        <div class="debt-hero-content">
-          <div class="debt-chip"><span class="debt-spark"></span> Receivable control</div>
-          <h1>Đối soát <span>công nợ</span></h1>
-          <p class="debt-lead">Kiểm soát giao dịch chưa tất toán, thanh toán thiếu, khoản chờ đối soát và công nợ theo khách, đoàn, cơ sở.</p>
-          <div class="debt-tags">
-            <span class="debt-tag"><%= payload.rangeLabel %></span>
-            <span class="debt-tag"><%= payload.hotelContext.label %></span>
-            <span class="debt-tag"><%= payload.totalRecords %> giao dịch</span>
-            <span class="debt-tag">Cập nhật <%= payload.generatedAtLabel %></span>
-          </div>
-          <div class="debt-actions">
-            <a class="debt-button debt-button--primary" href="/api/accounting/debts?<%= csvQuery %>">Xuất CSV</a>
-            <a class="debt-button" href="/api/accounting/debts?<%= jsonQuery %>">JSON</a>
-            <a class="debt-button debt-button--hot" href="/accounting/cashflow?tu_ngay=<%= filters.tu_ngay %>&den_ngay=<%= filters.den_ngay %>&hotel_id=<%= filters.hotel_id %>">Đối chiếu thu chi</a>
-          </div>
-        </div>
-      </div>
-
-      <aside class="debt-kpi-grid" aria-label="KPI công nợ">
-        <article class="debt-kpi is-rose"><span>Tổng công nợ</span><strong><%= summary.tongCongNoFormatted %></strong></article>
-        <article class="debt-kpi is-sun"><span>Chưa đối soát</span><strong><%= summary.tongChuaDoiSoatFormatted %></strong></article>
-        <article class="debt-kpi is-green"><span>Đã thanh toán</span><strong><%= summary.tongDaThanhToanFormatted %></strong></article>
-        <article class="debt-kpi is-violet"><span>Tỷ lệ đã thu</span><strong><%= summary.doiSoatCoverageFormatted %></strong></article>
-      </aside>
+    <section class="debt-title">
+      <h1>Quản lý công nợ</h1>
+      <small><%= payload.rangeLabel %> · <%= totalRecords %> khoản phải thu</small>
     </section>
 
-    <% if (payload.warnings && payload.warnings.length) { %>
-      <section class="debt-alert">
-        <% payload.warnings.forEach((warning) => { %>
-          <p><%= warning %></p>
-        <% }) %>
-      </section>
-    <% } %>
+    <% (payload.warnings || []).forEach((warning) => { %>
+      <p class="debt-warning"><%= warning %></p>
+    <% }) %>
 
-    <section class="debt-insight-grid" aria-label="Tín hiệu công nợ">
-      <article class="debt-insight is-rose">
-        <span>Quá hạn</span>
-        <strong><%= summary.overdueAmountFormatted %></strong>
-        <p><%= summary.overdueCount || 0 %> khoản đã quá hạn cần ưu tiên nhắc thanh toán.</p>
-      </article>
-      <article class="debt-insight is-sun">
-        <span>Sắp đến hạn</span>
-        <strong><%= summary.dueSoonAmountFormatted %></strong>
-        <p><%= summary.dueSoonCount || 0 %> khoản cần nhắc trước hạn trong 7 ngày.</p>
-      </article>
-      <article class="debt-insight is-green">
-        <span>Tỷ lệ đã thu</span>
-        <strong><%= summary.doiSoatCoverageFormatted %></strong>
-        <p>Đã thu <%= summary.tongDaThanhToanFormatted %> trên tổng giá trị booking.</p>
-      </article>
-      <article class="debt-insight is-cyan">
-        <span>Exposure công nợ</span>
-        <strong><%= summary.debtExposureRateFormatted %></strong>
-        <p><%= summary.highRiskCount || 0 %> hồ sơ rủi ro, <%= summary.missingContactCount || 0 %> thiếu liên hệ.</p>
-      </article>
-    </section>
-
-    <section class="debt-layout">
-      <aside class="debt-side-stack">
-        <section class="debt-filter">
-          <h2>Bộ lọc</h2>
-          <form method="get" action="/accounting/debts">
-            <div class="debt-field-grid">
-              <div class="debt-field">
-                <label for="tu_ngay">Từ ngày</label>
-                <input id="tu_ngay" type="date" name="tu_ngay" value="<%= filters.tu_ngay %>" />
-              </div>
-              <div class="debt-field">
-                <label for="den_ngay">Đến ngày</label>
-                <input id="den_ngay" type="date" name="den_ngay" value="<%= filters.den_ngay %>" />
-              </div>
-              <div class="debt-field">
-                <label for="trang_thai">Trạng thái</label>
-                <select id="trang_thai" name="trang_thai">
-                  <% statusOptions.forEach((option) => { %>
-                    <option value="<%= option.value %>" <%= filters.trang_thai === option.value ? "selected" : "" %>><%= option.label %></option>
+    <form class="debt-toolbar" method="get" action="/accounting/debts" aria-label="Công cụ công nợ">
+      <div class="debt-search">
+        <details class="debt-filter">
+          <summary>
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+              <path d="M3 5h18l-7 8v5l-4 2v-7L3 5Z"></path>
+            </svg>
+            Bộ lọc
+          </summary>
+          <div class="debt-filter-menu">
+            <input type="hidden" name="page" value="1">
+            <div class="debt-filter-grid">
+              <label class="debt-field">
+                <span>Từ ngày</span>
+                <input type="date" name="tu_ngay" value="<%= filters.tu_ngay %>">
+              </label>
+              <label class="debt-field">
+                <span>Đến ngày</span>
+                <input type="date" name="den_ngay" value="<%= filters.den_ngay %>">
+              </label>
+              <label class="debt-field">
+                <span>Trạng thái</span>
+                <select name="trang_thai">
+                  <% statusOptions.forEach((item) => { %>
+                    <option value="<%= item.value %>" <%= filters.trang_thai === item.value ? "selected" : "" %>><%= item.label %></option>
                   <% }) %>
                 </select>
-              </div>
-              <div class="debt-field">
-                <label for="limit">Hiển thị</label>
-                <select id="limit" name="limit">
-                  <% [10, 15, 25, 50, 100].forEach((limit) => { %>
-                    <option value="<%= limit %>" <%= Number(filters.limit) === limit ? "selected" : "" %>><%= limit %> dòng</option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="debt-field is-wide">
-                <label for="hotel_id">Cơ sở</label>
-                <select id="hotel_id" name="hotel_id">
+              </label>
+              <label class="debt-field is-wide">
+                <span>Cơ sở lưu trú</span>
+                <select name="hotel_id">
                   <option value="0" <%= Number(filters.hotel_id || 0) === 0 ? "selected" : "" %>>Toàn bộ cơ sở</option>
                   <% hotelOptions.forEach((hotel) => { %>
-                    <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>>
-                      <%= hotel.tenKhachSan %><%= hotel.tinhThanh ? ` · ${hotel.tinhThanh}` : "" %>
-                    </option>
+                    <option value="<%= hotel.id %>" <%= Number(filters.hotel_id || 0) === Number(hotel.id) ? "selected" : "" %>><%= hotel.label %></option>
                   <% }) %>
                 </select>
-              </div>
-              <div class="debt-field is-wide">
-                <label for="keyword">Từ khóa</label>
-                <input id="keyword" name="keyword" value="<%= filters.keyword %>" placeholder="Mã giao dịch, mã đặt chỗ, khách, đoàn, email, số điện thoại..." />
-              </div>
-            </div>
-            <input type="hidden" name="page" value="1" />
-            <div class="debt-form-actions">
-              <button class="debt-button debt-button--primary" type="submit">Lọc công nợ</button>
-              <a class="debt-button" href="/accounting/debts">Đặt lại</a>
-            </div>
-          </form>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Phân bổ trạng thái</h2>
-          <div class="debt-breakdown">
-            <% if (!statusBreakdown.length) { %>
-              <div class="debt-empty">Chưa có dữ liệu trạng thái trong kỳ này.</div>
-            <% } %>
-            <% statusBreakdown.forEach((item) => {
-              const pct = summary.tongCongNo > 0 ? Math.round((Number(item.total || 0) / Number(summary.tongCongNo || 1)) * 100) : 0;
-            %>
-              <div class="debt-break-row">
-                <span class="debt-status debt-status--<%= item.meta.tone %>"><%= item.meta.label %></span>
-                <div class="debt-meter"><span style="width:<%= Math.max(5, pct) %>%"></span></div>
-                <span class="debt-pill"><%= item.count %> · <%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Aging công nợ</h2>
-          <div class="debt-breakdown">
-            <% if (!agingBreakdown.length) { %>
-              <div class="debt-empty">Chưa có aging công nợ trong kỳ này.</div>
-            <% } %>
-            <% agingBreakdown.forEach((item) => { %>
-              <div class="debt-break-row">
-                <span class="debt-status debt-status--<%= item.meta.tone %>"><%= item.meta.label %></span>
-                <div class="debt-meter"><span style="width:<%= Math.max(5, item.share || 0) %>%"></span></div>
-                <span class="debt-pill"><%= item.count %> · <%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Việc cần xử lý</h2>
-          <div class="debt-review-list">
-            <% if (!actionItems.length) { %>
-              <div class="debt-empty">Không có cảnh báo lớn trong bộ lọc hiện tại.</div>
-            <% } %>
-            <% actionItems.forEach((item) => { %>
-              <article class="debt-review">
-                <div>
-                  <strong><%= item.title %></strong>
-                  <p><%= item.note %></p>
-                </div>
-                <span class="debt-status debt-status--<%= item.tone %>">Ưu tiên</span>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Cơ sở cần theo dõi</h2>
-          <div class="debt-hotels">
-            <% if (!hotelBreakdown.length) { %>
-              <div class="debt-empty">Chưa có dữ liệu theo cơ sở.</div>
-            <% } %>
-            <% hotelBreakdown.forEach((hotel) => { %>
-              <article class="debt-hotel">
-                <div>
-                  <strong><%= hotel.hotelLabel %></strong>
-                  <div class="debt-muted"><%= hotel.count %> giao dịch</div>
-                </div>
-                <strong class="debt-money is-debt"><%= hotel.totalFormatted %></strong>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-      </aside>
-
-      <section class="debt-side-stack">
-        <section class="debt-panel">
-          <h2>Phân tích trực quan</h2>
-          <div class="debt-chart-grid">
-            <article class="debt-chart is-wide">
-              <div class="debt-chart-head">
-                <div>
-                  <span>AR aging trend</span>
-                  <h3>Tồn nợ theo ngày</h3>
-                </div>
-                <span class="debt-pill"><%= dailyTrend.length %> ngày</span>
-              </div>
-              <canvas id="debtTrendChart" height="210"></canvas>
-            </article>
-            <article class="debt-chart">
-              <div class="debt-chart-head">
-                <div>
-                  <span>Aging buckets</span>
-                  <h3>Tuổi công nợ</h3>
-                </div>
-              </div>
-              <canvas id="debtAgingChart" height="210"></canvas>
-            </article>
-            <article class="debt-chart">
-              <div class="debt-chart-head">
-                <div>
-                  <span>Collection risk</span>
-                  <h3>Rủi ro thu hồi</h3>
-                </div>
-              </div>
-              <canvas id="debtRiskChart" height="210"></canvas>
-            </article>
-          </div>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Xu hướng tồn nợ</h2>
-          <div class="debt-trend">
-            <% if (!dailyTrend.length) { %>
-              <div class="debt-empty">Không có xu hướng để hiển thị.</div>
-            <% } %>
-            <% dailyTrend.slice(-10).forEach((item) => { %>
-              <div class="debt-trend-row">
-                <strong><%= item.dateLabel %></strong>
-                <div class="debt-meter"><span style="width:<%= Math.max(5, Math.round((Number(item.total || 0) / maxTrend) * 100)) %>%"></span></div>
-                <span class="debt-money is-debt"><%= item.totalFormatted %></span>
-              </div>
-            <% }) %>
-          </div>
-          <% if (payload.highestDebtDay) { %>
-            <p class="debt-muted" style="margin:14px 0 0">Ngày tồn nợ cao nhất: <strong><%= payload.highestDebtDay.dateLabel %></strong> với <strong><%= payload.highestDebtDay.totalFormatted %></strong>.</p>
-          <% } %>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Khách cần theo dõi</h2>
-          <div class="debt-customers">
-            <% if (!customerBreakdown.length) { %>
-              <div class="debt-empty">Không có khách/đoàn còn công nợ trong bộ lọc hiện tại.</div>
-            <% } %>
-            <% customerBreakdown.forEach((item) => {
-              const width = Math.max(6, Math.round((Number(item.total || 0) / maxCustomerDebt) * 100));
-            %>
-              <article class="debt-customer">
-                <div>
-                  <strong><%= item.customerName %></strong>
-                  <div class="debt-muted"><%= item.doiTuongType %> · <%= item.contactLabel %></div>
-                  <div class="debt-customer-meter"><span style="width:<%= width %>%"></span></div>
-                </div>
-                <div style="text-align:right">
-                  <strong class="debt-money is-debt"><%= item.totalFormatted %></strong>
-                  <div class="debt-muted">Quá hạn <%= item.overdueFormatted %></div>
-                </div>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="debt-panel">
-          <h2>Ưu tiên thu hồi</h2>
-          <div class="debt-review-list">
-            <% if (!priorityRows.length) { %>
-              <div class="debt-empty">Không có khoản công nợ rủi ro cao trong bộ lọc hiện tại.</div>
-            <% } %>
-            <% priorityRows.forEach((row) => { %>
-              <article class="debt-review">
-                <div>
-                  <span class="debt-status debt-status--<%= row.riskMeta.tone %>"><%= row.riskMeta.label %></span>
-                  <strong style="display:block;margin-top:8px"><%= row.bookingCode || `GD-${row.maGiaoDich}` %> · <%= row.displayName %></strong>
-                  <p><%= row.collectionAction %></p>
-                </div>
-                <div style="text-align:right">
-                  <strong class="debt-money is-debt"><%= row.conLaiFormatted %></strong>
-                  <div class="debt-muted"><%= row.overdueDays > 0 ? `Quá hạn ${row.overdueDays} ngày` : `Còn ${row.daysUntilDue} ngày` %></div>
-                </div>
-              </article>
-            <% }) %>
-          </div>
-        </section>
-
-        <section class="debt-table-panel">
-          <div class="debt-table-head">
-            <div>
-              <h2>Danh sách công nợ & đối soát</h2>
-              <p>Trang <%= page %>/<%= totalPages %>, đang hiển thị <%= rows.length %> trên <%= payload.totalRecords %> giao dịch.</p>
-            </div>
-            <span class="debt-pill">Lệch/chờ xử lý: <%= summary.soGiaoDichLech %></span>
-          </div>
-
-          <% if (!payload.hasData) { %>
-            <div class="debt-empty">Không có công nợ phù hợp với bộ lọc hiện tại.</div>
-          <% } else { %>
-            <div class="debt-table-wrap">
-              <table class="debt-table">
-                <thead>
-                  <tr>
-                    <th>Mã GD</th>
-                    <th>Khách / Đoàn</th>
-                    <th>Ngày</th>
-                    <th>Cơ sở</th>
-                    <th>Tổng tiền</th>
-                    <th>Đã thanh toán</th>
-                    <th>Còn lại</th>
-                    <th>Tuổi nợ</th>
-                    <th>Rủi ro</th>
-                    <th>Đối soát</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% rows.forEach((row) => { %>
-                    <tr>
-                      <td>
-                        <span class="debt-code">
-                          <%= row.bookingCode || `GD-${row.maGiaoDich}` %>
-                          <span class="debt-muted">#<%= row.maGiaoDich %></span>
-                        </span>
-                      </td>
-                      <td>
-                        <strong><%= row.customerName || row.groupName || "Khách lẻ" %></strong>
-                        <div class="debt-muted"><%= row.doiTuongType %> · <%= row.contactLabel %></div>
-                        <% if (row.groupName) { %><div class="debt-muted"><%= row.groupName %></div><% } %>
-                      </td>
-                      <td><%= row.ngayGiaoDichLabel %></td>
-                      <td>
-                        <strong><%= row.hotelLabel %></strong>
-                        <div class="debt-muted"><%= row.roomCount %> phòng · Hạn: <%= row.ngayDenHanLabel %></div>
-                      </td>
-                      <td class="debt-money is-total"><%= row.tongTienFormatted %></td>
-                      <td class="debt-money is-paid"><%= row.daThanhToanFormatted %></td>
-                      <td class="debt-money is-debt"><%= row.conLaiFormatted %></td>
-                      <td>
-                        <span class="debt-status debt-status--<%= row.agingMeta.tone %>"><%= row.agingMeta.label %></span>
-                        <div class="debt-muted" style="margin-top:5px"><%= row.dueSignal %></div>
-                      </td>
-                      <td>
-                        <span class="debt-status debt-status--<%= row.riskMeta.tone %>"><%= row.riskMeta.label %></span>
-                        <div class="debt-muted" style="margin-top:5px"><%= row.collectionAction %></div>
-                      </td>
-                      <td>
-                        <span class="debt-status debt-status--<%= row.statusMeta.tone %>"><%= row.statusMeta.label %></span>
-                        <div class="debt-muted" style="margin-top:5px"><%= row.paymentMeta.label %> · <%= row.statusMeta.hint %></div>
-                        <% if (row.ghiChu) { %><div class="debt-muted" style="margin-top:5px"><%= row.ghiChu %></div><% } %>
-                      </td>
-                    </tr>
+              </label>
+              <label class="debt-field">
+                <span>Hiển thị</span>
+                <select name="limit">
+                  <% [10, 15, 25, 50].forEach((limit) => { %>
+                    <option value="<%= limit %>" <%= currentLimit === limit ? "selected" : "" %>><%= limit %> dòng</option>
                   <% }) %>
-                </tbody>
-              </table>
+                </select>
+              </label>
             </div>
+            <div class="debt-filter-actions">
+              <a class="debt-btn is-ghost" href="/accounting/debts">Đặt lại</a>
+              <button class="debt-btn is-primary" type="submit">Áp dụng</button>
+            </div>
+          </div>
+        </details>
 
-            <% if (totalPages > 1) { %>
-              <nav class="debt-pagination" aria-label="Phân trang công nợ">
-                <% if (page > 1) { %>
-                  <a class="debt-page" href="/accounting/debts?<%= makeQuery({ page: page - 1 }) %>">Trước</a>
-                <% } %>
-                <% if (firstPage > 1) { %>
-                  <a class="debt-page" href="/accounting/debts?<%= makeQuery({ page: 1 }) %>">1</a>
-                <% } %>
-                <% pages.forEach((item) => { %>
-                  <a class="debt-page <%= item === page ? "is-active" : "" %>" href="/accounting/debts?<%= makeQuery({ page: item }) %>"><%= item %></a>
-                <% }) %>
-                <% if (lastPage < totalPages) { %>
-                  <a class="debt-page" href="/accounting/debts?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a>
-                <% } %>
-                <% if (page < totalPages) { %>
-                  <a class="debt-page" href="/accounting/debts?<%= makeQuery({ page: page + 1 }) %>">Tiếp</a>
-                <% } %>
-              </nav>
-            <% } %>
-          <% } %>
-        </section>
-      </section>
+        <input type="hidden" name="page" value="1">
+        <input class="debt-input" type="search" name="search" value="<%= filters.search || "" %>" placeholder="Tìm mã giao dịch, đặt chỗ, khách, email, SĐT...">
+        <button class="debt-icon-btn is-primary" type="submit" aria-label="Tìm công nợ">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="m16.5 16.5 4 4"></path>
+          </svg>
+        </button>
+      </div>
+
+      <a class="debt-icon-btn" href="/api/accounting/debts?<%= csvQuery %>" title="Xuất CSV" aria-label="Xuất CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <path d="M7 10l5 5 5-5"></path>
+          <path d="M12 15V3"></path>
+        </svg>
+      </a>
+    </form>
+
+    <section class="debt-stats" aria-label="Tổng hợp công nợ">
+      <article class="debt-stat is-risk"><strong><%= summary.tongCongNoFormatted || "0 đ" %></strong><span>Còn phải thu · <%= totalRecords %> khoản</span></article>
+      <article class="debt-stat is-risk"><strong><%= summary.overdueAmountFormatted || "0 đ" %></strong><span>Quá hạn · <%= summary.overdueCount || 0 %> khoản</span></article>
+      <article class="debt-stat is-soon"><strong><%= summary.dueSoonAmountFormatted || "0 đ" %></strong><span>Sắp đến hạn · <%= summary.dueSoonCount || 0 %> khoản</span></article>
+      <article class="debt-stat is-ok"><strong><%= summary.doiSoatCoverageFormatted || "0%" %></strong><span>Tỷ lệ đã thu trong kỳ</span></article>
+    </section>
+
+    <section class="debt-board">
+      <% if (!rows.length) { %>
+        <div class="debt-empty">Không có khoản công nợ phù hợp với bộ lọc hiện tại.</div>
+      <% } else { %>
+        <table class="debt-table">
+          <thead>
+            <tr>
+              <th style="width:17%">Giao dịch</th>
+              <th style="width:20%">Khách / liên hệ</th>
+              <th style="width:21%">Cơ sở lưu trú</th>
+              <th style="width:13%">Số tiền</th>
+              <th style="width:12%">Hạn thu</th>
+              <th style="width:12%">Trạng thái</th>
+              <th style="width:5%"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach((row) => { %>
+              <tr data-href="/accounting/revenue?search=<%= encodeURIComponent(row.maGiaoDich) %>" tabindex="0" title="<%= row.collectionAction %>">
+                <td>
+                  <span class="debt-main debt-code"><%= row.bookingCode || `GD-${row.maGiaoDich}` %></span>
+                  <span class="debt-sub">GD #<%= row.maGiaoDich %> · <%= row.ngayGiaoDichLabel %></span>
+                </td>
+                <td>
+                  <span class="debt-main"><%= row.customerName || row.groupName || "Khách lẻ" %></span>
+                  <span class="debt-sub"><%= row.doiTuongType %> · <%= row.contactLabel %></span>
+                </td>
+                <td>
+                  <span class="debt-main"><%= row.hotelLabel %></span>
+                  <span class="debt-sub"><%= row.roomCount %> phòng · <%= row.paymentMeta?.label || row.phuongThucThanhToan %></span>
+                </td>
+                <td>
+                  <span class="debt-money is-debt"><%= row.conLaiFormatted %></span>
+                  <span class="debt-sub">Đã thu <%= row.daThanhToanFormatted %></span>
+                </td>
+                <td>
+                  <span class="debt-status debt-status--<%= row.agingMeta?.tone || "slate" %>"><%= row.dueSignal %></span>
+                  <span class="debt-sub"><%= row.ngayDenHanLabel %></span>
+                </td>
+                <td>
+                  <span class="debt-status debt-status--<%= row.statusMeta?.tone || "slate" %>"><%= row.statusMeta?.label || row.trangThaiCongNo %></span>
+                  <span class="debt-sub"><%= row.riskMeta?.label || "Theo dõi" %></span>
+                </td>
+                <td>
+                  <a class="debt-icon-btn" href="/accounting/revenue?search=<%= encodeURIComponent(row.maGiaoDich) %>" onclick="event.stopPropagation()" aria-label="Mở doanh thu liên quan" title="Mở doanh thu liên quan">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true">
+                      <path d="M9 18l6-6-6-6"></path>
+                    </svg>
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+
+      <footer class="debt-footer">
+        <span>Hiển thị <strong><%= displayFrom %>-<%= displayTo %></strong> trong tổng số <strong><%= totalRecords %></strong> bản ghi</span>
+        <div class="debt-pagination">
+          <form class="debt-limit-form" method="get" action="/accounting/debts">
+            <input type="hidden" name="tu_ngay" value="<%= filters.tu_ngay %>">
+            <input type="hidden" name="den_ngay" value="<%= filters.den_ngay %>">
+            <input type="hidden" name="trang_thai" value="<%= filters.trang_thai %>">
+            <input type="hidden" name="hotel_id" value="<%= filters.hotel_id || 0 %>">
+            <input type="hidden" name="search" value="<%= filters.search || "" %>">
+            <span>Hiển thị</span>
+            <select name="limit" onchange="this.form.submit()">
+              <% [10, 15, 25, 50].forEach((limit) => { %>
+                <option value="<%= limit %>" <%= currentLimit === limit ? "selected" : "" %>><%= limit %></option>
+              <% }) %>
+            </select>
+          </form>
+
+          <a class="debt-page <%= page <= 1 ? "is-disabled" : "" %>" href="/accounting/debts?<%= makeQuery({ page: Math.max(1, page - 1) }) %>">Trước</a>
+          <% if (firstPage > 1) { %><a class="debt-page" href="/accounting/debts?<%= makeQuery({ page: 1 }) %>">1</a><% } %>
+          <% pages.forEach((item) => { %>
+            <a class="debt-page <%= item === page ? "is-active" : "" %>" href="/accounting/debts?<%= makeQuery({ page: item }) %>"><%= item %></a>
+          <% }) %>
+          <% if (lastPage < totalPages) { %><a class="debt-page" href="/accounting/debts?<%= makeQuery({ page: totalPages }) %>"><%= totalPages %></a><% } %>
+          <a class="debt-page <%= page >= totalPages ? "is-disabled" : "" %>" href="/accounting/debts?<%= makeQuery({ page: Math.min(totalPages, page + 1) }) %>">Sau</a>
+        </div>
+      </footer>
     </section>
   </div>
+    </div>
+  </section>
 </main>
 
 <script>
   (() => {
-    const data = <%- JSON.stringify(chartPayload).replace(/</g, "\\u003c") %>;
-    const palette = ["#8068ff", "#12bff3", "#20d6a3", "#ffd166", "#ff6aa2", "#f97316", "#14b8a6"];
-    const ink = "#102033";
-    const muted = "#667085";
-    const money = (value) => `${Math.round(Number(value || 0)).toLocaleString("vi-VN")} đ`;
-
-    const setup = (id) => {
-      const canvas = document.getElementById(id);
-      if (!canvas) return null;
-      const ratio = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.floor(rect.width * ratio));
-      canvas.height = Math.max(1, Math.floor(rect.height * ratio));
-      const ctx = canvas.getContext("2d");
-      ctx.scale(ratio, ratio);
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.font = "12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      return { ctx, width: rect.width, height: rect.height };
-    };
-
-    const empty = (ctx, width, height, label) => {
-      ctx.fillStyle = "rgba(16, 32, 51, .08)";
-      ctx.fillRect(0, height / 2 - 1, width, 2);
-      ctx.fillStyle = muted;
-      ctx.textAlign = "center";
-      ctx.fillText(label, width / 2, height / 2 - 10);
-    };
-
-    const drawTrend = () => {
-      const chart = setup("debtTrendChart");
-      if (!chart) return;
-      const { ctx, width, height } = chart;
-      const rows = (data.trend || []).slice(-14);
-      if (!rows.length) return empty(ctx, width, height, "Chưa có dữ liệu tồn nợ");
-      const pad = { top: 16, right: 18, bottom: 30, left: 52 };
-      const plotW = width - pad.left - pad.right;
-      const plotH = height - pad.top - pad.bottom;
-      const max = Math.max(...rows.map((row) => Number(row.total || 0)), 1);
-      const x = (index) => pad.left + (rows.length === 1 ? plotW / 2 : (plotW / (rows.length - 1)) * index);
-      const y = (value) => pad.top + plotH - (Number(value || 0) / max) * plotH;
-
-      ctx.strokeStyle = "rgba(16, 32, 51, .08)";
-      for (let i = 0; i <= 4; i += 1) {
-        const yy = pad.top + (plotH / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(pad.left, yy);
-        ctx.lineTo(width - pad.right, yy);
-        ctx.stroke();
-      }
-
-      const gradient = ctx.createLinearGradient(0, pad.top, 0, height - pad.bottom);
-      gradient.addColorStop(0, "rgba(128, 104, 255, .26)");
-      gradient.addColorStop(1, "rgba(18, 191, 243, .04)");
-      ctx.beginPath();
-      rows.forEach((row, index) => {
-        const xx = x(index);
-        const yy = y(row.total);
-        if (index === 0) ctx.moveTo(xx, yy);
-        else ctx.lineTo(xx, yy);
+    document.querySelectorAll("[data-href]").forEach((row) => {
+      row.addEventListener("click", () => {
+        window.location.href = row.getAttribute("data-href");
       });
-      ctx.lineTo(x(rows.length - 1), height - pad.bottom);
-      ctx.lineTo(x(0), height - pad.bottom);
-      ctx.closePath();
-      ctx.fillStyle = gradient;
-      ctx.fill();
-
-      ctx.beginPath();
-      rows.forEach((row, index) => {
-        const xx = x(index);
-        const yy = y(row.total);
-        if (index === 0) ctx.moveTo(xx, yy);
-        else ctx.lineTo(xx, yy);
-      });
-      ctx.strokeStyle = "#8068ff";
-      ctx.lineWidth = 3;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.stroke();
-
-      ctx.fillStyle = muted;
-      ctx.textAlign = "left";
-      ctx.fillText(money(max), 4, pad.top + 4);
-      ctx.textAlign = "center";
-      rows.forEach((row, index) => {
-        if (index % Math.ceil(rows.length / 5) === 0 || index === rows.length - 1) {
-          ctx.fillText(row.dateLabel || "", x(index), height - 9);
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          window.location.href = row.getAttribute("data-href");
         }
       });
-    };
-
-    const drawBars = (id, rows, valueKey, labelKey, emptyLabel) => {
-      const chart = setup(id);
-      if (!chart) return;
-      const { ctx, width, height } = chart;
-      const source = (rows || []).filter((item) => Number(item[valueKey] || 0) > 0).slice(0, 7);
-      if (!source.length) return empty(ctx, width, height, emptyLabel);
-      const max = Math.max(...source.map((item) => Number(item[valueKey] || 0)), 1);
-      const pad = { top: 10, right: 18, bottom: 16, left: 104 };
-      const rowH = Math.min(24, (height - pad.top - pad.bottom) / source.length - 7);
-      source.forEach((item, index) => {
-        const y = pad.top + index * (rowH + 9);
-        const value = Number(item[valueKey] || 0);
-        const barW = Math.max(8, ((width - pad.left - pad.right) * value) / max);
-        ctx.fillStyle = muted;
-        ctx.textAlign = "right";
-        ctx.fillText(String(item[labelKey] || "Khác").slice(0, 16), pad.left - 10, y + rowH - 6);
-        const gradient = ctx.createLinearGradient(pad.left, 0, pad.left + barW, 0);
-        gradient.addColorStop(0, palette[index % palette.length]);
-        gradient.addColorStop(1, palette[(index + 1) % palette.length]);
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.roundRect(pad.left, y, barW, rowH, 999);
-        ctx.fill();
-        ctx.fillStyle = ink;
-        ctx.textAlign = "left";
-        ctx.fillText(valueKey === "value" ? money(value) : value.toLocaleString("vi-VN"), pad.left + barW + 8, y + rowH - 6);
-      });
-    };
-
-    const drawAll = () => {
-      drawTrend();
-      drawBars("debtAgingChart", data.aging || [], "value", "label", "Chưa có aging công nợ");
-      drawBars("debtRiskChart", data.risks || [], "value", "label", "Không có cảnh báo rủi ro");
-    };
-
-    drawAll();
-    window.addEventListener("resize", drawAll);
+    });
   })();
 </script>
 

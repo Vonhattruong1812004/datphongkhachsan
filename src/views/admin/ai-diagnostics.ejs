@@ -566,10 +566,10 @@
     <section class="ai-hero" aria-label="AI diagnostics">
       <div class="ai-panel">
         <div class="ai-label">AI diagnostics</div>
-        <h1>Concierge, gợi ý phòng và <span>analytics AI</span></h1>
+        <h1>AI hỗ trợ đặt phòng, gợi ý phòng và <span>theo dõi AI</span></h1>
         <p class="ai-lead">
-          Theo dõi lớp AI local heuristic đang dùng cho tư vấn khách hàng, gợi ý phòng
-          và thống kê chuyển đổi dịch vụ trong hệ thống.
+          Theo dõi lớp AI local heuristic đang dùng để đọc nhu cầu đặt phòng, gợi ý phòng phù hợp
+          và đo tín hiệu dịch vụ đi kèm trong hệ thống.
         </p>
         <div class="ai-provider">
           <span>Mode: <%= provider.mode || "unknown" %></span>
@@ -579,8 +579,8 @@
         <p class="ai-lead" style="margin-top:12px;"><%= provider.summary || "" %></p>
         <div class="ai-actions">
           <a class="ai-button ai-button--primary" href="/api/admin/diagnostics/ai">AI JSON</a>
-          <a class="ai-button" href="/ai/analytics">Mở AI Analytics</a>
-          <a class="ai-button" href="/ai/concierge">Mở AI Concierge</a>
+          <a class="ai-button" href="/ai/analytics">Mở theo dõi AI đặt phòng</a>
+          <a class="ai-button" href="/ai/concierge">Mở AI hỗ trợ đặt phòng</a>
           <a class="ai-button" href="/dashboard/admin">Dashboard Admin</a>
         </div>
       </div>
@@ -604,11 +604,11 @@
       </article>
       <article class="ai-stat" style="--stat-color: var(--ai-violet)">
         <strong><%= conciergeCount %></strong>
-        <span>Concierge calls</span>
+        <span>Chat đặt phòng</span>
       </article>
       <article class="ai-stat" style="--stat-color: var(--ai-pink)">
         <strong><%= recommendationCount %></strong>
-        <span>Recommendation calls</span>
+        <span>Gợi ý phòng</span>
       </article>
     </section>
 
@@ -635,7 +635,7 @@
       <div class="ai-section-head">
         <div>
           <h2>Xu hướng 14 ngày</h2>
-          <p>Số lượt gọi AI concierge và recommendation theo ngày.</p>
+          <p>Số lượt gọi AI hỗ trợ đặt phòng và recommendation theo ngày.</p>
         </div>
       </div>
       <% if (!dailyTrend.length) { %>

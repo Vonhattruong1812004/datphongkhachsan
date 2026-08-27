@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { query, withTransaction } from "../../../config/database";
 import { realtimeHub } from "../../realtime/services/realtime.service";
+import { notificationService } from "../../notifications/services/notification.service";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney } from "../../../shared/utils/format";
 
@@ -13,6 +14,11 @@ const reportSchema = z.object({
   hotel_id: z.coerce.number().int().nonnegative().default(0),
   trang_thai: z.string().optional().default("all"),
   search: z.string().optional().default("")
+});
+
+const financialStatementSchema = reportSchema.extend({
+  mau_bao_cao: z.enum(["tonghop", "ketqua", "dongtien", "congno"]).default("tonghop"),
+  che_do: z.enum(["nhap", "chot"]).default("nhap")
 });
 
 const revenueSchema = z.object({
@@ -33,7 +39,7 @@ const expenseListSchema = z.object({
   search: z.string().optional().default(""),
   hotel_id: z.coerce.number().int().nonnegative().default(0),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(15)
+  limit: z.coerce.number().int().min(1).max(30).default(10)
 });
 
 const debtSchema = z.object({
@@ -72,13 +78,23 @@ const expenseSchema = z.object({
   trang_thai: z.enum(["ChoDuyet", "DaDuyet", "Huy"]).default("ChoDuyet")
 });
 
+const expenseStatusSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  trang_thai: z.enum(["ChoDuyet", "DaDuyet", "Huy"])
+});
+
+const expenseUpdateSchema = expenseSchema.extend({
+  id: z.coerce.number().int().positive()
+});
+
 const refundListSchema = z.object({
+  refund_id: z.coerce.number().int().nonnegative().optional().default(0),
   tu_ngay: z.string().optional().default(""),
   den_ngay: z.string().optional().default(""),
   trang_thai: z.string().optional().default("all"),
   search: z.string().optional().default(""),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(15)
+  limit: z.coerce.number().int().min(1).max(100).default(10)
 });
 
 const refundActionSchema = z.object({
@@ -3358,6 +3374,220 @@ export class AccountingService {
     };
   }
 
+  async buildFinancialStatement(rawFilters: unknown) {
+    const parsed = financialStatementSchema.parse(rawFilters ?? {});
+    const reportPayload = await this.buildReport({
+      ...parsed,
+      loai_baocao: "tonghop"
+    });
+    const [debtPayload, refundPayload] = await Promise.all([
+      this.getDebtList({
+        tu_ngay: reportPayload.filters.tu_ngay,
+        den_ngay: reportPayload.filters.den_ngay,
+        hotel_id: reportPayload.filters.hotel_id,
+        trang_thai: "all",
+        limit: 5,
+        page: 1
+      }),
+      this.getRefundList({
+        tu_ngay: reportPayload.filters.tu_ngay,
+        den_ngay: reportPayload.filters.den_ngay,
+        trang_thai: "all",
+        limit: 5,
+        page: 1
+      })
+    ]);
+    const summary = reportPayload.summary;
+    const debtSummary = debtPayload.summary || {};
+    const refundSummary = refundPayload.summary || {};
+    const reportTypes: Record<string, { label: string; scope: string }> = {
+      tonghop: { label: "Báo cáo tài chính tổng hợp", scope: "Kết quả kinh doanh, dòng tiền, công nợ và hoàn tiền" },
+      ketqua: { label: "Báo cáo kết quả kinh doanh", scope: "Doanh thu, chi phí, lợi nhuận ghi nhận và lợi nhuận đã thu" },
+      dongtien: { label: "Báo cáo dòng tiền", scope: "Dòng thu, dòng chi, tiền đã thu và tiền còn treo" },
+      congno: { label: "Báo cáo công nợ & hoàn tiền", scope: "Khoản phải thu, quá hạn, sắp đến hạn và yêu cầu hoàn tiền" }
+    };
+    const statementRows = [
+      {
+        code: "REV",
+        label: "Doanh thu ghi nhận",
+        value: summary.totalRevenue,
+        formatted: summary.totalRevenueFormatted,
+        note: `${summary.revenueTransactionCount} giao dịch trong kỳ`,
+        tone: "blue"
+      },
+      {
+        code: "COL",
+        label: "Tiền đã thu",
+        value: summary.paidRevenue,
+        formatted: summary.paidRevenueFormatted,
+        note: `Tỷ lệ thu ${summary.paidCoverageFormatted}`,
+        tone: "green"
+      },
+      {
+        code: "AR",
+        label: "Còn phải thu",
+        value: summary.outstandingRevenue,
+        formatted: summary.outstandingRevenueFormatted,
+        note: `${Number(debtSummary.overdueCount || 0)} khoản quá hạn`,
+        tone: "violet"
+      },
+      {
+        code: "EXP",
+        label: "Chi phí vận hành",
+        value: summary.totalExpense,
+        formatted: summary.totalExpenseFormatted,
+        note: `${summary.expenseVoucherCount} phiếu chi trong kỳ`,
+        tone: "amber"
+      },
+      {
+        code: "PFT",
+        label: "Lợi nhuận ghi nhận",
+        value: summary.profit,
+        formatted: summary.profitFormatted,
+        note: `Biên lợi nhuận ${summary.profitMarginFormatted}`,
+        tone: summary.profit >= 0 ? "green" : "red"
+      },
+      {
+        code: "CASH-PFT",
+        label: "Lợi nhuận đã thu",
+        value: summary.realizedProfit,
+        formatted: summary.realizedProfitFormatted,
+        note: "Tiền đã thu trừ chi phí",
+        tone: summary.realizedProfit >= 0 ? "green" : "red"
+      }
+    ];
+    const sections = [
+      {
+        key: "income",
+        title: "Kết quả kinh doanh",
+        rows: statementRows.filter((row) => ["REV", "EXP", "PFT"].includes(row.code))
+      },
+      {
+        key: "cashflow",
+        title: "Dòng tiền",
+        rows: statementRows.filter((row) => ["COL", "EXP", "CASH-PFT"].includes(row.code))
+      },
+      {
+        key: "receivable",
+        title: "Công nợ phải thu",
+        rows: [
+          {
+            code: "AR-OPEN",
+            label: "Công nợ mở",
+            value: Number(debtSummary.tongCongNo || 0),
+            formatted: debtSummary.tongCongNoFormatted || formatMoney(0),
+            note: `${debtPayload.totalRecords || 0} bản ghi công nợ`,
+            tone: "violet"
+          },
+          {
+            code: "AR-OVERDUE",
+            label: "Quá hạn",
+            value: Number(debtSummary.overdueAmount || 0),
+            formatted: debtSummary.overdueAmountFormatted || formatMoney(0),
+            note: `${Number(debtSummary.overdueCount || 0)} khoản quá hạn`,
+            tone: "red"
+          },
+          {
+            code: "AR-DUE",
+            label: "Sắp đến hạn",
+            value: Number(debtSummary.dueSoonAmount || 0),
+            formatted: debtSummary.dueSoonAmountFormatted || formatMoney(0),
+            note: `${Number(debtSummary.dueSoonCount || 0)} khoản cần nhắc`,
+            tone: "amber"
+          }
+        ]
+      },
+      {
+        key: "refund",
+        title: "Hoàn tiền",
+        rows: [
+          {
+            code: "RF-PENDING",
+            label: "Chờ kế toán chi",
+            value: Number(refundSummary.pendingAmount || 0),
+            formatted: refundSummary.pendingAmountFormatted || formatMoney(0),
+            note: `${Number(refundSummary.pendingCount || 0)} yêu cầu`,
+            tone: "amber"
+          },
+          {
+            code: "RF-PAID",
+            label: "Đã hoàn",
+            value: Number(refundSummary.paidAmount || 0),
+            formatted: refundSummary.paidAmountFormatted || formatMoney(0),
+            note: `${Number(refundSummary.paidCount || 0)} yêu cầu`,
+            tone: "green"
+          },
+          {
+            code: "RF-REJECT",
+            label: "Từ chối",
+            value: Number(refundSummary.rejectedAmount || 0),
+            formatted: refundSummary.rejectedAmountFormatted || formatMoney(0),
+            note: `${Number(refundSummary.rejectedCount || 0)} yêu cầu`,
+            tone: "slate"
+          }
+        ]
+      }
+    ];
+    const checks = [
+      {
+        label: "Doanh thu",
+        value: summary.revenueTransactionCount,
+        status: summary.revenueTransactionCount > 0 ? "Đã có dữ liệu" : "Chưa có giao dịch",
+        tone: summary.revenueTransactionCount > 0 ? "green" : "slate"
+      },
+      {
+        label: "Chi phí",
+        value: summary.expenseVoucherCount,
+        status: summary.expenseVoucherCount > 0 ? "Đã có phiếu chi" : "Chưa có phiếu chi",
+        tone: summary.expenseVoucherCount > 0 ? "green" : "slate"
+      },
+      {
+        label: "Công nợ",
+        value: Number(debtSummary.overdueCount || 0),
+        status: Number(debtSummary.overdueCount || 0) > 0 ? "Có khoản quá hạn" : "Không quá hạn",
+        tone: Number(debtSummary.overdueCount || 0) > 0 ? "red" : "green"
+      },
+      {
+        label: "Hoàn tiền",
+        value: Number(refundSummary.pendingCount || 0),
+        status: Number(refundSummary.pendingCount || 0) > 0 ? "Còn yêu cầu chờ chi" : "Không chờ chi",
+        tone: Number(refundSummary.pendingCount || 0) > 0 ? "amber" : "green"
+      }
+    ];
+    const reportCode = [
+      "BCTC",
+      String(parsed.mau_bao_cao || "tonghop").toUpperCase(),
+      String(reportPayload.filters.tu_ngay).replace(/-/g, ""),
+      String(reportPayload.filters.den_ngay).replace(/-/g, "")
+    ].join("-");
+
+    return {
+      ...reportPayload,
+      filters: {
+        ...reportPayload.filters,
+        mau_bao_cao: parsed.mau_bao_cao,
+        che_do: parsed.che_do
+      },
+      reportCode,
+      reportTypeMeta: reportTypes[parsed.mau_bao_cao] || reportTypes.tonghop,
+      statementRows,
+      sections: parsed.mau_bao_cao === "ketqua"
+        ? sections.filter((section) => section.key === "income")
+        : parsed.mau_bao_cao === "dongtien"
+          ? sections.filter((section) => section.key === "cashflow")
+          : parsed.mau_bao_cao === "congno"
+            ? sections.filter((section) => ["receivable", "refund"].includes(section.key))
+            : sections,
+      checks,
+      debtSummary: debtPayload.summary,
+      refundSummary: refundPayload.summary,
+      debtRows: debtPayload.rows,
+      refundRows: refundPayload.rows,
+      isFinal: parsed.che_do === "chot",
+      statusLabel: parsed.che_do === "chot" ? "Bản chốt" : "Bản nháp"
+    };
+  }
+
   async buildReportChartInsights(rawFilters: unknown) {
     const payload = await this.buildReport(rawFilters);
     const localInsights = this.buildLocalReportChartInsights(payload);
@@ -3826,15 +4056,189 @@ export class AccountingService {
     return result.rows[0];
   }
 
+  async getExpenseDetail(rawInput: unknown) {
+    await this.ensureExpenseManagementColumns();
+    const id = z.coerce.number().int().positive().parse(rawInput);
+    const [expenseHotelSupported, hotelOptions] = await Promise.all([
+      this.columnExists("chiphi", "makhachsan"),
+      this.getHotelOptions()
+    ]);
+    const hotelSelect = expenseHotelSupported
+      ? `cp.makhachsan AS "hotelId", ks.tenkhachsan AS "hotelName", ks.tinhthanh AS province`
+      : `NULL::int AS "hotelId", NULL::text AS "hotelName", NULL::text AS province`;
+    const hotelJoin = expenseHotelSupported ? `LEFT JOIN khachsan ks ON ks.makhachsan = cp.makhachsan` : "";
+    const categoryCase = `
+      CASE
+        WHEN NULLIF(TRIM(COALESCE(cp.loaichiphi, '')), '') IS NOT NULL THEN TRIM(cp.loaichiphi)
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%hoàn%', '%hoan%', '%refund%', '%cọc%', '%coc%']) THEN 'refund'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%điện%', '%nước%', '%dien%', '%nuoc%', '%utility%']) THEN 'utilities'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%lương%', '%luong%', '%nhân viên%', '%nhan vien%', '%salary%', '%bảo hiểm%', '%bao hiem%']) THEN 'payroll'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%sửa%', '%sua%', '%bảo trì%', '%bao tri%', '%repair%', '%maintenance%']) THEN 'maintenance'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%vật tư%', '%vat tu%', '%ga giường%', '%khăn%', '%linen%', '%amenity%', '%supplies%']) THEN 'supplies'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%buồng phòng%', '%buong phong%', '%housekeeping%', '%giặt%', '%giat%', '%laundry%']) THEN 'housekeeping'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%bếp%', '%bep%', '%nhà hàng%', '%nha hang%', '%f&b%', '%food%', '%beverage%']) THEN 'fnb'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%marketing%', '%quảng cáo%', '%quang cao%', '%ads%', '%ota%', '%commission%']) THEN 'marketing'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%kế toán%', '%ke toan%', '%pháp lý%', '%phap ly%', '%văn phòng%', '%van phong%', '%office%', '%admin%']) THEN 'admin'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%internet%', '%wifi%', '%phần mềm%', '%phan mem%', '%it%', '%software%']) THEN 'it'
+        WHEN (cp.tenchiphi || ' ' || COALESCE(cp.noidung, '')) ILIKE ANY (ARRAY['%thuế%', '%thue%', '%bảo hiểm%', '%bao hiem%', '%insurance%', '%tax%']) THEN 'tax_insurance'
+        ELSE 'other'
+      END
+    `;
+    const result = await query<{
+      id: number;
+      tenChiPhi: string;
+      ngayChi: string;
+      soTien: number | string;
+      noiDung: string | null;
+      trangThai: string;
+      loaiChiPhi: string | null;
+      nhaCungCap: string | null;
+      soHoaDon: string | null;
+      phuongThucChi: string | null;
+      hotelId: number | null;
+      hotelName: string | null;
+      province: string | null;
+      categoryKey: string;
+      evidenceStatus: string;
+    }>(
+      `
+        SELECT
+          cp.macp AS id,
+          cp.tenchiphi AS "tenChiPhi",
+          cp.ngaychi AS "ngayChi",
+          COALESCE(cp.sotien, 0)::numeric AS "soTien",
+          cp.noidung AS "noiDung",
+          cp.trangthai AS "trangThai",
+          cp.loaichiphi AS "loaiChiPhi",
+          cp.nhacungcap AS "nhaCungCap",
+          cp.sohoadon AS "soHoaDon",
+          cp.phuongthucchi AS "phuongThucChi",
+          ${hotelSelect},
+          ${categoryCase} AS "categoryKey",
+          CASE
+            WHEN cp.trangthai = 'Huy' THEN 'void'
+            WHEN NULLIF(TRIM(COALESCE(cp.sohoadon, '')), '') IS NOT NULL THEN 'invoice'
+            WHEN NULLIF(TRIM(COALESCE(cp.noidung, '')), '') IS NOT NULL THEN 'note'
+            ELSE 'missing'
+          END AS "evidenceStatus"
+        FROM chiphi cp
+        ${hotelJoin}
+        WHERE cp.macp = $1
+      `,
+      [id]
+    );
+    const row = result.rows[0];
+    if (!row) {
+      throw new HttpError(404, "Không tìm thấy phiếu chi.");
+    }
+
+    const expense = {
+      ...row,
+      soTien: Number(row.soTien || 0),
+      ngayChiInput: formatDate(row.ngayChi, "YYYY-MM-DD"),
+      ngayChiLabel: formatDate(row.ngayChi, "DD/MM/YYYY"),
+      statusMeta: this.getExpenseStatusMeta(row.trangThai),
+      categoryMeta: this.getExpenseCategoryMeta(row.categoryKey),
+      evidenceMeta: this.getExpenseEvidenceMeta(row.evidenceStatus),
+      phuongThucChiLabel: this.getExpensePaymentMeta(row.phuongThucChi).label,
+      vendorLabel: row.nhaCungCap || "Chưa ghi nhà cung cấp",
+      invoiceLabel: row.soHoaDon || "Chưa ghi số chứng từ",
+      hotelLabel: row.hotelName ? [row.hotelName, row.province].filter(Boolean).join(" · ") : "Chi phí dùng chung",
+      soTienFormatted: formatMoney(row.soTien)
+    };
+
+    return {
+      expense,
+      expenseHotelSupported,
+      hotelOptions,
+      statusOptions: this.getExpenseStatusOptions().filter((item) => item.value !== "all"),
+      categoryOptions: this.getExpenseCategoryOptions().filter((item) => item.value !== "all"),
+      paymentOptions: [
+        { value: "ChuyenKhoan", label: "Chuyển khoản" },
+        { value: "TienMat", label: "Tiền mặt" },
+        { value: "The", label: "Thẻ" },
+        { value: "ViDienTu", label: "Ví điện tử" },
+        { value: "CongNo", label: "Công nợ NCC" }
+      ]
+    };
+  }
+
+  async updateExpense(rawInput: unknown) {
+    await this.ensureExpenseManagementColumns();
+    const input = expenseUpdateSchema.parse(rawInput);
+    const hotelId = input.hotel_id > 0 ? input.hotel_id : null;
+    const result = await query<{ id: number }>(
+      `
+        UPDATE chiphi
+        SET
+          tenchiphi = $2,
+          ngaychi = $3,
+          sotien = $4,
+          noidung = $5,
+          trangthai = $6,
+          makhachsan = $7,
+          loaichiphi = $8,
+          nhacungcap = $9,
+          sohoadon = $10,
+          phuongthucchi = $11
+        WHERE macp = $1
+        RETURNING macp AS id
+      `,
+      [
+        input.id,
+        input.ten_chi_phi.trim(),
+        input.ngay_chi,
+        input.so_tien,
+        input.noi_dung.trim() || null,
+        input.trang_thai,
+        hotelId,
+        this.normalizeExpenseCategoryKey(input.loai_chi_phi),
+        input.nha_cung_cap.trim() || null,
+        input.so_hoa_don.trim() || null,
+        input.phuong_thuc_chi.trim() || null
+      ]
+    );
+    if (!result.rows[0]) {
+      throw new HttpError(404, "Không tìm thấy phiếu chi cần cập nhật.");
+    }
+    return result.rows[0];
+  }
+
+  async updateExpenseStatus(rawInput: unknown) {
+    await this.ensureExpenseManagementColumns();
+    const input = expenseStatusSchema.parse(rawInput);
+    const result = await query<{ id: number; trangThai: string }>(
+      `
+        UPDATE chiphi
+        SET trangthai = $2
+        WHERE macp = $1
+        RETURNING macp AS id, trangthai AS "trangThai"
+      `,
+      [input.id, input.trang_thai]
+    );
+    if (!result.rows[0]) {
+      throw new Error("Không tìm thấy phiếu chi cần cập nhật.");
+    }
+    return result.rows[0];
+  }
+
   async getRefundList(rawFilters: unknown) {
     await this.ensureRefundRequestTable();
     const normalized = this.normalizeRefundFilters(rawFilters);
     const { filters, warnings } = normalized;
-    const params: unknown[] = [filters.tu_ngay, filters.den_ngay];
-    const where = [
-      `DATE(rr.created_at) >= $1`,
-      `DATE(rr.created_at) <= $2`
-    ];
+    const params: unknown[] = [];
+    const where: string[] = [];
+
+    if (filters.refund_id) {
+      params.push(filters.refund_id);
+      where.push(`rr.id = $${params.length}`);
+    } else {
+      params.push(filters.tu_ngay, filters.den_ngay);
+      where.push(
+        `DATE(rr.created_at) >= $1`,
+        `DATE(rr.created_at) <= $2`
+      );
+    }
 
     if (filters.trang_thai !== "all") {
       params.push(filters.trang_thai);
@@ -4083,7 +4487,13 @@ export class AccountingService {
         paymentQrImageUrl: qrPayload.qrImageUrl,
         paymentQrReady: qrPayload.ready,
         paymentQrWarning: qrPayload.warning,
-        canAccountingProcess: row.status === "ChoXuLy"
+        canAccountingProcess: row.status === "ChoXuLy",
+        detailHref: `/accounting/refunds/${row.id}`,
+        accountingActionLabel: row.status === "ChoXuLy"
+          ? "Mở xử lý"
+          : row.status === "DaHoan"
+            ? "Xem chứng từ"
+            : "Xem chi tiết"
       };
     });
 
@@ -4117,8 +4527,56 @@ export class AccountingService {
     };
   }
 
+  async getRefundDetail(refundId: unknown) {
+    const id = Number(refundId);
+    if (!Number.isInteger(id) || id <= 0) {
+      throw new HttpError(400, "Ma yeu cau hoan tien khong hop le.");
+    }
+
+    const payload = await this.getRefundList({ refund_id: id, limit: 1, page: 1 });
+    const refund = payload.rows[0];
+    if (!refund) {
+      throw new HttpError(404, "Khong tim thay yeu cau hoan tien.");
+    }
+
+    const timeline = [
+      {
+        label: "Tạo yêu cầu",
+        value: refund.createdAtLabel,
+        done: true,
+        note: refund.createdByRole ? `Tạo bởi ${refund.createdByRole}` : "Đã ghi nhận yêu cầu"
+      },
+      {
+        label: "Quản lý duyệt",
+        value: refund.managerReviewedAtLabel || "Chưa duyệt",
+        done: Boolean(refund.managerReviewedAtLabel),
+        note: refund.managerNote || refund.statusMeta?.hint || ""
+      },
+      {
+        label: "Kế toán chi hoàn",
+        value: refund.refundPaidAtLabel || refund.processedAtLabel || "Chưa chi",
+        done: refund.status === "DaHoan",
+        note: refund.refundBankTxnId ? `Mã GD ngân hàng: ${refund.refundBankTxnId}` : "Chờ xác nhận chuyển khoản"
+      },
+      {
+        label: "Đóng yêu cầu",
+        value: refund.processedAtLabel || "Đang mở",
+        done: ["DaHoan", "TuChoi"].includes(refund.status),
+        note: refund.expenseId ? `Phiếu chi CP-${refund.expenseId}` : refund.accountingNote || ""
+      }
+    ];
+
+    return {
+      ...payload,
+      refund,
+      timeline,
+      returnToListHref: "/accounting/refunds"
+    };
+  }
+
   async processRefund(rawInput: unknown) {
     await this.ensureRefundRequestTable();
+    await this.ensureExpenseManagementColumns();
     const input = refundActionSchema.parse(rawInput);
     const accountingNote = input.accounting_note.trim();
     const paymentReference = input.payment_reference.trim();
@@ -4213,12 +4671,23 @@ export class AccountingService {
       const paidAt = paidAtValue && !Number.isNaN(new Date(paidAtValue).getTime()) ? new Date(paidAtValue) : new Date();
       const expense = await client.query(
         `
-          INSERT INTO chiphi (tenchiphi, ngaychi, sotien, noidung, trangthai)
-          VALUES ($1, CURRENT_DATE, $2, $3, 'DaDuyet')
+          INSERT INTO chiphi (
+            tenchiphi,
+            ngaychi,
+            sotien,
+            noidung,
+            trangthai,
+            loaichiphi,
+            nhacungcap,
+            sohoadon,
+            phuongthucchi
+          )
+          VALUES ($1, $2::date, $3, $4, 'DaDuyet', 'refund', $5, $6, 'ChuyenKhoan')
           RETURNING macp
         `,
         [
           `Hoan coc dat phong ${refund.refund_code}`,
+          formatDate(paidAt, "YYYY-MM-DD"),
           amount,
           [
             `Hoan tien cho GD-${refund.magiaodich}`,
@@ -4229,7 +4698,9 @@ export class AccountingService {
             paymentProof ? `Chung tu: ${paymentProof}` : "",
             `Ly do huy: ${refund.reason || ""}`,
             accountingNote ? `Ke toan: ${accountingNote}` : ""
-          ].filter(Boolean).join(" | ")
+          ].filter(Boolean).join(" | "),
+          String(refund.bank_name || "Ngan hang"),
+          paymentReference
         ]
       ) as { rows: Array<{ macp: number }> };
       const expenseId = Number(expense.rows[0]?.macp || 0);
@@ -4293,6 +4764,14 @@ export class AccountingService {
       }
     });
 
+    await notificationService.notifyRefundCompletedForCustomer({
+      refundId: processed.id,
+      refundCode: processed.refundCode,
+      transactionId: processed.transactionId,
+      amountFormatted: formatMoney(processed.amount),
+      rejected: processed.action === "reject"
+    }).catch(() => undefined);
+
     return {
       ...processed,
       amountFormatted: formatMoney(processed.amount)
@@ -4311,7 +4790,7 @@ export class AccountingService {
 
     let tuNgay = isDate(parsed.tu_ngay) ? parsed.tu_ngay : dateOnly(fromDefault);
     let denNgay = isDate(parsed.den_ngay) ? parsed.den_ngay : dateOnly(today);
-    let trangThai = parsed.trang_thai || "all";
+    let trangThai = parsed.refund_id ? "all" : (parsed.trang_thai || "all");
 
     if (!isDate(parsed.tu_ngay) && parsed.tu_ngay) {
       warnings.push("Ngày bắt đầu không hợp lệ nên hệ thống đã dùng mốc 90 ngày gần nhất.");
@@ -4334,6 +4813,7 @@ export class AccountingService {
     return {
       filters: {
         ...parsed,
+        refund_id: parsed.refund_id,
         tu_ngay: tuNgay,
         den_ngay: denNgay,
         trang_thai: trangThai,
