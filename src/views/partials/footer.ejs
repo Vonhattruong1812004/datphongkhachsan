@@ -2097,9 +2097,11 @@
       const contextCards = Array.isArray(payload.context_cards) ? payload.context_cards : [];
       const quickActions = Array.isArray(payload.quick_actions) ? payload.quick_actions : [];
       const isTravelInspiration = payload.intent === "inspiration";
-      const bookingDecision = isTravelInspiration ? null : (payload.recommendations?.booking_decision || null);
-      const visibleBulletLimit = isTravelInspiration ? 4 : (bookingDecision ? 3 : 4);
-      const visibleContextLimit = isTravelInspiration ? 4 : (bookingDecision ? 1 : 4);
+      const isDestinationGuide = payload.intent === "location";
+      const isTravelPlanning = isTravelInspiration || isDestinationGuide;
+      const bookingDecision = isTravelPlanning ? null : (payload.recommendations?.booking_decision || null);
+      const visibleBulletLimit = isTravelPlanning ? 5 : (bookingDecision ? 3 : 4);
+      const visibleContextLimit = isTravelPlanning ? 4 : (bookingDecision ? 1 : 4);
       const filters = payload.extracted_filters || {};
       const filterChips = [
         filters.dia_diem ? `Gần ${filters.dia_diem}` : "",

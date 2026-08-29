@@ -59,7 +59,7 @@ interface BookingDecisionProfile {
   agentModel: "dual-agent-local";
   conversationMode: "new_request" | "follow_up";
   refinementIntent: string | null;
-  travelerIntent: "couple" | "family" | "business" | "wellness" | "luxury" | "saving" | "unknown";
+  travelerIntent: "couple" | "family" | "business" | "wellness" | "luxury" | "saving" | "beach" | "foodie" | "adventure" | "unknown";
   experienceTags: string[];
   needQuality: "thin" | "usable" | "rich";
   stayNights: number;
@@ -77,6 +77,7 @@ interface BookingDecisionProfile {
   hardSignals: string[];
   missingSignals: string[];
   decisionQuestion: string;
+  tripBrief: string;
 }
 
 type PromotionCandidate = Awaited<ReturnType<BookingService["getActivePromotions"]>>[number];
@@ -378,7 +379,7 @@ export class AIService {
       ],
       suggestedStayAreas: ["Hà Tiên", "Mũi Nai", "Kien Giang"],
       bookingFallbackCities: ["An Giang", "Can Tho"],
-      fallbackBookingNote: "Kho phòng hiện chưa có khách sạn Kiên Giang/Hà Tiên, nên hệ thống mở rộng sang An Giang hoặc Cần Thơ như phương án dừng chân/tuyến miền Tây để vẫn có lựa chọn đặt phòng cụ thể.",
+      fallbackBookingNote: "Nếu phòng sát Hà Tiên chưa đủ điều kiện theo bộ lọc, hệ thống sẽ mở rộng sang An Giang hoặc Cần Thơ như phương án dừng chân/tuyến miền Tây.",
       imageUrl: "/uploads/destinations/phu-quoc.jpg"
     }
   ];
@@ -451,8 +452,10 @@ export class AIService {
       .map((room) => this.scoreRoom(room, filters, memory, decisionProfile, activePromotions))
       .sort((left, right) => right.recommendation.score - left.recommendation.score);
 
-    const topPick = scoredRooms[0] ?? null;
-    const alternatives = scoredRooms.slice(1, 5);
+    const normalPricedRooms = scoredRooms.filter((room) => !this.hasSuspiciousRoomPrice(room));
+    const rankedRooms = normalPricedRooms.length ? normalPricedRooms : scoredRooms;
+    const topPick = rankedRooms[0] ?? null;
+    const alternatives = rankedRooms.slice(1, 5);
     const bookingDecision = await this.buildBookingDecisionPlan(filters, decisionProfile, topPick, alternatives, fallbackLevel);
 
     if (options?.sourceLabel) {
@@ -641,6 +644,10 @@ export class AIService {
     else if (/(vuon|garden)/.test(normalizedText)) filters.view_phong = "Vườn";
     else if (/(pho|city|thanh pho)/.test(normalizedText)) filters.view_phong = "Thành phố";
 
+    if (!filters.loai_luu_tru && /(nghi duong bien|resort bien|sat bien|view bien|o bien)/.test(normalizedText)) {
+      filters.loai_luu_tru = "RESORT";
+    }
+
     const destinationAliases = [
       { pattern: /(nui ong cam|ong cam|nui cam|thien cam son|that son|chua van linh|phat di lac)/, value: "Núi Ông Cấm", city: "An Giang" },
       { pattern: /(ha tien|mui nai|thach dong|nui da dung)/, value: "Hà Tiên", city: "Kien Giang" },
@@ -677,6 +684,10 @@ export class AIService {
     const guestMatch = text.match(/(\d+)\s*(nguoi|người|khach|khách|pax)/i);
     if (guestMatch) {
       filters.so_khach = Number(guestMatch[1]);
+    } else if (/(cap doi|couple|trang mat|honeymoon|hai vo chong|2 vo chong)/.test(normalizedText)) {
+      filters.so_khach = 2;
+    } else if (/(gia dinh|family|co tre em|có trẻ em|em be|bo me|phu huynh)/.test(normalizedText)) {
+      filters.so_khach = 4;
     }
 
     const budgetMatch = text.match(/(\d+(?:[.,]\d+)?)\s*(tr|triệu|trieu|k|nghin|nghìn|vnd|đ|d)\b/i);
@@ -879,6 +890,18 @@ export class AIService {
       return "wellness";
     }
 
+    if (/(bien|beach|sea|ocean|tam bien|ngam hoang hon|dao|hai san)/.test(text)) {
+      return "beach";
+    }
+
+    if (/(an uong|am thuc|hai san|cho dem|quan ngon|food|foodie|dac san)/.test(text)) {
+      return "foodie";
+    }
+
+    if (/(leo nui|trekking|kham pha|phuot|tham quan nhieu|hang dong|song nuoc|trai nghiem)/.test(text)) {
+      return "adventure";
+    }
+
     if (/(vip|cao cap|sang|luxury|suite|penthouse|dep nhat|tot nhat|view dep)/.test(text)) {
       return "luxury";
     }
@@ -903,8 +926,18 @@ export class AIService {
     if (/(gan trung tam|trung tam|center|central)/.test(text)) tags.add("near:center");
     if (/(ma giam|khuyen mai|uu dai|voucher|coupon)/.test(text)) tags.add("deal-seeking");
     if (/(checkin som|check-in som|tra phong muon|late checkout)/.test(text)) tags.add("flexible-time");
+    if (/(ho boi|hồ bơi|pool|be boi|bể bơi)/.test(text)) tags.add("amenity:pool");
+    if (/(an sang|ăn sáng|breakfast|buffet)/.test(text)) tags.add("amenity:breakfast");
+    if (/(spa|massage|xong hoi|xông hơi|jacuzzi)/.test(text)) tags.add("amenity:spa");
+    if (/(dua don|đưa đón|san bay|sân bay|airport|xe dua)/.test(text)) tags.add("amenity:transfer");
+    if (/(tre em|trẻ em|em be|bé|be|kid|kids)/.test(text)) tags.add("audience:kids");
+    if (/(nguoi lon tuoi|người lớn tuổi|ong ba|ông bà|bo me|bố mẹ)/.test(text)) tags.add("audience:elderly");
+    if (/(yen tinh|yên tĩnh|khong on|không ồn|nghi ngoi|nghỉ ngơi)/.test(text)) tags.add("mood:quiet");
+    if (/(cho dem|chợ đêm|an uong|ăn uống|hai san|hải sản|am thuc|ẩm thực)/.test(text)) tags.add("mood:food");
+    if (/(nghi le|nghỉ lễ|le|lễ|cao diem|cao điểm|cuoi tuan|cuối tuần)/.test(text)) tags.add("trip:peak");
+    if (/(2 ngay 1 dem|2 ngày 1 đêm|ngan ngay|ngắn ngày|cuoi tuan|cuối tuần)/.test(text)) tags.add("trip:short");
 
-    return Array.from(tags).slice(0, 8);
+    return Array.from(tags).slice(0, 12);
   }
 
   private detectIntent(message: string, filters?: Partial<SearchBookingInput>): AIIntent {
@@ -1222,9 +1255,38 @@ export class AIService {
       href: `/booking/rooms/${topPick.id}/detail`
     }] : [];
 
-    if (mode === "beach") return [...beachCards, ...roomCard];
-    if (mode === "holiday") return [...holidayCards, ...roomCard];
-    return [...hotCards, ...roomCard];
+    if (mode === "beach") return [...(await this.enrichDestinationCardsWithRoomHints(beachCards)), ...roomCard];
+    if (mode === "holiday") return [...(await this.enrichDestinationCardsWithRoomHints(holidayCards)), ...roomCard];
+    return [...(await this.enrichDestinationCardsWithRoomHints(hotCards)), ...roomCard];
+  }
+
+  private async enrichDestinationCardsWithRoomHints(cards: AIContextCard[]): Promise<AIContextCard[]> {
+    return Promise.all(cards.map(async (card) => {
+      if (!card.href || !card.href.startsWith("/booking/search")) return card;
+
+      try {
+        const url = new URL(card.href, "http://bento.local");
+        const filters = searchBookingSchema.parse({
+          dia_diem: url.searchParams.get("dia_diem") || "",
+          hotel_city: url.searchParams.get("hotel_city") || "",
+          view_phong: url.searchParams.get("view_phong") || "",
+          so_khach: 2,
+          sort_by: "ai"
+        });
+        const payload = await this.bookingService.searchRooms(filters);
+        const room = payload.items.find((item) => !this.hasSuspiciousRoomPrice(item));
+        if (!room) return card;
+
+        const roomHint = `Gợi ý xem trước: ${room.khachSan} · ${room.soPhong}, từ ${Number(room.gia || 0).toLocaleString("vi-VN")} đ / đêm.`;
+        return {
+          ...card,
+          price: `${Number(room.gia || 0).toLocaleString("vi-VN")} đ / đêm`,
+          meta: [card.meta, roomHint].filter(Boolean).join(" ")
+        };
+      } catch {
+        return card;
+      }
+    }));
   }
 
   private async buildPromotionAnswer() {
@@ -1406,6 +1468,19 @@ export class AIService {
         href: this.buildBookingSearchHref(searchFilters),
         imageUrl: insight.imageUrl
       },
+      ...uniqueRooms.map((room) => ({
+        type: "room" as const,
+        title: `${room.khachSan} · ${room.soPhong}`,
+        subtitle: `${room.loaiLuuTruTen || "Lưu trú"} · ${room.loaiPhong} · ${room.tinhThanh}`,
+        meta: this.isRoomFallbackForDestination(room, insight)
+          ? `${insight.fallbackBookingNote || "Phương án mở rộng theo tuyến đi khi chưa có phòng sát điểm đến."} ${room.recommendation.summary}`
+          : room.nearbyPlaceName
+          ? `Gần ${room.nearbyPlaceName}${room.nearbyDistanceLabel ? ` khoảng ${room.nearbyDistanceLabel}` : ""}. ${room.recommendation.summary}`
+          : `${room.recommendation.summary} Ưu tiên khu ${insight.suggestedStayAreas.join(", ")} để di chuyển thuận hơn.`,
+        badge: this.isRoomFallbackForDestination(room, insight) ? "Phương án thay thế" : room.recommendation.label,
+        price: `${Number(room.gia || 0).toLocaleString("vi-VN")} đ / đêm`,
+        href: `/booking/rooms/${room.id}/detail`
+      })),
       {
         type: "guide",
         title: `${this.currentMonthLabel()} nên đi như thế nào?`,
@@ -1426,20 +1501,7 @@ export class AIService {
         subtitle: insight.packing.slice(0, 2).join(" · "),
         meta: `Tránh: ${insight.avoid.slice(0, 2).join("; ")}.`,
         badge: "Chuẩn bị"
-      },
-      ...uniqueRooms.map((room) => ({
-        type: "room" as const,
-        title: `${room.khachSan} · ${room.soPhong}`,
-        subtitle: `${room.loaiLuuTruTen || "Lưu trú"} · ${room.loaiPhong} · ${room.tinhThanh}`,
-        meta: this.isRoomFallbackForDestination(room, insight)
-          ? `${insight.fallbackBookingNote || "Phương án mở rộng theo tuyến đi khi chưa có phòng sát điểm đến."} ${room.recommendation.summary}`
-          : room.nearbyPlaceName
-          ? `Gần ${room.nearbyPlaceName}${room.nearbyDistanceLabel ? ` khoảng ${room.nearbyDistanceLabel}` : ""}. ${room.recommendation.summary}`
-          : `${room.recommendation.summary} Ưu tiên khu ${insight.suggestedStayAreas.join(", ")} để di chuyển thuận hơn.`,
-        badge: this.isRoomFallbackForDestination(room, insight) ? "Phương án thay thế" : room.recommendation.label,
-        price: `${Number(room.gia || 0).toLocaleString("vi-VN")} đ / đêm`,
-        href: `/booking/rooms/${room.id}/detail`
-      }))
+      }
     ];
 
     return {
@@ -1538,6 +1600,7 @@ export class AIService {
   ) {
     const top = recommendations.top_pick;
     const decision = recommendations.booking_decision;
+    const profile = recommendations.decision_profile;
     const refinementLabel = decision.conversationalHints.refinement;
     const destinationLabel = filters.dia_diem || filters.hotel_city || "";
     const missing = [
@@ -1571,12 +1634,12 @@ export class AIService {
     return {
       answer: {
         title: top
-          ? `${decision.recommendedActionLabel}: ${top.khachSan} · ${top.soPhong}`
+          ? `${decision.readyToBook ? "Phương án nên đặt" : "Phương án đáng xem trước"}: ${top.khachSan} · ${top.soPhong}`
           : destinationLabel
             ? `Mình chưa thấy phòng khớp chính xác ở ${destinationLabel}.`
             : "Mình có thể tư vấn phòng theo nhu cầu của bạn.",
         body: top
-          ? `${refinementLabel ? `Mình giữ ngữ cảnh trước và đang xử lý theo hướng: ${refinementLabel}. ` : ""}${top.recommendation.summary}`
+          ? `${refinementLabel ? `Mình giữ ngữ cảnh trước và đang xử lý theo hướng: ${refinementLabel}. ` : ""}${profile.tripBrief} ${top.recommendation.summary}`
           : relaxedRooms.length
             ? `Điều kiện ${destinationLabel ? `ở ${destinationLabel} ` : ""}hơi chặt nên mình hiển thị vài lựa chọn gần nhất để bạn cân nhắc nới ngân sách, đổi loại lưu trú hoặc mở rộng khu vực.`
             : destinationLabel
@@ -1584,11 +1647,13 @@ export class AIService {
               : "Bạn có thể hỏi bằng tiếng Việt tự nhiên: muốn ở khu vực nào, mấy người, ngân sách bao nhiêu, thích hotel/resort/homestay hay penthouse, cần gần điểm nào.",
         bullets: top
           ? [
-              `${top.recommendation.label}: độ phù hợp ${top.recommendation.score}/99.`,
-              `Mức sẵn sàng đặt phòng: ${decision.readinessScore}/100 - ${decision.recommendedActionLabel}.`,
+              `${top.recommendation.label}: ${top.recommendation.reasons[0] || "phù hợp nhất với nhu cầu hiện tại."}`,
+              decision.readyToBook
+                ? "Có thể chuyển sang bước xem chi tiết, nhập thông tin khách và thanh toán cọc."
+                : `Trước khi chốt nên bổ sung: ${decision.requiredNextInputs.slice(0, 2).join(", ") || "kiểm tra điều kiện phòng"}.`,
               top.recommendation.decisionNotes[0] || "Có thể mở danh sách để so sánh thêm các lựa chọn khác.",
-              top.recommendation.decisionNotes[1] || decision.policyNotes[0] || top.recommendation.tradeoffs[0] || `Cơ sở: ${top.khachSan} tại ${top.tinhThanh}.`,
-              top.recommendation.reasons[0] || "Phù hợp với nhóm tiêu chí tìm kiếm hiện tại."
+              top.recommendation.tradeoffs[0] || top.recommendation.decisionNotes[1] || decision.policyNotes[0] || `Cơ sở: ${top.khachSan} tại ${top.tinhThanh}.`,
+              `Câu hỏi quan trọng nhất lúc này: ${decision.conversationalHints.nextBestQuestion || "bạn muốn giữ phương án này không?"}`
             ]
           : destinationLabel
             ? [
@@ -1634,7 +1699,10 @@ export class AIService {
       const payload = await this.bookingService.searchRooms(searchBookingSchema.parse(candidate));
       if (!payload.items.length) continue;
 
-      return payload.items.slice(0, 4).map((room) => ({
+      const visibleRooms = payload.items.filter((room) => !this.hasSuspiciousRoomPrice(room));
+      const displayRooms = visibleRooms.length ? visibleRooms : payload.items;
+
+      return displayRooms.slice(0, 4).map((room) => ({
         type: "room" as const,
         title: `${room.khachSan} · ${room.soPhong}`,
         subtitle: `${room.loaiLuuTruTen || "Lưu trú"} · ${room.loaiPhong} · ${room.tinhThanh}`,
@@ -1814,6 +1882,13 @@ export class AIService {
       prompts.add("Đổi sang resort gần Mũi Nai Hà Tiên");
       prompts.add("So sánh biển Mỹ Khê, Phú Quốc và Nha Trang");
       prompts.add("Tìm phòng biển dưới 2 triệu cho 2 người");
+      prompts.add("Đi biển tháng này nên chọn khu nào ít rủi ro thời tiết?");
+    }
+
+    if (intent === "inspiration") {
+      prompts.add("Các nơi đang hot và có phòng dễ chốt");
+      prompts.add("Nghỉ lễ nên đi đâu cho gia đình?");
+      prompts.add("Tôi muốn đi biển, ưu tiên sạch đẹp và không quá đông");
     }
 
     if (intent === "tour") {
@@ -2006,6 +2081,7 @@ export class AIService {
     const refinementIntent = this.detectRefinementIntent(message, hasContext);
     const travelerIntent = this.detectTravelerIntent(message, filters);
     const experienceTags = this.buildExperienceTags(travelerIntent, filters, message);
+    const tripBrief = this.buildTripBrief(filters, travelerIntent, experienceTags);
 
     return {
       agentModel: "dual-agent-local",
@@ -2030,8 +2106,48 @@ export class AIService {
       missingSignals,
       decisionQuestion: missingSignals.length
         ? `Còn thiếu ${missingSignals.join(", ")} nên hệ thống sẽ gợi ý phương án an toàn và hỏi bổ sung.`
-        : "Đủ thông tin để xếp hạng phòng theo nhu cầu đặt phòng hiện tại."
+        : "Đủ thông tin để xếp hạng phòng theo nhu cầu đặt phòng hiện tại.",
+      tripBrief
     };
+  }
+
+  private buildTripBrief(
+    filters: SearchBookingInput,
+    intent: BookingDecisionProfile["travelerIntent"],
+    tags: string[]
+  ) {
+    const destination = filters.dia_diem || filters.hotel_city || "điểm đến bạn đang cân nhắc";
+    const guest = filters.so_khach > 0 ? `${filters.so_khach} khách` : "chưa rõ số khách";
+    const budget = Number(filters.gia_goi_y || filters.gia_den || 0) > 0
+      ? `khoảng ${formatMoney(Number(filters.gia_goi_y || filters.gia_den))} / đêm`
+      : "chưa khóa ngân sách";
+    const styleByIntent: Record<BookingDecisionProfile["travelerIntent"], string> = {
+      couple: "Chuyến đi cặp đôi",
+      family: "Chuyến đi gia đình",
+      business: "Chuyến đi công tác",
+      wellness: "Kỳ nghỉ dưỡng thư giãn",
+      luxury: "Kỳ nghỉ ưu tiên trải nghiệm cao cấp",
+      saving: "Chuyến đi cần tối ưu chi phí",
+      beach: "Chuyến đi biển",
+      foodie: "Chuyến đi thiên về ăn uống và khám phá địa phương",
+      adventure: "Chuyến đi tham quan/khám phá",
+      unknown: "Nhu cầu đặt phòng"
+    };
+    const extras = [
+      tags.includes("amenity:pool") ? "hồ bơi" : "",
+      tags.includes("amenity:breakfast") ? "ăn sáng" : "",
+      tags.includes("amenity:spa") ? "spa/thư giãn" : "",
+      tags.includes("amenity:transfer") ? "đưa đón/di chuyển" : "",
+      tags.includes("audience:kids") ? "phù hợp trẻ em" : "",
+      tags.includes("audience:elderly") ? "dễ di chuyển cho người lớn tuổi" : ""
+    ].filter(Boolean);
+
+    return `${styleByIntent[intent]} tại ${destination}, ${guest}, ${budget}${extras.length ? `, ưu tiên ${extras.join(", ")}` : ""}.`;
+  }
+
+  private hasSuspiciousRoomPrice(room: Pick<SearchRoomRow, "gia">) {
+    const price = Number(room.gia || 0);
+    return price > 0 && price < 100000;
   }
 
   private findBestPromotionDeal(
@@ -2149,10 +2265,10 @@ export class AIService {
     const conciergeBrief = !topPick
       ? "Chưa tìm được phòng đủ tín hiệu, nên cần đổi ngày, ngân sách hoặc khu vực để ra quyết định tốt hơn."
       : requiredNextInputs.length
-        ? `Cần thêm ${requiredNextInputs.join(", ")} trước khi chốt phương án đặt phòng.`
+        ? `${profile.tripBrief} Cần thêm ${requiredNextInputs.join(", ")} trước khi chốt phương án đặt phòng.`
         : uniqueRiskFlags.length
-          ? "Đã có phương án phù hợp, nhưng cần kiểm tra các điểm rủi ro trước khi thanh toán cọc."
-          : "Đã đối chiếu nhu cầu, sức chứa, giá, ưu đãi và trạng thái phòng; phương án này đủ điều kiện để chuyển sang đặt.";
+          ? `${profile.tripBrief} Đã có phương án phù hợp, nhưng cần kiểm tra các điểm rủi ro trước khi thanh toán cọc.`
+          : `${profile.tripBrief} Phương án này đủ điều kiện để chuyển sang đặt.`;
     const timeline: BookingDecisionPlan["timeline"] = [
       { label: "Hiểu nhu cầu", status: profile.needQuality === "thin" ? "next" : "done" },
       { label: "Đối chiếu phòng", status: topPick ? "done" : "blocked" },
@@ -2266,10 +2382,18 @@ export class AIService {
       }
     ];
     const questionByMissingSignal: Record<string, string> = {
-      "số khách": "Bạn đi mấy người để kiểm tra đúng sức chứa phòng?",
-      "khu vực muốn ở": "Bạn muốn ở khu vực hoặc gần địa điểm nào?",
-      "ngân sách": "Ngân sách tối đa mỗi đêm của bạn khoảng bao nhiêu?",
-      "ngày nhận/trả phòng": "Bạn muốn nhận phòng và trả phòng ngày nào?"
+      "số khách": profile.travelerIntent === "family"
+        ? "Gia đình mình khoảng mấy người và có trẻ em không?"
+        : "Bạn đi mấy người để kiểm tra đúng sức chứa phòng?",
+      "khu vực muốn ở": profile.travelerIntent === "beach"
+        ? "Bạn muốn ưu tiên biển nào: Mỹ Khê, Mũi Nai/Hà Tiên, Phú Quốc hay Nha Trang?"
+        : "Bạn muốn ở khu vực hoặc gần địa điểm nào?",
+      "ngân sách": profile.travelerIntent === "luxury"
+        ? "Bạn muốn giữ trải nghiệm cao cấp trong khoảng ngân sách nào mỗi đêm?"
+        : "Ngân sách tối đa mỗi đêm của bạn khoảng bao nhiêu?",
+      "ngày nhận/trả phòng": profile.experienceTags.includes("trip:peak")
+        ? "Bạn đi dịp lễ/cuối tuần ngày nào để kiểm tra phòng trống chính xác?"
+        : "Bạn muốn nhận phòng và trả phòng ngày nào?"
     };
     const suggestedReplies = new Set<string>();
     if (requiredNextInputs.includes("số khách")) {
@@ -2277,8 +2401,13 @@ export class AIService {
       suggestedReplies.add("Gia đình 4 người");
     }
     if (requiredNextInputs.includes("khu vực muốn ở")) {
-      suggestedReplies.add("Gần biển Mỹ Khê");
-      suggestedReplies.add("Gần trung tâm Đà Nẵng");
+      if (profile.travelerIntent === "beach") {
+        suggestedReplies.add("Biển Mỹ Khê");
+        suggestedReplies.add("Hà Tiên - Mũi Nai");
+      } else {
+        suggestedReplies.add("Gần biển Mỹ Khê");
+        suggestedReplies.add("Gần trung tâm Đà Nẵng");
+      }
     }
     if (requiredNextInputs.includes("ngân sách")) {
       suggestedReplies.add("Dưới 2 triệu một đêm");
@@ -2287,6 +2416,12 @@ export class AIService {
     if (requiredNextInputs.includes("ngày nhận/trả phòng")) {
       suggestedReplies.add("Cuối tuần này 2 đêm");
       suggestedReplies.add("Cuối tuần sau 2 đêm");
+    }
+    if (profile.experienceTags.includes("amenity:pool")) {
+      suggestedReplies.add("Ưu tiên hồ bơi");
+    }
+    if (profile.experienceTags.includes("amenity:breakfast")) {
+      suggestedReplies.add("Có ăn sáng");
     }
     if (profile.refinementIntent) {
       suggestedReplies.add("So sánh vì sao phòng này tốt nhất");
@@ -2410,7 +2545,7 @@ export class AIService {
     const tradeoffs: string[] = [];
     const decisionNotes: string[] = [];
     const price = Number(room.gia || 0);
-    const abnormalPrice = price > 0 && price < 100000;
+    const abnormalPrice = this.hasSuspiciousRoomPrice(room);
     const subtotal = Number(room.estimatedTotal || 0) > 0
       ? Number(room.estimatedTotal)
       : price * Math.max(1, profile.stayNights || 1);
@@ -2428,6 +2563,17 @@ export class AIService {
     const roomTypeText = this.normalizeForAi(`${room.loaiPhong || ""} ${room.loaiLuuTruTen || ""} ${room.loaiLuuTruMa || ""}`);
     const bedText = this.normalizeForAi(room.loaiGiuong || "");
     const viewText = this.normalizeForAi(room.viewPhong || "");
+    const roomText = this.normalizeForAi([
+      room.khachSan,
+      room.loaiPhong,
+      room.loaiLuuTruTen,
+      room.viewPhong,
+      room.ghiChu,
+      room.nearbyPlaceName,
+      room.diaChi,
+      room.quanHuyen,
+      room.tinhThanh
+    ].filter(Boolean).join(" "));
 
     if (abnormalPrice) {
       addRule("Giá phòng bất thường", -18, "risk");
@@ -2470,6 +2616,53 @@ export class AIService {
       addRule("Nhận diện nhu cầu tiết kiệm", 5);
       badges.push("Tối ưu chi phí");
       reasons.push("Ưu tiên phương án có ưu đãi để giảm tổng tiền đặt phòng.");
+    } else if (profile.travelerIntent === "beach") {
+      if (/bien|beach|sea|ocean|mui nai|my khe|phu quoc|nha trang|vung tau|hoang hon/.test(roomText)) {
+        addRule("Nhận diện chuyến đi biển", 8);
+        badges.push("Hợp đi biển");
+        reasons.push("Phù hợp nhu cầu đi biển vì có tín hiệu gần biển, view biển hoặc khu nghỉ dưỡng biển.");
+      }
+      if (/resort/.test(roomTypeText)) addRule("Loại lưu trú hợp nghỉ biển", 5);
+    } else if (profile.travelerIntent === "foodie") {
+      if (/trung tam|cho dem|dia phuong|hai san|ben ninh kieu|ha tien|hoi an|can tho/.test(roomText)) {
+        addRule("Nhận diện nhu cầu ăn uống địa phương", 6);
+        badges.push("Dễ ăn uống");
+        reasons.push("Vị trí/ghi chú phòng có tín hiệu thuận tiện ăn uống hoặc khám phá địa phương.");
+      }
+    } else if (profile.travelerIntent === "adventure") {
+      if (room.nearbyPlaceName || /gan|tham quan|nui|cho noi|ba na|thach dong|trung tam/.test(roomText)) {
+        addRule("Nhận diện nhu cầu tham quan", 6);
+        badges.push("Dễ tham quan");
+        reasons.push("Phòng có tín hiệu thuận tuyến tham quan hoặc gần điểm đến cần đi.");
+      }
+    }
+
+    if (profile.experienceTags.includes("amenity:pool") && /resort|vip|suite|bien|nghi duong|ho boi|pool/.test(roomText)) {
+      addRule("Ưu tiên hồ bơi/nghỉ dưỡng", 4);
+      badges.push("Có vibe nghỉ dưỡng");
+      decisionNotes.push("Nên kiểm tra chi tiết tiện ích hồ bơi của cơ sở trước khi chốt.");
+    }
+
+    if (profile.experienceTags.includes("amenity:breakfast") && /hotel|resort|suite|buffet|an sang|breakfast/.test(roomText)) {
+      addRule("Ưu tiên bữa sáng", 3);
+      decisionNotes.push("Nên xem chính sách bữa sáng trong chi tiết phòng trước khi thanh toán.");
+    }
+
+    if (profile.experienceTags.includes("amenity:transfer") && /san bay|trung tam|transit|rach gia|ben tau|dua don/.test(roomText)) {
+      addRule("Ưu tiên di chuyển/đưa đón", 4);
+      badges.push("Dễ di chuyển");
+    }
+
+    if (profile.experienceTags.includes("audience:kids") && (Number(room.soKhachToiDa || 0) >= 4 || /family|suite|resort/.test(roomText))) {
+      addRule("Phù hợp gia đình có trẻ em", 5);
+      badges.push("Hợp trẻ em");
+      reasons.push("Ưu tiên phòng rộng hoặc loại lưu trú dễ sắp xếp cho gia đình có trẻ em.");
+    }
+
+    if (profile.experienceTags.includes("audience:elderly") && /trung tam|hotel|thanh pho|de di chuyen|gan/.test(roomText)) {
+      addRule("Dễ di chuyển cho người lớn tuổi", 4);
+      badges.push("Dễ di chuyển");
+      reasons.push("Có tín hiệu vị trí thuận tiện, phù hợp khi đi cùng người lớn tuổi.");
     }
 
     if (filters.so_khach > 0) {
@@ -2608,8 +2801,23 @@ export class AIService {
 
     const needAgentScore = Math.round(
       (ruleBreakdown
-        .filter((item) => ["Khớp đúng sức chứa", "Đủ sức chứa, dư ít", "Đủ sức chứa nhưng hơi rộng", "Đúng tỉnh/thành muốn ở", "Gần địa điểm cần đến", "Đúng loại cơ sở muốn đặt", "Đúng loại phòng", "Đúng view mong muốn"].includes(item.label))
-        .reduce((sum, item) => sum + Math.max(0, item.score), 0) / 58) * 99
+        .filter((item) => [
+          "Khớp đúng sức chứa",
+          "Đủ sức chứa, dư ít",
+          "Đủ sức chứa nhưng hơi rộng",
+          "Đúng tỉnh/thành muốn ở",
+          "Gần địa điểm cần đến",
+          "Đúng loại cơ sở muốn đặt",
+          "Đúng loại phòng",
+          "Đúng view mong muốn",
+          "Nhận diện chuyến đi biển",
+          "Loại lưu trú hợp nghỉ biển",
+          "Nhận diện nhu cầu ăn uống địa phương",
+          "Nhận diện nhu cầu tham quan",
+          "Phù hợp gia đình có trẻ em",
+          "Dễ di chuyển cho người lớn tuổi"
+        ].includes(item.label))
+        .reduce((sum, item) => sum + Math.max(0, item.score), 0) / 82) * 99
     );
     const bookingAgentScore = Math.round(
       (ruleBreakdown
