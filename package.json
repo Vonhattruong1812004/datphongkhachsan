@@ -2,6 +2,11 @@
   "name": "abc-resort-node",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "@huggingface/transformers": {
+      "sharp": "0.35.5"
+    }
+  },
   "scripts": {
     "dev": "concurrently -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
     "dev:server": "tsx watch src/server.ts",
@@ -14,6 +19,15 @@
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "test": "tsx --test $(find src -name '*.test.ts' -print)",
+    "ai:train": ".venv-ai/bin/python ml/train_intent.py",
+    "ai:evaluate": ".venv-ai/bin/python ml/train_intent.py --evaluate-only",
+    "ai:test": "tsx --test src/modules/ai/services/intent-model.test.ts",
+    "ai:semantic:prepare": ".venv-ai/bin/python ml/prepare_semantic.py",
+    "ai:semantic:encode": "tsx src/scripts/encode-intents.ts",
+    "ai:semantic:train": ".venv-ai/bin/python ml/train_semantic.py",
+    "ai:semantic:evaluate": ".venv-ai/bin/python ml/train_semantic.py --evaluate-only",
+    "ai:semantic:test": "tsx --test src/modules/ai/services/semantic-intent.test.ts",
+    "ai:semantic:smoke": "tsx src/scripts/smoke-semantic.ts",
     "verify:db": "tsx src/scripts/verify-db.ts",
     "smoke": "tsx src/scripts/smoke.ts",
     "smoke:auth": "tsx src/scripts/smoke-auth.ts",
@@ -28,6 +42,7 @@
     "smoke:service": "tsx src/scripts/smoke-service.ts"
   },
   "dependencies": {
+    "@huggingface/transformers": "3.8.1",
     "bcryptjs": "^2.4.3",
     "connect-pg-simple": "^10.0.0",
     "dayjs": "^1.11.13",

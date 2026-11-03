@@ -13,3 +13,7 @@ playwright-report
 test-results
 storage/backups
 uploads/ekyc
+.venv-ai
+ml/cache
+ml/private
+**/__pycache__

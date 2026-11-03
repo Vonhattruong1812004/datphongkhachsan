@@ -1,0 +1,35 @@
+{
+  "provenance": "Assistant-authored Vietnamese challenge, written before v2 training. Not independent human evaluation. All splits frozen before model selection; calibration and test are disjoint. Public external test assesses booking in English and OOD in Vietnamese only.",
+  "splits": {
+    "calibration": {
+      "account": ["Tài khoản Bento của tôi bị khóa, hỗ trợ mở được không?", "Muốn đổi địa chỉ email trong hồ sơ đăng nhập"],
+      "booking": ["Bọn em ba đứa cần chỗ ngủ ở Vũng Tàu tối thứ bảy", "Tìm nơi lưu trú có thang máy cho bố mẹ lớn tuổi"],
+      "checkin": ["Xe tới lúc năm giờ sáng thì khách sạn cho nhận chìa khóa chưa?", "Tới quầy nhận phòng cần xuất trình giấy tờ nào vậy?"],
+      "checkout": ["Ngày trả phòng có thể nán lại tới ba giờ chiều không?", "Làm thủ tục rời khách sạn lúc sáng sớm được chứ?"],
+      "destination_alternative": ["Không đi Đà Lạt nữa, giới thiệu tỉnh nào mới đi", "Bỏ lịch ghé chợ nổi, có điểm tham quan thay thế không?"],
+      "itinerary": ["Sắp xếp giúp thứ tự ghé các điểm trong một buổi sáng", "Lên kế hoạch vui chơi hai ngày tại Ninh Bình"],
+      "nearby": ["Mình đang đứng đây, xung quanh có chỗ nào nghỉ qua đêm?", "Dùng tọa độ điện thoại tìm khách sạn gần mình nhất"],
+      "other": ["Viết giúp bài thơ về công nghệ thông tin", "Giải phương trình bậc hai hộ em"],
+      "packing": ["Đi thuyền vào mùa mưa nên chuẩn bị đồ đạc ra sao?", "Chuyến đi biển với trẻ nhỏ nên đem theo những gì?"],
+      "payment": ["Đã chuyển khoản mà mã QR vẫn đang chờ xử lý", "Tiền cọc được trừ vào hóa đơn cuối cùng thế nào?"],
+      "refund": ["Khách sạn hủy lịch của tôi thì tiền ứng trước nhận lại thế nào?", "Bao lâu sau khi hủy chỗ thì tiền về tài khoản ngân hàng?"],
+      "room_alternative": ["Chỗ nghỉ này hơi ồn, tìm phương án khác cùng khu nhé", "Thử gợi ý khách sạn khác thay chỗ vừa chọn giúp tôi"],
+      "service": ["Gửi thêm hai chai nước lên phòng đang ở nhé", "Đăng ký đưa đón sân bay cho khách đang lưu trú ở đâu?"]
+    },
+    "test": {
+      "account": ["Quên mật khẩu Bento rồi, làm sao vào lại?", "Tôi đổi số điện thoại, cập nhật tài khoản bằng cách nào?", "Đăng ký thành viên bị báo email đã tồn tại"],
+      "booking": ["Có nơi nào ngủ được cho nhóm đi phượt tám người ở Mộc Châu?", "Tụi mình muốn thuê căn hộ ba đêm, có bếp riêng càng tốt", "Nhờ chọn chỗ ở sạch sẽ cho mẹ và bé tại Hải Phòng"],
+      "checkin": ["Máy bay trễ, nửa đêm mới đến có được vào phòng không?", "Đã cọc rồi, chiều nay đến nhận phòng đưa CCCD là đủ chưa?", "Khách nước ngoài dùng hộ chiếu lúc nhận phòng được không?"],
+      "checkout": ["Hôm rời đi tôi muốn bàn giao phòng trước bình minh", "Trả chìa khóa xong có phải chờ kiểm tra minibar không?", "Ở thêm đến buổi tối ngày trả phòng tính phụ thu ra sao?"],
+      "destination_alternative": ["Chán đi biển rồi, chuyển qua vùng cao nào đó nhé", "Đừng đề xuất Cái Răng nữa, muốn điểm vui chơi khác", "Thay Nha Trang bằng một thành phố du lịch khác đi"],
+      "itinerary": ["Chia lịch tham quan Huế từ sáng tới tối giúp mình", "Có ba ngày ở Phú Yên thì mỗi ngày nên đi những đâu?", "Ghép các điểm tham quan thành lộ trình không phải đi vòng"],
+      "nearby": ["Quanh chỗ tôi đang đứng có homestay nào không?", "Lấy vị trí GPS này để tìm phòng trong vòng năm cây số", "Kiếm chỗ ngủ gần vị trí hiện tại trên điện thoại tôi"],
+      "other": ["Soạn cho tôi hợp đồng mua bán xe máy", "Hướng dẫn lập trình trò chơi cờ vua", "Dự đoán kết quả trận bóng tối nay"],
+      "packing": ["Sắp đi Cái Răng, hành lý cần những món nào và tránh mang gì?", "Đi vùng núi vào mùa lạnh thì chuẩn bị quần áo thế nào?", "Nên bỏ gì vào balo cho chuyến tham quan ngoài trời?"],
+      "payment": ["Ngân hàng đã trừ tiền sao đơn vẫn chưa xác nhận đặt thành công?", "Có thể nộp tiền cọc bằng chuyển khoản thay vì tiền mặt không?", "QR cọc hết hiệu lực trước lúc chuyển thì xử lý thế nào?"],
+      "refund": ["Xin hủy chuyến do việc gấp, muốn lấy lại khoản đã cọc", "Đã duyệt hoàn tiền mà ngân hàng chưa nhận được", "Tôi nhập nhầm số tài khoản nhận hoàn, sửa chỗ nào?"],
+      "room_alternative": ["Không ưng căn vừa gợi ý, còn căn nào để ở nữa?", "Vẫn nghỉ ở Huế nhưng thay cơ sở lưu trú đang xem", "Phòng này không có ban công, đưa phòng thay thế có ban công"],
+      "service": ["Tôi muốn đặt suất ăn đem lên phòng khách đang ở", "Nhờ giặt quần áo cho phòng mình thì đăng ký thế nào?", "Khách lưu trú muốn mua thêm gói massage cho tối nay"]
+    }
+  }
+}

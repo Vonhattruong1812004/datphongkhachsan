@@ -2,31 +2,9 @@ import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { HttpError } from "../../../shared/http/http-error";
 import { ManagerService } from "../services/manager.service";
+import { resolveRoomImage } from "../../../shared/media/room-images";
 
 const managerService = new ManagerService();
-
-function resolveRoomImageUrl(rawPath: string | null | undefined) {
-  const value = String(rawPath || "").trim();
-  if (!value) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(value) || value.startsWith("/uploads/phong/")) {
-    return value;
-  }
-
-  const fileName = value
-    .replace(/\\/g, "/")
-    .replace(/^\/?public\/uploads\/phong\//i, "")
-    .replace(/^\/?uploads\/phong\//i, "")
-    .replace(/^\/?phong\//i, "")
-    .replace(/^\/?rooms\//i, "")
-    .split("/")
-    .filter(Boolean)
-    .pop();
-
-  return fileName ? `/uploads/phong/${encodeURIComponent(fileName)}` : "";
-}
 
 export async function renderManagerHome(req: Request, res: Response) {
   return res.redirect(`/dashboard/quanly${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`);
@@ -370,7 +348,7 @@ async function renderRoomsPage(req: Request, res: Response, options: {
   const formMode = options.formMode || (requestedEditId ? "edit" : (roomDraft ? "create" : "list"));
   const normalizedRooms = roomItems.map((room) => ({
     ...room,
-    imageUrl: resolveRoomImageUrl(room.hinhAnh),
+    imageUrl: resolveRoomImage(room.hinhAnh, room.id, room.loaiPhong),
     viewLabel: normalizeRoomView(room.viewPhong),
     statusTone: getRoomStatusTone(room.trangThai),
     realtimeTone: getRoomRealtimeTone(room.trangThaiRealtime),

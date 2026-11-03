@@ -1,4 +1,8 @@
 node_modules
+.venv-ai/
+ml/cache/
+__pycache__/
+ml/private/
 dist
 .env
 public/build
@@ -6,6 +10,7 @@ npm-debug.log*
 .DS_Store
 uploads/ekyc
 storage/backups/*.sql
+storage/room-images/
 tmp/
 outputs/
 ~$*.docx

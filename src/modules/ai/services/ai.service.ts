@@ -9,10 +9,25 @@ import { NewsService } from "../../news/services/news.service";
 import { formatMoney } from "../../../shared/utils/format";
 import { expireOutdatedPromotions } from "../../../shared/promotions/promotion-maintenance";
 import { calculatePromotionDiscount } from "../../booking/services/booking-rules";
+import { isNearbyRequest, isFreshLocation } from "./nearby-intent";
+import { conversationalReply, hasGreetingPrefix } from "./conversation";
+import { nearbyPlacesService } from "./nearby-places";
+import { travelQuestion } from "./travel-question";
+import { alternativeRequest, dialogueContextSchema, excludedRoomIds } from "./alternative-request";
+import { matchBookingRegion } from "../../../shared/location/booking-regions";
+import { intentClassifier, intentModelMode, predictIntent, type IntentPrediction } from "./intent-model";
+import { semanticShadow } from "./semantic-intent";
 
 const aiConciergeSchema = z.object({
-  message: z.string().min(2),
-  filters: searchBookingSchema.partial().optional()
+  message: z.string().trim().min(1).max(2000),
+  filters: searchBookingSchema.partial().optional(),
+  dialogue_context: dialogueContextSchema.optional(),
+  location: z.object({
+    latitude: z.number().finite().min(-90).max(90),
+    longitude: z.number().finite().min(-180).max(180),
+    accuracy: z.number().finite().nonnegative(),
+    capturedAt: z.number().finite()
+  }).optional()
 });
 
 type ScoredRoom = SearchRoomRow & {
@@ -264,7 +279,7 @@ export class AIService {
     },
     {
       canonicalName: "Chợ nổi Cái Răng",
-      aliases: [/cho noi cai rang/, /\bcai rang\b/, /can tho/],
+      aliases: [/cho noi cai rang/, /\bcai rang\b/],
       city: "Can Tho",
       district: "Cái Răng",
       region: "Cái Răng, Cần Thơ",
@@ -386,32 +401,256 @@ export class AIService {
 
   async buildConciergeResponse(rawInput: unknown, user?: SessionUser | null) {
     const input = aiConciergeSchema.parse(rawInput);
+    const routing = { prediction: predictIntent(input.message), used: false };
+    const [response, semantic] = await Promise.all([
+      this.buildConciergeAnswer(input, user, routing), semanticShadow.predict(input.message)
+    ]);
+    return {
+      ...response,
+      nlu: {
+        mode: intentModelMode(),
+        source: routing.used ? "trained-model" : "rules-or-context",
+        model_version: routing.prediction?.modelVersion ?? null,
+        predicted_intent: routing.prediction?.label ?? null,
+        probability: routing.prediction?.probability ?? null,
+        accepted: routing.prediction?.accepted ?? false,
+        calibrated: false,
+        semantic_shadow: {
+          mode: semanticShadow.status().mode,
+          model_version: semantic?.modelVersion ?? null,
+          predicted_intent: semantic?.label ?? null,
+          probability: semantic?.probability ?? null,
+          accepted: semantic?.accepted ?? false,
+          applied: false,
+          calibration: "temperature-scaling; limited held-out calibration data"
+        }
+      }
+    };
+  }
+
+  private async buildConciergeAnswer(
+    input: z.infer<typeof aiConciergeSchema>, user: SessionUser | null | undefined,
+    routing: { prediction: IntentPrediction | null; used: boolean }
+  ) {
+    const learned = intentModelMode() === "on" && routing.prediction?.accepted ? routing.prediction.label : null;
+    const conversation = conversationalReply(input.message, input.filters);
+    if (conversation) {
+      return {
+        message: input.message,
+        intent: "conversation",
+        conversation_kind: conversation.kind,
+        requires_location: false,
+        answer: { title: "", body: conversation.text, bullets: [] },
+        recommendations: null,
+        extracted_filters: conversation.resetContext ? {} : conversation.kind === "inspiration"
+          ? { ...input.filters, hotel_city: "", dia_diem: "", hotel_district: "", hotel_name: "", user_lat: 0, user_lng: 0, view_phong: "", loai_luu_tru: "" }
+          : (input.filters ?? {}),
+        dialogue_context: conversation.resetContext ? { topic: "other", excluded_room_ids: [] }
+          : conversation.kind === "inspiration" ? { topic: "destination", excluded_room_ids: [] } : input.dialogue_context,
+        context_cards: [], quick_actions: [], follow_up_prompts: conversation.suggestions
+      };
+    }
+    let alternative = alternativeRequest(input.message, input.dialogue_context);
+    if (!alternative && (learned === "room_alternative" || learned === "destination_alternative")) {
+      alternative = learned === "room_alternative" ? "room" : "destination";
+      routing.used = true;
+    }
+    if (alternative === "clarify") {
+      return {
+        message: input.message, intent: "conversation", requires_location: false,
+        answer: { title: "", body: "Bạn muốn xem phòng khác hay đổi sang điểm đến khác?", bullets: [] },
+        extracted_filters: input.filters ?? {},
+        dialogue_context: { ...input.dialogue_context, topic: "clarification" },
+        recommendations: null, context_cards: [], quick_actions: [],
+        follow_up_prompts: ["Phòng khác", "Điểm đến khác"]
+      };
+    }
+    const excludedIds = alternative === "room" ? excludedRoomIds(input.dialogue_context) : [];
+    const namedRegion = matchBookingRegion(input.message);
+    const nearbyRule = isNearbyRequest(input.message);
+    const nearbyRequest = (nearbyRule || learned === "nearby") && !namedRegion;
+    if (nearbyRequest && !nearbyRule) routing.used = true;
+    const continuesNearby = alternative === "room" && !namedRegion && input.filters?.user_lat && input.filters?.user_lng;
+    if ((nearbyRequest || continuesNearby) && !isFreshLocation(input.location)) {
+      return {
+        message: input.message,
+        intent: "booking",
+        requires_location: true,
+        answer: { title: "Bạn đang ở đâu?", body: "Cho phép định vị hoặc nhập khu vực bạn muốn tìm khách sạn.", bullets: [] },
+        recommendations: null,
+        dialogue_context: input.dialogue_context,
+        extracted_filters: { ...(input.filters || {}), dia_diem: "", hotel_city: "", hotel_district: "", hotel_name: "", user_lat: 0, user_lng: 0 },
+        context_cards: [], quick_actions: [], follow_up_prompts: []
+      };
+    }
+    if (alternative === "room" && input.dialogue_context?.excluded_room_ids.length === 50) {
+      return {
+        message: input.message, intent: "conversation", requires_location: false,
+        answer: { title: "", body: "Mình đã duyệt nhiều lựa chọn theo yêu cầu này. Bạn muốn đổi điểm đến hay bắt đầu tìm lại?", bullets: [] },
+        extracted_filters: input.filters ?? {}, dialogue_context: input.dialogue_context,
+        recommendations: null, context_cards: [], quick_actions: [], follow_up_prompts: ["Điểm đến khác", "Bắt đầu lại"]
+      };
+    }
     const extractedFilters = await this.extractFiltersFromMessage(input.message);
+    let question = alternative === "destination" ? "change_destination" as const : travelQuestion(input.message);
+    if (!question && (learned === "packing" || learned === "itinerary")) {
+      question = learned;
+      routing.used = true;
+    }
+    if (question === "change_destination") {
+      const previous = input.filters ?? {};
+      const changedCity = extractedFilters.hotel_city
+        && this.normalizeForAi(extractedFilters.hotel_city) !== this.normalizeForAi(previous.hotel_city || "");
+      // A named replacement wins; a rejected destination must not be searched again.
+      if (!changedCity) {
+        return {
+          message: input.message, intent: "travel_guidance", requires_location: false,
+          answer: { title: "Mình đổi địa điểm nhé", body: "Bạn muốn tìm khu khác trong cùng thành phố hay chuyển sang tỉnh/thành khác?", bullets: [] },
+          extracted_filters: { ...previous, dia_diem: "", hotel_district: "", hotel_name: "", user_lat: 0, user_lng: 0, view_phong: "", loai_luu_tru: "" },
+          dialogue_context: { topic: "clarification", excluded_room_ids: [] },
+          recommendations: null, context_cards: [], quick_actions: [],
+          follow_up_prompts: previous.hotel_city ? [`Tìm phòng ở trung tâm ${previous.hotel_city}`, "Mình chưa biết đi đâu"] : ["Mình chưa biết đi đâu"]
+        };
+      }
+    }
     const locationAwareFilters = this.resetStaleLocationContext(input.filters ?? {}, extractedFilters);
     const mergedFilters = searchBookingSchema.parse(this.applyConversationalRefinement(input.message, {
       ...(input.filters ?? {}),
       ...locationAwareFilters
     }, Boolean(input.filters)));
 
-    const intent = this.detectIntent(input.message, mergedFilters);
+    if (nearbyRequest && input.location) {
+      Object.assign(mergedFilters, {
+        dia_diem: "", hotel_city: "", hotel_district: "", hotel_name: "", view_phong: extractedFilters.view_phong || "",
+        user_lat: input.location.latitude, user_lng: input.location.longitude, sort_by: "distance"
+      });
+    } else if (extractedFilters.dia_diem || extractedFilters.hotel_city || !isFreshLocation(input.location)) {
+      mergedFilters.user_lat = 0;
+      mergedFilters.user_lng = 0;
+    } else if (input.location && input.filters?.user_lat && input.filters?.user_lng) {
+      mergedFilters.user_lat = input.location.latitude;
+      mergedFilters.user_lng = input.location.longitude;
+    }
+
+    if (question === "attractions") {
+      const place = mergedFilters.dia_diem || mergedFilters.hotel_city;
+      const destinations = place ? await this.findDestinations(input.message, mergedFilters) : [];
+      return {
+        message: input.message, intent: "travel_guidance", requires_location: false,
+        answer: {
+          title: place ? `Điểm tham quan ở ${place}` : "Bạn muốn khám phá ở đâu?",
+          body: destinations.length ? "Một vài điểm tham quan trong dữ liệu du lịch của Bento:"
+            : place ? "Mình chưa có đủ thông tin tham quan tại khu vực này. Bạn muốn tìm hiểu điểm cụ thể nào?" : "Bạn cho mình biết tỉnh/thành hoặc khu vực muốn tham quan nhé.",
+          bullets: destinations.map(item => `${item.name}${item.summary ? `: ${item.summary}` : ""}`)
+        },
+        extracted_filters: mergedFilters, recommendations: null, context_cards: [], quick_actions: [],
+        dialogue_context: { topic: "destination", excluded_room_ids: [] },
+        follow_up_prompts: place ? [`Tìm phòng ở ${place}`, `Lập lịch trình 1 ngày ở ${place}`] : []
+      };
+    }
+
+    if (question === "packing" || question === "itinerary") {
+      const insight = this.findDestinationInsight(input.message, mergedFilters);
+      const place = insight?.canonicalName || mergedFilters.dia_diem || mergedFilters.hotel_city;
+      const packing = insight?.packing || ["Giấy tờ tùy thân, đồ dùng cá nhân, thuốc đang sử dụng và pin dự phòng.", "Giày đi bộ, nước uống và áo mưa gọn."];
+      const avoid = insight?.avoid || ["Tránh xếp lịch quá dày; xác nhận giờ mở cửa và chi phí với nơi cung cấp dịch vụ."];
+      const bullets = !place ? [] : question === "packing"
+        ? [`Mang theo: ${packing.slice(0, 2).join(" ")}`, `Lưu ý: ${avoid.slice(0, 2).join(" ")}`]
+        : [
+            `Buổi sáng: ${insight?.activities[0] || "Ăn sáng, chọn một điểm tham quan gần nơi ở."}`,
+            `Buổi trưa: ${insight?.activities[1] || "Ăn trưa và dành thời gian nghỉ ngơi."}`,
+            `Buổi chiều: ${insight?.activities[2] || "Dạo quanh khu lưu trú, trở về trước giờ di chuyển tiếp."}`,
+            "Buổi tối: Ăn tối gần nơi ở, nghỉ ngơi hoặc đi dạo tùy sức khỏe."
+          ];
+      return {
+        message: input.message, intent: "travel_guidance", requires_location: false,
+        answer: {
+          title: question === "packing" ? `Chuẩn bị${place ? ` cho ${place}` : " chuyến đi"}` : `Lịch trình tham khảo${place ? ` tại ${place}` : ""}`,
+          body: !place ? "Bạn muốn đi đâu để mình gợi ý sát hơn?" : question === "packing"
+            ? "Đây là gợi ý chung, chưa phải dự báo thời tiết cho ngày bạn đi."
+            : "Gợi ý một ngày, có thể điều chỉnh theo giờ xuất phát. Hãy kiểm tra thời tiết, giờ hoạt động và phương tiện trước khi đi.",
+          bullets
+        },
+        extracted_filters: mergedFilters, recommendations: null, context_cards: [], quick_actions: [],
+        dialogue_context: { topic: question, excluded_room_ids: [] },
+        follow_up_prompts: place ? [question === "packing" ? `Lập lịch trình 1 ngày ở ${place}` : `Đi ${place} cần mang gì?`] : []
+      };
+    }
+
+    let intent = nearbyRequest || alternative === "room" ? "booking" : this.detectIntent(input.message, extractedFilters);
+    // Keep explicit policy/context routes; learned NLU handles general or broad room matches.
+    if (!nearbyRequest && alternative !== "room" && learned
+      && ["booking", "checkin", "checkout", "payment", "refund", "service", "account"].includes(learned)
+      && (intent === "general" || intent === "booking" || intent === learned)) {
+      intent = learned as AIIntent;
+      routing.used = true;
+    }
+    if (intent === "general") {
+      const hasNewCriteria = Object.values(extractedFilters).some(value => Boolean(value));
+      const refinement = this.detectRefinementIntent(input.message, input.dialogue_context?.topic === "booking");
+      if (hasNewCriteria || refinement) intent = "booking";
+      else return {
+        message: input.message, intent: "conversation", conversation_kind: "clarification", requires_location: false,
+        answer: { title: "", body: "Mình chưa rõ bạn muốn hỏi điều gì. Bạn cần tìm phòng, gợi ý điểm đến hay thông tin tham quan?", bullets: [] },
+        extracted_filters: input.filters ?? {}, dialogue_context: { topic: "clarification", excluded_room_ids: [] },
+        recommendations: null, context_cards: [], quick_actions: [], follow_up_prompts: ["Tìm phòng", "Gợi ý điểm đến"]
+      };
+    }
     const faq = this.matchFaqAnswer(input.message, intent);
     const recommendations = await this.recommendRooms(mergedFilters, user ?? null, {
       sourceLabel: "Trợ lý đặt phòng",
       message: input.message,
-      hasContext: Boolean(input.filters)
+      hasContext: Boolean(input.filters),
+      excludedRoomIds: excludedIds,
+      allowRelaxation: false
     });
+    if (alternative === "room" && !recommendations.top_pick) {
+      return {
+        message: input.message, intent: "conversation", requires_location: false,
+        answer: { title: "", body: "Mình chưa có phòng khác đáp ứng bộ lọc này. Bạn muốn đổi khu vực hay bắt đầu tìm lại?", bullets: [] },
+        extracted_filters: mergedFilters,
+        dialogue_context: { topic: "booking", last_room_id: null, excluded_room_ids: excludedIds },
+        recommendations: null, context_cards: [], quick_actions: [], follow_up_prompts: ["Điểm đến khác", "Bắt đầu lại"]
+      };
+    }
+    if (!recommendations.top_pick && input.location && isFreshLocation(input.location)
+      && (nearbyRequest || (mergedFilters.user_lat && mergedFilters.user_lng))) {
+      const discovery = await nearbyPlacesService.discover(input.location);
+      await this.logApiRequest("/api/ai/concierge", "POST", user?.maTaiKhoan ?? null, 200);
+      return {
+        message: input.message, intent: "nearby_discovery", requires_location: false,
+        answer: {
+          title: discovery.places.length ? "Nơi lưu trú gần bạn" : "Tìm thêm quanh bạn",
+          body: discovery.places.length
+            ? "Bento chưa có phòng khớp bộ lọc tại đây. Bạn có thể tham khảo các nơi lưu trú này."
+            : discovery.status === "unavailable"
+              ? "Nguồn bản đồ chưa phản hồi. Bạn có thể mở bản đồ để tìm tiếp quanh mình."
+              : "Nguồn hiện tại chưa có địa điểm phù hợp. Bạn có thể tìm thêm trên bản đồ.",
+          bullets: []
+        },
+        extracted_filters: mergedFilters, recommendations: null,
+        external_discovery: discovery, context_cards: [], quick_actions: [], follow_up_prompts: []
+      };
+    }
     const assistant = await this.buildSmartAnswer(input.message, intent, mergedFilters, recommendations);
 
     await this.logApiRequest("/api/ai/concierge", "POST", user?.maTaiKhoan ?? null, 200);
 
     return {
       message: input.message,
+      requires_location: false,
+      reply_intro: hasGreetingPrefix(input.message) ? "Chào bạn! Mình xem giúp bạn nhé." : "",
       intent,
       answer: assistant.answer,
       context_cards: assistant.contextCards,
       quick_actions: assistant.quickActions,
       faq,
       extracted_filters: mergedFilters,
+      dialogue_context: {
+        topic: intent === "booking" ? "booking" : intent === "location" || intent === "inspiration" ? "destination" : "other",
+        last_room_id: recommendations.top_pick ? Number(recommendations.top_pick.id) : null,
+        excluded_room_ids: excludedIds
+      },
       follow_up_prompts: this.buildFollowUpPrompts(mergedFilters, recommendations.top_pick, intent),
       cta: {
         label: "Mở danh sách phòng phù hợp",
@@ -424,9 +663,10 @@ export class AIService {
   async recommendRooms(
     rawFilters: unknown,
     user?: SessionUser | null,
-    options?: { sourceLabel?: string; message?: string; hasContext?: boolean }
+    options?: { sourceLabel?: string; message?: string; hasContext?: boolean; excludedRoomIds?: number[]; allowRelaxation?: boolean }
   ) {
     const filters = searchBookingSchema.parse(rawFilters ?? {});
+    const nearby = Boolean(filters.user_lat && filters.user_lng);
     const [initialRoomsPayload, memory, activePromotions] = await Promise.all([
       this.bookingService.searchRooms(filters),
       this.loadCustomerMemory(user?.maKhachHang ?? null),
@@ -435,7 +675,7 @@ export class AIService {
     let roomsPayload = initialRoomsPayload;
     let fallbackLevel: "strict" | "relaxed" = "strict";
 
-    if (!roomsPayload.items.length) {
+    if (!roomsPayload.items.length && !nearby && options?.allowRelaxation !== false) {
       for (const candidate of this.buildRelaxedFilterCandidates(filters)) {
         const relaxedPayload = await this.bookingService.searchRooms(searchBookingSchema.parse(candidate));
         if (relaxedPayload.items.length) {
@@ -449,11 +689,21 @@ export class AIService {
     const decisionProfile = this.buildDecisionProfile(filters, memory, options?.message || "", Boolean(options?.hasContext));
 
     const scoredRooms = roomsPayload.items
+      .filter((room) => !options?.excludedRoomIds?.includes(Number(room.id)))
+      .filter((room) => !nearby || (room.userDistanceKm != null && Number(room.userDistanceKm) <= 25))
       .map((room) => this.scoreRoom(room, filters, memory, decisionProfile, activePromotions))
-      .sort((left, right) => right.recommendation.score - left.recommendation.score);
+      .sort((left, right) => {
+        if (nearby && filters.sort_by === "distance") {
+          return Number(left.userDistanceKm) - Number(right.userDistanceKm) || right.recommendation.score - left.recommendation.score;
+        }
+        if (nearby && filters.sort_by === "price_asc") {
+          return Number(left.gia) - Number(right.gia) || Number(left.userDistanceKm) - Number(right.userDistanceKm);
+        }
+        return right.recommendation.score - left.recommendation.score;
+      });
 
     const normalPricedRooms = scoredRooms.filter((room) => !this.hasSuspiciousRoomPrice(room));
-    const rankedRooms = normalPricedRooms.length ? normalPricedRooms : scoredRooms;
+    const rankedRooms = nearby ? scoredRooms : normalPricedRooms.length ? normalPricedRooms : scoredRooms;
     const topPick = rankedRooms[0] ?? null;
     const alternatives = rankedRooms.slice(1, 5);
     const bookingDecision = await this.buildBookingDecisionPlan(filters, decisionProfile, topPick, alternatives, fallbackLevel);
@@ -562,9 +812,11 @@ export class AIService {
       generatedAt: new Date().toISOString(),
       provider: {
         mode: "local",
-        provider: "local-heuristic",
+        provider: intentModelMode() !== "off" && intentClassifier.status().available ? `local-ml-${intentModelMode() === "shadow" ? "shadow" : "hybrid"}` : "local-heuristic",
         adapterReady: true,
-        summary: "Hệ thống đang chạy local heuristic: không tốn phí API ngoài, đủ để hỗ trợ đặt phòng theo nhu cầu, giá, ngày ở, loại phòng, view và dịch vụ đi kèm."
+        intentModel: { ...intentClassifier.status(), mode: intentModelMode() },
+        semanticModel: semanticShadow.status(),
+        summary: "Nhận diện ý định bằng mô hình học máy cục bộ kết hợp luật dự phòng. Xếp hạng phòng và kiểm tra nghiệp vụ vẫn dựa trên dữ liệu, quy tắc; mô hình được đánh giá trên dữ liệu khởi tạo, chưa phải hội thoại khách thật."
       },
       summary: {
         totalAiRequests,
@@ -632,17 +884,17 @@ export class AIService {
     else if (/(penthouse|penhouse|can ho cao cap|tang cao)/.test(normalizedText)) filters.loai_luu_tru = "PENTHOUSE";
     else if (/(hotel|khach san)/.test(normalizedText)) filters.loai_luu_tru = "HOTEL";
 
-    if (/(king|giuong king)/.test(normalizedText)) filters.loai_giuong = "King";
-    else if (/(twin|2 giuong|hai giuong)/.test(normalizedText)) filters.loai_giuong = "Twin";
-    else if (/(don|single)/.test(normalizedText)) filters.loai_giuong = "Single";
-    else if (/(doi|double)/.test(normalizedText)) filters.loai_giuong = "Double";
+    if (/\bking\b/.test(normalizedText)) filters.loai_giuong = "King";
+    else if (/\b(twin|2 giuong|hai giuong)\b/.test(normalizedText)) filters.loai_giuong = "Twin";
+    else if (/\b(giuong don|single)\b/.test(normalizedText)) filters.loai_giuong = "Single";
+    else if (/\b(giuong doi|double)\b/.test(normalizedText)) filters.loai_giuong = "Double";
 
     const wantsBeachTrip = /(\bdi bien\b|du lich bien|nghi bien|tam bien|ra bien|gan bien|sat bien|view bien|bien dep|beach|sea|ocean|muon.*bien|can.*bien|tim.*bien)/.test(normalizedText)
       && !/(khong|ko|không|chua|chưa).*(bien|beach|sea|ocean)/.test(normalizedText);
 
-    if (/(bien|sea|ocean)/.test(normalizedText)) filters.view_phong = "Biển";
-    else if (/(vuon|garden)/.test(normalizedText)) filters.view_phong = "Vườn";
-    else if (/(pho|city|thanh pho)/.test(normalizedText)) filters.view_phong = "Thành phố";
+    if (/\b(view|huong|nhin ra)\s+(bien|sea|ocean)\b|\b(sea|ocean)\s*view\b/.test(normalizedText)) filters.view_phong = "Biển";
+    else if (/\b(view|huong|nhin ra)\s+(vuon|garden)\b/.test(normalizedText)) filters.view_phong = "Vườn";
+    else if (/\b(view|huong|nhin ra)\s+(thanh pho|pho|city)\b/.test(normalizedText)) filters.view_phong = "Thành phố";
 
     if (!filters.loai_luu_tru && /(nghi duong bien|resort bien|sat bien|view bien|o bien)/.test(normalizedText)) {
       filters.loai_luu_tru = "RESORT";
@@ -651,13 +903,15 @@ export class AIService {
     const destinationAliases = [
       { pattern: /(nui ong cam|ong cam|nui cam|thien cam son|that son|chua van linh|phat di lac)/, value: "Núi Ông Cấm", city: "An Giang" },
       { pattern: /(ha tien|mui nai|thach dong|nui da dung)/, value: "Hà Tiên", city: "Kien Giang" },
-      { pattern: /(cho noi cai rang|cai rang|can tho)/, value: "Chợ nổi Cái Răng", city: "Can Tho" },
+      { pattern: /(cho noi cai rang|cai rang)/, value: "Chợ nổi Cái Răng", city: "Can Tho" },
       { pattern: /(ba na|bana|cau vang)/, value: "Bà Nà Hills", city: "Da Nang" },
       { pattern: /(my khe|bien my khe)/, value: "Biển Mỹ Khê", city: "Da Nang" },
       { pattern: /(hoi an|pho co hoi an)/, value: "Phố cổ Hội An", city: "Quang Nam" },
       { pattern: /(nha trang|tran phu)/, value: "Biển Trần Phú Nha Trang", city: "Khanh Hoa" },
       { pattern: /(vinwonders|vinpearl)/, value: "VinWonders Nha Trang", city: "Khanh Hoa" },
       { pattern: /(ho xuan huong|cho dem da lat|da lat)/, value: "Đà Lạt", city: "Lam Dong" },
+      { pattern: /\b(sa pa|sapa|fansipan)\b/, value: "Sa Pa", city: "Lao Cai" },
+      { pattern: /\b(moc chau)\b/, value: "Mộc Châu", city: "Son La" },
       { pattern: /(phu quoc|duong dong|bai sao)/, value: "Dương Đông Phú Quốc", city: "Kien Giang" },
       { pattern: /(vung tau|ba ria|ho tram|long hai|con dao)/, value: "Vũng Tàu", city: "Ba Ria - Vung Tau" },
       { pattern: /(nguyen hue|cho ben thanh|sai gon|ho chi minh|hcm)/, value: "Phố đi bộ Nguyễn Huệ", city: "Ho Chi Minh" }
@@ -674,11 +928,10 @@ export class AIService {
       filters.sort_by = "ai";
     }
 
-    for (const city of cities) {
-      if (normalizedText.includes(this.normalizeForAi(city))) {
-        filters.hotel_city = city;
-        break;
-      }
+    const namedCity = matchBookingRegion(message, cities);
+    if (namedCity) {
+      if (filters.hotel_city && this.normalizeForAi(filters.hotel_city) !== this.normalizeForAi(namedCity)) filters.dia_diem = "";
+      filters.hotel_city = namedCity;
     }
 
     const guestMatch = text.match(/(\d+)\s*(nguoi|người|khach|khách|pax)/i);
@@ -825,8 +1078,12 @@ export class AIService {
     const hasNewCity = Boolean(nextCity && nextCity !== previousCity);
 
     if (hasNewDestination || hasNewCity) {
+      nextFilters.user_lat = 0;
+      nextFilters.user_lng = 0;
       nextFilters.hotel_district = "";
       nextFilters.hotel_name = "";
+      nextFilters.view_phong = extractedFilters.view_phong || "";
+      nextFilters.loai_luu_tru = extractedFilters.loai_luu_tru || "";
     }
 
     if (nextCity && !nextDestination && previousDestination) {
@@ -944,7 +1201,6 @@ export class AIService {
     const text = this.normalizeForAi(message);
     const bookingDecisionSignal = /((tim|can|muon|goi y|tu van).*(phong|hotel|khach san|resort|homestay|penthouse|villa|view|giuong|gan bien|gan trung tam)|(\d+)\s*(nguoi|khach|pax).*(phong|hotel|khach san|resort|homestay|villa)|ngan sach|duoi\s*\d+|tren\s*\d+)/;
 
-    if (this.findDestinationInsight(message, filters)) return "location";
     if (this.isTravelInspirationRequest(text)) return "inspiration";
     if (/(tour|lich trinh|hanh trinh|tham quan|ve tham quan|goi du lich|combo du lich)/.test(text)) return "tour";
     if (/(tin tuc|viral|dia diem hot|diem den hot|blog|bai viet|binh luan|cam xuc|review diem den)/.test(text)) return "news";
@@ -960,7 +1216,8 @@ export class AIService {
     if (/(doi tac|dang co so|dang khach san|dang phong|chu khach san|dai ly|hop tac|kenh ban phong)/.test(text)) return "partner";
     if (/(gan toi|vi tri|ban do|map|khoang cach|duong di|gan dia diem|gan trung tam)/.test(text)) return "location";
     if (/(di|tim|can|muon).*(\d+)\s*(nguoi|khach|pax)/.test(text)) return "booking";
-    if (/(phong|hotel|khach san|resort|homestay|penthouse|villa|luu tru|dat phong|gia|view|giuong)/.test(text)) return "booking";
+    if (/\b(phong|hotel|khach san|resort|homestay|penthouse|villa|luu tru|dat phong|gia|view|giuong)\b/.test(text)) return "booking";
+    if (this.findDestinationInsight(message)) return "location";
 
     return "general";
   }
@@ -1506,8 +1763,8 @@ export class AIService {
 
     return {
       answer: {
-        title: `Mình nhận diện đây là ${insight.canonicalName}.`,
-        body: `${insight.summary} Nếu mục tiêu là ra quyết định đặt phòng, mình sẽ xét theo 3 lớp: ở khu nào để đi thuận, thời điểm ${this.currentMonthLabel().toLowerCase()} có rủi ro gì, và phòng nào trong hệ thống đáng chốt nhất.`,
+        title: insight.canonicalName,
+        body: insight.summary,
         bullets: [
           `Vị trí: ${insight.region}; nên ưu tiên lưu trú ở ${insight.suggestedStayAreas.join(", ")}.`,
           hotelBullet,
@@ -1600,16 +1857,15 @@ export class AIService {
   ) {
     const top = recommendations.top_pick;
     const decision = recommendations.booking_decision;
-    const profile = recommendations.decision_profile;
-    const refinementLabel = decision.conversationalHints.refinement;
-    const destinationLabel = filters.dia_diem || filters.hotel_city || "";
+    const nearby = Boolean(filters.user_lat && filters.user_lng);
+    const destinationLabel = nearby ? "vị trí của bạn" : filters.dia_diem || filters.hotel_city || "";
     const missing = [
       destinationLabel ? "" : "điểm đến",
       filters.so_khach > 0 ? "" : "số khách",
       filters.gia_goi_y > 0 || filters.gia_tu > 0 || filters.gia_den > 0 ? "" : "ngân sách",
       filters.ngay_nhan && filters.ngay_tra ? "" : "ngày nhận/trả"
     ].filter(Boolean);
-    const relaxedRooms = top ? [] : await this.loadRelaxedRoomCards(filters);
+    const relaxedRooms = top || nearby ? [] : await this.loadRelaxedRoomCards(filters);
     const contextCards: AIContextCard[] = [
       ...(top ? [{
         type: "room" as const,
@@ -1634,12 +1890,16 @@ export class AIService {
     return {
       answer: {
         title: top
-          ? `${decision.readyToBook ? "Phương án nên đặt" : "Phương án đáng xem trước"}: ${top.khachSan} · ${top.soPhong}`
+          ? nearby ? "Khách sạn gần bạn" : "Gợi ý cho bạn"
           : destinationLabel
             ? `Mình chưa thấy phòng khớp chính xác ở ${destinationLabel}.`
             : "Mình có thể tư vấn phòng theo nhu cầu của bạn.",
         body: top
-          ? `${refinementLabel ? `Mình giữ ngữ cảnh trước và đang xử lý theo hướng: ${refinementLabel}. ` : ""}${profile.tripBrief} ${top.recommendation.summary}`
+          ? nearby
+            ? `Cách bạn khoảng ${top.userDistanceLabel || `${Number(top.userDistanceKm).toFixed(1)} km`} theo đường thẳng. Chưa tính tuyến đường thực tế.`
+            : `${top.loaiPhong} · tối đa ${top.soKhachToiDa} khách · ${top.tinhThanh}.`
+          : nearby
+            ? "Chưa có phòng phù hợp trong bán kính 25 km. Bạn muốn tìm ở khu vực nào khác?"
           : relaxedRooms.length
             ? `Điều kiện ${destinationLabel ? `ở ${destinationLabel} ` : ""}hơi chặt nên mình hiển thị vài lựa chọn gần nhất để bạn cân nhắc nới ngân sách, đổi loại lưu trú hoặc mở rộng khu vực.`
             : destinationLabel
@@ -1647,14 +1907,10 @@ export class AIService {
               : "Bạn có thể hỏi bằng tiếng Việt tự nhiên: muốn ở khu vực nào, mấy người, ngân sách bao nhiêu, thích hotel/resort/homestay hay penthouse, cần gần điểm nào.",
         bullets: top
           ? [
-              `${top.recommendation.label}: ${top.recommendation.reasons[0] || "phù hợp nhất với nhu cầu hiện tại."}`,
-              decision.readyToBook
-                ? "Có thể chuyển sang bước xem chi tiết, nhập thông tin khách và thanh toán cọc."
-                : `Trước khi chốt nên bổ sung: ${decision.requiredNextInputs.slice(0, 2).join(", ") || "kiểm tra điều kiện phòng"}.`,
-              top.recommendation.decisionNotes[0] || "Có thể mở danh sách để so sánh thêm các lựa chọn khác.",
-              top.recommendation.tradeoffs[0] || top.recommendation.decisionNotes[1] || decision.policyNotes[0] || `Cơ sở: ${top.khachSan} tại ${top.tinhThanh}.`,
-              `Câu hỏi quan trọng nhất lúc này: ${decision.conversationalHints.nextBestQuestion || "bạn muốn giữ phương án này không?"}`
-            ]
+              ...(filters.ngay_nhan && filters.ngay_tra ? [] : ["Chọn ngày nhận/trả để kiểm tra phòng trống và tổng tiền."]),
+              ...(filters.ngay_nhan && filters.ngay_tra && top.recommendation.decisionNotes[0] ? [top.recommendation.decisionNotes[0]] : [])
+            ].slice(0, 2)
+          : nearby ? []
           : destinationLabel
             ? [
                 relaxedRooms.length ? "Không có kết quả khớp tuyệt đối, hệ thống đã tự nới một phần bộ lọc để có phương án thay thế." : (missing.length ? `Nên bổ sung: ${missing.join(", ")}.` : "Có thể lọc sâu theo view, loại giường và loại lưu trú."),
@@ -1719,21 +1975,23 @@ export class AIService {
   }
 
   private findDestinationInsight(message: string, filters?: Partial<SearchBookingInput>): DestinationInsight | null {
-    const haystack = this.normalizeForAi([
-      message,
-      filters?.dia_diem,
-      filters?.hotel_city,
-      filters?.hotel_district
-    ].filter(Boolean).join(" "));
-
-    return this.destinationInsights.find((item) => {
+    const matches = (haystack: string) => this.destinationInsights.find((item) => {
       const canonical = this.normalizeForAi(item.canonicalName);
       const city = this.normalizeForAi(item.city);
       const district = this.normalizeForAi(item.district);
       return haystack.includes(canonical)
         || (haystack.includes(city) && haystack.includes(district))
         || item.aliases.some((pattern) => pattern.test(haystack));
-    }) ?? null;
+    });
+    const explicit = matches(this.normalizeForAi(message));
+    if (explicit) return explicit;
+    const haystack = this.normalizeForAi([
+      filters?.dia_diem,
+      filters?.hotel_city,
+      filters?.hotel_district
+    ].filter(Boolean).join(" "));
+
+    return matches(haystack) ?? null;
   }
 
   private currentMonthLabel() {
@@ -2062,7 +2320,7 @@ export class AIService {
     const budgetMode: BookingDecisionProfile["budgetMode"] = targetBudget > 0
       ? (/(tong|tat ca|ca chuyen|ca ky|total|all in|all-in)/.test(normalizedMessage) ? "total" : "nightly")
       : "unknown";
-    const hasLocation = Boolean(filters.dia_diem || filters.hotel_city || filters.hotel_district || filters.hotel_name);
+    const hasLocation = Boolean(filters.dia_diem || filters.hotel_city || filters.hotel_district || filters.hotel_name || (filters.user_lat && filters.user_lng));
     const hardSignals = [
       filters.so_khach > 0 ? `${filters.so_khach} khách` : "",
       hasLocation ? "có khu vực/điểm đến" : "",

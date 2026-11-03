@@ -8,6 +8,9 @@
   const hotelDistrictItems = typeof hotelDistricts !== "undefined" && Array.isArray(hotelDistricts) ? hotelDistricts : [];
   const hotelDistrictJson = JSON.stringify(hotelDistrictItems).replace(/</g, "\\u003c");
   const staff = String(staffMode || "");
+  const backFilters = new URLSearchParams(filters || {});
+  if (staff) backFilters.set("staff_mode", staff);
+  const backSearchHref = `/booking/search?${backFilters.toString()}`;
   const hasRoomScope = Boolean(filters.hotel_city || filters.hotel_district || filters.dia_diem || filters.hotel_name || (filters.user_lat && filters.user_lng));
   const todayLabel = new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 %>
@@ -783,6 +786,7 @@
 </style>
 
 <main class="online-shell">
+  <%- include("../partials/booking-navigation", { backHref: backSearchHref, backLabel: "Quay lại tìm phòng" }) %>
   <section class="online-hero">
     <div class="online-kicker">Khách hàng · Đặt phòng trực tuyến</div>
     <h1>Đặt phòng trực tuyến</h1>
@@ -887,6 +891,7 @@
                 <article class="room-card <%= selectedIds.has(String(room.id)) ? "is-selected" : "" %>" data-room-card data-room-index="<%= index %>" data-room-collapsed="<%= index >= 12 && !selectedIds.has(String(room.id)) ? "true" : "false" %>">
                   <img src="<%= room.imageUrl %>" alt="Phòng <%= room.soPhong %>" />
                   <div class="room-card__body">
+                    <div class="room-card__credit"><%- include("../partials/room-image-note", { imageUrl: room.imageUrl }) %></div>
                     <span class="online-kicker"><%= room.loaiLuuTruTen || "Hotel" %> · <%= room.tinhThanh %> · <%= room.khachSan %></span>
                     <h3><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h3>
                     <p><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View lưu trú" %> · tối đa <%= room.soKhachToiDa %> khách</p>
@@ -949,12 +954,15 @@
             <div class="total-line total-line--grand"><span>Cọc 50%</span><strong id="depositAmount">0 đ</strong></div>
           </div>
           <div class="capacity-alert" id="capacityAlert" hidden></div>
-          <div class="online-actions"><button class="online-button online-button--primary" id="submitBookingButton" type="submit">Tạo QR cọc SePay</button></div>
         </section>
       </aside>
     </section>
   </form>
 </main>
+
+<div class="booking-payment-action">
+  <button id="submitBookingButton" type="submit" form="multiBookingForm">Tạo QR cọc SePay</button>
+</div>
 
 <script type="application/json" id="onlineDistrictData"><%- hotelDistrictJson %></script>
 <script>

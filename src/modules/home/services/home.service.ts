@@ -1,6 +1,5 @@
 import { query } from "../../../config/database";
-import fs from "node:fs";
-import path from "node:path";
+import { resolveRoomImage } from "../../../shared/media/room-images";
 import { NewsService, type DestinationNewsArticle } from "../../news/services/news.service";
 import { TourService, type TourPackage } from "../../tours/services/tour.service";
 
@@ -41,28 +40,6 @@ export interface HomePageData {
 export class HomeService {
   private readonly newsService = new NewsService();
   private readonly tourService = new TourService();
-  private readonly appRoot = path.resolve(__dirname, "../../../..");
-  private readonly roomUploadDir = path.resolve(this.appRoot, "uploads/phong");
-  private readonly roomFallbackImages = [
-    "1.png",
-    "2.png",
-    "5.png",
-    "6.png",
-    "7.png",
-    "8.png",
-    "9.png",
-    "10.png",
-    "11.png",
-    "12.png",
-    "16.png",
-    "18.png",
-    "24.png",
-    "25.png",
-    "47.png",
-    "49.png",
-    "76.png",
-    "77.png"
-  ];
 
   async getFeaturedRooms(limit = 6): Promise<FeaturedRoom[]> {
     const result = await query<FeaturedRoom>(
@@ -89,18 +66,10 @@ export class HomeService {
       [limit]
     );
 
-    const usedImages = new Set<string>();
-
-    return result.rows.map((room, index) => {
-      const preferredImage = this.resolveRoomImage(room.hinhAnh);
-      const imageUrl = this.pickRoomImage(preferredImage, room.id, index, usedImages);
-      usedImages.add(imageUrl);
-
-      return {
-        ...room,
-        imageUrl
-      };
-    });
+    return result.rows.map((room) => ({
+      ...room,
+      imageUrl: resolveRoomImage(room.hinhAnh, room.id, room.loaiPhong)
+    }));
   }
 
   async getHomePageData(): Promise<HomePageData> {
@@ -187,64 +156,4 @@ export class HomeService {
     return result.rows.map((item) => item.value).filter(Boolean);
   }
 
-  private resolveRoomImage(rawPath: string | null) {
-    const value = String(rawPath || "").trim();
-    if (!value) {
-      return "";
-    }
-
-    if (/^https?:\/\//i.test(value)) {
-      return value;
-    }
-
-    const normalized = value
-      .replace(/\\/g, "/")
-      .replace(/^\/?public\/uploads\/phong\//i, "")
-      .replace(/^\/?uploads\/phong\//i, "")
-      .replace(/^\/?phong\//i, "")
-      .replace(/^\/?rooms\//i, "")
-      .split("/")
-      .filter(Boolean)
-      .pop();
-
-    if (!normalized) {
-      return "";
-    }
-
-    return `/uploads/phong/${encodeURIComponent(normalized)}`;
-  }
-
-  private pickRoomImage(preferredImage: string, roomId: number, index: number, usedImages: Set<string>) {
-    if (preferredImage && !usedImages.has(preferredImage) && this.roomImageExists(preferredImage)) {
-      return preferredImage;
-    }
-
-    const candidates = this.roomFallbackImages
-      .map((fileName) => `/uploads/phong/${encodeURIComponent(fileName)}`)
-      .filter((imageUrl) => this.roomImageExists(imageUrl));
-
-    if (!candidates.length) {
-      return preferredImage || "";
-    }
-
-    const startIndex = Math.abs(Number(roomId || index)) % candidates.length;
-    const rotated = [...candidates.slice(startIndex), ...candidates.slice(0, startIndex)];
-    const unused = rotated.find((imageUrl) => !usedImages.has(imageUrl));
-
-    return unused || candidates[startIndex] || candidates[0];
-  }
-
-  private roomImageExists(imageUrl: string) {
-    if (/^https?:\/\//i.test(imageUrl)) {
-      return true;
-    }
-
-    const fileName = decodeURIComponent(imageUrl)
-      .replace(/\\/g, "/")
-      .split("/")
-      .filter(Boolean)
-      .pop();
-
-    return Boolean(fileName && fs.existsSync(path.resolve(this.roomUploadDir, fileName)));
-  }
 }

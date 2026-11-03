@@ -56,6 +56,7 @@
 </style>
 
 <main class="book-shell">
+  <%- include("../partials/booking-navigation", { backHref: backSearchUrl, backLabel: "Quay lại tìm phòng" }) %>
   <div class="book-layout">
     <section class="book-card">
       <span class="book-chip"><%= isCskhAssist ? "CSKH hỗ trợ · Bước 2" : "Bước 2 · Thông tin khách" %></span>
@@ -159,6 +160,7 @@
     <aside class="book-card book-room">
       <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
       <div class="book-room__body">
+        <%- include("../partials/room-image-note", { imageUrl: room.imageUrl }) %>
         <span class="book-chip"><%= room.tinhThanh %> · <%= room.khachSan %></span>
         <h2><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h2>
         <p class="book-muted"><%= room.loaiGiuong || "Giường tiêu chuẩn" %> · <%= room.viewPhong || "View nội khu" %> · tối đa <%= room.soKhachToiDa %> khách.</p>

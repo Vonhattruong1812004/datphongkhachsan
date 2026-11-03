@@ -1453,7 +1453,8 @@
 
   .exp-expense-list {
     display: grid;
-    overflow: hidden;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: auto;
     border: 1px solid #d7e8fb;
     border-radius: 10px;
     background: #ffffff;
@@ -1462,6 +1463,7 @@
   .exp-expense-header,
   .exp-expense-item {
     display: grid;
+    min-width: 1256px;
     grid-template-columns: minmax(210px, 1.3fr) 120px 120px minmax(190px, 1fr) minmax(180px, .95fr) 130px 126px 56px;
     gap: 14px;
     align-items: center;
@@ -1939,6 +1941,7 @@
     }
 
     .exp-expense-item {
+      min-width: 0;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
     }
 
@@ -1968,9 +1971,9 @@
     }
 
     .exp-form--create {
-      position: static;
-      width: 100%;
-      margin-top: 10px;
+      width: calc(100vw - 64px);
+      max-height: 70dvh;
+      overflow-y: auto;
     }
 
     .exp-table-head,

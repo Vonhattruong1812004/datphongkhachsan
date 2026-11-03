@@ -72,13 +72,13 @@
   main.broadcast-page [class*="-campaign"],
   main.broadcast-page [class*="-metric"],
   main.broadcast-page [class*="-empty"],
-  main.promo-home [class*="-panel"],
+  main.promo-home [class*="-panel"]:where(:not(.promo-filter-panel)),
   main.promo-home [class*="-stat"],
   main.promo-home [class*="-table"],
   main.promo-home [class*="-preview"],
   main.promo-home [class*="-insight"],
   main.promo-home [class*="-empty"] {
-    background: rgba(255, 255, 255, .72) !important;
+    background: rgba(255, 255, 255, .94) !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }

@@ -6,6 +6,8 @@ import { z } from "zod";
 import { env } from "../../../config/env";
 import { pool, query, withTransaction } from "../../../config/database";
 import { HttpError } from "../../../shared/http/http-error";
+import { intentClassifier, intentModelMode } from "../../ai/services/intent-model";
+import { semanticShadow } from "../../ai/services/semantic-intent";
 
 const trimString = (message: string) => z.string({ required_error: message }).trim();
 const adminEmailSchema = trimString("Email bat buoc.")
@@ -743,9 +745,11 @@ export class AdminService {
       generatedAt: new Date().toISOString(),
       provider: {
         mode: "local",
-        provider: "local-heuristic",
+        provider: intentModelMode() !== "off" && intentClassifier.status().available ? `local-ml-${intentModelMode() === "shadow" ? "shadow" : "hybrid"}` : "local-heuristic",
         adapter_ready: true,
-        summary: "Hệ thống đang chạy local heuristic để hỗ trợ đặt phòng, sẵn sàng nối thêm provider ngoài sau này."
+        intent_model: { ...intentClassifier.status(), mode: intentModelMode() },
+        semantic_model: semanticShadow.status(),
+        summary: "Nhận diện ý định bằng TF-IDF + Logistic Regression đã train trên dữ liệu khởi tạo. Xếp hạng phòng và kiểm tra nghiệp vụ vẫn dùng quy tắc. Chưa đánh giá trên hội thoại khách thật."
       },
       summary: {
         ready: providerReady && analyticsReady,

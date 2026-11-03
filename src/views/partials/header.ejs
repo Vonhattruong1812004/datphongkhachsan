@@ -147,9 +147,7 @@
     <% } %>
 
     <button class="mobile-nav-toggle" type="button" id="mobileNavToggle" aria-expanded="false" aria-controls="siteNavLinks">
-      <span></span>
-      <span></span>
-      <span></span>
+      <span class="mobile-nav-toggle__icon" aria-hidden="true"><span></span><span></span><span></span></span>
       <strong>Menu</strong>
     </button>
 
@@ -220,6 +218,9 @@
     </div>
 
     <nav class="nav-links <%= useCompactHeader ? "nav-links--staff" : "" %>" id="siteNavLinks">
+      <% if (showCustomerNav && activePath !== "/") { %>
+        <a class="chip nav-shortcut" href="/">Trang chủ</a>
+      <% } %>
       <% if (showCustomerNav && !currentUser) { %>
         <a class="chip nav-shortcut" href="/booking/search">Tìm phòng</a>
         <a class="chip nav-shortcut" href="/app-download">Tải app</a>

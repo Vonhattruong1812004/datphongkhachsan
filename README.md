@@ -30,6 +30,16 @@ Hệ thống không chỉ xử lý đặt phòng. Đây là một nền tảng v
 
 ## Công Nghệ Sử Dụng
 
+Phần học máy của trợ lý: **TF-IDF + Logistic Regression nhận diện 13 ý định**, có pipeline train,
+validation/test và model chạy trực tiếp trong Node.js. Hiện mặc định chạy `shadow` để kiểm chứng;
+bộ xếp hạng phòng vẫn theo nghiệp vụ, chưa phải mô hình đã học từ hành vi khách.
+Xem [quy trình huấn luyện, kết quả và giới hạn](docs/ai-training.md).
+
+Đã bổ sung bản thử nghiệm **multilingual MiniLM + lớp phân loại được train riêng**,
+dùng thêm dữ liệu CLINC150/MASSIVE và hiệu chỉnh xác suất. Bản này chỉ chạy quan sát,
+chưa thay mô hình hiện tại vì vẫn yếu ở một số ý định nghiệp vụ tiếng Việt.
+Xem [model card v2, nguồn dữ liệu và lệnh kiểm thử](docs/ai-semantic-v2.md).
+
 - **Backend:** Node.js, Express, TypeScript.
 - **View server-side:** EJS.
 - **Frontend asset shell:** React, Vite, Tailwind CSS.

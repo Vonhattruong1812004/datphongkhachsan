@@ -9,6 +9,7 @@ import { customerBookingHoldStore, type CustomerBookingAccount, type CustomerBoo
 import { appendNote, buildSepayPaidNote, buildSepayTransferPayload, parseSepayMetadata, replaceSepayMetadata } from "../../payment/sepay";
 import { HttpError } from "../../../shared/http/http-error";
 import { formatDate, formatMoney, nightsBetween } from "../../../shared/utils/format";
+import { resolveRoomImage } from "../../../shared/media/room-images";
 import { expireOutdatedPromotions } from "../../../shared/promotions/promotion-maintenance";
 import { calculatePromotionDiscount, isCustomerCancelableBooking, isCustomerEditableBooking } from "./booking-rules";
 
@@ -952,7 +953,7 @@ export class BookingService {
       },
       items: items.map((room) => ({
         ...room,
-        imageUrl: this.resolveRoomImage(room.hinhAnh),
+        imageUrl: resolveRoomImage(room.hinhAnh, room.id, room.loaiPhong),
         priceFormatted: formatMoney(room.gia),
         userDistanceLabel: formatDistanceKm(room.userDistanceKm),
         nearbyDistanceLabel: formatDistanceKm(room.nearbyDistanceKm),
@@ -1037,7 +1038,7 @@ export class BookingService {
 
     return {
       ...result.rows[0],
-      imageUrl: this.resolveRoomImage(result.rows[0].hinhAnh),
+      imageUrl: resolveRoomImage(result.rows[0].hinhAnh, result.rows[0].id, result.rows[0].loaiPhong),
       priceFormatted: formatMoney(result.rows[0].gia),
       latestBooking: latest
         ? {
@@ -1096,7 +1097,7 @@ export class BookingService {
       .sort((a, b) => (order.get(Number(a.id)) ?? 0) - (order.get(Number(b.id)) ?? 0))
       .map((room) => ({
         ...room,
-        imageUrl: this.resolveRoomImage(room.hinhAnh)
+        imageUrl: resolveRoomImage(room.hinhAnh, room.id, room.loaiPhong)
       }));
   }
 
@@ -2276,7 +2277,7 @@ export class BookingService {
         soKhachToiDa: Number(row.soKhachToiDa),
         khachSan: row.khachSan,
         tinhThanh: row.tinhThanh,
-        imageUrl: this.resolveRoomImage(row.hinhAnh)
+        imageUrl: resolveRoomImage(row.hinhAnh, row.maPhong, row.loaiPhong)
       },
       formValues: {
         ten_khach: row.tenKhach || "",
@@ -3540,26 +3541,4 @@ export class BookingService {
     return `BENTO-${stamp}-${suffix}`;
   }
 
-  private resolveRoomImage(rawPath: string | null) {
-    const value = String(rawPath || "").trim();
-    if (!value) {
-      return "/uploads/phong/1.png";
-    }
-
-    if (/^https?:\/\//i.test(value) || value.startsWith("/uploads/phong/")) {
-      return value;
-    }
-
-    const fileName = value
-      .replace(/\\/g, "/")
-      .replace(/^\/?public\/uploads\/phong\//i, "")
-      .replace(/^\/?uploads\/phong\//i, "")
-      .replace(/^\/?phong\//i, "")
-      .replace(/^\/?rooms\//i, "")
-      .split("/")
-      .filter(Boolean)
-      .pop();
-
-    return fileName ? `/uploads/phong/${encodeURIComponent(fileName)}` : "/uploads/phong/1.png";
-  }
 }

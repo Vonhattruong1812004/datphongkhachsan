@@ -40,6 +40,7 @@
 </style>
 
 <main class="review-shell">
+  <%- include("../partials/booking-navigation", { backHref: backSearchUrl, backLabel: "Quay lại tìm phòng" }) %>
   <section class="review-card review-hero">
     <div>
       <span class="review-chip"><%= isCskhAssist ? "CSKH hỗ trợ · Bước 3" : "Bước 3 · Kiểm tra trước khi đặt" %></span>
@@ -56,6 +57,7 @@
   </section>
 
   <section class="review-card">
+    <%- include("../partials/room-image-note", { imageUrl: room.imageUrl }) %>
     <span class="review-chip"><%= room.tinhThanh %> · <%= room.khachSan %></span>
     <h2><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h2>
     <div class="review-grid">
@@ -81,7 +83,7 @@
       <div class="review-line review-line--total"><span>Cọc cần thanh toán</span><strong><%= summary.depositAmountFormatted %></strong></div>
     </div>
 
-    <form method="post" action="/booking/rooms/<%= room.id %>">
+    <form method="post" action="/booking/rooms/<%= room.id %>" id="reviewBookingForm">
       <% Object.entries(filters || {}).forEach(([key, value]) => { %>
         <% if (!["ngay_nhan", "ngay_tra"].includes(key)) { %>
           <input type="hidden" name="<%= key %>" value="<%= value %>" />
@@ -98,7 +100,6 @@
       <input type="hidden" name="use_existing_customer" value="<%= booking.use_existing_customer ? "1" : "" %>" />
       <input type="hidden" name="services_json" value="<%= JSON.stringify(booking.services || []) %>" />
       <div class="review-actions">
-        <button class="review-button review-button--primary" type="submit" name="btn_action" value="confirm">Tạo QR cọc 50%</button>
         <button class="review-button" type="submit" name="btn_action" value="review">Tính lại</button>
         <a class="review-button" href="<%= roomDetailUrl %>">Xem chi tiết phòng</a>
         <a class="review-button" href="/booking/rooms/<%= room.id %>?<%= searchQuery %>">Quay lại chỉnh sửa</a>
@@ -107,5 +108,8 @@
     </form>
   </section>
 </main>
+<div class="booking-payment-action">
+  <button type="submit" form="reviewBookingForm" name="btn_action" value="confirm">Tạo QR cọc 50%</button>
+</div>
 <%- include("../partials/customer-background") %>
 <%- include("../partials/footer") %>

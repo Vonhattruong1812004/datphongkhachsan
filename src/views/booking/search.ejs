@@ -528,6 +528,7 @@
 </style>
 
 <main class="guest-booking-shell">
+  <%- include("../partials/booking-navigation", { backHref: "/", backLabel: "Trang chủ" }) %>
   <section class="guest-hero">
     <div class="guest-kicker"><%= isCskhAssist ? "CSKH hỗ trợ" : "Đặt phòng trực tuyến" %></div>
     <h1>Tìm nơi lưu trú <span><%= activeDestinationLabel %></span></h1>
@@ -635,6 +636,7 @@
             <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
             <div>
               <span class="room-badge"><%= room.tinhThanh || "Điểm đến" %></span>
+              <%- include("../partials/room-image-note", { imageUrl: room.imageUrl }) %>
               <h3><%= room.loaiPhong %> · Phòng <%= room.soPhong %></h3>
               <p><%= room.loaiLuuTruTen || "Hotel" %> · <%= room.khachSan %> · <%= room.loaiGiuong %> · <%= room.viewPhong %></p>
               <strong><%= room.priceFormatted %> / đêm</strong>
@@ -685,6 +687,7 @@
           <article class="room-fresh">
             <img src="<%= room.imageUrl %>" alt="<%= room.loaiPhong %> - phòng <%= room.soPhong %>" />
             <div class="room-fresh__body">
+              <%- include("../partials/room-image-note", { imageUrl: room.imageUrl }) %>
               <div class="room-main">
                 <span class="room-badge"><%= room.loaiLuuTruTen || "Hotel" %> · <%= room.quanHuyen || room.tinhThanh || "Điểm đến" %></span>
                 <h3><%= room.khachSan || `${room.loaiPhong} phòng ${room.soPhong}` %></h3>
