@@ -1,6 +1,6 @@
 # Bento Booking - Hệ thống đặt phòng lưu trú toàn quốc
 
-Đây là hệ thống đặt phòng khách sạn/resort được rebuild bằng **Node.js, TypeScript, Express, EJS, React/Vite và PostgreSQL**. Dự án kế thừa nghiệp vụ từ source PHP cũ trong `../code2`, nhưng phần chạy chính, phát triển chính và deploy chính nằm trong thư mục `abc-resort-node/`.
+Hệ thống được xây dựng trên nền tảng **Node.js, TypeScript, Express, EJS, React/Vite và PostgreSQL**, thiết kế theo kiến trúc module hóa và hướng đến triển khai production.
 
 Hệ thống không chỉ xử lý đặt phòng. Đây là một nền tảng vận hành resort theo nhiều actor: khách hàng, lễ tân, quản lý, kế toán, chăm sóc khách hàng, nhân viên dịch vụ và admin. Mỗi actor có dashboard riêng, UC riêng và dữ liệu được nối với nhau thành workflow đặt phòng, cọc, eKYC, check-in, check-out, hủy phòng, hoàn tiền, dịch vụ bổ sung, phản hồi và báo cáo tài chính.
 
@@ -451,7 +451,7 @@ Hướng deploy cloud khuyến nghị:
 
 1. GitHub Actions chạy build/test.
 2. GitHub Actions build Docker image.
-3. Push image lên GitHub Container Registry: `ghcr.io/vonhattruong1812004/datphongkhachsan`.
+3. Push image lên GitHub Container Registry (ghcr.io).
 4. Cloud/VPS pull image mới.
 5. Cloud/VPS chạy app với biến môi trường production và PostgreSQL riêng.
 6. Mount persistent volume cho `uploads/` và `storage/`.
@@ -509,8 +509,6 @@ uploads/
 
 ## Quy Ước Phát Triển
 
-- Chỉ phát triển code chính trong `abc-resort-node/`.
-- `../code2` chỉ dùng để đối chiếu nghiệp vụ cũ khi cần.
 - Không sửa schema database nếu chưa thật sự cần.
 - Khi sửa UC theo actor, kiểm tra route, service, view và smoke script liên quan.
 - Không đưa logic nghiệp vụ quan trọng chỉ vào EJS; service layer phải là nơi kiểm tra chính.
@@ -547,7 +545,5 @@ uploads/
 
 ## Ghi Chú Vận Hành
 
-- Repository GitHub: `Vonhattruong1812004/datphongkhachsan`.
 - Branch chính: `main`.
 - App name hiển thị trong UI: `Bento Booking`.
-- README này mô tả hệ thống Node.js hiện tại, không mô tả source PHP cũ.
