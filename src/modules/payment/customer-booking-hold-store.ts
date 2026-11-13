@@ -100,10 +100,11 @@ class CustomerBookingHoldStore {
     this.holds.delete(id);
   }
 
-  getActiveRoomIds(ngayNhan: string, ngayTra: string) {
+  getActiveRoomIds(ngayNhan: string, ngayTra: string, excludeHoldId?: number) {
     this.purgeExpired();
     const result = new Set<number>();
     for (const hold of this.holds.values()) {
+      if (hold.id === excludeHoldId) continue;
       if (hold.status !== "PENDING") continue;
       if (!rangesOverlap(hold.ngayNhan, hold.ngayTra, ngayNhan, ngayTra)) continue;
       (hold.roomIds?.length ? hold.roomIds : [hold.roomId]).forEach((roomId) => result.add(roomId));

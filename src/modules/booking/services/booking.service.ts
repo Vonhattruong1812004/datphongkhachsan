@@ -1010,56 +1010,11 @@ export class BookingService {
       return null;
     }
 
-    const latestBooking = await query<LatestRoomBookingRow>(
-      `
-        SELECT
-          gd.magiaodich AS "maGiaoDich",
-          gd.madatcho AS "maDatCho",
-          gd.ngaygiaodich AS "ngayGiaoDich",
-          gd.trangthai AS "trangThaiGiaoDich",
-          gd.tongtien AS "tongTien",
-          ct.mactgd AS "maCtGd",
-          ct.ngaynhandukien AS "ngayNhanDuKien",
-          ct.ngaytradukien AS "ngayTraDuKien",
-          ct.trangthai AS "trangThaiChiTiet",
-          COALESCE(NULLIF(ct.tenkhach, ''), kh.tenkh) AS "tenKhach",
-          ct.songuoi AS "soNguoi"
-        FROM chitietgiaodich ct
-        INNER JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
-        LEFT JOIN khachhang kh ON kh.makhachhang = gd.makhachhang
-        WHERE ct.maphong = $1
-        ORDER BY gd.ngaygiaodich DESC NULLS LAST, ct.mactgd DESC
-        LIMIT 1
-      `,
-      [roomId]
-    );
-
-    const latest = latestBooking.rows[0] || null;
-
     return {
       ...result.rows[0],
       imageUrl: resolveRoomImage(result.rows[0].hinhAnh, result.rows[0].id, result.rows[0].loaiPhong),
       priceFormatted: formatMoney(result.rows[0].gia),
-      latestBooking: latest
-        ? {
-            id: latest.maGiaoDich,
-            bookingCode: latest.maDatCho || `GD-${latest.maGiaoDich}`,
-            customerName: latest.tenKhach || "Khách lưu trú",
-            guestCount: Number(latest.soNguoi || 0),
-            createdAt: latest.ngayGiaoDich,
-            createdAtLabel: latest.ngayGiaoDich ? formatDate(latest.ngayGiaoDich, "DD/MM/YYYY HH:mm") : "Chưa rõ",
-            checkinDate: latest.ngayNhanDuKien,
-            checkoutDate: latest.ngayTraDuKien,
-            checkinLabel: latest.ngayNhanDuKien ? formatDate(latest.ngayNhanDuKien) : "Chưa rõ",
-            checkoutLabel: latest.ngayTraDuKien ? formatDate(latest.ngayTraDuKien) : "Chưa rõ",
-            transactionStatus: latest.trangThaiGiaoDich,
-            transactionStatusLabel: formatBookingStatus(latest.trangThaiGiaoDich),
-            roomStatus: latest.trangThaiChiTiet,
-            roomStatusLabel: formatBookingStatus(latest.trangThaiChiTiet),
-            total: Number(latest.tongTien || 0),
-            totalFormatted: formatMoney(latest.tongTien)
-          }
-        : null
+      latestBooking: null
     };
   }
 
@@ -1176,7 +1131,7 @@ export class BookingService {
     return { services, serviceAmount };
   }
 
-  async previewBooking(rawInput: unknown): Promise<BookingPreviewPayload> {
+  async previewBooking(rawInput: unknown, excludeHoldId?: number): Promise<BookingPreviewPayload> {
     const booking = bookingPreviewSchema.parse(rawInput);
     const room = await this.getRoomById(booking.room_id);
 
@@ -1195,7 +1150,7 @@ export class BookingService {
       throw new HttpError(422, "Ngay nhan va ngay tra khong hop le.");
     }
 
-    await this.ensureRoomAvailability(room.id, booking.ngay_nhan, booking.ngay_tra);
+    await this.ensureRoomAvailability(room.id, booking.ngay_nhan, booking.ngay_tra, excludeHoldId);
 
     const nights = nightsBetween(booking.ngay_nhan, booking.ngay_tra);
     const subtotal = Number(room.gia) * nights;
@@ -1233,7 +1188,7 @@ export class BookingService {
     };
   }
 
-  async previewMultiRoomBooking(rawInput: unknown) {
+  async previewMultiRoomBooking(rawInput: unknown, excludeHoldId?: number) {
     const booking = bookingMultiRoomSchema.parse(rawInput);
     const roomIds = Array.from(new Set(booking.room_ids.map(Number)));
     const rooms = await this.getRoomsByIds(roomIds);
@@ -1248,7 +1203,7 @@ export class BookingService {
     }
 
     for (const room of rooms) {
-      await this.ensureRoomAvailability(room.id, booking.ngay_nhan, booking.ngay_tra);
+      await this.ensureRoomAvailability(room.id, booking.ngay_nhan, booking.ngay_tra, excludeHoldId);
     }
 
     const nights = nightsBetween(booking.ngay_nhan, booking.ngay_tra);
@@ -1404,7 +1359,6 @@ export class BookingService {
       throw new HttpError(422, "So tien coc chua du.");
     }
 
-    customerBookingHoldStore.remove(hold.id);
     const paidMeta = {
       content: hold.content,
       expiresAt: hold.expiresAt,
@@ -1422,11 +1376,13 @@ export class BookingService {
         ? await this.createMultiRoomBooking(hold.input, hold.preferredCustomerId, {
             paymentMethod: "ChuyenKhoan",
             note,
+            paymentHold: hold,
             autoCreateCustomerAccount: true
           })
         : await this.createBooking(hold.input, hold.preferredCustomerId, {
             paymentMethod: "ChuyenKhoan",
             note,
+            paymentHold: hold,
             autoCreateCustomerAccount: true
           });
 
@@ -1460,8 +1416,8 @@ export class BookingService {
     };
   }
 
-  async createBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string; autoCreateCustomerAccount?: boolean } = {}) {
-    const preview = await this.previewBooking(rawInput);
+  async createBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string; autoCreateCustomerAccount?: boolean; paymentHold?: CustomerBookingHold } = {}) {
+    const preview = await this.previewBooking(rawInput, options.paymentHold?.id);
     const paymentMethod = options.paymentMethod || "ChuaThanhToan";
     const bookingNote = options.note || "Booking online tao tu Node.js";
     let createdAccount: CustomerBookingAccount | null = null;
@@ -1651,6 +1607,8 @@ export class BookingService {
       return maGiaoDich;
     });
 
+    // Record success immediately after COMMIT, even if the following view query fails.
+    if (options.paymentHold) customerBookingHoldStore.completeSnapshot(options.paymentHold, bookingId, "", createdAccount);
     const detail = await this.getBookingDetail(bookingId);
 
     realtimeHub.publish({
@@ -1687,8 +1645,8 @@ export class BookingService {
     };
   }
 
-  async createMultiRoomBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string; autoCreateCustomerAccount?: boolean } = {}) {
-    const preview = await this.previewMultiRoomBooking(rawInput);
+  async createMultiRoomBooking(rawInput: unknown, preferredCustomerId = 0, options: { paymentMethod?: "ChuaThanhToan" | "ChuyenKhoan"; note?: string; autoCreateCustomerAccount?: boolean; paymentHold?: CustomerBookingHold } = {}) {
+    const preview = await this.previewMultiRoomBooking(rawInput, options.paymentHold?.id);
     const paymentMethod = options.paymentMethod || "ChuaThanhToan";
     const bookingNote = options.note || "Booking online nhieu phong tao tu Node.js";
     const guestByRoom = distributeGuests(preview.booking.so_nguoi, preview.rooms);
@@ -1882,6 +1840,7 @@ export class BookingService {
       return maGiaoDich;
     });
 
+    if (options.paymentHold) customerBookingHoldStore.completeSnapshot(options.paymentHold, bookingId, "", createdAccount);
     const detail = await this.getBookingDetail(bookingId);
 
     for (const room of preview.rooms) {
@@ -3211,11 +3170,11 @@ export class BookingService {
     return result.rows;
   }
 
-  private async ensureRoomAvailability(roomId: number, checkin: string, checkout: string) {
+  private async ensureRoomAvailability(roomId: number, checkin: string, checkout: string, excludeHoldId?: number) {
     if (directBookingHoldStore.getActiveRoomIds(checkin, checkout).has(roomId)) {
       throw new HttpError(409, "Phong nay dang duoc le tan giu cho thanh toan coc.");
     }
-    if (customerBookingHoldStore.getActiveRoomIds(checkin, checkout).has(roomId)) {
+    if (customerBookingHoldStore.getActiveRoomIds(checkin, checkout, excludeHoldId).has(roomId)) {
       throw new HttpError(409, "Phong nay dang duoc khach khac giu cho thanh toan coc.");
     }
 

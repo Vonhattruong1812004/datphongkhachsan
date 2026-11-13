@@ -108,10 +108,11 @@ class DirectBookingHoldStore {
     this.holds.delete(id);
   }
 
-  getActiveRoomIds(ngayDen: string, ngayDi: string) {
+  getActiveRoomIds(ngayDen: string, ngayDi: string, excludeHoldId?: number) {
     this.purgeExpired();
     const result = new Set<number>();
     for (const hold of this.holds.values()) {
+      if (hold.id === excludeHoldId) continue;
       if (hold.status !== "PENDING") continue;
       if (!rangesOverlap(hold.ngayDen, hold.ngayDi, ngayDen, ngayDi)) continue;
       hold.roomIds.forEach((roomId) => result.add(roomId));
