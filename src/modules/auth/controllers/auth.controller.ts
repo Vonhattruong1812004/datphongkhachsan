@@ -47,7 +47,7 @@ function sanitizeLoginNext(value: unknown) {
   const raw = Array.isArray(value) ? value[0] : value;
   const next = typeof raw === "string" ? raw.trim() : "";
 
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/api/")) {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || /[\\\u0000-\u0020]/.test(next) || next.startsWith("/api/")) {
     return "";
   }
 

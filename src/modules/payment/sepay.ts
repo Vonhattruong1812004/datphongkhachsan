@@ -1,6 +1,6 @@
 import { formatMoney } from "../../shared/utils/format";
 
-export const SEPAY_API_KEY = process.env.SEPAY_API_KEY || "my-secret-key-123";
+export const SEPAY_API_KEY = process.env.SEPAY_API_KEY || (process.env.NODE_ENV === "production" ? "" : "my-secret-key-123");
 export const SEPAY_AUTH_HEADER = `Apikey ${SEPAY_API_KEY}`;
 export const SEPAY_HOLD_MINUTES = 10;
 export const SEPAY_BANK_CODE = "ICB";
@@ -43,13 +43,17 @@ export function parseSepayMetadata(note: string | null | undefined): SepayMetada
   const expiresAt = readField("expires");
   const status = String(readField("status") || "PENDING").toUpperCase();
 
-  if (!parseSepayOrderId(content) || !expiresAt) return null;
+  const depositAmount = Number(readField("deposit"));
+  const paidAmount = Number(readField("paid") || 0);
+  if (!parseSepayOrderId(content) || !Number.isFinite(Date.parse(expiresAt))
+    || !Number.isFinite(depositAmount) || depositAmount < 0
+    || !Number.isFinite(paidAmount) || paidAmount < 0) return null;
 
   return {
     content,
     expiresAt,
-    depositAmount: Math.max(0, Number(readField("deposit") || 0)),
-    paidAmount: Math.max(0, Number(readField("paid") || 0)),
+    depositAmount,
+    paidAmount,
     status: status === "PAID" ? "PAID" : status === "EXPIRED" ? "EXPIRED" : "PENDING"
   };
 }
@@ -121,12 +125,13 @@ export function buildSepayTransferPayload(orderId: number, amount: number) {
 
 export function parseSepayOrderId(content: string) {
   const match = String(content || "").match(/\bROOM_?(\d+)\b/i);
-  return match ? Number(match[1]) : 0;
+  const id = match ? Number(match[1]) : 0;
+  return Number.isSafeInteger(id) && id > 0 ? id : 0;
 }
 
 export function parseSepayCheckoutContent(content: string) {
   const match = String(content || "").match(/\bOUT_?(\d+)P_?(\d+)\b/i);
-  return match
+  return match && [Number(match[1]), Number(match[2])].every(id => Number.isInteger(id) && id > 0 && id <= 2147483647)
     ? {
         transactionId: Number(match[1] || 0),
         roomId: Number(match[2] || 0)

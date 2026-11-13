@@ -9,6 +9,7 @@ interface AccountRow {
   maTaiKhoan: number;
   username: string;
   passwordHash: string;
+  status: string;
   maVaiTro: number;
   tenVaiTro: string | null;
   maKhachHang: number | null;
@@ -33,6 +34,10 @@ export class AuthService {
     const matched = await this.verifyPassword(password, account.passwordHash);
     if (!matched) {
       throw new HttpError(401, "Sai ten dang nhap hoac mat khau.");
+    }
+
+    if (account.status !== "HoatDong") {
+      throw new HttpError(403, "Tai khoan da bi khoa hoac ngung hoat dong.");
     }
 
     if (account.passwordHash === password) {
@@ -134,6 +139,7 @@ export class AuthService {
           tk.matk AS "maTaiKhoan",
           tk.username,
           tk.password AS "passwordHash",
+          tk.trangthai AS status,
           tk.mavaitro AS "maVaiTro",
           vr.tenvaitro AS "tenVaiTro",
           kh.makhachhang AS "maKhachHang",
@@ -159,7 +165,8 @@ export class AuthService {
   }
 
   private async verifyPassword(rawPassword: string, passwordHash: string) {
-    if (rawPassword === passwordHash) {
+    // Legacy plaintext can be migrated, but a stored bcrypt hash is never a password.
+    if (!passwordHash.startsWith("$2") && rawPassword === passwordHash) {
       return true;
     }
 

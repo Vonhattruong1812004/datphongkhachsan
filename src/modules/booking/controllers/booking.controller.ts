@@ -220,7 +220,11 @@ export async function createBookingApi(req: Request, res: Response) {
 }
 
 export async function customerBookingHoldStatusApi(req: Request, res: Response) {
+  res.setHeader("Cache-Control", "private, no-store");
   const holdId = Number(req.params.holdId || req.query.hold_id || 0);
+  if (!Number.isSafeInteger(holdId) || holdId <= 0 || req.session.recentBookingHoldId !== holdId) {
+    throw new HttpError(403, "Ban khong co quyen xem ma giu cho nay.");
+  }
   const payload = bookingService.getCustomerBookingHoldStatus(holdId);
   if (payload.status === "PAID" && payload.transactionId) {
     req.session.recentBookingId = payload.transactionId;
@@ -254,12 +258,15 @@ export async function bookingFeedbackApi(req: Request, res: Response) {
 }
 
 export async function lookupBookingApi(req: Request, res: Response) {
+  res.setHeader("Cache-Control", "private, no-store");
   const maGiaoDich = Number(req.query.ma_gd || req.params.id || 0);
   const currentCustomerId = req.session.user?.maKhachHang ?? 0;
 
   const booking = currentCustomerId > 0
     ? await bookingService.getBookingDetailForCustomer(maGiaoDich, currentCustomerId)
-    : await bookingService.getBookingDetail(maGiaoDich);
+    : (req.session.recentBookingId === maGiaoDich && maGiaoDich > 0
+      ? await bookingService.getBookingDetail(maGiaoDich)
+      : (() => { throw new HttpError(403, "Ban khong co quyen xem booking nay."); })());
 
   return res.json({
     ok: true,

@@ -14,6 +14,9 @@ import { directBookingHoldStore } from "../../payment/direct-booking-hold-store"
 import { customerBookingHoldStore } from "../../payment/customer-booking-hold-store";
 import { FrontdeskService } from "../../frontdesk/services/frontdesk.service";
 import { BookingService } from "../../booking/services/booking.service";
+import { timingSafeEqual } from "node:crypto";
+import { SEPAY_API_KEY, SEPAY_ACCOUNT_NO } from "../../payment/sepay";
+import { HttpError } from "../../../shared/http/http-error";
 
 interface SepayWebhookBody {
   [key: string]: unknown;
@@ -28,10 +31,15 @@ interface SepayTransactionRow {
 }
 
 const POSTGRES_INTEGER_MAX = 2147483647;
+// Coalesce concurrent delivery retries within this server process.
+const pendingDeposits = new Map<number, Promise<unknown>>();
 
 export class SepayWebhookService {
   isAuthorized(headerValue: string | undefined) {
-    return String(headerValue || "").trim() === SEPAY_AUTH_HEADER;
+    if (!SEPAY_API_KEY) return false;
+    const supplied = Buffer.from(String(headerValue || "").trim());
+    const expected = Buffer.from(SEPAY_AUTH_HEADER);
+    return supplied.length === expected.length && timingSafeEqual(supplied, expected);
   }
 
   extractWebhookPayload(body: SepayWebhookBody | string | null | undefined) {
@@ -55,23 +63,35 @@ export class SepayWebhookService {
       || ""
     );
 
-    const amount = Number(
-      data.amount
-      || data.transfer_amount
-      || data.transferAmount
-      || data.money
-      || data.value
-      || 0
-    );
+    const rawAmount = data.transferAmount
+      ?? data.transfer_amount
+      ?? data.amount
+      ?? data.money
+      ?? data.value
+      ?? 0;
+    const amount = typeof rawAmount === "number" || typeof rawAmount === "string"
+      ? Number(rawAmount) : NaN;
 
     return {
       content,
-      amount: Math.max(0, amount)
+      amount
     };
   }
 
-  async handleWebhook(body: SepayWebhookBody | string | null | undefined) {
+  async handleWebhook(body: SepayWebhookBody | string | null | undefined): Promise<{
+    status: string; message: string; transactionId?: number; roomId?: number; bookingCode?: string | null;
+  }> {
+    const data = typeof body === "object" && body !== null ? body : {};
+    if (data.transferType !== undefined && data.transferType !== "in") {
+      return { status: "OK", message: "Ignored outgoing transfer." };
+    }
+    if (data.accountNumber !== undefined && String(data.accountNumber).trim() !== SEPAY_ACCOUNT_NO) {
+      return { status: "OK", message: "Ignored different beneficiary account." };
+    }
     const payload = this.extractWebhookPayload(body);
+    if (!Number.isSafeInteger(payload.amount) || payload.amount <= 0) {
+      throw new HttpError(422, "Invalid SePay transfer amount.");
+    }
     const checkoutContent = parseSepayCheckoutContent(payload.content);
     if (checkoutContent?.transactionId && checkoutContent?.roomId) {
       return this.confirmCheckoutPayment(
@@ -87,7 +107,19 @@ export class SepayWebhookService {
       return { status: "OK", message: "No ROOM order content." };
     }
 
-    return this.confirmDeposit(orderId, payload.amount);
+    const pending = pendingDeposits.get(orderId);
+    if (pending) {
+      await pending;
+      // Recheck using this delivery's amount (the first delivery may be insufficient).
+      return this.handleWebhook(body);
+    }
+    const confirmation = this.confirmDeposit(orderId, payload.amount);
+    pendingDeposits.set(orderId, confirmation);
+    try {
+      return await confirmation;
+    } finally {
+      if (pendingDeposits.get(orderId) === confirmation) pendingDeposits.delete(orderId);
+    }
   }
 
   private async confirmCheckoutPayment(transactionId: number, roomId: number, paidAmount: number, content: string) {
@@ -224,6 +256,10 @@ export class SepayWebhookService {
 
       if (order.status === "Paid" || meta.status === "PAID") {
         return { status: "OK", message: "Order already paid." };
+      }
+
+      if (order.status !== "Booked" || order.paymentMethod !== "ChuaThanhToan" || meta.status !== "PENDING") {
+        return { status: "OK", message: "Order is not awaiting a deposit." };
       }
 
       if (new Date(meta.expiresAt).getTime() < Date.now()) {

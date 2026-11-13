@@ -1,4 +1,4 @@
-const CACHE_NAME = "abc-resort-shell-v4";
+const CACHE_NAME = "abc-resort-shell-v5";
 const APP_SHELL = [
   "/app.css",
   "/manifest.webmanifest",
@@ -8,7 +8,6 @@ const APP_SHELL = [
   "/icons/app-icon-512.png"
 ];
 const CACHEABLE_API_PATHS = new Set([
-  "/api/customer/mobile-home",
   "/api/system/health"
 ]);
 const NEVER_CACHE_PATHS = new Set([
@@ -55,6 +54,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (NEVER_CACHE_PATHS.has(url.pathname) || request.headers.has("range")) return;
+  // Identity documents must never be served from an older browser cache.
+  let pathname;
+  try { pathname = decodeURIComponent(url.pathname); } catch { return; }
+  if (/^\/uploads\/ekyc(?:\/|$)/i.test(pathname)) return;
 
   if (url.pathname.startsWith("/api/")) {
     if (!CACHEABLE_API_PATHS.has(url.pathname)) return;
@@ -72,17 +75,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const contentType = response.headers.get("Content-Type") || "";
-          if (contentType.includes("text/html")) {
-            safeCachePut(request, response).catch(() => undefined);
-          }
-          return response;
-        })
-        .catch(async () => {
-          const cached = await caches.match(request);
-          return cached || caches.match("/offline.html");
-        })
+        .catch(() => caches.match("/offline.html"))
     );
     return;
   }
