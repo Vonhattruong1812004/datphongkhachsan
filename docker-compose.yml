@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:17-alpine
-    container_name: bento-resort-db
+    container_name: bento-booking-db
     environment:
       POSTGRES_DB: abc_resort1
       POSTGRES_USER: bento
@@ -23,12 +23,12 @@ services:
     build:
       context: .
       target: runtime
-    image: bento-resort-node:local
-    container_name: bento-resort-app
+    image: bento-booking:local
+    container_name: bento-booking-app
     environment:
       NODE_ENV: production
       PORT: 3010
-      APP_NAME: Bento Resort
+      APP_NAME: Bento Booking
       SESSION_SECRET: change_me_in_cloud_secret
       PGHOST: db
       PGPORT: 5432

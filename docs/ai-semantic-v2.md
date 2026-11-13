@@ -94,7 +94,7 @@ errors and selective coverage are in `ml/reports/semantic-evaluation.json`.
 
 ## Reproduce locally
 
-From the `abc-resort-node` directory, using Node 22+ (tested locally on Node 24/macOS arm64):
+From the `bento-booking` directory, using Node 22+ (tested locally on Node 24/macOS arm64):
 
 ```sh
 npm ci

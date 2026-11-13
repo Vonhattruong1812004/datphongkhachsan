@@ -1,4 +1,4 @@
-name: Bento Resort CI/CD
+name: Bento Booking CI/CD
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
     env:
       NODE_ENV: test
       PORT: 3010
-      APP_NAME: Bento Resort
+      APP_NAME: Bento Booking
       SESSION_SECRET: ci_session_secret
       PGHOST: 127.0.0.1
       PGPORT: 5432

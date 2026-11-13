@@ -15,7 +15,7 @@
     "build:server": "tsc -p tsconfig.json",
     "build:client": "vite build",
     "start": "node dist/server.js",
-    "docker:build": "docker build -t bento-resort-node:local .",
+    "docker:build": "docker build -t bento-booking:local .",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
     "test": "tsx --test $(find src -name '*.test.ts' -print)",

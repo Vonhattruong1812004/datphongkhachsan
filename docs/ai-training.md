@@ -66,7 +66,7 @@ Bao cao day du: `ml/reports/intent-evaluation.json`. Day la baseline, chua phai 
 
 ## Chay lai
 
-Tu thu muc `abc-resort-node` (Python 3.12):
+Tu thu muc `bento-booking` (Python 3.12):
 
 ```sh
 python3 -m venv .venv-ai
