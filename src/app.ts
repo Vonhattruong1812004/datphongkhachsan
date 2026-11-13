@@ -26,6 +26,9 @@ import { tourRouter } from "./modules/tours/routes/tour.routes";
 import { webhookRouter } from "./modules/webhook/routes/webhook.routes";
 import { csrfProtection } from "./shared/http/csrf";
 import { errorHandler } from "./shared/http/error-handler";
+import { asyncHandler } from "./shared/http/async-handler";
+import { refreshSessionAccess } from "./shared/auth/refresh-session";
+import { serveEkycFile } from "./modules/ekyc/controllers/ekyc-file.controller";
 
 const appRoot = path.resolve(__dirname, "..");
 const legacyRoot = path.resolve(appRoot, "../code2");
@@ -46,6 +49,10 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
   app.use(sessionMiddleware);
+  app.use(asyncHandler(async (req, res, next) => {
+    await refreshSessionAccess(req, res);
+    next();
+  }));
   app.use((req, res, next) => {
     const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
     const origin = req.get("origin");
@@ -81,11 +88,17 @@ export function createApp() {
   });
   app.use(express.static(path.resolve(appRoot, "public")));
   app.use("/uploads/phong", express.static(path.resolve(appRoot, "uploads/phong")));
-  app.use("/uploads/ekyc", express.static(path.resolve(appRoot, "uploads/ekyc")));
-  app.use("/uploads/ekyc", express.static(path.resolve(legacyRoot, "uploads/ekyc")));
+  app.use("/uploads/ekyc", asyncHandler(serveEkycFile));
   app.use("/uploads/dichvu", express.static(path.resolve(appRoot, "uploads/dichvu")));
   app.use("/uploads/dichvu", express.static(path.resolve(legacyRoot, "public/uploads/dichvu")));
-  app.use("/uploads", express.static(path.resolve(appRoot, "uploads")));
+  // Never mount the entire uploads root: encoded paths could bypass private-file guards.
+  app.use("/uploads/phanhoi", express.static(path.resolve(appRoot, "uploads/phanhoi")));
+  app.use("/uploads/destinations", express.static(path.resolve(appRoot, "uploads/destinations")));
+  // Dynamic pages can contain customer records, credentials or CSRF tokens.
+  app.use((_req, res, next) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    next();
+  });
   app.use(csrfProtection);
 
   app.use(async (req, res, next) => {
