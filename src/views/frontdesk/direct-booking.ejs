@@ -3099,7 +3099,8 @@ const createdAccounts = paymentPending ? [] : (result?.createdAccounts || []);
             try {
               const data = JSON.parse(event.data || "{}");
               if (String(data.holdId || "") === String(paymentHoldId)) {
-                renderPaidState(data);
+                // Credentials are fetched through the authorized endpoint, never the shared stream.
+                pollPaymentStatus();
                 stream.close();
               }
             } catch (_error) {

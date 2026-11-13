@@ -1239,6 +1239,8 @@ export class ServiceModuleService {
     const hasHotelScope = await this.supportsServiceHotelScope();
 
     const payload = await withTransaction(async (client) => {
+      // Use the same booking lock as checkout before checking whether the room is still occupied.
+      await client.query("SELECT magiaodich FROM giaodich WHERE magiaodich = $1 FOR UPDATE", [input.transaction_id]);
       const roomCheck = await client.query(
         `
           SELECT
@@ -1429,6 +1431,20 @@ export class ServiceModuleService {
     }
 
     const result = await withTransaction(async (client) => {
+      await client.query("SELECT magiaodich FROM giaodich WHERE magiaodich = $1 FOR UPDATE", [transactionId]);
+      const selectedRoomIds = Array.from(new Set(selectedItems.map(item => item.roomId)));
+      const currentRooms = await client.query(`
+        SELECT ct.maphong
+        FROM chitietgiaodich ct
+        JOIN giaodich gd ON gd.magiaodich = ct.magiaodich
+        WHERE ct.magiaodich = $1 AND ct.maphong = ANY($2::int[])
+          AND ct.trangthai = 'CheckedIn' AND gd.trangthai = 'Stayed'
+        FOR UPDATE OF ct
+      `, [transactionId, selectedRoomIds]) as { rows: Array<{ maphong: number }> };
+      const currentRoomIds = new Set(currentRooms.rows.map(item => Number(item.maphong)));
+      if (selectedRoomIds.some(id => !currentRoomIds.has(id))) {
+        throw new HttpError(409, "Phong da thay doi trang thai. Vui long tra cuu lai truoc khi them dich vu.");
+      }
       let totalAdded = 0;
       const orderIds: number[] = [];
 

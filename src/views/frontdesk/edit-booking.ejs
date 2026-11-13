@@ -1297,7 +1297,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const kmValue = Number(document.getElementById("km_giatri")?.value || 0);
     const kmType = String(document.getElementById("km_type")?.value || "PERCENT").toUpperCase();
     const discount = kmValue > 0
-      ? (kmType === "FIXED" || kmValue >= 100 ? Math.min(kmValue, beforeDiscount) : beforeDiscount * kmValue / 100)
+      ? (kmType === "FIXED" ? Math.min(kmValue, beforeDiscount) : Math.min(beforeDiscount, beforeDiscount * kmValue / 100))
       : 0;
     const finalTotal = Math.max(0, beforeDiscount - discount);
     const view = {

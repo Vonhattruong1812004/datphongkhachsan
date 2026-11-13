@@ -143,6 +143,7 @@
         <div class="room-spec"><span>Giá niêm yết</span><strong><%= room.priceFormatted || `${Number(room.gia || 0).toLocaleString("vi-VN")} đ` %> / đêm</strong></div>
       </div>
       <div class="room-note"><%= room.ghiChu || "Phòng phù hợp cho đặt online. Khách chọn ngày nhận/trả ở bước tạo booking để hệ thống kiểm tra trùng lịch và sinh QR cọc SePay." %></div>
+      <% if (latestBooking) { %>
       <div class="room-last-booking">
         <div class="room-last-booking__head">
           <strong>Lượt đặt gần nhất</strong>
@@ -161,6 +162,7 @@
           <p class="room-muted" style="margin:0">Phòng này chưa phát sinh lượt đặt nào trong hệ thống.</p>
         <% } %>
       </div>
+      <% } %>
     </article>
 
     <aside class="room-detail-panel">

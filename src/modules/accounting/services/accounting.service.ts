@@ -4609,7 +4609,7 @@ export class AccountingService {
       }
 
       const amount = Math.max(0, Math.round(Number(refund.amount_requested || 0)));
-      if (amount <= 0) {
+      if (!Number.isSafeInteger(amount) || amount <= 0) {
         throw new HttpError(422, "So tien hoan khong hop le.");
       }
 
@@ -4652,6 +4652,8 @@ export class AccountingService {
         throw new HttpError(422, "Can nhap ma giao dich ngan hang de xac nhan da chuyen khoan hoan tien.");
       }
 
+      // Different refund rows can share the same bank reference; serialize that check too.
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`refund-bank:${paymentReference.toLowerCase()}`]);
       const duplicatedReference = await client.query(
         `
           SELECT id

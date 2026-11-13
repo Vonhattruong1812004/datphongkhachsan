@@ -18,6 +18,7 @@ import {
   replaceSepayMetadata
 } from "../../payment/sepay";
 import { directBookingHoldStore, type DirectBookingHold, type DirectBookingHoldInput } from "../../payment/direct-booking-hold-store";
+import { customerBookingHoldStore } from "../../payment/customer-booking-hold-store";
 
 type PaymentMethod = "TienMat" | "The" | "ChuyenKhoan" | "ViDienTu";
 type RoomCondition = "Tot" | "CanVeSinh" | "HuHaiNhe" | "HuHaiNang" | "DangBaoTri";
@@ -1376,7 +1377,7 @@ export class FrontdeskService {
     });
   }
 
-  async getCheckoutPreview(transactionId: number, roomId: number, roomCondition?: RoomCondition) {
+  async getCheckoutPreview(transactionId: number, roomId: number, roomCondition?: RoomCondition, client?: { query: typeof query }) {
     if (!transactionId || transactionId <= 0) {
       throw new HttpError(422, "Thieu ma giao dich.");
     }
@@ -1385,12 +1386,12 @@ export class FrontdeskService {
       throw new HttpError(422, "Thieu ma phong.");
     }
 
-    const transaction = await this.findTransactionById(transactionId);
+    const transaction = await this.findTransactionById(transactionId, client);
     if (!transaction) {
       throw new HttpError(404, "Khong tim thay giao dich.");
     }
 
-    const room = await this.getRoomDetail(transactionId, roomId);
+    const room = await this.getRoomDetail(transactionId, roomId, client);
     if (!room) {
       throw new HttpError(404, "Khong tim thay phong trong giao dich.");
     }
@@ -1403,22 +1404,41 @@ export class FrontdeskService {
     const checkoutCondition = roomCondition === undefined
       ? storedRoomCondition
       : this.requireRoomCondition(roomCondition);
-    const roomsStayed = (await this.getTransactionRooms(transactionId)).filter((item) => item.trangThai === "CheckedIn");
+    const allRooms = await this.getTransactionRooms(transactionId, client);
+    const billableRooms = allRooms.filter(item => ["Booked", "CheckedIn", "CheckedOut"].includes(item.trangThai));
+    const assignmentCheck = await (client ?? { query }).query<{ count: number }>(`
+      SELECT COUNT(*)::int AS count
+      FROM chitietdichvu service
+      WHERE service.magiaodich = $1
+        AND (
+          (service.maphong IS NULL AND $2::int <> 1)
+          OR (service.maphong IS NOT NULL AND NOT EXISTS (
+            SELECT 1 FROM chitietgiaodich detail
+            WHERE detail.magiaodich = service.magiaodich
+              AND detail.maphong = service.maphong
+              AND detail.trangthai IN ('Booked', 'CheckedIn', 'CheckedOut')
+          ))
+        )
+    `, [transactionId, billableRooms.length]);
+    if (Number(assignmentCheck.rows[0]?.count || 0) > 0) {
+      throw new HttpError(409, "Dich vu chua duoc gan dung phong trong giao dich. Can doi soat dich vu truoc khi checkout.");
+    }
+    const roomsStayed = allRooms.filter((item) => item.trangThai === "CheckedIn");
     if (!roomsStayed.length) {
       throw new HttpError(409, "Giao dich khong co phong nao dang check-in.");
     }
 
-    const services = (await this.getRoomServices(transactionId, roomId)).map((service) => this.annotateServiceSource(service));
+    const services = (await this.getRoomServices(transactionId, roomId, client)).map((service) => this.annotateServiceSource(service));
     const serviceTotal = services.reduce((sum, item) => sum + Number(item.thanhTien), 0);
     const damageFee = this.damageFeeForCondition(checkoutCondition);
     const roomFee = Number(room.thanhTien || 0);
     const surchargeFee = Number(room.tienPhuThu || 0);
     const beforeDiscount = roomFee + surchargeFee + serviceTotal + damageFee;
-    const discountFee = await this.calculatePromotionDiscount(transaction.maKhuyenMai, beforeDiscount);
+    const discountFee = await this.calculatePromotionDiscount(transaction.maKhuyenMai, beforeDiscount, client);
     const total = Math.max(0, beforeDiscount - discountFee);
-    const promotion = await this.getPromotionForTransaction(transaction.maKhuyenMai);
+    const promotion = await this.getPromotionForTransaction(transaction.maKhuyenMai, client);
     const deposit = this.calculateDepositCreditForCheckout(transaction.ghiChu, total, {
-      bookedRooms: (await this.getTransactionRooms(transactionId)).filter((item) => item.trangThai === "Booked").length,
+      bookedRooms: allRooms.filter((item) => item.trangThai === "Booked").length,
       checkedInRoomsAfterThis: roomsStayed.filter((item) => item.maPhong !== roomId).length
     });
     const dueTotal = Math.max(0, total - deposit.credit);
@@ -1493,19 +1513,28 @@ export class FrontdeskService {
     roomId: number,
     paymentMethod: PaymentMethod | string,
     roomCondition?: RoomCondition | string,
-    note = ""
+    note = "",
+    sepayPaidAmount?: number
   ) {
-    const preview = await this.getCheckoutPreview(transactionId, roomId, roomCondition as RoomCondition | undefined);
     const normalizedPaymentMethod = this.normalizePaymentMethod(paymentMethod);
-    const checkoutCondition = this.requireRoomCondition(preview.room.checkoutCondition || roomCondition || preview.room.tinhTrangPhong);
-    const nextRoomStatus = this.roomStatusForCondition(checkoutCondition);
-    const nextRealtimeStatus = this.realtimeStatusForCondition(checkoutCondition);
-    const depositAppliedNote = preview.summary.depositCredit > 0
-      ? buildSepayDepositAppliedNote(roomId, preview.summary.depositCredit)
-      : "";
-    const checkoutNote = appendNote(this.buildCheckoutNote(preview, note), depositAppliedNote);
+    const completed = await withTransaction(async (client) => {
+      // Serialize all rooms of a booking before calculating the remaining shared deposit.
+      await client.query("SELECT magiaodich FROM giaodich WHERE magiaodich = $1 FOR UPDATE", [transactionId]);
+      await client.query("SELECT mactgd FROM chitietgiaodich WHERE magiaodich = $1 FOR UPDATE", [transactionId]);
+      await client.query("SELECT mactdv FROM chitietdichvu WHERE magiaodich = $1 FOR UPDATE", [transactionId]);
+      const preview = await this.getCheckoutPreview(transactionId, roomId, roomCondition as RoomCondition | undefined, client);
+      if (sepayPaidAmount !== undefined && (!Number.isSafeInteger(sepayPaidAmount) || sepayPaidAmount <= 0
+        || sepayPaidAmount < Math.round(preview.summary.total))) {
+        throw new HttpError(409, "So tien SePay chua du cho hoa don checkout hien tai.");
+      }
+      const checkoutCondition = this.requireRoomCondition(preview.room.checkoutCondition || roomCondition || preview.room.tinhTrangPhong);
+      const nextRoomStatus = this.roomStatusForCondition(checkoutCondition);
+      const nextRealtimeStatus = this.realtimeStatusForCondition(checkoutCondition);
+      const depositAppliedNote = preview.summary.depositCredit > 0
+        ? buildSepayDepositAppliedNote(roomId, preview.summary.depositCredit)
+        : "";
+      const checkoutNote = appendNote(this.buildCheckoutNote(preview, note), depositAppliedNote);
 
-    await withTransaction(async (client) => {
       const detailUpdate = await client.query(
         `
           UPDATE chitietgiaodich
@@ -1518,6 +1547,7 @@ export class FrontdeskService {
               END
           WHERE magiaodich = $1
             AND maphong = $2
+            AND trangthai = 'CheckedIn'
         `,
         [
           transactionId,
@@ -1619,7 +1649,9 @@ export class FrontdeskService {
         "LeTan",
         `Checkout V2 hoan tat, tinh trang phong: ${checkoutCondition}.`
       );
+      return { nextRoomStatus, checkoutCondition, nextRealtimeStatus };
     });
+    const { nextRoomStatus, checkoutCondition, nextRealtimeStatus } = completed;
     const snapshot = await this.getTransactionSnapshot(transactionId);
     realtimeHub.publish({
       type: "room_status_changed",
@@ -1708,7 +1740,8 @@ export class FrontdeskService {
       roomId,
       "ChuyenKhoan",
       preview.room.checkoutCondition,
-      `SePay checkout content="${content || preview.paymentTransfer.content}" paid=${Math.round(paidAmount)}`
+      `SePay checkout content="${content || preview.paymentTransfer.content}" paid=${Math.round(paidAmount)}`,
+      paidAmount
     );
 
     realtimeHub.publish({
@@ -2147,7 +2180,7 @@ export class FrontdeskService {
     ngay_den?: string;
     ngay_di?: string;
     so_nguoi?: number;
-  }) {
+  }, excludeHoldId?: number) {
     const { ngayDen, ngayDi } = this.validateDirectBookingDates(rawFilters.ngay_den, rawFilters.ngay_di);
     const soNguoi = Math.max(1, Number(rawFilters.so_nguoi || 1));
 
@@ -2184,7 +2217,10 @@ export class FrontdeskService {
       `,
       [soNguoi, ngayDen, ngayDi]
     );
-    const heldRoomIds = directBookingHoldStore.getActiveRoomIds(ngayDen, ngayDi);
+    const heldRoomIds = new Set([
+      ...directBookingHoldStore.getActiveRoomIds(ngayDen, ngayDi, excludeHoldId),
+      ...customerBookingHoldStore.getActiveRoomIds(ngayDen, ngayDi)
+    ]);
 
     return {
       filters: {
@@ -2371,7 +2407,7 @@ export class FrontdeskService {
     }
 
     if (new Date(hold.expiresAt).getTime() < Date.now()) {
-      directBookingHoldStore.remove(hold.id);
+      directBookingHoldStore.expire(hold.id);
       throw new HttpError(409, "Hold thanh toan da het han.");
     }
 
@@ -2379,32 +2415,7 @@ export class FrontdeskService {
       throw new HttpError(422, "So tien coc chua du.");
     }
 
-    directBookingHoldStore.remove(hold.id);
-    const created = await this.createDirectBookingV2(hold.input);
-    directBookingHoldStore.completeSnapshot(hold, created.transactionId, created.bookingCode, created.createdAccounts);
-    const transaction = await this.findTransactionById(created.transactionId);
-    const currentMeta = parseSepayMetadata(transaction?.ghiChu);
-    const paidMeta = {
-      content: hold.content,
-      expiresAt: hold.expiresAt,
-      depositAmount: hold.summary.depositAmount,
-      paidAmount: Math.round(paidAmount),
-      status: "PAID" as const
-    };
-    const paidNote = appendNote(
-      replaceSepayMetadata(transaction?.ghiChu || "", currentMeta ? { ...currentMeta, ...paidMeta } : paidMeta),
-      buildSepayPaidNote(paidAmount)
-    );
-
-    await query(
-      `
-        UPDATE giaodich
-        SET phuongthucthanhtoan = 'ChuyenKhoan',
-            ghichu = $2
-        WHERE magiaodich = $1
-      `,
-      [created.transactionId, paidNote]
-    );
+    const created = await this.createDirectBookingV2(hold.input, { hold, paidAmount });
 
     realtimeHub.publish({
       type: "booking_created_after_deposit",
@@ -2413,7 +2424,6 @@ export class FrontdeskService {
         holdId: hold.id,
         transactionId: created.transactionId,
         bookingCode: created.bookingCode,
-        createdAccounts: created.createdAccounts,
         total: created.total,
         depositAmount: hold.summary.depositAmount,
         totalFormatted: formatMoney(created.total),
@@ -2681,7 +2691,7 @@ export class FrontdeskService {
     room_guests?: Array<{ room_id?: number; ten_khach?: string; cccd?: string; sdt?: string; email?: string; dia_chi?: string }>;
     members?: Array<{ ten_khach?: string; cccd?: string; sdt?: string; email?: string; dia_chi?: string }>;
     services?: Array<{ service_id?: number; room_id?: number; quantity?: number; note?: string }>;
-  }) {
+  }, payment?: { hold: DirectBookingHold; paidAmount: number }) {
     const existingCustomerId = Math.max(0, Number(rawInput.existing_customer_id || 0));
     const useExistingCustomer = String(rawInput.customer_mode || "") === "existing" && existingCustomerId > 0;
     const { ngayDen, ngayDi } = this.validateDirectBookingDates(rawInput.ngay_den, rawInput.ngay_di);
@@ -2795,7 +2805,7 @@ export class FrontdeskService {
       excludedCustomerId: useExistingCustomer ? existingCustomerId : 0
     });
 
-    const roomSearch = await this.searchDirectBookingRooms({ ngay_den: ngayDen, ngay_di: ngayDi, so_nguoi: soNguoi });
+    const roomSearch = await this.searchDirectBookingRooms({ ngay_den: ngayDen, ngay_di: ngayDi, so_nguoi: soNguoi }, payment?.hold.id);
     const roomMap = new Map(roomSearch.items.map((item) => [item.id, item]));
     for (const roomId of roomIds) {
       if (!roomMap.has(roomId)) {
@@ -2997,18 +3007,27 @@ export class FrontdeskService {
       const total = Math.max(0, tongPhong + tongDichVu - discount);
       const depositAmount = Math.ceil(total * 0.5);
       const expiresAt = new Date(Date.now() + SEPAY_HOLD_MINUTES * 60 * 1000);
-      const sepayNote = buildSepayMetadata(maGiaoDich, depositAmount, expiresAt);
+      const sepayNote = payment
+        ? appendNote(replaceSepayMetadata("", {
+            content: payment.hold.content,
+            expiresAt: payment.hold.expiresAt,
+            depositAmount: payment.hold.summary.depositAmount,
+            paidAmount: Math.round(payment.paidAmount),
+            status: "PAID"
+          }), buildSepayPaidNote(payment.paidAmount))
+        : buildSepayMetadata(maGiaoDich, depositAmount, expiresAt);
       await client.query(
         `
           UPDATE giaodich
           SET tongtien = $2,
+              phuongthucthanhtoan = CASE WHEN $4::boolean THEN 'ChuyenKhoan' ELSE phuongthucthanhtoan END,
               ghichu = CASE
                 WHEN COALESCE(ghichu, '') = '' THEN $3
                 ELSE ghichu || ' | ' || $3
               END
           WHERE magiaodich = $1
         `,
-        [maGiaoDich, total, sepayNote]
+        [maGiaoDich, total, sepayNote, Boolean(payment)]
       );
 
       const accountPrefix = maDoan ? `D${String(maDoan).padStart(3, "0")}` : `GD${maGiaoDich}`;
@@ -3067,15 +3086,18 @@ export class FrontdeskService {
         depositAmount,
         expiresAt: expiresAt.toISOString(),
         paymentTransfer: buildSepayTransferPayload(maGiaoDich, depositAmount),
-        paymentPending: true,
+        paymentPending: !payment,
         createdAccounts
       };
     });
 
+    // Payment and booking were committed together; never retry creation after a view-query failure.
+    if (payment) directBookingHoldStore.completeSnapshot(payment.hold, created.transactionId, created.bookingCode, created.createdAccounts);
+    const { createdAccounts: _credentials, ...publicBooking } = created;
     realtimeHub.publish({
       type: "booking_created_direct_v2",
       scopes: ["admin", "letan", "quanly", "dichvu"],
-      data: created
+      data: publicBooking
     });
 
     const detail = await this.getTransactionSnapshot(created.transactionId);
@@ -3467,7 +3489,7 @@ export class FrontdeskService {
     }));
   }
 
-  private async getPromotionForTransaction(promotionId: number | null) {
+  private async getPromotionForTransaction(promotionId: number | null, client?: { query: typeof query }) {
     if (!promotionId) {
       return {
         id: null,
@@ -3478,7 +3500,7 @@ export class FrontdeskService {
       };
     }
 
-    const result = await query<{
+    const result = await (client ?? { query }).query<{
       id: number;
       tenChuongTrinh: string;
       mucUuDai: number;
@@ -3512,7 +3534,7 @@ export class FrontdeskService {
 
     const value = Number(promotion.mucUuDai || 0);
     const type = String(promotion.loaiUuDai || "PERCENT").toUpperCase();
-    const suffix = type === "FIXED" || value >= 100 ? "d" : "%";
+    const suffix = type === "FIXED" ? "d" : "%";
     return {
       id: promotion.id,
       name: promotion.tenChuongTrinh,
@@ -3593,12 +3615,12 @@ export class FrontdeskService {
     };
   }
 
-  private async calculatePromotionDiscount(promotionId: number | null, totalBeforeDiscount: number) {
+  private async calculatePromotionDiscount(promotionId: number | null, totalBeforeDiscount: number, client?: { query: typeof query }) {
     if (!promotionId || totalBeforeDiscount <= 0) {
       return 0;
     }
 
-    const promotion = await this.getPromotionForTransaction(promotionId);
+    const promotion = await this.getPromotionForTransaction(promotionId, client);
     const value = Number(promotion.value || 0);
     if (value <= 0) {
       return 0;
@@ -3611,7 +3633,7 @@ export class FrontdeskService {
     }
 
     const type = String(promotion.type || "PERCENT").toUpperCase();
-    const discount = type === "FIXED" || value >= 100
+    const discount = type === "FIXED"
       ? value
       : (totalBeforeDiscount * value) / 100;
 
@@ -3761,7 +3783,7 @@ export class FrontdeskService {
     const roomTotal = Number(result.rows[0]?.roomTotal || 0);
     const serviceTotal = Number(result.rows[0]?.serviceTotal || 0);
     const beforeDiscount = roomTotal + serviceTotal;
-    const discount = await this.calculatePromotionDiscount(promotionId, beforeDiscount);
+    const discount = await this.calculatePromotionDiscount(promotionId, beforeDiscount, client);
 
     return {
       roomTotal,
@@ -3799,7 +3821,7 @@ export class FrontdeskService {
     const roomTotal = Number(result.rows[0]?.roomTotal || 0);
     const serviceTotal = Number(result.rows[0]?.serviceTotal || 0);
     const beforeDiscount = roomTotal + serviceTotal;
-    const discount = await this.calculatePromotionDiscount(promotionId, beforeDiscount);
+    const discount = await this.calculatePromotionDiscount(promotionId, beforeDiscount, client);
 
     return {
       roomTotal,
@@ -3895,12 +3917,12 @@ export class FrontdeskService {
     };
   }
 
-  private async findTransactionById(transactionId: number) {
+  private async findTransactionById(transactionId: number, client?: { query: typeof query }) {
     if (!transactionId || transactionId <= 0) {
       return null;
     }
 
-    const result = await query<TransactionLookupRow>(
+    const result = await (client ?? { query }).query<TransactionLookupRow>(
       `
         SELECT
           gd.magiaodich AS "maGiaoDich",
@@ -3931,8 +3953,8 @@ export class FrontdeskService {
     return result.rows[0] ?? null;
   }
 
-  private async getTransactionRooms(transactionId: number) {
-    const result = await query<RoomStayRow>(
+  private async getTransactionRooms(transactionId: number, client?: { query: typeof query }) {
+    const result = await (client ?? { query }).query<RoomStayRow>(
       `
         SELECT
           ct.mactgd AS "maCtgd",
@@ -3970,13 +3992,13 @@ export class FrontdeskService {
     return result.rows;
   }
 
-  private async getRoomDetail(transactionId: number, roomId: number) {
-    const rooms = await this.getTransactionRooms(transactionId);
+  private async getRoomDetail(transactionId: number, roomId: number, client?: { query: typeof query }) {
+    const rooms = await this.getTransactionRooms(transactionId, client);
     return rooms.find((item) => item.maPhong === roomId) ?? null;
   }
 
-  private async getRoomServices(transactionId: number, roomId: number) {
-    const result = await query<ServiceRow>(
+  private async getRoomServices(transactionId: number, roomId: number, client?: { query: typeof query }) {
+    const result = await (client ?? { query }).query<ServiceRow>(
       `
         SELECT
           MIN(ctdv.mactdv) AS "maCtDv",
