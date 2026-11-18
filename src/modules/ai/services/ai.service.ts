@@ -396,6 +396,74 @@ export class AIService {
       bookingFallbackCities: ["An Giang", "Can Tho"],
       fallbackBookingNote: "Nếu phòng sát Hà Tiên chưa đủ điều kiện theo bộ lọc, hệ thống sẽ mở rộng sang An Giang hoặc Cần Thơ như phương án dừng chân/tuyến miền Tây.",
       imageUrl: "/uploads/destinations/phu-quoc.jpg"
+    },
+    {
+      canonicalName: "Quy Nhơn",
+      aliases: [/quy nhon/, /eo gio/, /bai xep/, /ghenh rang/, /ky co/, /binh dinh/],
+      city: "Binh Dinh",
+      district: "Quy Nhơn",
+      region: "Quy Nhơn, Bình Định",
+      category: "Biển · hoang sơ · yên tĩnh",
+      summary: "Quy Nhơn là điểm biển ít đông khách hơn Nha Trang hay Đà Nẵng, phù hợp cho chuyến nghỉ yên tĩnh, lặn biển và khám phá bờ biển hoang sơ. Eo Gió, Bãi Xép, Kỳ Co là các điểm nổi bật.",
+      highlights: ["Eo Gió và Kỳ Co hoang sơ, ít đông", "Biển Bãi Xép từng xuất hiện trong phim", "Gành Đá Đĩa — cột đá dung nham độc đáo"],
+      activities: ["Chèo kayak hoặc lặn biển tại Kỳ Co", "Thăm Gành Đá Đĩa và chụp ảnh", "Ăn hải sản tươi tại chợ Quy Nhơn", "Dạo bờ biển Quy Nhơn buổi sáng"],
+      visitThisMonth: ["Mùa hè là thời điểm tốt nhất; tránh tháng 11-12 khi có bão miền Trung.", "Nên đặt phòng sớm vào tháng cao điểm hè."],
+      packing: ["Kem chống nắng, kính lặn, dép biển.", "Áo mưa nhẹ nếu đi vào tháng 9-10.", "Tiền mặt vì một số điểm không có ATM."],
+      avoid: ["Tránh Kỳ Co khi biển động, thuyền có thể không hoạt động.", "Không để đồ dùng không giám sát ở bãi biển vắng."],
+      routeNotes: ["Nên ở trung tâm Quy Nhơn để thuận tiện đi các điểm quanh thành phố.", "Có thể bay thẳng vào sân bay Phù Cát (cách trung tâm ~30km)."],
+      suggestedStayAreas: ["Quy Nhơn", "Binh Dinh"],
+      imageUrl: "/uploads/destinations/phu-quoc.jpg"
+    },
+    {
+      canonicalName: "Phú Yên",
+      aliases: [/phu yen/, /ganh da dia/, /vung ro/, /tuy hoa/, /mui dien/, /o loan/],
+      city: "Phu Yen",
+      district: "Tuy Hòa",
+      region: "Tuy Hòa, Phú Yên",
+      category: "Biển · đá · yên bình",
+      summary: "Phú Yên nổi tiếng với Gành Đá Đĩa, Mũi Điện (cực Đông), và các bãi biển vắng. Điểm đến hợp cho du lịch chậm, nhiếp ảnh thiên nhiên và nghỉ dưỡng yên tĩnh.",
+      highlights: ["Gành Đá Đĩa — kỳ quan địa chất basalt độc đáo", "Mũi Điện — điểm cực Đông Việt Nam đón bình minh sớm nhất", "Vũng Rô và Đầm Ô Loan — cảnh sắc ven biển thanh bình"],
+      activities: ["Chụp ảnh Gành Đá Đĩa lúc bình minh", "Leo Mũi Điện ngắm bình minh cực Đông", "Kayak trên Vũng Rô", "Ăn hải sản tươi tại Tuy Hòa"],
+      visitThisMonth: ["Tháng 1-8 là mùa đẹp nhất; tháng 9-12 có mưa bão miền Trung.", "Đi Gành Đá Đĩa sáng sớm để tránh đông và có ánh sáng đẹp."],
+      packing: ["Giày chống trơn để leo đá, kem chống nắng, áo khoác nhẹ sáng sớm.", "Máy ảnh hoặc điện thoại chụp ảnh tốt."],
+      avoid: ["Không đứng ở mép đá khi sóng lớn.", "Tránh đi một mình vào buổi tối ở bờ biển vắng."],
+      routeNotes: ["Nên ở trung tâm Tuy Hòa để thuận đi các điểm.", "Bay vào sân bay Tuy Hòa hoặc đi tàu từ Hà Nội/TP.HCM."],
+      suggestedStayAreas: ["Tuy Hòa", "Phu Yen"],
+      imageUrl: "/uploads/destinations/da-nang-ba-na.jpg"
+    },
+    {
+      canonicalName: "Huế",
+      aliases: [/\bhue\b/, /kinh thanh hue/, /dai noi/, /lang tu duc/, /cho dong ba/, /thien mu/, /ngu hanh/],
+      city: "Thua Thien Hue",
+      district: "Thành phố Huế",
+      region: "Huế, Thừa Thiên Huế",
+      category: "Di sản · văn hóa · ẩm thực",
+      summary: "Huế là cố đô triều Nguyễn, nổi bật với Kinh thành, lăng tẩm, chùa Thiên Mụ và ẩm thực cung đình tinh tế. Phù hợp cho chuyến du lịch văn hóa, lịch sử và khám phá ẩm thực.",
+      highlights: ["Đại Nội và Kinh thành Huế — di sản UNESCO", "Lăng Tự Đức, Khải Định, Minh Mạng", "Chùa Thiên Mụ bên dòng sông Hương", "Chợ Đông Ba và ẩm thực cung đình"],
+      activities: ["Tham quan Đại Nội và Kinh thành", "Đi thuyền trên sông Hương buổi chiều", "Thử bún bò Huế, cơm hến, bánh khoái", "Ghé các lăng tẩm theo hành trình vòng ngoài"],
+      visitThisMonth: ["Tháng 2-8 là mùa đẹp; tháng 9-12 mưa nhiều, nên chuẩn bị áo mưa.", "Tháng 4-5 festival Huế nếu có (kiểm tra lịch hàng năm)."],
+      packing: ["Giày đi bộ thoải mái, áo mưa nhẹ, trang phục lịch sự khi vào cung/chùa.", "Nón lá Huế có thể mua làm quà lưu niệm."],
+      avoid: ["Không mặc hở hang khi vào khu di tích và chùa.", "Tránh đi lăng tẩm quá nhiều điểm trong một ngày vì mệt."],
+      routeNotes: ["Nên ở gần sông Hương hoặc trung tâm để thuận tiện đi bộ.", "Có thể kết hợp Đà Nẵng và Hội An trong cùng hành trình miền Trung."],
+      suggestedStayAreas: ["Huế", "Thua Thien Hue"],
+      imageUrl: "/uploads/destinations/da-nang-ba-na.jpg"
+    },
+    {
+      canonicalName: "Mũi Né Phan Thiết",
+      aliases: [/phan thiet/, /mui ne/, /doi cat/, /suoi tien/, /binh thuan/],
+      city: "Binh Thuan",
+      district: "Mũi Né",
+      region: "Mũi Né, Phan Thiết, Bình Thuận",
+      category: "Biển · resort · đồi cát",
+      summary: "Mũi Né nổi tiếng với đồi cát đỏ/trắng, kite surfing và các resort ven biển. Cách TP.HCM khoảng 200km, dễ đến bằng xe buýt giường nằm hoặc xe riêng.",
+      highlights: ["Đồi cát đỏ và trắng — cảnh tượng hiếm có ở Việt Nam", "Kite surfing — thiên đường lướt diều", "Bãi biển resort dài và nhiều lựa chọn lưu trú"],
+      activities: ["Trượt cát và chụp ảnh đồi cát lúc bình minh", "Thử kite surfing hoặc windsurf", "Dạo chợ cá Mũi Né sáng sớm", "Thư giãn ở pool resort buổi chiều"],
+      visitThisMonth: ["Tháng 11-4 là mùa khô và gió mạnh — lý tưởng cho kite surfing.", "Tháng 5-10 mưa hơn nhưng vẫn ổn cho resort nghỉ dưỡng."],
+      packing: ["Kem chống nắng SPF cao, kính mát, dép biển.", "Áo gió nhẹ cho buổi sáng sớm đi cát."],
+      avoid: ["Không lên đồi cát giữa trưa nắng gắt.", "Kiểm tra giờ hoạt động thuê xe ATV trước khi đi."],
+      routeNotes: ["Nên ở khu resort dọc đường Nguyễn Đình Chiểu để gần biển và tiện ăn uống.", "Từ TP.HCM có xe buýt giường nằm Phuong Trang chạy đêm rất tiện."],
+      suggestedStayAreas: ["Mũi Né", "Phan Thiết", "Binh Thuan"],
+      imageUrl: "/uploads/destinations/phu-quoc.jpg"
     }
   ];
 
@@ -639,7 +707,9 @@ export class AIService {
     return {
       message: input.message,
       requires_location: false,
-      reply_intro: hasGreetingPrefix(input.message) ? "Chào bạn! Mình xem giúp bạn nhé." : "",
+      reply_intro: hasGreetingPrefix(input.message)
+        ? (["Chào bạn! Mình xem giúp bạn nhé.", "Xin chào! Để mình tìm cho bạn.", "Hey! Mình đây, tìm phòng ngay nhé!"][Math.floor(Math.random() * 3)])
+        : "",
       intent,
       answer: assistant.answer,
       context_cards: assistant.contextCards,
@@ -873,6 +943,27 @@ export class AIService {
     const filters: Partial<SearchBookingInput> = {};
     const cities = await this.getKnownCities();
 
+    // ── Budget range: "2-3 triệu", "từ 500k đến 1tr", "khoảng 1.5-2tr" ──
+    const budgetRangeMatch = text.match(
+      /(tu|từ|khoang|khoảng)?\s*(\d+(?:[.,]\d+)?)\s*(tr|triệu|trieu|k|nghin|nghìn)?\s*(?:-|đến|den|~)\s*(\d+(?:[.,]\d+)?)\s*(tr|triệu|trieu|k|nghin|nghìn)/i
+    );
+    const parseBudgetUnit = (val: string, unit: string) => {
+      const raw = Number(val.replace(",", "."));
+      const u = unit?.toLowerCase() || "";
+      if (["tr", "triệu", "trieu"].includes(u)) return Math.round(raw * 1_000_000);
+      if (["k", "nghin", "nghìn"].includes(u)) return Math.round(raw * 1_000);
+      return Math.round(raw);
+    };
+    if (budgetRangeMatch) {
+      const lo = parseBudgetUnit(budgetRangeMatch[2], budgetRangeMatch[3] || budgetRangeMatch[5]);
+      const hi = parseBudgetUnit(budgetRangeMatch[4], budgetRangeMatch[5]);
+      if (lo > 0 && hi > 0 && hi >= lo) {
+        filters.gia_tu = lo;
+        filters.gia_den = hi;
+        filters.gia_goi_y = Math.round((lo + hi) / 2);
+      }
+    }
+
     if (normalizedText.includes("deluxe")) filters.loai_phong = "Deluxe";
     else if (normalizedText.includes("suite")) filters.loai_phong = "Suite";
     else if (normalizedText.includes("family")) filters.loai_phong = "Family";
@@ -914,7 +1005,19 @@ export class AIService {
       { pattern: /\b(moc chau)\b/, value: "Mộc Châu", city: "Son La" },
       { pattern: /(phu quoc|duong dong|bai sao)/, value: "Dương Đông Phú Quốc", city: "Kien Giang" },
       { pattern: /(vung tau|ba ria|ho tram|long hai|con dao)/, value: "Vũng Tàu", city: "Ba Ria - Vung Tau" },
-      { pattern: /(nguyen hue|cho ben thanh|sai gon|ho chi minh|hcm)/, value: "Phố đi bộ Nguyễn Huệ", city: "Ho Chi Minh" }
+      { pattern: /(nguyen hue|cho ben thanh|sai gon|ho chi minh|hcm)/, value: "Phố đi bộ Nguyễn Huệ", city: "Ho Chi Minh" },
+      // ── Destinations mới bổ sung ──
+      { pattern: /\b(quy nhon|eo gio|bai xep|ghenh rang|ky co)\b/, value: "Quy Nhơn", city: "Binh Dinh" },
+      { pattern: /\b(phu yen|ganh da dia|vung ro|tuy hoa|mui dien)\b/, value: "Phú Yên", city: "Phu Yen" },
+      { pattern: /\b(hue|kinh thanh hue|dai noi|lang tu duc|cho dong ba)\b/, value: "Kinh thành Huế", city: "Thua Thien Hue" },
+      { pattern: /\b(hai phong|do son|cat ba|dao cat ba)\b/, value: "Hải Phòng", city: "Hai Phong" },
+      { pattern: /\b(ninh binh|trang an|tam coc|bich dong|hang mua)\b/, value: "Tràng An Ninh Bình", city: "Ninh Binh" },
+      { pattern: /\b(phan thiet|mui ne|doi cat|suoi tien)\b/, value: "Mũi Né Phan Thiết", city: "Binh Thuan" },
+      { pattern: /\b(con dao|con lon|dam trau|dat doc)\b/, value: "Côn Đảo", city: "Ba Ria - Vung Tau" },
+      { pattern: /\b(ha long|vinh ha long|sung sot|halong)\b/, value: "Vịnh Hạ Long", city: "Quang Ninh" },
+      { pattern: /\b(da nang|han|cau rong)\b/, value: "Đà Nẵng", city: "Da Nang" },
+      { pattern: /\b(han noi|hanoi|ho guom|pho co ha noi|hoan kiem)\b/, value: "Hà Nội", city: "Ha Noi" },
+      { pattern: /\b(can tho|ninh kieu|ben ninh kieu)\b/, value: "Cần Thơ", city: "Can Tho" },
     ];
     const matchedDestination = destinationAliases.find((item) => item.pattern.test(normalizedText));
     if (matchedDestination) {
@@ -934,8 +1037,17 @@ export class AIService {
       filters.hotel_city = namedCity;
     }
 
+    // ── Guest count: "mình và 2 bạn" → 3, "nhóm 8 người", "cả nhà 6 người" ──
     const guestMatch = text.match(/(\d+)\s*(nguoi|người|khach|khách|pax)/i);
-    if (guestMatch) {
+    // "mình/tôi và N bạn/người" → N+1
+    const meAndFriendsMatch = text.match(/(?:minh|tôi|mình)\s+va\s+(\d+)\s*(?:ban|bạn|nguoi|người)/i);
+    // "cả nhà N người", "nhóm N người"
+    const groupMatch = text.match(/(?:ca nha|nhom|nhóm)\s+(\d+)\s*(?:nguoi|người)/i);
+    if (groupMatch) {
+      filters.so_khach = Number(groupMatch[1]);
+    } else if (meAndFriendsMatch) {
+      filters.so_khach = Number(meAndFriendsMatch[1]) + 1;
+    } else if (guestMatch) {
       filters.so_khach = Number(guestMatch[1]);
     } else if (/(cap doi|couple|trang mat|honeymoon|hai vo chong|2 vo chong)/.test(normalizedText)) {
       filters.so_khach = 2;
@@ -977,6 +1089,17 @@ export class AIService {
       filters.ngay_tra = checkin.add(Math.max(1, nights), "day").format("YYYY-MM-DD");
     };
 
+    // ── Extended date parsing ──
+    // "thứ N tuần này/sau": thứ 2=1, thứ 3=2, ..., thứ 7=6, chủ nhật=0
+    const thuMatch = normalizedText.match(/\bthu\s+(2|3|4|5|6|7|hai|ba|tu|nam|sau|bay)\b/);
+    const dayOfWeekMap: Record<string, number> = { "2": 1, "hai": 1, "3": 2, "ba": 2, "4": 3, "tu": 3, "5": 4, "nam": 4, "6": 5, "sau": 5, "7": 6, "bay": 6 };
+    // "dịp 30/4", "30/4-1/5" (holiday date range without year)
+    const holidayMatch = text.match(/\b(30\/4|1\/5|2\/9|1\/1)\b/);
+    // "tháng N [năm Y]": tháng 12, tháng 3 năm sau
+    const monthMatch = normalizedText.match(/\bthang\s+(\d{1,2})(?:\s+nam\s+(\d{4}))?\b/);
+    // "cuối tháng [này]", "đầu tháng [sau]"
+    const endMonthMatch = normalizedText.match(/\b(cuoi|dau|giua)\s+thang(\s+(nay|sau))?\b/);
+
     if (!filters.ngay_nhan && /(hom nay|today)/.test(normalizedText)) {
       setRange(today, requestedNights || 1);
     } else if (!filters.ngay_nhan && /(ngay mai|tomorrow)/.test(normalizedText)) {
@@ -985,10 +1108,50 @@ export class AIService {
       setRange(today.add(2, "day"), requestedNights || 1);
     } else if (!filters.ngay_nhan && /(cuoi tuan nay|weekend này|weekend nay)/.test(normalizedText)) {
       const daysUntilSaturday = (6 - today.day() + 7) % 7;
-      setRange(today.add(daysUntilSaturday, "day"), requestedNights || 2);
+      setRange(today.add(daysUntilSaturday || 7, "day"), requestedNights || 2);
     } else if (!filters.ngay_nhan && /(cuoi tuan sau|weekend sau|next weekend)/.test(normalizedText)) {
       const daysUntilSaturday = (6 - today.day() + 7) % 7;
       setRange(today.add(daysUntilSaturday + 7, "day"), requestedNights || 2);
+    } else if (!filters.ngay_nhan && thuMatch) {
+      // "thứ 7 tuần này", "thứ 6 tuần sau"
+      const targetDow = dayOfWeekMap[thuMatch[1]] ?? -1;
+      if (targetDow >= 0) {
+        const isNextWeek = /tuan sau|tuần sau/.test(normalizedText);
+        let diff = (targetDow - today.day() + 7) % 7;
+        if (diff === 0) diff = 7; // same weekday → next occurrence
+        if (isNextWeek) diff += 7;
+        setRange(today.add(diff, "day"), requestedNights || 2);
+      }
+    } else if (!filters.ngay_nhan && holidayMatch) {
+      // "30/4", "1/5", "2/9" — set checkin to nearest future occurrence
+      const holidayDates: Record<string, [number, number]> = { "30/4": [3, 30], "1/5": [4, 1], "2/9": [8, 2], "1/1": [0, 1] };
+      const [mon, day] = holidayDates[holidayMatch[1]] ?? [];
+      if (mon !== undefined) {
+        let d = dayjs().month(mon).date(day);
+        if (d.isBefore(today)) d = d.add(1, "year");
+        setRange(d, requestedNights || 3);
+      }
+    } else if (!filters.ngay_nhan && monthMatch) {
+      const mon = Number(monthMatch[1]) - 1;
+      const yr = monthMatch[2] ? Number(monthMatch[2]) : (today.month() > mon ? today.year() + 1 : today.year());
+      if (mon >= 0 && mon <= 11) {
+        const checkin = dayjs().year(yr).month(mon).date(1).startOf("month");
+        setRange(checkin.isAfter(today) ? checkin : today.add(1, "day"), requestedNights || 2);
+      }
+    } else if (!filters.ngay_nhan && endMonthMatch) {
+      const part = endMonthMatch[1]; // cuoi|dau|giua
+      const isNext = /sau/.test(endMonthMatch[3] || "");
+      const ref = isNext ? today.add(1, "month") : today;
+      const checkin = part === "cuoi"
+        ? ref.endOf("month").subtract(3, "day")
+        : part === "dau"
+          ? ref.startOf("month").add(1, "day")
+          : ref.date(15);
+      setRange(checkin.isBefore(today) ? today.add(1, "day") : checkin, requestedNights || 2);
+    } else if (!filters.ngay_nhan && /(dip le|dip tet|le tet|tet nguyen dan|tet|mung 1 tet)/.test(normalizedText)) {
+      // Tết nguyên đán — approximate late January / early February next year
+      const tetYear = today.month() > 1 ? today.year() + 1 : today.year();
+      setRange(dayjs(`${tetYear}-01-28`), requestedNights || 5);
     }
 
     if (filters.ngay_nhan && !filters.ngay_tra && requestedNights) {
@@ -1060,6 +1223,43 @@ export class AIService {
         filters.so_khach = 4;
       }
       filters.sort_by = "capacity_fit";
+    }
+
+    // ── Sprint 2: Điều chỉnh số đêm qua lời tự nhiên ──────────────────────
+    const addNightsMatch = text.match(/\b(them|thêm)\s+(\d+)\s*(dem|đêm|ngay|ngày)\b/);
+    const setNightsMatch = text.match(/\b(doi sang|đổi sang|dat|đặt)\s+(\d+)\s*(dem|đêm|ngay|ngày)\b/);
+    const subNightsMatch = text.match(/\b(bot|bớt|giam|giảm)\s+(\d+)\s*(dem|đêm|ngay|ngày)\b/);
+
+    if (filters.ngay_nhan) {
+      const checkin = dayjs(filters.ngay_nhan);
+      const currentNights = filters.ngay_tra
+        ? Math.max(1, dayjs(filters.ngay_tra).diff(checkin, "day")) : 1;
+
+      if (addNightsMatch) {
+        const extra = parseInt(addNightsMatch[2], 10);
+        filters.ngay_tra = checkin.add(currentNights + extra, "day").format("YYYY-MM-DD");
+      } else if (setNightsMatch) {
+        const nights = Math.max(1, parseInt(setNightsMatch[2], 10));
+        filters.ngay_tra = checkin.add(nights, "day").format("YYYY-MM-DD");
+      } else if (subNightsMatch) {
+        const sub = parseInt(subNightsMatch[2], 10);
+        const newNights = Math.max(1, currentNights - sub);
+        filters.ngay_tra = checkin.add(newNights, "day").format("YYYY-MM-DD");
+      }
+    }
+
+    // ── Sprint 2: Điều chỉnh số người ──────────────────────────────────────
+    const addGuestMatch = text.match(/\b(them|thêm)\s+(\d+)\s*(nguoi|người|khach|khách)\b/);
+    const subGuestMatch = text.match(/\b(bot|bớt|giam|giảm)\s+(\d+)\s*(nguoi|người|khach|khách)\b/);
+    const setGuestMatch = text.match(/\b(doi sang|đổi sang|doi thanh|đổi thành)\s+(\d+)\s*(nguoi|người|khach|khách)\b/);
+
+    const curGuests = Number(filters.so_khach || 0);
+    if (addGuestMatch) {
+      filters.so_khach = curGuests + parseInt(addGuestMatch[2], 10);
+    } else if (subGuestMatch) {
+      filters.so_khach = Math.max(1, curGuests - parseInt(subGuestMatch[2], 10));
+    } else if (setGuestMatch) {
+      filters.so_khach = Math.max(1, parseInt(setGuestMatch[2], 10));
     }
 
     return filters;
@@ -2116,6 +2316,42 @@ export class AIService {
       return {
         topic: "payment",
         answer: "Hệ thống theo dõi tổng tiền giao dịch, công nợ và các khoản dịch vụ phát sinh. Việc thanh toán được chốt rõ ở bước check-out và kế toán."
+      };
+    }
+
+    // FAQ destinations mới
+    if (/(quy nhon|binh dinh|ky co|eo gio|ganh da dia)/.test(text)) {
+      return {
+        topic: "destination",
+        answer: "Quy Nhơn (Bình Định) nổi tiếng với Eo Gió, Kỳ Co, Gành Đá Đĩa và ẩm thực bánh xèo tôm nhảy. Thời điểm lý tưởng là từ tháng 1 đến tháng 8. Mình có thể tìm phòng khách sạn hoặc homestay gần bãi biển cho bạn."
+      };
+    }
+
+    if (/(phu yen|tuy hoa|ganh da dia|mui dien|vung ro)/.test(text)) {
+      return {
+        topic: "destination",
+        answer: "Phú Yên (Tuy Hòa) có Gành Đá Đĩa độc đáo, Mũi Điện – điểm cực Đông đất liền, bãi biển Long Thủy sạch đẹp và núi Nhạn. Nên đi tháng 1-8 để tránh mưa. Mình có thể gợi ý lưu trú phù hợp."
+      };
+    }
+
+    if (/(hue|co do|song huong|dai noi|lang tam|lang bac)/.test(text)) {
+      return {
+        topic: "destination",
+        answer: "Huế – Cố đô ngàn năm với Đại Nội, lăng tẩm vua Nguyễn, chùa Thiên Mụ và ẩm thực cung đình tinh tế. Thời tiết đẹp nhất từ tháng 2-5 và tháng 9-11. Mình có thể tìm khách sạn gần sông Hương cho bạn."
+      };
+    }
+
+    if (/(phan thiet|mui ne|doi cat|kite|thung lung tinh yeu)/.test(text)) {
+      return {
+        topic: "destination",
+        answer: "Phan Thiết – Mũi Né nổi tiếng với đồi cát đỏ/trắng, Suối Tiên và kite surfing đẳng cấp châu Á. Thời điểm lý tưởng là mùa khô tháng 11-5. Mình có thể tìm resort có hồ bơi hoặc gần bãi biển."
+      };
+    }
+
+    if (/(con dao|vuon quoc gia|bai dat do|bai lo voi)/.test(text)) {
+      return {
+        topic: "destination",
+        answer: "Côn Đảo có vườn quốc gia, bãi Đất Đỏ, bãi Lò Vôi và hệ sinh thái biển nguyên sơ. Nên đặt sớm vì phòng thường kín vào mùa cao điểm. Bay từ TP.HCM khoảng 50 phút."
       };
     }
 

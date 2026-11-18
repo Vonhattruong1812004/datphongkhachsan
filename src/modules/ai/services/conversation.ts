@@ -67,14 +67,24 @@ export function conversationalReply(message: string, filters: Partial<SearchBook
       ? "Có vẻ mình hiểu chưa đúng ý bạn rồi. Bạn muốn đổi điểm nào trong gợi ý vừa rồi?"
       : "Mình hỏi lại cho rõ nhé: bạn muốn tìm phòng hay cần tư vấn cho chuyến đi?", suggestions: hasContext ? ["Tìm phòng rẻ hơn", "Tìm phòng rộng hơn"] : suggestions };
   }
-  if (/^(ok(ay)?|oke|oki|duoc|duoc roi|dong y|uh|um|u|ua|vang|da|tot|hay qua|tuyet|tuyet voi)( (nhe|nha|roi|a|ban))*$/.test(text)) {
+  if (/^(ok(ay)?|oke|oki|duoc|duoc roi|dong y|uh|um|u|ua|vang|da|tot|hay qua|tuyet|tuyet voi|ngon|ngon lam|chuan|chuan lam|dinh|dinh qua)( (nhe|nha|roi|a|ban))*$/.test(text)) {
     return { kind: "acknowledgement", text: `Được nhé! ${hasContext ? nextQuestion : "Bạn muốn mình giúp gì tiếp nè?"}`, suggestions: hasContext ? [] : suggestions };
   }
-  if (/^(thoi|thoi nhe|khong can nua|de sau|tam dung|dung lai)$/.test(text)) {
+  if (/^(thoi|thoi nhe|khong can nua|de sau|tam dung|dung lai|thoi khoi|bo qua di)$/.test(text)) {
     return { kind: "pause", text: "Được nhé, mình dừng gợi ý ở đây. Khi nào cần, bạn cứ nhắn mình.", suggestions: [] };
   }
-  if (/^(bat dau lai|tim chuyen khac|lam lai tu dau|xoa ngu canh|new search)$/.test(text)) {
+  if (/^(bat dau lai|tim chuyen khac|lam lai tu dau|xoa ngu canh|new search|tim lai|tim lai tu dau)$/.test(text)) {
     return { kind: "reset", text: "Mình cùng lên kế hoạch mới nhé. Bạn muốn đi đâu lần này?", suggestions, resetContext: true };
+  }
+  // Context refinement shortcut — để booking flow xử lý ("thêm 1 đêm", "đổi 3 đêm", "bớt 1 người"…)
+  if (hasContext && /\b(them|doi sang|giam|bo bot|thay doi)\b/.test(text)
+    && /\b(\d+)\s*(dem|nguoi|khach|ngay)\b/.test(text)) {
+    return null;
+  }
+  // Câu hỏi dạng "còn phòng không?" hoặc "phòng nào đẹp nhất?" → booking flow
+  if (/\b(con phong|co phong|con cho|co cho)\b.*\b(khong|ko|k)\b/.test(text)
+    || /\b(phong nao|cho nao|chon giup|tu van giup|goi y giup)\b/.test(text)) {
+    return null;
   }
   return null;
 }
