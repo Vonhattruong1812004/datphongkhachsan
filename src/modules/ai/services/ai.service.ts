@@ -665,6 +665,7 @@ export class AIService {
       };
     }
     const faq = this.matchFaqAnswer(input.message, intent);
+    const sentiment = this.detectSentiment(input.message);
     const recommendations = await this.recommendRooms(mergedFilters, user ?? null, {
       sourceLabel: "Trợ lý đặt phòng",
       message: input.message,
@@ -700,7 +701,7 @@ export class AIService {
         external_discovery: discovery, context_cards: [], quick_actions: [], follow_up_prompts: []
       };
     }
-    const assistant = await this.buildSmartAnswer(input.message, intent, mergedFilters, recommendations);
+    const assistant = await this.buildSmartAnswer(input.message, intent, mergedFilters, recommendations, sentiment);
 
     await this.logApiRequest("/api/ai/concierge", "POST", user?.maTaiKhoan ?? null, 200);
 
@@ -711,6 +712,7 @@ export class AIService {
         ? (["Chào bạn! Mình xem giúp bạn nhé.", "Xin chào! Để mình tìm cho bạn.", "Hey! Mình đây, tìm phòng ngay nhé!"][Math.floor(Math.random() * 3)])
         : "",
       intent,
+      sentiment,
       answer: assistant.answer,
       context_cards: assistant.contextCards,
       quick_actions: assistant.quickActions,
@@ -1433,7 +1435,8 @@ export class AIService {
     message: string,
     intent: AIIntent,
     filters: SearchBookingInput,
-    recommendations: Awaited<ReturnType<AIService["recommendRooms"]>>
+    recommendations: Awaited<ReturnType<AIService["recommendRooms"]>>,
+    sentiment?: "frustrated" | "excited" | "urgent" | "neutral"
   ): Promise<{
     answer: { title: string; body: string; bullets: string[] };
     contextCards: AIContextCard[];
@@ -1463,7 +1466,7 @@ export class AIService {
       case "booking":
       case "general":
       default:
-        return this.buildBookingAnswer(filters, recommendations, intent);
+        return this.buildBookingAnswer(filters, recommendations, intent, sentiment);
     }
   }
 
@@ -2053,7 +2056,8 @@ export class AIService {
   private async buildBookingAnswer(
     filters: SearchBookingInput,
     recommendations: Awaited<ReturnType<AIService["recommendRooms"]>>,
-    intent: AIIntent
+    intent: AIIntent,
+    sentiment?: "frustrated" | "excited" | "urgent" | "neutral"
   ) {
     const top = recommendations.top_pick;
     const decision = recommendations.booking_decision;
@@ -2066,6 +2070,11 @@ export class AIService {
       filters.ngay_nhan && filters.ngay_tra ? "" : "ngày nhận/trả"
     ].filter(Boolean);
     const relaxedRooms = top || nearby ? [] : await this.loadRelaxedRoomCards(filters);
+    const sentimentPrefix =
+      sentiment === "frustrated" ? "Mình hiểu, để mình thử lại với bộ lọc rộng hơn. " :
+      sentiment === "urgent" ? "Mình xử lý nhanh! " :
+      sentiment === "excited" ? "Tuyệt! Mình tìm ngay. " :
+      "";
     const contextCards: AIContextCard[] = [
       ...(top ? [{
         type: "room" as const,
@@ -2094,7 +2103,7 @@ export class AIService {
           : destinationLabel
             ? `Mình chưa thấy phòng khớp chính xác ở ${destinationLabel}.`
             : "Mình có thể tư vấn phòng theo nhu cầu của bạn.",
-        body: top
+        body: sentimentPrefix + (top
           ? nearby
             ? `Cách bạn khoảng ${top.userDistanceLabel || `${Number(top.userDistanceKm).toFixed(1)} km`} theo đường thẳng. Chưa tính tuyến đường thực tế.`
             : `${top.loaiPhong} · tối đa ${top.soKhachToiDa} khách · ${top.tinhThanh}.`
@@ -2104,7 +2113,7 @@ export class AIService {
             ? `Điều kiện ${destinationLabel ? `ở ${destinationLabel} ` : ""}hơi chặt nên mình hiển thị vài lựa chọn gần nhất để bạn cân nhắc nới ngân sách, đổi loại lưu trú hoặc mở rộng khu vực.`
             : destinationLabel
               ? `Mình đã ghi nhận điểm đến ${destinationLabel}${filters.so_khach > 0 ? ` cho ${filters.so_khach} khách` : ""}, nhưng kho phòng hiện tại chưa có kết quả phù hợp. Bạn có thể mở danh sách để kiểm tra bộ lọc hoặc đổi sang tỉnh/thành lân cận.`
-              : "Bạn có thể hỏi bằng tiếng Việt tự nhiên: muốn ở khu vực nào, mấy người, ngân sách bao nhiêu, thích hotel/resort/homestay hay penthouse, cần gần điểm nào.",
+              : "Bạn có thể hỏi bằng tiếng Việt tự nhiên: muốn ở khu vực nào, mấy người, ngân sách bao nhiêu, thích hotel/resort/homestay hay penthouse, cần gần điểm nào."),
         bullets: top
           ? [
               ...(filters.ngay_nhan && filters.ngay_tra ? [] : ["Chọn ngày nhận/trả để kiểm tra phòng trống và tổng tiền."]),
@@ -3431,6 +3440,20 @@ export class AIService {
     }
 
     return `${pieces.join(", ")}. Độ phù hợp hiện tại ở mức ${finalScore}/99.`;
+  }
+
+  private detectSentiment(message: string): "frustrated" | "excited" | "urgent" | "neutral" {
+    const t = this.normalizeForAi(message);
+    if (/(mai khong|sao khong|te qua|chan qua|khong tim duoc|tim hoai|mai|buc|kho chiu|khong hieu gi|do|chan|that vong|tim mai|lau the|lau vay)/.test(t)) {
+      return "frustrated";
+    }
+    if (/(gap|khan|ngay hom nay|toi nay|sang mai|can ngay|con phong|kip khong|con kip|con khong|chieu nay|bay gio)/.test(t)) {
+      return "urgent";
+    }
+    if (/(tuyet|perfect|xin|ngon|hay qua|thich qua|dep|wow|ung|hop ly|qua tot|dinh|chuan|ngon lam|that su|rat dep|rat tot)/.test(t)) {
+      return "excited";
+    }
+    return "neutral";
   }
 
   private normalizeForAi(value: string) {
