@@ -657,12 +657,19 @@ export class AIService {
       const hasNewCriteria = Object.values(extractedFilters).some(value => Boolean(value));
       const refinement = this.detectRefinementIntent(input.message, input.dialogue_context?.topic === "booking");
       if (hasNewCriteria || refinement) intent = "booking";
-      else return {
-        message: input.message, intent: "conversation", conversation_kind: "clarification", requires_location: false,
-        answer: { title: "", body: "Mình chưa rõ bạn muốn hỏi điều gì. Bạn cần tìm phòng, gợi ý điểm đến hay thông tin tham quan?", bullets: [] },
-        extracted_filters: input.filters ?? {}, dialogue_context: { topic: "clarification", excluded_room_ids: [] },
-        recommendations: null, context_cards: [], quick_actions: [], follow_up_prompts: ["Tìm phòng", "Gợi ý điểm đến"]
-      };
+      else {
+        // Low-confidence fallback: give user a clear example based on message length
+        const wordCount = input.message.trim().split(/\s+/).length;
+        const clarifyBody = wordCount <= 3
+          ? "Bạn có thể nói thêm không? Ví dụ: \"Tìm phòng Đà Nẵng 2 đêm cho 2 người\" hoặc \"Gợi ý nơi đi biển tháng 12\"."
+          : "Mình chưa rõ bạn muốn hỏi điều gì. Bạn cần tìm phòng, gợi ý điểm đến hay thông tin tham quan?";
+        return {
+          message: input.message, intent: "conversation", conversation_kind: "clarification", requires_location: false,
+          answer: { title: "", body: clarifyBody, bullets: ["Điểm đến bạn muốn đến?", "Chuyến đi bao nhiêu người?", "Ngân sách mỗi đêm?"] },
+          extracted_filters: input.filters ?? {}, dialogue_context: { topic: "clarification", excluded_room_ids: [] },
+          recommendations: null, context_cards: [], quick_actions: [], follow_up_prompts: ["Tìm phòng Đà Nẵng", "Gợi ý biển đẹp tháng 12", "Phòng 2 người dưới 1 triệu"]
+        };
+      }
     }
     const faq = this.matchFaqAnswer(input.message, intent);
     const sentiment = this.detectSentiment(input.message);
@@ -701,7 +708,7 @@ export class AIService {
         external_discovery: discovery, context_cards: [], quick_actions: [], follow_up_prompts: []
       };
     }
-    const assistant = await this.buildSmartAnswer(input.message, intent, mergedFilters, recommendations, sentiment);
+    const assistant = await this.buildSmartAnswer(input.message, intent, mergedFilters, recommendations, sentiment, recommendations.profile_memory);
 
     await this.logApiRequest("/api/ai/concierge", "POST", user?.maTaiKhoan ?? null, 200);
 
@@ -1436,7 +1443,8 @@ export class AIService {
     intent: AIIntent,
     filters: SearchBookingInput,
     recommendations: Awaited<ReturnType<AIService["recommendRooms"]>>,
-    sentiment?: "frustrated" | "excited" | "urgent" | "neutral"
+    sentiment?: "frustrated" | "excited" | "urgent" | "neutral",
+    memory?: { hasMemory: boolean; city: string | null; roomType: string | null }
   ): Promise<{
     answer: { title: string; body: string; bullets: string[] };
     contextCards: AIContextCard[];
@@ -1466,7 +1474,7 @@ export class AIService {
       case "booking":
       case "general":
       default:
-        return this.buildBookingAnswer(filters, recommendations, intent, sentiment);
+        return this.buildBookingAnswer(filters, recommendations, intent, sentiment, memory);
     }
   }
 
@@ -2057,7 +2065,8 @@ export class AIService {
     filters: SearchBookingInput,
     recommendations: Awaited<ReturnType<AIService["recommendRooms"]>>,
     intent: AIIntent,
-    sentiment?: "frustrated" | "excited" | "urgent" | "neutral"
+    sentiment?: "frustrated" | "excited" | "urgent" | "neutral",
+    memory?: { hasMemory: boolean; city: string | null; roomType: string | null }
   ) {
     const top = recommendations.top_pick;
     const decision = recommendations.booking_decision;
@@ -2075,6 +2084,16 @@ export class AIService {
       sentiment === "urgent" ? "Mình xử lý nhanh! " :
       sentiment === "excited" ? "Tuyệt! Mình tìm ngay. " :
       "";
+    // Memory-aware personalized note
+    const personalNote = memory?.hasMemory && memory.city
+      ? ` (theo gu của bạn ở ${memory.city})`
+      : memory?.hasMemory && memory.roomType
+        ? ` (theo sở thích phòng ${memory.roomType})`
+        : "";
+    // Missing info hint — surfaces when 2+ key fields missing and no top pick
+    const missingHint = !top && missing.length >= 2
+      ? `Để gợi ý chính xác hơn, mình cần thêm: ${missing.slice(0, 2).join(" và ")}. `
+      : "";
     const contextCards: AIContextCard[] = [
       ...(top ? [{
         type: "room" as const,
@@ -2099,11 +2118,11 @@ export class AIService {
     return {
       answer: {
         title: top
-          ? nearby ? "Khách sạn gần bạn" : "Gợi ý cho bạn"
+          ? nearby ? "Khách sạn gần bạn" : `Gợi ý cho bạn${personalNote}`
           : destinationLabel
             ? `Mình chưa thấy phòng khớp chính xác ở ${destinationLabel}.`
             : "Mình có thể tư vấn phòng theo nhu cầu của bạn.",
-        body: sentimentPrefix + (top
+        body: sentimentPrefix + missingHint + (top
           ? nearby
             ? `Cách bạn khoảng ${top.userDistanceLabel || `${Number(top.userDistanceKm).toFixed(1)} km`} theo đường thẳng. Chưa tính tuyến đường thực tế.`
             : `${top.loaiPhong} · tối đa ${top.soKhachToiDa} khách · ${top.tinhThanh}.`
@@ -2372,6 +2391,21 @@ export class AIService {
 
   private buildFollowUpPrompts(filters: SearchBookingInput, topPick: ScoredRoom | null, intent: AIIntent = "booking") {
     const prompts = new Set<string>();
+
+    // ── Proactive clarification: surface the most critical missing piece first ──
+    const proactiveQ: string[] = [];
+    if (!filters.ngay_nhan) {
+      proactiveQ.push("Bạn dự định đi vào ngày nào?");
+    } else if (!filters.ngay_tra) {
+      proactiveQ.push("Bạn muốn nghỉ bao nhiêu đêm?");
+    }
+    if (!filters.so_khach || filters.so_khach === 0) {
+      proactiveQ.push("Chuyến đi này có bao nhiêu người?");
+    }
+    if (!filters.gia_den && !filters.gia_goi_y && !filters.gia_tu) {
+      proactiveQ.push("Ngân sách mỗi đêm của bạn khoảng bao nhiêu?");
+    }
+
     const destinationInsight = this.findDestinationInsight(filters.dia_diem || filters.hotel_city || "", filters);
 
     if (destinationInsight) {
@@ -2433,7 +2467,8 @@ export class AIService {
 
     prompts.add("Phòng nào hợp cho gia đình có trẻ em?");
 
-    return Array.from(prompts).slice(0, 4);
+    const allPrompts = [...proactiveQ, ...Array.from(prompts)];
+    return allPrompts.slice(0, 4);
   }
 
   private async getKnownCities() {
@@ -3083,6 +3118,33 @@ export class AIService {
       tradeoffs.push(`Giá ${formatMoney(price)} / đêm thấp bất thường, nên kiểm tra lại dữ liệu phòng trước khi đặt.`);
     }
 
+    // Budget per-night scoring for multi-night stays
+    if (profile.stayNights > 1 && filters.gia_goi_y > 0) {
+      const nightlyDiff = Math.abs(effectiveNightlyPrice - filters.gia_goi_y) / filters.gia_goi_y;
+      if (nightlyDiff <= 0.05) {
+        addRule("Giá mỗi đêm khớp ngân sách", 6);
+        badges.push("Giá/đêm chuẩn");
+      } else if (nightlyDiff <= 0.10) {
+        addRule("Giá sát ngân sách mục tiêu", 8);
+        badges.push("Giá/đêm rất hợp ngân sách");
+      }
+    }
+    if (filters.gia_den > 0 && effectiveNightlyPrice > filters.gia_den * 1.5) {
+      addRule("Vượt ngân sách đáng kể", -10, "risk");
+      tradeoffs.push(`Giá/đêm (${formatMoney(effectiveNightlyPrice)}) cao hơn ngân sách tối đa ~${Math.round((effectiveNightlyPrice / filters.gia_den - 1) * 100)}%.`);
+    }
+
+    // Review score boost (field may not be in SearchRoomRow — safe cast via unknown)
+    const reviewScore = Number((room as unknown as Record<string, unknown>)["diemDanhGia"] ?? 0);
+    if (reviewScore >= 4.5) {
+      addRule("Đánh giá xuất sắc", 8);
+      badges.push("⭐ Đánh giá cao");
+      reasons.push(`Khách đánh giá ${reviewScore}/5 — xếp loại xuất sắc.`);
+    } else if (reviewScore >= 4.0) {
+      addRule("Đánh giá tốt", 4);
+      badges.push("Được đánh giá tốt");
+    }
+
     if (profile.travelerIntent === "family") {
       if (Number(room.soKhachToiDa || 0) >= Math.max(3, filters.so_khach || 3)) {
         addRule("Nhận diện chuyến đi gia đình", 7);
@@ -3332,7 +3394,18 @@ export class AIService {
 
     const tradeoffCap = abnormalPrice ? 72 : tradeoffs.length >= 2 ? 88 : tradeoffs.length ? 93 : 99;
     const confidenceCap = confidence + (profile.needQuality === "rich" ? 10 : profile.needQuality === "usable" ? 8 : 4);
+
+    // Weekend checkin bonus
+    if (filters.ngay_nhan) {
+      const dow = dayjs(filters.ngay_nhan).day(); // 0=Sun,5=Fri,6=Sat
+      if (dow === 5 || dow === 6 || dow === 0) {
+        addRule("Check-in dịp cuối tuần", 2);
+        badges.push("Phù hợp cuối tuần");
+      }
+    }
+
     const finalScore = Math.max(45, Math.min(99, score, tradeoffCap, confidenceCap));
+
     const tone: "strong" | "good" | "balanced" =
       finalScore >= 86 ? "strong" : finalScore >= 72 ? "good" : "balanced";
     const label = finalScore >= 90
