@@ -1024,9 +1024,9 @@ export class AIService {
       { pattern: /\b(phan thiet|mui ne|doi cat|suoi tien)\b/, value: "Mũi Né Phan Thiết", city: "Binh Thuan" },
       { pattern: /\b(con dao|con lon|dam trau|dat doc)\b/, value: "Côn Đảo", city: "Ba Ria - Vung Tau" },
       { pattern: /\b(ha long|vinh ha long|sung sot|halong)\b/, value: "Vịnh Hạ Long", city: "Quang Ninh" },
-      { pattern: /\b(da nang|han|cau rong)\b/, value: "Đà Nẵng", city: "Da Nang" },
-      { pattern: /\b(han noi|hanoi|ho guom|pho co ha noi|hoan kiem)\b/, value: "Hà Nội", city: "Ha Noi" },
-      { pattern: /\b(can tho|ninh kieu|ben ninh kieu)\b/, value: "Cần Thơ", city: "Can Tho" },
+      { pattern: /\b(song han|cau rong|ban dao son tra)\b/, value: "Cầu Rồng Đà Nẵng", city: "Da Nang" },
+      { pattern: /\b(ho guom|pho co ha noi|hoan kiem|lang bac)\b/, value: "Hồ Gươm Hà Nội", city: "Ha Noi" },
+      { pattern: /\b(ninh kieu|ben ninh kieu)\b/, value: "Bến Ninh Kiều", city: "Can Tho" },
     ];
     const matchedDestination = destinationAliases.find((item) => item.pattern.test(normalizedText));
     if (matchedDestination) {
