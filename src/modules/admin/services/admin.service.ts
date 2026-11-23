@@ -619,6 +619,7 @@ export class AdminService {
 
   async runtimeDiagnostics() {
     const backupDir = this.ensureBackupDir();
+    this.getAutoBackupConfig();
     const checks = [
       this.buildPathCheck("public_build", "Tài nguyên build", path.resolve(process.cwd(), "public/build"), true),
       this.buildPathCheck("manifest", "PWA manifest", path.resolve(process.cwd(), "public/manifest.webmanifest"), false),
@@ -955,11 +956,19 @@ export class AdminService {
   private getAutoBackupConfig(): BackupConfig {
     const configPath = this.getBackupConfigPath();
     if (!fs.existsSync(configPath)) {
-      return {
+      const initialConfig: BackupConfig = {
         enabled: false,
         mode: "manual",
+        updated_at: this.formatDateTime(new Date()),
+        updated_by: "system",
         last_backup: null
       };
+      try {
+        this.writeAutoBackupConfig(initialConfig);
+      } catch {
+        // ignore write failure on read-only fs
+      }
+      return initialConfig;
     }
 
     try {
@@ -1004,7 +1013,7 @@ export class AdminService {
           SELECT
             makhachsan AS id,
             tenkhachsan AS "tenKhachSan",
-            thanhpho AS "thanhPho"
+            tinhthanh AS "thanhPho"
           FROM khachsan
           ORDER BY makhachsan ASC
         `
