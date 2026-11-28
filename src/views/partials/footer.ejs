@@ -827,5 +827,92 @@
   })();
 
 </script>
+
+<!-- Scroll-to-top button -->
+<button class="ux-scroll-top" id="uxScrollTop" type="button" aria-label="Cuộn lên đầu trang" title="Lên đầu trang">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="18 15 12 9 6 15"></polyline>
+  </svg>
+</button>
+
+<!-- Toast container -->
+<div class="ux-toast-container" id="uxToastContainer" aria-live="polite"></div>
+
+<script>
+(() => {
+  // Scroll-to-top
+  const scrollBtn = document.getElementById("uxScrollTop");
+  if (scrollBtn) {
+    let ticking = false;
+    const checkScroll = () => {
+      scrollBtn.classList.toggle("is-visible", window.scrollY > 400);
+      ticking = false;
+    };
+    window.addEventListener("scroll", () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(checkScroll); }
+    }, { passive: true });
+    scrollBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    checkScroll();
+  }
+
+  // Toast system
+  window.bentoToast = (message, type = "info", duration = 4000) => {
+    const container = document.getElementById("uxToastContainer");
+    if (!container) return;
+    const toast = document.createElement("div");
+    toast.className = `ux-toast ux-toast--${type}`;
+    toast.textContent = message;
+    toast.addEventListener("click", () => {
+      toast.classList.add("is-leaving");
+      setTimeout(() => toast.remove(), 250);
+    });
+    container.appendChild(toast);
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.add("is-leaving");
+        setTimeout(() => toast.remove(), 250);
+      }
+    }, duration);
+  };
+
+  // Auto-toast for flash messages
+  document.querySelectorAll(".flash").forEach(flash => {
+    const text = flash.textContent?.trim();
+    if (!text) return;
+    const type = flash.classList.contains("flash--success") ? "success"
+      : flash.classList.contains("flash--error") ? "error" : "info";
+    window.bentoToast(text, type, 5000);
+  });
+
+  // Lazy image reveal
+  if ("IntersectionObserver" in window) {
+    const imgObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-loaded");
+          imgObserver.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: "100px" });
+    document.querySelectorAll('img[loading="lazy"]').forEach(img => {
+      if (img.complete) img.classList.add("is-loaded");
+      else imgObserver.observe(img);
+    });
+  }
+
+  // Form submit loading state
+  document.querySelectorAll("form").forEach(form => {
+    form.addEventListener("submit", () => {
+      const submitBtn = form.querySelector('[type="submit"]');
+      if (submitBtn && !submitBtn.classList.contains("is-loading")) {
+        submitBtn.classList.add("is-loading");
+        setTimeout(() => submitBtn.classList.remove("is-loading"), 8000);
+      }
+    });
+  });
+})();
+</script>
 </body>
 </html>
