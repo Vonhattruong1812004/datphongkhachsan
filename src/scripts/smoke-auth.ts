@@ -215,6 +215,7 @@ async function main() {
     if (profilePage.status !== 200) {
       throw new Error(`Customer profile failed: ${profilePage.status}`);
     }
+    csrfToken = extractCsrfToken(await profilePage.text()) || csrfToken;
 
     const profileUpdate = new URLSearchParams({
       email: user.email,
@@ -258,7 +259,7 @@ async function main() {
     }
 
     const roomSearch = await fetch(
-      `${baseUrl}/api/booking/search?so_khach=1&ngay_nhan=${encodeURIComponent(formatDateInput(checkinDate))}&ngay_tra=${encodeURIComponent(formatDateInput(checkoutDate))}`,
+      `${baseUrl}/api/booking/search?hotel_city=Da%20Nang&so_khach=1&ngay_nhan=${encodeURIComponent(formatDateInput(checkinDate))}&ngay_tra=${encodeURIComponent(formatDateInput(checkoutDate))}`,
       {
         headers: {
           Cookie: cookieJar

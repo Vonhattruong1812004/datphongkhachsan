@@ -9,6 +9,11 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
+  res.locals.currentUser ??= req.session?.user ?? null;
+  res.locals.currentPath ??= req.path;
+  res.locals.query ??= req.query;
+  res.locals.headerNotifications ??= [];
+
   if (error instanceof ZodError) {
     const messages = formatZodMessages(error);
     const message = messages.join(" ") || "Dữ liệu không hợp lệ, vui lòng kiểm tra lại.";

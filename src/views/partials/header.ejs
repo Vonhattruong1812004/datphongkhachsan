@@ -1,4 +1,5 @@
 <%
+    const currentUser = typeof locals !== "undefined" && locals.currentUser ? locals.currentUser : null;
     const roleId = currentUser ? Number(currentUser.maVaiTro) : 0;
     const activePath = typeof currentPath === "string" ? currentPath : "";
     const dashboardHrefByRole = {

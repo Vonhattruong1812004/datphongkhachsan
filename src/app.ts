@@ -99,22 +99,22 @@ export function createApp() {
     res.setHeader("Cache-Control", "private, no-store");
     next();
   });
-  app.use(csrfProtection);
-
   app.use(async (req, res, next) => {
-    res.locals.currentUser = req.session.user ?? null;
+    res.locals.currentUser = req.session?.user ?? null;
     res.locals.currentPath = req.path;
     res.locals.query = req.query;
     res.locals.headerNotifications = [];
 
     try {
-      res.locals.headerNotifications = await notificationService.listForHeader(req.session.user, 8);
+      res.locals.headerNotifications = await notificationService.listForHeader(req.session?.user, 8);
     } catch (error) {
       req.log?.warn({ err: error }, "Khong the tai thong bao header");
     }
 
     next();
   });
+
+  app.use(csrfProtection);
 
   app.use("/", homeRouter);
   app.use("/ai", aiRouter);

@@ -527,11 +527,12 @@ export class CustomerService {
   }
 
   async updateProfile(maKhachHang: number, rawInput: Record<string, unknown>) {
-    const tenKh = String(rawInput.ten_khach || "").trim();
-    const email = String(rawInput.email || "").trim();
-    const sdt = String(rawInput.sdt || "").trim();
-    const cccd = String(rawInput.cccd || "").trim();
-    const diaChi = String(rawInput.dia_chi || "").trim();
+    const current = await this.getProfile(maKhachHang);
+    const tenKh = String(rawInput.ten_khach !== undefined ? rawInput.ten_khach : (current.tenKh || "")).trim();
+    const email = String(rawInput.email !== undefined ? rawInput.email : (current.email || "")).trim();
+    const sdt = String(rawInput.sdt !== undefined ? rawInput.sdt : (current.sdt || "")).trim();
+    const cccd = String(rawInput.cccd !== undefined ? rawInput.cccd : (current.cccd || "")).trim();
+    const diaChi = String(rawInput.dia_chi !== undefined ? rawInput.dia_chi : (current.diaChi || "")).trim();
 
     const errors: string[] = [];
     if (tenKh.length < 2) {
@@ -554,7 +555,6 @@ export class CustomerService {
       throw new HttpError(422, errors.join(" "));
     }
 
-    const current = await this.getProfile(maKhachHang);
     const emailChanged = String(current.email || "").toLowerCase() !== email.toLowerCase();
     const phoneChanged = String(current.sdt || "") !== sdt;
     const identityChanged = String(current.cccd || "") !== cccd;

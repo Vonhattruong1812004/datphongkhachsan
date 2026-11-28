@@ -159,7 +159,7 @@ function handleServiceImportUpload(req: Request, res: Response, next: NextFuncti
   });
 }
 
-serviceRouter.get("/", requireRole([ROLE.LE_TAN, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(renderServicePage));
+serviceRouter.get("/", requireRole([ROLE.DICH_VU, ROLE.LE_TAN, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(renderServicePage));
 serviceRouter.get("/manage", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(renderCatalogManagePage));
 serviceRouter.get("/manage/new", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(renderCatalogCreatePage));
 serviceRouter.get("/manage/:id/edit", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(renderCatalogEditPage));
@@ -176,7 +176,7 @@ serviceRouter.get("/catalog/new", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.
 serviceRouter.get("/catalog/:id/edit", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.ADMIN]), (req, res) => res.redirect(301, `/service/manage/${req.params.id}/edit${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`));
 serviceRouter.post("/catalog", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.ADMIN]), handleServiceImageUpload, validateCsrfToken, asyncHandler(saveCatalogItemAction));
 serviceRouter.post("/catalog/:id/delete", requireRole([ROLE.DICH_VU, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(deleteCatalogItemAction));
-serviceRouter.post("/orders", requireRole([ROLE.LE_TAN]), asyncHandler(createServiceOrderAction));
+serviceRouter.post("/orders", requireRole([ROLE.DICH_VU, ROLE.LE_TAN]), asyncHandler(createServiceOrderAction));
 serviceRouter.post("/orders/:orderId/status", requireRole([ROLE.DICH_VU, ROLE.LE_TAN]), asyncHandler(updateServiceOrderStatusAction));
 serviceRouter.post("/inspection", requireRole([ROLE.DICH_VU, ROLE.LE_TAN, ROLE.QUAN_LY, ROLE.ADMIN]), asyncHandler(updateInspectionAction));
 
