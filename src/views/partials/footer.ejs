@@ -877,39 +877,46 @@
     }, duration);
   };
 
-  // Auto-toast for flash messages
-  document.querySelectorAll(".flash").forEach(flash => {
-    const text = flash.textContent?.trim();
-    if (!text) return;
-    const type = flash.classList.contains("flash--success") ? "success"
-      : flash.classList.contains("flash--error") ? "error" : "info";
-    window.bentoToast(text, type, 5000);
-  });
-
-  // Lazy image reveal
-  if ("IntersectionObserver" in window) {
-    const imgObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-loaded");
-          imgObserver.unobserve(entry.target);
-        }
-      });
-    }, { rootMargin: "100px" });
-    document.querySelectorAll('img[loading="lazy"]').forEach(img => {
-      if (img.complete) img.classList.add("is-loaded");
-      else imgObserver.observe(img);
-    });
+  // Skip link target: use the page's <main> when it has no explicit id
+  if (!document.getElementById("main-content")) {
+    const main = document.querySelector("body > main") || document.querySelector("main");
+    if (main) {
+      if (main.id) {
+        document.querySelector(".ux-skip-link")?.setAttribute("href", `#${main.id}`);
+      } else {
+        main.id = "main-content";
+      }
+      if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
+    }
   }
 
-  // Form submit loading state
-  document.querySelectorAll("form").forEach(form => {
-    form.addEventListener("submit", () => {
-      const submitBtn = form.querySelector('[type="submit"]');
-      if (submitBtn && !submitBtn.classList.contains("is-loading")) {
-        submitBtn.classList.add("is-loading");
-        setTimeout(() => submitBtn.classList.remove("is-loading"), 8000);
-      }
+  // Submit loading state: runs after page handlers (bubble phase on document),
+  // and only when the submit was not cancelled by client-side validation or an AJAX handler.
+  document.addEventListener("submit", (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || form.hasAttribute("data-no-loading")) return;
+    if (form.closest(".floating-assist, .header-search")) return;
+    window.setTimeout(() => {
+      if (event.defaultPrevented) return;
+      const submitBtn = event.submitter instanceof HTMLElement && event.submitter.form === form
+        ? event.submitter
+        : form.querySelector('button[type="submit"], button:not([type])');
+      if (!submitBtn || submitBtn.tagName !== "BUTTON" || submitBtn.classList.contains("ux-btn-loading")) return;
+      submitBtn.classList.add("ux-btn-loading");
+      submitBtn.setAttribute("aria-busy", "true");
+      window.setTimeout(() => {
+        submitBtn.classList.remove("ux-btn-loading");
+        submitBtn.removeAttribute("aria-busy");
+      }, 8000);
+    }, 0);
+  });
+
+  // Restore buttons when the page is shown again from the back/forward cache
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    document.querySelectorAll(".ux-btn-loading").forEach((button) => {
+      button.classList.remove("ux-btn-loading");
+      button.removeAttribute("aria-busy");
     });
   });
 })();

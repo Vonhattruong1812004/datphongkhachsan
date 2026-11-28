@@ -1,122 +1,102 @@
-/* ux-friendly.css — User experience improvements for Bento Booking
-   Smooth transitions, better feedback, scroll-to-top, toast, accessibility, mobile UX */
+/* ux-friendly.css — UX layer for Bento Booking.
+   Rules are opt-in (ux-* classes) or narrowly scoped so they never override
+   page-specific layouts, table alignment, or existing state classes. */
 
-/* ─── 1. Smooth page transitions ─── */
-main,
-.guest-booking-shell,
-.role-dash,
-.travel-home {
-  animation: ux-fade-in 0.35s ease-out;
+/* ─── 1. Gentle page entrance (opacity only: no transform, so fixed/sticky children are unaffected) ─── */
+body > main {
+  animation: ux-fade-in 0.3s ease-out;
 }
 
 @keyframes ux-fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* ─── 2. Better interactive feedback ─── */
-a,
-button,
-.chip,
+/* ─── 2. Interactive feedback ─── */
 .button,
+.chip,
 .travel-button,
-.guest-button,
-[role="button"] {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+.guest-button {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
-button:active:not(:disabled),
 .button:active,
 .chip:active,
 .travel-button:active,
-.guest-button:active,
-[role="button"]:active {
-  transform: scale(0.97) !important;
+.guest-button:active {
+  transform: scale(0.97);
 }
 
-button:disabled,
-.button:disabled,
-.guest-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-/* Loading spinner for submit buttons */
-.is-loading {
+/* Submit loading state (set by footer script only after a real, non-prevented submit) */
+.ux-btn-loading {
   position: relative;
   color: transparent !important;
   pointer-events: none;
 }
 
-.is-loading::after {
+.ux-btn-loading > * {
+  visibility: hidden;
+}
+
+.ux-btn-loading::after {
   content: "";
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
   border-top-color: #ffffff;
   border-radius: 50%;
   animation: ux-spin 0.6s linear infinite;
+}
+
+.button:not(.button--primary).ux-btn-loading::after,
+.guest-button:not(.guest-button--primary).ux-btn-loading::after {
+  border-color: rgba(0, 108, 228, 0.2);
+  border-top-color: #006ce4;
 }
 
 @keyframes ux-spin {
   to { transform: rotate(360deg); }
 }
 
-/* ─── 3. Better form input UX ─── */
-input,
-textarea,
-select {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #9ca3af;
-  transition: opacity 0.2s ease;
-}
-
+/* ─── 3. Forms ─── */
 input:focus::placeholder,
 textarea:focus::placeholder {
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
-/* Input validation visual feedback */
-input:invalid:not(:placeholder-shown):not(:focus),
-textarea:invalid:not(:placeholder-shown):not(:focus) {
-  border-color: rgba(239, 68, 68, 0.5);
+/* Only flag fields the user has actually interacted with */
+input:user-invalid,
+textarea:user-invalid,
+select:user-invalid {
+  border-color: rgba(220, 38, 38, 0.6);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
 }
 
-input:valid:not(:placeholder-shown):not([value=""]),
-select:valid:not([value=""]) {
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-/* ─── 4. Scroll-to-top button ─── */
+/* ─── 4. Scroll-to-top (sits above the Zalo + "Hỏi Bento" stack, ~150px tall) ─── */
 .ux-scroll-top {
   position: fixed;
-  right: 22px;
-  bottom: 100px;
+  right: 24px;
+  bottom: 172px;
   z-index: 85;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
+  padding: 0;
   border: 1px solid #d8e1ec;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   color: #003b95;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(15, 36, 66, 0.12);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(15, 36, 66, 0.14);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(12px);
-  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, background-color 0.15s ease;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, visibility 0.25s ease, transform 0.25s ease, background-color 0.15s ease;
 }
 
 .ux-scroll-top.is-visible {
@@ -128,8 +108,6 @@ select:valid:not([value=""]) {
 .ux-scroll-top:hover {
   background: #eff6ff;
   border-color: #93c5fd;
-  transform: translateY(-3px);
-  box-shadow: 0 14px 36px rgba(0, 108, 228, 0.18);
 }
 
 .ux-scroll-top svg {
@@ -137,10 +115,15 @@ select:valid:not([value=""]) {
   height: 20px;
 }
 
-/* ─── 5. Toast notification ─── */
+/* Hide while the AI drawer is open so it never covers the chat */
+.floating-assist:has(.floating-assist__drawer:not([hidden])) ~ .ux-scroll-top {
+  display: none;
+}
+
+/* ─── 5. Toasts (window.bentoToast) ─── */
 .ux-toast-container {
   position: fixed;
-  top: 90px;
+  top: 88px;
   right: 18px;
   z-index: 999;
   display: grid;
@@ -154,7 +137,7 @@ select:valid:not([value=""]) {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 13px 16px;
   border-radius: 12px;
   border: 1px solid #d8e1ec;
   background: #ffffff;
@@ -163,143 +146,87 @@ select:valid:not([value=""]) {
   font-weight: 700;
   line-height: 1.4;
   box-shadow: 0 18px 48px rgba(15, 36, 66, 0.16);
-  animation: ux-toast-in 0.35s ease-out;
+  animation: ux-toast-in 0.3s ease-out;
   cursor: pointer;
 }
 
-.ux-toast--success {
-  border-color: rgba(34, 197, 94, 0.3);
-  background: #f0fdf4;
-  color: #065f46;
-}
-
-.ux-toast--success::before {
-  content: "✓";
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+.ux-toast::before {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #16a34a;
-  color: #fff;
-  font-size: 14px;
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 900;
 }
 
-.ux-toast--error {
-  border-color: rgba(239, 68, 68, 0.3);
-  background: #fef2f2;
-  color: #991b1b;
-}
-
-.ux-toast--error::before {
-  content: "!";
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #dc2626;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.ux-toast--info {
-  border-color: rgba(0, 108, 228, 0.2);
-  background: #eff6ff;
-  color: #1e40af;
-}
-
-.ux-toast--info::before {
-  content: "i";
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #2563eb;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 900;
-  font-style: italic;
-}
+.ux-toast--success { border-color: rgba(34, 197, 94, 0.3); background: #f0fdf4; color: #065f46; }
+.ux-toast--success::before { content: "✓"; background: #16a34a; }
+.ux-toast--error { border-color: rgba(239, 68, 68, 0.3); background: #fef2f2; color: #991b1b; }
+.ux-toast--error::before { content: "!"; background: #dc2626; }
+.ux-toast--info { border-color: rgba(0, 108, 228, 0.2); background: #eff6ff; color: #1e40af; }
+.ux-toast--info::before { content: "i"; background: #2563eb; }
 
 .ux-toast.is-leaving {
-  animation: ux-toast-out 0.25s ease-in forwards;
+  animation: ux-toast-out 0.22s ease-in forwards;
 }
 
 @keyframes ux-toast-in {
-  from { opacity: 0; transform: translateX(30px) scale(0.95); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes ux-toast-out {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(30px); }
+  to { opacity: 0; transform: translateX(24px); }
 }
 
-/* ─── 6. Better card hover effects ─── */
+/* ─── 6. Card hover (home + search cards only) ─── */
 .travel-room-card,
 .travel-news-card,
 .travel-tour-card,
-.travel-city-card,
-.travel-trust-card,
-.travel-info-card,
-.room-fresh,
-.promo-card,
-.recent-room-card,
-.dashboard-card,
-.room-card {
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+.travel-trust-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .travel-room-card:hover,
 .travel-news-card:hover,
-.travel-tour-card:hover,
-.travel-info-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 24px 60px rgba(15, 36, 66, 0.16);
-}
-
-.travel-city-card:hover {
-  transform: translateY(-4px) scale(1.02);
+.travel-tour-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 54px rgba(15, 36, 66, 0.14);
 }
 
 .travel-trust-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 40px rgba(15, 36, 66, 0.12);
+  transform: translateY(-2px);
 }
 
-.dashboard-card:hover,
-.room-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 50px rgba(15, 36, 66, 0.14);
-  border-color: rgba(0, 108, 228, 0.24);
+/* ─── 7. Content-photo placeholder (photos only, never icons/logos) ─── */
+.travel-room-media img,
+.travel-news-media img,
+.travel-tour-card > img,
+.room-fresh > img,
+.recent-room-card img {
+  background-color: #eef2f7;
 }
 
-/* ─── 7. Image loading placeholder ─── */
-img {
-  background-color: #f1f5f9;
+/* ─── 8. Table row hover (no padding/alignment overrides) ─── */
+tbody tr:hover > td {
+  background-color: #f8fbff;
 }
 
-img[loading="lazy"] {
-  opacity: 0;
-  transition: opacity 0.4s ease;
+/* ─── 9. Flash messages ─── */
+.flash {
+  border-radius: 12px;
+  font-weight: 700;
+  animation: ux-fade-in 0.3s ease-out;
 }
 
-img[loading="lazy"].is-loaded,
-img[loading="lazy"]:not([src=""]) {
-  opacity: 1;
-}
-
-/* ─── 8. Better breadcrumb / back navigation ─── */
+/* ─── 10. Opt-in utilities ─── */
 .ux-breadcrumb {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
   font-size: 13px;
@@ -307,115 +234,31 @@ img[loading="lazy"]:not([src=""]) {
   color: #66758a;
 }
 
-.ux-breadcrumb a {
-  color: #006ce4;
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
+.ux-breadcrumb a { color: #006ce4; }
+.ux-breadcrumb a:hover { color: #003b95; }
+.ux-breadcrumb__sep { color: #c8d4e0; }
 
-.ux-breadcrumb a:hover {
-  color: #003b95;
-}
-
-.ux-breadcrumb__sep {
-  color: #c8d4e0;
-}
-
-/* ─── 9. Better empty states ─── */
-.guest-empty,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 42px 24px;
-  text-align: center;
-}
-
-.guest-empty::before,
-.empty-state::before {
-  content: "🔍";
-  font-size: 36px;
-  opacity: 0.6;
-}
-
-/* ─── 10. Table improvements ─── */
-table {
-  font-size: 14px;
-}
-
-th, td {
-  padding: 12px 14px;
-  text-align: left;
-}
-
-tr:hover td {
-  background: #f8fbff;
-}
-
-/* ─── 11. Flash message improvements ─── */
-.flash {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  animation: ux-fade-in 0.35s ease-out;
-  border-radius: 12px;
-}
-
-/* ─── 12. Mobile bottom safe area ─── */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .floating-assist {
-    bottom: calc(18px + env(safe-area-inset-bottom));
-  }
-
-  .ux-scroll-top {
-    bottom: calc(100px + env(safe-area-inset-bottom));
-  }
-}
-
-/* ─── 13. Better mobile header spacing ─── */
-@media (max-width: 760px) {
-  .ux-scroll-top {
-    right: 14px;
-    bottom: 90px;
-    width: 42px;
-    height: 42px;
-  }
-
-  .ux-toast-container {
-    top: auto;
-    bottom: 18px;
-    right: 12px;
-    left: 12px;
-    max-width: none;
-  }
-}
-
-/* ─── 14. Skeleton loading placeholder ─── */
 .ux-skeleton {
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
-  animation: ux-skeleton-shimmer 1.5s ease-in-out infinite;
+  animation: ux-skeleton-shimmer 1.4s ease-in-out infinite;
   border-radius: 8px;
 }
 
 @keyframes ux-skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
 }
 
-/* ─── 15. Tooltip helper ─── */
-[data-tooltip] {
-  position: relative;
-}
+[data-tooltip] { position: relative; }
 
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  padding: 6px 12px;
+  transform: translateX(-50%);
+  padding: 6px 10px;
   border-radius: 8px;
   background: #0f2442;
   color: #ffffff;
@@ -425,83 +268,17 @@ tr:hover td {
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
   z-index: 999;
 }
 
-[data-tooltip]:hover::after {
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
 }
 
-/* ─── 16. Progress bar for multi-step flows ─── */
-.ux-progress {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin-bottom: 24px;
-}
-
-.ux-progress__step {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #94a3b8;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  position: relative;
-}
-
-.ux-progress__step:first-child {
-  border-radius: 12px 0 0 12px;
-}
-
-.ux-progress__step:last-child {
-  border-radius: 0 12px 12px 0;
-}
-
-.ux-progress__step.is-active {
-  color: #006ce4;
-  background: #eff6ff;
-  border-color: #93c5fd;
-  font-weight: 900;
-}
-
-.ux-progress__step.is-done {
-  color: #047857;
-  background: #ecfdf5;
-  border-color: #86efac;
-}
-
-.ux-progress__num {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 900;
-  flex: 0 0 26px;
-}
-
-.ux-progress__step.is-active .ux-progress__num {
-  background: #006ce4;
-  color: #ffffff;
-}
-
-.ux-progress__step.is-done .ux-progress__num {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-/* ─── 17. Accessibility: skip link ─── */
+/* ─── 11. Accessibility: skip link ─── */
 .ux-skip-link {
   position: fixed;
   top: -100px;
@@ -512,42 +289,46 @@ tr:hover td {
   background: #006ce4;
   color: #ffffff;
   font-weight: 800;
-  text-decoration: none;
   box-shadow: 0 10px 30px rgba(0, 59, 149, 0.3);
   transition: top 0.2s ease;
 }
 
-.ux-skip-link:focus {
-  top: 16px;
-}
+.ux-skip-link:focus { top: 16px; }
 
-/* ─── 18. Better selection color ─── */
 ::selection {
   background: rgba(0, 108, 228, 0.18);
   color: #003b95;
 }
 
-/* ─── 19. Smooth scrollbar ─── */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* ─── 12. Scrollbar ─── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.6); }
+
+/* ─── 13. Mobile ─── */
+@media (max-width: 760px) {
+  .ux-scroll-top {
+    right: 16px;
+    bottom: 166px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .ux-toast-container {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .ux-scroll-top { margin-bottom: env(safe-area-inset-bottom); }
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.55);
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+@media (prefers-reduced-motion: reduce) {
+  body > main,
+  .flash,
+  .ux-toast { animation: none; }
 }
